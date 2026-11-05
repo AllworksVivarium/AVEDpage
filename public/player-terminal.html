@@ -343,7 +343,8 @@
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
 <link rel="stylesheet" href="/page-headings.css?v=warm-1">
-<link rel="stylesheet" href="/print-signal.css?v=warm-1">
+<link rel="stylesheet" href="/print-signal.css?v=reading-1">
+<link rel="stylesheet" href="/terminal-reading.css?v=reading-1">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -378,7 +379,7 @@
        模块 0：老式机器柔和信号“登录中”过渡层
        ========================================================================== -->
   <div id="signal-Connecting-overlay" role="dialog" aria-label="公司终端连接" aria-busy="false" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
-    <div class="w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
+    <div class="signal-mesh w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
         <span>\\UPLINK\A.V.E.D.\TERMINAL_09</span>
         <span id="signal-noise-code">CARRIER: 82% [SYNCING]</span>
@@ -413,12 +414,12 @@
         <span class="w-2 h-2 bg-white animate-pulse"></span>
         <span>\\A.V.E.D.\TERMINAL_GATEWAY</span>
       </div>
-      <div class="hidden md:block text-neutral-300">ALLWORKS VIVARIUM ENGINEERING DIRECTORATE</div>
+      <div class="landing-float hidden md:block text-neutral-300">ALLWORKS VIVARIUM ENGINEERING DIRECTORATE</div>
       <div>STATUS // STANDBY</div>
     </div>
 
     <div class="w-full max-w-6xl my-auto py-6 flex flex-col items-center z-10">
-      <div class="text-center mb-5 sm:mb-7 space-y-1">
+      <div class="landing-float text-center mb-5 sm:mb-7 space-y-1">
         <div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.28em] sm:tracking-[0.38em] text-white/70 uppercase">
           Allworks Vivarium Engineering Directorate
         </div>
@@ -464,10 +465,10 @@
       </div>
 
       <!-- 三语标语：我们控制，我们收容，我们保护 -->
-      <div class="mt-5 mb-8 text-center space-y-2 max-w-xl px-2">
+      <div class="landing-float landing-motto mt-5 mb-8 text-center space-y-2 max-w-xl px-2">
         <div class="pt-3 border-t border-white/20 space-y-1.5">
           <p class="text-xs sm:text-sm tracking-[0.32em] text-white/85 font-serif-sc font-semibold">
-            我们控制，我们收容，我们保护
+            控制、收容、保护
           </p>
           <p class="text-[11px] sm:text-xs font-mono-tech tracking-[0.28em] text-white/60 uppercase">
             SECURE. CONTAIN. PROTECT.
@@ -774,8 +775,8 @@
               <form id="news-detail-comment-form" class="flex flex-col sm:flex-row gap-2 pt-2 font-mono-tech">
                 <input id="news-detail-comment-input" type="text" placeholder="发表评论..." required
                   class="flex-1 px-3 py-2.5 border border-[var(--inner-border-soft)] bg-white text-black text-xs focus:outline-none">
-                <button type="submit" class="magnetic-cta inner-btn-primary px-6 py-2.5 font-bold text-xs whitespace-nowrap cursor-pointer">
-                  [ 签署留言 ]
+                <button type="submit" class="terminal-key inner-btn-primary px-6 py-2.5 font-bold text-xs whitespace-nowrap cursor-pointer">
+                  留言
                 </button>
               </form>
             </div>
@@ -1632,16 +1633,16 @@
        ========================================================================== -->
   <script src="/http-client.js?v=signal-5" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=warm-1" defer></script>
+  <script src="/notices-ui.js?v=reading-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/player-community.js?v=notices-1" defer></script>
   <script src="/sky-ui.js?v=signal-5" defer></script>
   <script src="/economy-ui.js?v=signal-5" defer></script>
   <script src="/welfare-ui.js?v=signal-5" defer></script>
-  <script src="/visual-style.js?v=warm-1" defer></script>
+  <script src="/visual-style.js?v=reading-1" defer></script>
   <script src="/player.js?v=warm-1" defer></script>
   <script src="/page-headings.js?v=serif-1" defer></script>
-  <script src="/print-signal.js?v=warm-1" defer></script>
+  <script src="/print-signal.js?v=reading-1" defer></script>
 </body>
 </html>
