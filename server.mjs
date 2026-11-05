@@ -5,6 +5,8 @@ import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
 import {installEconomy,proofRandom} from './server-economy.mjs';
 import {installSky} from './server-sky.mjs';
+import {installWelfare} from './server-welfare.mjs';
+import {directoryDepartment} from './server-directory.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
@@ -226,7 +228,7 @@ const secureRoll = (seedHex, range) => {
 };
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl) };
+  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs };
 };
 const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
 const adminMutation = (req, res) => {
@@ -240,6 +242,7 @@ const adminMutation = (req, res) => {
 let economy;
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
+const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
@@ -286,6 +289,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(media.handle(req,res,url))return;
+    if(await welfare.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
     if(await sky.handle(req,res,url))return;
     if(await community.handle(req,res,url))return;
@@ -532,7 +536,7 @@ const server = createServer(async (req, res) => {
       if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||initialBalance<0||initialBalance>100000000))return send(res,400,{error:'初始余额必须是 0 到 100,000,000 之间的整数。'});
       try {
         const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role) VALUES (?,?,?,?,?,?)')
-          .run(username.trim(),hashPassword(password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,typeof department==='string'?department.trim().slice(0,80):'',role==='admin'?'admin':'employee');
+          .run(username.trim(),hashPassword(password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,directoryDepartment(department),role==='admin'?'admin':'employee');
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name) VALUES(?,?)').run(id,`匿名员工-${id}`);
         if(initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         return send(res,201,{id});
@@ -547,7 +551,7 @@ const server = createServer(async (req, res) => {
       if(qq===undefined)return send(res,400,{error:'QQ 号最多 30 个字符。'});
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=? WHERE id=?').run(displayName.trim(),qq,department.trim(),enabled?1:0,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=? WHERE id=?').run(displayName.trim(),qq,directoryDepartment(department),enabled?1:0,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(hashPassword(password),employeeId);
         return send(res,200,{ok:true});

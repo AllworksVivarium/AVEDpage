@@ -455,7 +455,7 @@
       const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
 
       function switchMainView(target) {
-        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
+        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();refreshDirectory().catch(e=>showToast(e.message));}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
@@ -497,7 +497,7 @@
 
       document.getElementById('back-to-news-list-btn').addEventListener('click', () => {
         currentNewsId = null;
-        renderCompanyNewsView();
+        renderCompanyNewsView();document.getElementById('view-news').scrollIntoView({block:'start'});
       });
 
 
@@ -507,9 +507,10 @@
       function renderDepartmentsAndPersonnel() {
         const deptGrid = document.getElementById('departments-grid');
         if (deptGrid) {
-          deptGrid.innerHTML = departmentsData.map((d,i) => `<button type="button" data-department-filter="${d.name}" class="department-sheet ${window.avedDepartmentFilter===d.name?'department-selected':''}"><div class="department-meta"><span>AVED / ${esc(d.code)}</span><span>DIVISION ${String(i+1).padStart(2,'0')}</span></div><h3>${d.name}</h3><div class="department-summary"><p>${d.desc}</p><span class="department-number">${String(i+1).padStart(2,'0')}</span></div><footer><span>${d.motto}</span><b>调阅人员 ↗</b></footer></button>`).join('');
+          deptGrid.innerHTML = departmentsData.map((d,i) => `<button type="button" data-department-filter="${d.name}" class="department-sheet ${window.avedDepartmentFilter===d.name?'department-selected':''}"><div class="department-meta"><span>AVED / ${esc(d.code)}</span><span>DIVISION ${String(i+1).padStart(2,'0')}</span></div><h3>${d.name}</h3><div class="department-summary"><p>${d.desc}</p><svg class="department-plate" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M12 20H388M12 44H388M12 188H388"/><text x="16" y="38">AVED / DIVISION REGISTER</text><text class="plate-title" x="12" y="102">${esc(d.code.split('//')[1]||'DIVISION')}</text><circle cx="60" cy="153" r="28"/><path d="M18 153H102M60 111V195"/><text class="plate-number" x="220" y="210">${String(i+1).padStart(2,'0')}</text></svg></div><footer><span>${d.motto}</span><b>调阅人员 ↗</b></footer></button>`).join('');
         }
 
+        let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='直属 / 待分配';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='直属 / 待分配').length;extra.hidden=!unassigned;extra.textContent='直属与待分配档案 / '+unassigned+' 人';
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
@@ -917,8 +918,7 @@
 
 
       document.getElementById('back-to-forum-list-btn').addEventListener('click', () => {
-        currentForumThreadId = null;
-        renderForumView();
+        returnForumList();
       });
 
 
@@ -1768,7 +1768,7 @@
       function renderPendingImagesQueue(){}
       function renderAnonAuditLog(){}
       function renderEmployeeRoster(){}
-      let economyUI=null,economyRevision=0;
+      let economyUI=null,welfareUI=null,economyRevision=0,directoryRequest=0;
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       let playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
       const byId=id=>document.getElementById(id);
@@ -1776,11 +1776,13 @@
         const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
         const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;
         if(data.economy)applyEconomyRules(data.economy);
-        employees=data.employees.map(e=>({id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:'',avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''}));
+        employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
           isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
@@ -1803,14 +1805,14 @@
         byId('admin-nav-tab').hidden=!currentUser.serverAdmin;
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
-      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));}catch(e){showToast(e.message,'warn');}}
-      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');}catch(e){showToast(e.message,'warn');}}
+      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
+      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       function completeEnterIntranet(emp){
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        communityUI.refresh();renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('news');
+        communityUI.refresh();welfareUI.refresh().catch(e=>showToast(e.message));renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('news');
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         refreshChat('sky');refreshChat('derby');startChatStreams();
       }
@@ -1826,17 +1828,18 @@
       function readImageFileAsDataUrl(file,callback){if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1500000){showToast('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。','warn');return;}const reader=new FileReader();reader.onload=()=>callback(reader.result);reader.readAsDataURL(file);}
       const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 · ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
       const attachment=item=>item.imageData?`<img src="${esc(item.imageData)}" class="max-w-full max-h-96 object-contain mt-3" alt="随帖影像" loading="lazy">`:'';
+      function returnForumList(){currentForumThreadId=null;renderForumView();byId('view-forum').scrollIntoView({block:'start'});}
       function renderForumView(){
         const th=forumThreads.find(t=>String(t.id)===String(currentForumThreadId));
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
-        byId('forum-skeleton-container')?.classList.add('hidden');
-        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">🎭 ${esc(t.anonymousName)} · ${AVEDTime.markup(t.createdAt)} · 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
+        byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;
+        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'实名':'匿名'} · ${esc(t.anonymousName)} · ${AVEDTime.markup(t.createdAt)} · 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
           if(forumNext)byId('forum-threads-list-container').insertAdjacentHTML('beforeend','<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>');
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">🎭 ${esc(th.anonymousName)} · ${AVEDTime.markup(th.createdAt)} · 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
+        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'实名':'匿名'} · ${esc(th.anonymousName)} · ${AVEDTime.markup(th.createdAt)} · 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
         api('/api/player/forum/'+th.id).then(d=>{if(String(currentForumThreadId)!==String(th.id))return;
-          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> · ${AVEDTime.markup(r.createdAt)} · ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
+          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'实名':'匿名'}</small> · ${AVEDTime.markup(r.createdAt)} · ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
           byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
       async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
@@ -1859,7 +1862,7 @@
       function renderSky(state){skyRound=state.round;skyUI.render(state);}
       async function pollSky(){return skyUI.poll();}
       async function refreshChat(room){renderChat(room,await api('/api/player/chat?room='+room));}
-      function renderChat(room,d){const box=byId(room==='sky'?'skydive-chat-list':'derby-chat-messages');if(!box)return;
+      function renderChat(room,d){if(room==='sky')skyUI.radio(d.items);const box=byId(room==='sky'?'skydive-chat-list':'derby-chat-messages');if(!box)return;
         const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80;const last=box.dataset.lastId;const next=String(d.items.at(-1)?.id||'')+d.items.map(m=>m.alias).join('|');if(last===next)return;
         box.innerHTML=d.items.map(m=>`<div class="py-1"><b>${esc(m.alias)}</b> <span class="text-xs opacity-60">${AVEDTime.markup(m.createdAt,'clock')}</span><p class="whitespace-pre-wrap">${esc(m.body)}</p></div>`).join('');box.dataset.lastId=next;if(nearBottom||!last)box.scrollTop=box.scrollHeight;
       }
@@ -1867,9 +1870,9 @@
       function startChatStreams(){for(const connection of chatConnections)connection.close();chatConnections=['sky','derby'].map(room=>{const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>renderChat(room,JSON.parse(e.data));return source;});}
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){const target=byId('view-profile');if(!target)return;
-        target.innerHTML=`<div class="retro-corner-box p-5 space-y-4"><h2 class="text-xl font-bold">个人主页</h2><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div><p>${esc(currentUser.name)} · ${esc(currentUser.account)}</p><p>余额：${fmtMoney(currentUser.balance)}</p><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary px-4 py-2">保存</button></form><h3 class="font-bold">成就</h3>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p>${playerAchievements.some(a=>a.code===code)?'◆ 已达成':'◇ 未达成'} · ${title}</p>`).join('')}</div>`;
+        target.innerHTML=`<div class="retro-corner-box p-5 space-y-4"><h2 class="text-xl font-bold">个人主页</h2><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div><p>${esc(currentUser.name)} · ${esc(currentUser.account)}</p><p>余额：${fmtMoney(currentUser.balance)}</p><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary px-4 py-2">保存</button></form><h3 class="font-bold">成就</h3>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p>${playerAchievements.some(a=>a.code===code)?'◆ 已达成':'◇ 未达成'} · ${title}</p>`).join('')}</div>`;welfareUI?.profile();
       }
-      async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌',risk:'深潜授信'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
+      async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌',risk:'历史配给'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
       async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
       document.addEventListener('submit',event=>{
@@ -1879,15 +1882,15 @@
         action(form.querySelector('[type=submit]')||form.querySelector('button'),async()=>{
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form';
-            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
-            form.reset();if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='未选择附图';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
+            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||playerProfile.forumIdentity||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
+            form.reset();form.querySelector('[name=identityMode]').value=playerProfile.forumIdentity||'anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='未选择附图';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
           }else if(id==='scp-realname-comment-form'){
             const dossier=scpItemsData.find(s=>s.id===selectedScpId);if(!dossier)throw new Error('请先选择档案。');
-            const input=form.querySelector('input[type=text],textarea');await api('/api/player/dossiers/'+dossier.dbId+'/comments',{method:'POST',body:{body:input.value}});form.reset();await loadDossierComments(dossier);
+            const input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/dossiers/'+dossier.dbId+'/comments',{method:'POST',body:{body:input?.value||''}});form.reset();await loadDossierComments(dossier);
           }else if(id.endsWith('chat-form')){
-            const room=id==='skydive-chat-form'?'sky':'derby',input=form.querySelector('input[type=text],textarea');await api('/api/player/chat',{method:'POST',body:{room,body:input.value}});form.reset();await refreshChat(room);
+            const room=id==='skydive-chat-form'?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
           }else if(id==='cloud-profile-form'){
             const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');
             if(file?.size){if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
@@ -1899,8 +1902,8 @@
       document.addEventListener('click',event=>{
         const card=event.target.closest('[data-scp-id]');if(card){const dossier=scpItemsData.find(d=>d.id===card.dataset.scpId);if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         const button=event.target.closest('button,a');if(!button)return;const id=button.id;
-        if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();return;}
-        if(button.dataset.cloudThread){stop(event);currentForumThreadId=button.dataset.cloudThread;renderForumView();return;}
+        if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();byId('news-detail-subview').scrollIntoView({block:'start'});return;}
+        if(button.dataset.cloudThread){stop(event);currentForumThreadId=button.dataset.cloudThread;renderForumView();byId('view-forum').scrollIntoView({block:'start'});return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.nav){api('/api/player/view',{method:'POST',body:{page:button.dataset.nav}}).catch(()=>{});}
         if(button.dataset.game==='doudizhu'&&!cardRound)initDoudizhu();
@@ -1956,7 +1959,9 @@
 
       const skyUI=AVEDSkyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
-      const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
+      const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
+      welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
+      setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       let rememberedSession=false;
       api('/api/me').then(()=>{try{rememberedSession=!!localStorage.getItem('aved_username');}catch{}}).catch(()=>{});

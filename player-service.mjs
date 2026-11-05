@@ -1,5 +1,6 @@
 import {mediaReference} from './server-media.mjs';
 import {weighted} from './server-economy.mjs';
+import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
@@ -14,6 +15,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
   };
   for(const table of ['forum_threads','forum_replies']) {
+    addColumn(table,'identity_mode',"TEXT NOT NULL DEFAULT 'anonymous'");
     addColumn(table,'image_data',"TEXT NOT NULL DEFAULT ''");
     addColumn(table,'moderation',"TEXT NOT NULL DEFAULT 'approved'");
   }
@@ -78,13 +80,13 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const marketService=installMarket(db);
   const market=id=>marketService.items(id);
   function forum(before=Number.MAX_SAFE_INTEGER,viewer=0) {
-    const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,p.anonymous_name AS anonymousName,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,
+    const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,CASE WHEN f.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=f.employee_id) ELSE p.anonymous_name END AS anonymousName,f.identity_mode AS identityMode,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,
       (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,
       (SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount
       FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.status='published' AND f.deleted_at='' AND f.id<? ORDER BY f.id DESC LIMIT 11`).all(viewer,before);
     return {items:rows.slice(0,10).map(row=>({...row,imageData:mediaReference('thread',row.id,row.imageData)})),next:rows.length>10?rows[9].id:null};
   }
-  const replies=(id,viewer=0)=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,p.anonymous_name AS anonymousName,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
+  const replies=(id,viewer=0)=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,CASE WHEN r.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=r.employee_id) ELSE p.anonymous_name END AS anonymousName,r.identity_mode AS identityMode,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
     (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads f ON f.id=r.thread_id JOIN profiles p ON p.employee_id=r.employee_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND f.status='published' AND f.deleted_at='' ORDER BY r.id`).all(viewer,id).map(row=>({...row,imageData:mediaReference('reply',row.id,row.imageData)}));
   const saveRound=(id,game,state)=>Number(db.prepare('INSERT INTO player_rounds(employee_id,game,state_json) VALUES(?,?,?)').run(id,game,JSON.stringify(state)).lastInsertRowid);
   const loadRound=(id,round,game)=>{const r=db.prepare('SELECT state_json FROM player_rounds WHERE id=? AND employee_id=? AND game=?').get(round,id,game);if(!r)throw new Error('该局不存在，请重新开始。');return JSON.parse(r.state_json);};
@@ -103,24 +105,25 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:db.prepare('SELECT code,created_at AS createdAt FROM earned_achievements WHERE employee_id=?').all(id),
           history:db.prepare('SELECT id,game,cost,prize,seed_hash AS seedHash,created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30').all(id),
-          employees:db.prepare('SELECT e.id,e.display_name AS displayName,e.department,p.avatar_url AS avatarUrl FROM employees e LEFT JOIN profiles p ON p.employee_id=e.id WHERE enabled=1').all().map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
+          employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
           announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,datetime(created_at) DESC,id DESC').all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
           forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
+      if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
       if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,id));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,p.anonymous_name AS anonymousName,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:topic,items:replies(Number(thread[1]),id)});return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,CASE WHEN f.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=f.employee_id) ELSE p.anonymous_name END AS anonymousName,f.identity_mode AS identityMode,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:topic,items:replies(Number(thread[1]),id)});return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
-        if(!alias)throw new Error('请先保存匿名名称。');
+        if(!alias)throw new Error('请先保存匿名名称。');const identityMode=data.identityMode??publicProfile(id).forumIdentity;if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
         let row;
         if(thread){if(!db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published'").get(thread[1]))throw new Error('帖子不存在。');row=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body,image_data,status,moderation) VALUES(?,?,?,?,?,?,?)').run(thread[1],id,alias,data.body.trim(),img,status,moderation);}
         else row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body,image_data,status,moderation) VALUES(?,?,?,?,?,?,?)').run(id,alias,data.title.trim(),data.body.trim(),img,status,moderation);
-        send(res,201,{id:Number(row.lastInsertRowid),pending:!!img});return true;
+        db.prepare('UPDATE '+(thread?'forum_replies':'forum_threads')+' SET identity_mode=? WHERE id=?').run(identityMode,row.lastInsertRowid);send(res,201,{id:Number(row.lastInsertRowid),pending:!!img});return true;
       }
       if(path==='/api/admin/moderation'&&req.method==='GET') {
         const items=db.prepare(`SELECT 'thread' AS kind,f.id,f.title,f.body,f.image_data AS imageData,f.employee_id AS employeeId,e.username,e.display_name AS displayName,f.created_at AS createdAt FROM forum_threads f JOIN employees e ON e.id=f.employee_id WHERE f.moderation='pending'

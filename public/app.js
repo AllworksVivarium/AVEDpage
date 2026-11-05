@@ -408,6 +408,7 @@ async function renderAdmin() {
     '<button type="button" class="small-action" id="openSpeechRecords">检索通讯记录</button></div></section>';
   $('#openSpeechRecords').onclick=()=>renderTab('speech');
 
+  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'直属 / 待分配';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['直属 / 待分配','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
     password: v.get("password"),

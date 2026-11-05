@@ -85,11 +85,11 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         const table=tables[edit[1]],row=db.prepare(`SELECT * FROM ${table} WHERE id=? AND employee_id=? AND deleted_at=''`).get(edit[2],user.id);
         if(!row){send(res,404,{error:'发言不存在或不属于当前员工。'});return true;}
         const d=await readBody(req,2500000);if(!valid(d.body,3000)||(edit[1]==='thread'&&!valid(d.title,120)))throw new Error('请填写有效标题和正文。');
-        const img=d.imageData===undefined?row.image_data:image(d.imageData),needsReview=!!img;
-        tx(()=>{db.prepare('INSERT INTO speech_revisions(source_type,source_id,employee_id,before_json,after_json) VALUES(?,?,?,?,?)').run(edit[1],row.id,user.id,JSON.stringify({title:row.title,body:row.body,imageData:row.image_data}),JSON.stringify({title:d.title,body:d.body.trim(),imageData:img}));
+        const img=d.imageData===undefined?row.image_data:image(d.imageData),needsReview=!!img,identityMode=d.identityMode??row.identity_mode??'anonymous';if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
+        tx(()=>{db.prepare('INSERT INTO speech_revisions(source_type,source_id,employee_id,before_json,after_json) VALUES(?,?,?,?,?)').run(edit[1],row.id,user.id,JSON.stringify({title:row.title,body:row.body,imageData:row.image_data,identityMode:row.identity_mode}),JSON.stringify({title:d.title,body:d.body.trim(),imageData:img,identityMode}));
           if(edit[1]==='thread')db.prepare("UPDATE forum_threads SET title=?,body=?,image_data=?,status=?,moderation=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.title.trim(),d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',row.id);
           else db.prepare("UPDATE forum_replies SET body=?,image_data=?,status=?,moderation=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',row.id);
-          log(user.id,'speech.edit',edit[1]+'/'+row.id);});send(res,200,{ok:true,pending:needsReview});return true;
+          db.prepare('UPDATE '+table+' SET identity_mode=? WHERE id=?').run(identityMode,row.id);log(user.id,'speech.edit',edit[1]+'/'+row.id);});send(res,200,{ok:true,pending:needsReview});return true;
       }
       if(adminDelete&&method==='DELETE') {
         const table=({threads:'forum_threads',replies:'forum_replies'})[adminDelete[1]]||adminDelete[2],rid=Number(adminDelete[3]);
