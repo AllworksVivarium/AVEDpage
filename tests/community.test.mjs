@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join,resolve,sep} from 'node:path';
+import {spawn} from 'node:child_process';
+import {createServer} from 'node:net';
+import {DatabaseSync} from 'node:sqlite';
+
+test('community identity, edits, moderation, search and retained removals',async t=>{
+ const folder=mkdtempSync(join(tmpdir(),'aved-community-'));
+ const port=await new Promise(resolvePort=>{const socket=createServer();socket.listen(0,'127.0.0.1',()=>{const p=socket.address().port;socket.close(()=>resolvePort(p));});});
+ const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:folder,PORT:String(port),HOST:'127.0.0.1',NODE_ENV:'production',COOKIE_SECURE:'false',SESSION_SECRET:'isolated-community-review-secret-123456',BOOTSTRAP_ADMIN_USERNAME:'community-admin',BOOTSTRAP_ADMIN_NAME:'监察员',BOOTSTRAP_ADMIN_PASSWORD:'community-review-123'},stdio:['ignore','pipe','pipe']});
+ let errors='';child.stdout.resume();child.stderr.on('data',x=>errors+=x);
+ t.after(async()=>{if(child.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}assert.ok(resolve(folder).startsWith(resolve(tmpdir())+sep));rmSync(folder,{recursive:true,force:true});});
+ const base='http://127.0.0.1:'+port;let ready=false;
+ for(let i=0;i<70;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,100));}assert.ok(ready,errors);
+ async function login(identifier,password,remember=false){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password,remember})});assert.equal(r.status,200);if(remember)assert.match(r.headers.get('set-cookie'),/Max-Age=2592000/);return r.headers.get('set-cookie').split(';')[0];}
+ const admin=await login('community-admin','community-review-123');
+ const request=async(cookie,path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};};
+ const a=(p,m,b)=>request(admin,p,m,b);
+ const emp=(await a('/api/admin/employees','POST',{username:'employee',displayName:'实名员工',password:'employee123',qqNumber:'100001',department:'医疗部',initialBalance:100000})).data.id;
+ await a('/api/admin/employees','POST',{username:'other',displayName:'另一员工',password:'employee123'});
+ const cookie=await login('employee','employee123',true),other=await login('other','employee123');const p=(path,m,b)=>request(cookie,path,m,b);
+ const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
+ const prof=await p('/api/profile','PUT',{anonymousName:'夜班代号',bio:'',avatarUrl:img});await new Promise(r=>setTimeout(r,30));assert.equal(prof.status,200,JSON.stringify(prof.data)+errors);
+ let state=(await p('/api/player/state')).data;assert.equal(state.employees.find(e=>e.id===emp).avatarUrl,img);assert.equal(state.stocks.length,5);assert.ok(state.stocks.some(s=>s.name==='医疗部'));
+ const thread=(await p('/api/player/forum','POST',{title:'主题',body:'修改之前'})).data.id;
+ assert.equal((await request(other,'/api/player/forum/thread/'+thread,'PUT',{title:'主题',body:'越权修改'})).status,404);
+ assert.equal((await request(other,'/api/admin/forum/threads/'+thread,'DELETE')).status,403);
+ assert.equal((await p('/api/player/forum/thread/'+thread,'PUT',{title:'修订主题',body:'修改之后'})).status,200);
+ assert.equal((await p('/api/profile','PUT',{anonymousName:'新代号',bio:'',avatarUrl:img})).status,200);
+ let row=(await p('/api/player/forum')).data.items.find(x=>x.id===thread);assert.equal(row.anonymousName,'新代号');assert.equal(row.body,'修改之后');assert.ok(row.editedAt);assert.equal(row.canEdit,1);assert.equal('employeeId' in row,false);
+ let records=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('修改之后'))).data.items;assert.equal(records[0].qqNumber,'100001');assert.ok(records[0].aliases.includes('夜班代号'));assert.equal(records[0].revisions[0].before.body,'修改之前');assert.equal(records[0].revisions[0].after.body,'修改之后');
+ const news=state.announcements[0];await p('/api/posts','POST',{announcementId:news.id,anonymousName:'伪造名',body:'实名评论'});const comment=(await p('/api/posts?announcementId='+news.id)).data.items[0];assert.equal(comment.displayName,'实名员工');assert.equal('anonymousName' in comment,false);
+ const dossier=state.dossiers[0];await p('/api/player/dossiers/'+dossier.id+'/comments','POST',{body:'持久评论'});assert.equal((await p('/api/player/dossiers/'+dossier.id+'/comments')).data.items[0].body,'持久评论');
+ assert.equal((await a('/api/admin/dossiers/'+dossier.id,'PUT',{code:dossier.code,title:'修订档案',department:'医疗部',status:'观察中',summary:'档案内容'})).status,200);
+ const pending=(await p('/api/player/forum','POST',{title:'图文主题',body:'待审核',imageData:img})).data;assert.equal(pending.pending,true);assert.equal((await p('/api/player/forum')).data.items.some(x=>x.id===pending.id),false);
+ const life=(await p('/api/player/life','POST',{title:'医疗值班画',kind:'art',body:'走廊',tags:['医疗部'],imageData:img})).data;assert.equal(life.pending,true);assert.equal((await p('/api/player/life')).data.items.length,0);
+ assert.ok((await a('/api/admin/moderation')).data.items.some(x=>x.kind==='life'&&x.id===life.id));await a('/api/admin/moderation/life/'+life.id,'POST',{action:'approve'});
+ const lifeResult=(await p('/api/player/life?kind=art&department='+encodeURIComponent('医疗部')+'&q='+encodeURIComponent('值班'))).data.items;assert.equal(lifeResult.length,1);assert.equal(lifeResult[0].anonymousName,'新代号');
+ const rules=await a('/api/admin/terminology','POST',{pattern:'收容',replacement:'封存',isRegex:false});assert.equal(rules.status,200);assert.equal((await a('/api/admin/terminology','POST',{pattern:'(a+)+$',replacement:'',isRegex:true})).status,400);
+ await a('/api/admin/forum/threads/'+thread,'DELETE');assert.equal((await p('/api/player/forum')).data.items.some(x=>x.id===thread),false);records=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('修改之后'))).data.items;assert.ok(records[0].deletedAt);assert.ok(records[0].deletedBy);
+ const snapshot=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});assert.equal(snapshot.prepare('SELECT COUNT(*) AS n FROM dossier_comments').get().n,1);assert.equal(snapshot.prepare("SELECT COUNT(*) AS n FROM activity_logs WHERE target='profiles'").get().n,0);assert.equal(snapshot.prepare('SELECT COUNT(*) AS n FROM speech_revisions').get().n,1);snapshot.close();
+});

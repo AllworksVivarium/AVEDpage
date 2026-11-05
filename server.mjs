@@ -1,3 +1,4 @@
+import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -169,7 +170,7 @@ const sessionsTtl = 8 * 60 * 60 * 1000;
 // Enable only after HTTPS is working; HTTP IP/local previews keep working by default.
 const cookieSecurity = process.env.COOKIE_SECURE === 'true' ? '; Secure' : '';
 const attempts = new Map();
-const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml' };
+const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png', '.webp':'image/webp' };
 const readBody = (req, maxBytes=32768) => new Promise((resolveBody, reject) => {
   const chunks = []; let size = 0;
   req.on('data', chunk => { size += chunk.length; if (size > maxBytes) { reject(new Error('too large')); req.destroy(); } else chunks.push(chunk); });
@@ -190,7 +191,7 @@ const sessionEmployee = req => {
   if (!session || session.expires_at < Date.now() || !session.enabled) {
     db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash); return null;
   }
-  db.prepare('UPDATE sessions SET expires_at=? WHERE token_hash=?').run(Date.now() + sessionsTtl, tokenHash);
+
   return session;
 };
 const requireEmployee = (req, res) => {
@@ -233,6 +234,7 @@ const adminMutation = (req, res) => {
   return true;
 };
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee});
+const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
@@ -246,7 +248,7 @@ const server = createServer(async (req, res) => {
       const attempt = attempts.get(ip) || { count:0, until:now + 10 * 60 * 1000 };
       if (attempt.until < now) { attempt.count = 0; attempt.until = now + 10 * 60 * 1000; }
       if (attempt.count >= 10) return send(res, 429, { error:'尝试次数过多，请稍后再试。' });
-      const { identifier, username, password } = await readBody(req);
+      const { identifier, username, password, remember } = await readBody(req);
       const loginName = typeof identifier === 'string' ? identifier.trim() : (typeof username === 'string' ? username.trim() : '');
       let employee = loginName ? db.prepare('SELECT id,password_hash,enabled FROM employees WHERE username=?').get(loginName) : null;
       if (!employee && loginName) {
@@ -259,12 +261,13 @@ const server = createServer(async (req, res) => {
       attempts.delete(ip);
       const token = randomBytes(32).toString('base64url');
       db.prepare('INSERT INTO sessions (token_hash,employee_id,expires_at) VALUES (?,?,?)')
-        .run(sessionDigest(token), employee.id, now + sessionsTtl);
+        .run(sessionDigest(token), employee.id, now + (remember ? 30*86400000 : sessionsTtl));
       playerService.log(employee.id,'login');
-      const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${cookieSecurity}`;
+      const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${remember ? 2592000 : 28800}${cookieSecurity}`;
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
+    if(await community.handle(req,res,url))return;
     if(await playerService.handle(req,res,url))return;
     if (url.pathname === '/api/logout' && req.method === 'POST') {
       const user=sessionEmployee(req);if(user)playerService.log(user.id,'logout');
@@ -368,8 +371,8 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/forum/') && url.pathname.endsWith('/replies') && req.method === 'GET') {
       if(!requireEmployee(req,res))return;const id=Number(url.pathname.split('/')[3]);
-      return send(res,200,{items:db.prepare(`SELECT r.id,r.anonymous_name AS anonymousName,r.body,r.created_at AS createdAt,
-        (SELECT COALESCE(SUM(delta),0) FROM balance_ledger l WHERE l.employee_id=r.employee_id) AS balance FROM forum_replies r WHERE r.thread_id=? AND r.status='published' ORDER BY r.id`).all(id)});
+      return send(res,200,{items:db.prepare(`SELECT r.id,COALESCE((SELECT anonymous_name FROM profiles WHERE employee_id=r.employee_id),r.anonymous_name) AS anonymousName,r.body,r.created_at AS createdAt,
+        (SELECT COALESCE(SUM(delta),0) FROM balance_ledger l WHERE l.employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND t.status='published' AND t.deleted_at='' ORDER BY r.id`).all(id)});
     }
     if (url.pathname.startsWith('/api/forum/') && url.pathname.endsWith('/replies') && req.method === 'POST') {
       const employee=requireEmployee(req,res);if(!employee)return;const id=Number(url.pathname.split('/')[3]);const {body}=await readBody(req),profile=publicProfile(employee.id);
@@ -553,7 +556,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/admin/dossiers' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
       const { code,title,department,status,summary } = await readBody(req);
-      if (!validText(code,30)||!validText(title,100)||!validText(summary,2000)) return send(res,400,{error:'请填写档案编号、名称和内容。'});
+      if (!validText(code,30)||!validText(title,100)||!validText(summary,12000)) return send(res,400,{error:'请填写档案编号、名称和内容。'});
       try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary) VALUES (?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim()); return send(res,201,{id:Number(result.lastInsertRowid)}); }
       catch { return send(res,409,{error:'档案编号已存在。'}); }
     }

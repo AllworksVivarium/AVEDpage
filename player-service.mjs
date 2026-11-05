@@ -6,7 +6,7 @@ import { generateSealedTicket } from './server-ticket.mjs';
 
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee}) {
   const chatStreams=new Map();
-  const chatItems=room=>db.prepare('SELECT id,alias,body,created_at AS createdAt FROM chat_messages WHERE room=? ORDER BY id DESC LIMIT 80').all(room).reverse();
+  const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[])response.write(payload);}
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
@@ -54,6 +54,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
   db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
+  for(const [code,name] of [['AVED.VIV','收容部'],['AVED.ANC','武装部'],['AVED.MEM','后勤部'],['AVED.RES','科研部'],['AVED.MED','医疗部']]){db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,3200,?)').run(code,name,Math.floor(Date.now()/60000));db.prepare('UPDATE stock_prices SET name=? WHERE code=?').run(name,code);}
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片请使用不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
   const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -74,17 +75,15 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
   const marketService=installMarket(db);
   const market=id=>marketService.items(id);
-  function forum(before=Number.MAX_SAFE_INTEGER) {
-    const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,f.anonymous_name AS anonymousName,f.created_at AS createdAt,
+  function forum(before=Number.MAX_SAFE_INTEGER,viewer=0) {
+    const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,p.anonymous_name AS anonymousName,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,
       (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,
-      (SELECT COUNT(*) FROM checkins WHERE employee_id=f.employee_id) AS checkins,
-      (SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published') AS replyCount
-      FROM forum_threads f WHERE f.status='published' AND f.id<? ORDER BY f.id DESC LIMIT 11`).all(before);
+      (SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount
+      FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.status='published' AND f.deleted_at='' AND f.id<? ORDER BY f.id DESC LIMIT 11`).all(viewer,before);
     return {items:rows.slice(0,10),next:rows.length>10?rows[9].id:null};
   }
-  const replies=id=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,r.anonymous_name AS anonymousName,r.created_at AS createdAt,
-    (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance,
-    (SELECT COUNT(*) FROM checkins WHERE employee_id=r.employee_id) AS checkins FROM forum_replies r JOIN forum_threads f ON f.id=r.thread_id WHERE r.thread_id=? AND r.status='published' AND f.status='published' ORDER BY r.id`).all(id);
+  const replies=(id,viewer=0)=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,p.anonymous_name AS anonymousName,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
+    (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads f ON f.id=r.thread_id JOIN profiles p ON p.employee_id=r.employee_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND f.status='published' AND f.deleted_at='' ORDER BY r.id`).all(viewer,id);
   const saveRound=(id,game,state)=>Number(db.prepare('INSERT INTO player_rounds(employee_id,game,state_json) VALUES(?,?,?)').run(id,game,JSON.stringify(state)).lastInsertRowid);
   const loadRound=(id,round,game)=>{const r=db.prepare('SELECT state_json FROM player_rounds WHERE id=? AND employee_id=? AND game=?').get(round,id,game);if(!r)throw new Error('该局不存在，请重新开始。');return JSON.parse(r.state_json);};
   const updateRound=(round,state)=>db.prepare('UPDATE player_rounds SET state_json=? WHERE id=?').run(JSON.stringify(state),round);
@@ -107,16 +106,16 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:db.prepare('SELECT code,created_at AS createdAt FROM earned_achievements WHERE employee_id=?').all(id),
           history:db.prepare('SELECT id,game,cost,prize,seed_hash AS seedHash,created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30').all(id),
-          employees:db.prepare('SELECT id,display_name AS displayName,department FROM employees WHERE enabled=1').all(),
+          employees:db.prepare('SELECT e.id,e.display_name AS displayName,e.department,p.avatar_url AS avatarUrl FROM employees e LEFT JOIN profiles p ON p.employee_id=e.id WHERE enabled=1').all(),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,id DESC').all(),
+          announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,datetime(created_at) DESC,id DESC').all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
-          forum:forum(),stocks:market(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
+          forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
-      if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER));return true;}
+      if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,id));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published'").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');send(res,200,{items:replies(Number(thread[1]))});return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published'").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');send(res,200,{items:replies(Number(thread[1]),id)});return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
@@ -141,7 +140,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       const dossier=path.match(/^\/api\/player\/dossiers\/(\d+)\/comments$/);
       if(dossier){if(!db.prepare('SELECT id FROM dossiers WHERE id=?').get(dossier[1]))throw new Error('档案不存在。');
         if(req.method==='POST'){if(!valid(data.body,2000))throw new Error('评议最多 2000 字。');db.prepare('INSERT INTO dossier_comments(dossier_id,employee_id,body) VALUES(?,?,?)').run(dossier[1],id,data.body.trim());}
-        send(res,200,{items:db.prepare('SELECT c.id,c.body,e.display_name AS displayName,e.department,c.created_at AS createdAt FROM dossier_comments c JOIN employees e ON e.id=c.employee_id WHERE dossier_id=? ORDER BY c.id').all(dossier[1])});return true;}
+        send(res,200,{items:db.prepare(`SELECT c.id,c.body,e.display_name AS displayName,e.department,c.created_at AS createdAt FROM dossier_comments c JOIN employees e ON e.id=c.employee_id WHERE dossier_id=? AND c.deleted_at='' ORDER BY c.id`).all(dossier[1])});return true;}
       if(path==='/api/player/balance/zero'&&req.method==='POST'){transaction(()=>{const b=balanceFor(id);if(b)recordLedger(id,-b,'主动归零');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/relief'&&req.method==='POST'){transaction(()=>{if(balanceFor(id)>=10000)throw new Error('余额低于 10,000 才能领取。');if(db.prepare('SELECT 1 FROM player_daily WHERE employee_id=? AND day=? AND action=?').get(id,today(),'relief'))throw new Error('今日已经领取。');db.prepare('INSERT INTO player_daily VALUES(?,?,?)').run(id,today(),'relief');recordLedger(id,25000,'应急低保');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/games/scratch'&&req.method==='POST') {
@@ -224,13 +223,13 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
         if(!chatStreams.has(room))chatStreams.set(room,new Set());chatStreams.get(room).add(res);
         res.write('data: '+JSON.stringify({items:chatItems(room)})+'\n\n');
-        const timer=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}res.write(': heartbeat\n\n');},20000);
+        const timer=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}res.write(': heartbeat\n\n');emitChat(room);},20000);
         res.on('close',()=>{clearInterval(timer);chatStreams.get(room)?.delete(res);});return true;
       }
       if(path==='/api/player/chat') {
         const room=req.method==='POST'?data.room:url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');
         if(req.method==='POST'){if(!valid(data.body,500))throw new Error('消息最多 500 字。');db.prepare('INSERT INTO chat_messages(employee_id,room,alias,body) VALUES(?,?,?,?)').run(id,room,publicProfile(id).anonymousName,data.body.trim());emitChat(room);}
-        send(res,200,{items:db.prepare('SELECT id,alias,body,created_at AS createdAt FROM chat_messages WHERE room=? ORDER BY id DESC LIMIT 80').all(room).reverse()});return true;
+        send(res,200,{items:db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse()});return true;
       }
       send(res,404,{error:'接口不存在。'});return true;
     }catch(error){send(res,400,{error:error.message});return true;}

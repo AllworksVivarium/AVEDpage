@@ -13,8 +13,8 @@
 | GET / POST | `/api/checkin` | 查询/领取每日签到；每天一次 |
 | GET | `/api/dossiers` | 读取收容物档案 |
 | GET | `/api/announcements` | 读取公告 |
-| GET | `/api/posts?announcementId=1` | 读取公告下的匿名留言 |
-| POST | `/api/posts` | 发布公告留言：`announcementId`、`anonymousName`、`body` |
+| GET | `/api/posts?announcementId=1` | 读取公告下的实名留言 |
+| POST | `/api/posts` | 发布实名公告留言：`announcementId`、`body` |
 | GET / POST | `/api/forum` | 读取/发布匿名帖子；发布字段：`title`、`body` |
 | GET / POST | `/api/forum/{id}/replies` | 读取/发布论坛回复；发布字段：`body` |
 | POST | `/api/games/scratch` | 服务器刮刮乐结算 |
@@ -22,7 +22,7 @@
 | GET | `/api/games/history` | 读取当前员工的游戏票据记录 |
 | GET | `/api/music` | 读取管理员启用的音乐曲目 |
 
-头像可以是 PNG/JPG/WEBP 上传图片（最多 1.6 MB，保存在数据库），或 HTTPS 图片链接。上传数据仅通过登录后的个人资料接口提交。
+头像可以是 PNG/JPG/WEBP 上传图片（最多 1.5 MB，保存在数据库），或 HTTPS 图片链接。上传数据仅通过登录后的个人资料接口提交。
 
 ## 管理员接口
 
@@ -33,11 +33,11 @@
 | POST | `/api/admin/employees/{id}/balance` | 记入余额变动流水：`delta`、`reason` |
 | POST / DELETE | `/api/admin/dossiers`、`/api/admin/dossiers/{id}` | 新增 / 删除档案 |
 | POST / DELETE | `/api/admin/announcements`、`/api/admin/announcements/{id}` | 发布 / 删除公告 |
-| DELETE | `/api/admin/posts/{id}` | 永久删除公告下的匿名留言 |
+| DELETE | `/api/admin/posts/{id}` | 移除公告留言并保留审计 |
 | GET | `/api/admin/posts` | 查看完整的公告匿名留言审核队列（含发言员工映射） |
 | GET | `/api/admin/forum` | 查看完整的匿名主题和回复审核队列（含发言员工映射） |
 | GET | `/api/admin/speech-records` | 统一查询发言审计记录，可按员工、来源、日期和关键词筛选 |
-| DELETE | `/api/admin/forum/threads/{id}`、`/api/admin/forum/replies/{id}` | 永久删除匿名主题或回复；删除主题会同时删除其回复 |
+| DELETE | `/api/admin/forum/threads/{id}`、`/api/admin/forum/replies/{id}` | 移除匿名主题或回复并保留原记录；主题移除后回复不再公开 |
 | GET / POST / DELETE | `/api/admin/music`、`/api/admin/music/{id}` | 查看 / 添加 / 删除音乐曲目 |
 
 新增员工字段：`username`（唯一登录用户名）、`password`（至少 6 位）、`displayName`（员工姓名）、`qqNumber`、`department`、可选 `initialBalance`。密码只保存 PBKDF2 哈希。QQ 号仅在管理员名册接口返回。登录时可以填写唯一用户名或员工姓名；如员工姓名重复，则使用唯一用户名登录。
@@ -53,6 +53,19 @@
 - 前端仅展示 API 返回的数据；页面刷新后重新从服务器读取，不以 localStorage/sessionStorage 作为业务数据存储。
 
 修改 API 字段时应同步调整此文档和前端。视觉重做可以独立进行，但请保留以上路径、认证和字段约定。
+
+## 社区与内容维护
+
+- 公告留言 GET /api/posts 返回 displayName 和 department，署名由服务器绑定。
+- 玩家论坛返回当前匿名代号、canEdit、editedAt。PUT /api/player/forum/thread/:id 和 reply/:id 仅允许作者修订，保存完整前后版本；含图修订重新审核。玩家没有删除接口。
+- GET /api/player/life?q=&department=&kind=article|art&order=newest|oldest&before= 读取生活记录，每页 20 项，返回 items,next。POST 接受 title,body,kind,tags,imageData；图片整条待审，纯文字直接归档。
+- GET /api/admin/moderation 包括 life；POST /api/admin/moderation/life/:id 批准或拒绝生活图文。
+- PUT /api/admin/dossiers/:id 修订编号、名称、部门、状态和正文。新增仍使用 POST；评论独立持久化。
+- GET /api/admin/speech-records?from=&to=&keyword=&sourceType=&employeeId=&offset= 查询论坛、通告、卷宗、无线电及生活记录，每页最多 200 项，日期按上海自然日筛选。返回 QQ、实名、当前及历次代号、修订前后版本和删除人/时间。
+- 管理员 DELETE 论坛主题、回复、通告留言及 /api/admin/speech/posts|dossier_comments|chat_messages|life_records/:id 为保留记录的移除，前台过滤删除内容，审计保留操作人。
+- GET /api/terminology 读取启用规则；管理员使用 /api/admin/terminology 的 GET/POST、/:id 的 PUT/DELETE 管理。正则为受限模式，不允许重复量词、分组、反向引用；仅改变展示，不改写原始发言。
+- 勾选记住凭证后会话最长 30 天；密码由浏览器密码管理器保管，页面不存储明文密码。注销撤销会话。
+- 个人头像直接同步员工名录；头像更换不生成 profiles 审计快照，代号修改仍保存历史。
 
 
 

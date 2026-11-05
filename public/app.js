@@ -73,18 +73,26 @@ $("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
   const error = $("#error");
-  error.textContent = "正在核验…";
+  error.textContent = "";
+  const connectStarted=performance.now();
+  showAdminConnecting();
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   try {
-    await api("/api/login", {
+    const authenticated=await api("/api/login", {
       method: "POST",
       body: JSON.stringify({
         identifier: form.get("loginIdentifier"),
         password: form.get("password"),
+        remember:form.has("remember"),
       }),
     });
+    if(form.has("remember")&&window.PasswordCredential&&navigator.credentials){navigator.credentials.store(new PasswordCredential({id:authenticated.employee.username,password:form.get("password"),name:authenticated.employee.displayName})).catch(()=>{});}
     error.textContent = "";
     await loadPortal();
+    await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-(performance.now()-connectStarted))));
+    hideAdminConnecting();
   } catch (e) {
+    hideAdminConnecting();show(loginCard);
     error.textContent = e.message || "暂时无法连接，请稍后再试。";
   }
 });
@@ -100,7 +108,7 @@ async function loadPortal() {
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
     if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
-    $("#greeting").textContent = "欢迎回到公司，" + currentUser.displayName;
+    $("#greeting").textContent = "当前用户：" + currentUser.displayName + " [管理员]";
     $("#employeeMeta").textContent = isAdmin
       ? "管理员　/　员工资料与内容管理"
       : (currentUser.department || "员工") +
@@ -121,11 +129,11 @@ async function loadPortal() {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","moderation","activity"].includes(tab.dataset.tab),
+          !["admin","content","moderation","activity","speech","terminology"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab("admin");
+    if (isAdmin) await renderTab(location.hash==='#dossiers'?'content':'admin');
     else await Promise.all([renderTab("files"), loadMusic()]);
   } catch(error) {
     show(loginCard);$("#error").textContent=error.message;
@@ -353,16 +361,8 @@ async function renderAdmin() {
   if (currentUser?.role !== "admin")
     throw new Error("只有管理员可以访问此页面。");
 
-  const [{ items: employees }, { items: forum }, { items: comments }] =
-    await Promise.all([
-      api("/api/admin/employees"),
-      api("/api/admin/forum"),
-      api("/api/admin/posts"),
-    ]);
-  const content = [
-    ...comments.map((x) => ({ ...x, itemType: "comment" })),
-    ...forum,
-  ].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const {items:employees}=await api('/api/admin/employees');
+  const content=[];
 
   const employeeRows = employees.map((e) =>
     "<tr><td>" + esc(e.displayName) + "<small>" + esc(e.username) +
@@ -402,13 +402,14 @@ async function renderAdmin() {
 
   $("#panel").innerHTML =
     '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 · 通讯记录</p></div><span class="admin-count">员工 ' +
-    employees.length + "　/　内容 " + content.length +
+    employees.length +
     '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 账户名"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
     ' 位员工　·　登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
-    '</tbody></table></div></section><section class="admin-section"><div class="section-heading"><div><h3>发帖记录与帖子管理</h3><p>显示完整内容；删除前会再次确认</p></div></div><div class="admin-post-list">' +
-    postRows + "</div></section>";
+    '</tbody></table></div></section><section class="admin-section"><div class="section-heading"><div><h3>发帖记录与帖子管理</h3><p>身份追溯与通讯归档</p></div></div><div class="admin-post-list">' +
+    '<button type="button" class="small-action" id="openSpeechRecords">检索通讯记录</button></div></section>';
+  $('#openSpeechRecords').onclick=()=>renderTab('speech');
 
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
@@ -519,7 +520,9 @@ async function deleteEmployee(id, displayName, username) {
 async function renderTab(tab) {
   setActive(tab);
   try {
-    if(tab === 'moderation')await renderModeration();
+    if(tab === 'speech')await renderSpeechRecords();
+    else if(tab === 'terminology')await renderTerminology();
+    else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();
     else if (tab === "files") await renderDossiers();
