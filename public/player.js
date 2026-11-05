@@ -453,7 +453,7 @@
       // ======================================================================
       // 左侧导航切换 7 大独立分页（切换至收容物页时触发随机黑块乱码闪烁，切换至论坛页时触发骨架屏加载）
       // ======================================================================
-      const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
+      const mainViews = ['welcome', 'news', 'departments', 'containment', 'forum', 'casino'];
 
       function switchMainView(target) {
         if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();refreshDirectory().catch(e=>showToast(e.message));}
@@ -1833,6 +1833,8 @@
         if(!currentUser)return;
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
         byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
+        byId('welcome-real-name').textContent=currentUser.name;
+        byId('welcome-anonymous-id').textContent=currentUser.savedAlias||playerProfile.anonymousName||'未登记';
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
@@ -1849,7 +1851,7 @@
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        communityUI.refresh();welfareUI.refresh().catch(e=>showToast(e.message));renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('news');
+        communityUI.refresh();welfareUI.refresh().catch(e=>showToast(e.message));renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('welcome');
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         refreshChat('sky');refreshChat('derby');startChatStreams();
       }
@@ -2024,7 +2026,7 @@
       },true);
       function checkAndSettleScratchTicket(){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         activeIssuedTicket.settled=true;byId('active-ticket-result-banner').textContent='本张奖金 '+fmtMoney(activeIssuedTicket.totalPayout)+'，已入账。';byId('scratch-next-ticket').disabled=false;}
-      const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.className='retro-corner-box px-3 py-1.5';profileButton.textContent='个人主页';byId('logout-btn').before(profileButton);
+      const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');
       const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-back-lobby-btn').after(nextTicket);
       byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');

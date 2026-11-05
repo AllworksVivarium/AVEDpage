@@ -346,7 +346,8 @@
 <link rel="stylesheet" href="/print-signal.css?v=reading-1">
 <link rel="stylesheet" href="/terminal-reading.css?v=frame-1">
 <link rel="stylesheet" href="/terminal-frame.css?v=frame-1">
-<link rel="stylesheet" href="/terminal-patterns.css?v=patterns-1">
+<link rel="stylesheet" href="/terminal-patterns.css?v=welcome-1">
+<link rel="stylesheet" href="/terminal-welcome.css?v=welcome-1">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -697,6 +698,11 @@
             <span class="sidebar-label">TERMINAL DIRECTORY</span>
           </div>
 
+          <button type="button" data-nav="welcome" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer" aria-label="接入首页">
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m3 11 9-8 9 8M5 9v12h14V9M9 21v-8h6v8"/></svg>
+            <span class="sidebar-label truncate">接入首页</span>
+          </button>
+
           <!-- 使用您上传的第4张高音喇叭图作为公司新闻通告图标 -->
           <button type="button" data-nav="news" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition">
             <img src="/assets/broadcast.jpg" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20">
@@ -736,7 +742,15 @@
         <!-- ====================================================================
              独立分页 1：公司新闻通告（嵌入您上传的第4张高音喇叭图作为通告视觉徽标）
              ==================================================================== -->
-        <section id="view-news" class="space-y-6">
+        <section id="view-welcome" class="terminal-welcome hidden" aria-labelledby="welcome-real-name">
+          <div class="welcome-type-block">
+            <p class="welcome-salutation">欢迎您，</p>
+            <h1 class="welcome-character"><span id="welcome-real-name"></span><span class="welcome-punctuation">！</span></h1>
+            <p class="welcome-identity">当前 ID：<bdi id="welcome-anonymous-id"></bdi></p>
+          </div>
+        </section>
+
+        <section id="view-news" class="space-y-6 hidden">
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-[var(--inner-crimson)]">
             <div class="notice-masthead flex">
               <img src="/assets/broadcast.jpg" alt="A.V.E.D. 广播喇叭"
@@ -1639,15 +1653,15 @@
   <script src="/notices-ui.js?v=reading-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=notices-1" defer></script>
+  <script src="/player-community.js?v=welcome-1" defer></script>
   <script src="/sky-ui.js?v=signal-5" defer></script>
   <script src="/economy-ui.js?v=signal-5" defer></script>
   <script src="/welfare-ui.js?v=signal-5" defer></script>
-  <script src="/visual-style.js?v=patterns-1" defer></script>
-  <script src="/player.js?v=frame-1" defer></script>
+  <script src="/visual-style.js?v=welcome-1" defer></script>
+  <script src="/player.js?v=welcome-1" defer></script>
   <script src="/page-headings.js?v=serif-1" defer></script>
   <script src="/print-signal.js?v=reading-1" defer></script>
-  <script src="/terminal-frame.js?v=patterns-1" defer></script>
+  <script src="/terminal-frame.js?v=welcome-1" defer></script>
   <script src="/landing-sphere.js?v=patterns-1" defer></script>
 </body>
 </html>
