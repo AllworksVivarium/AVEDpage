@@ -26,7 +26,7 @@
 #inner-app-view :is(.notice-summary,.notice-comment-body){margin-block-start:.8em}
 /* Physical square keys. The press and release have separate timings. */
 #inner-app-view :is(.notice-button,.terminal-key){border-radius:0!important;touch-action:manipulation;transform:scale(1);box-shadow:0 2px 0 #0003;transition:transform 150ms ease-out,box-shadow 150ms ease-out,background-color 150ms ease-out,text-shadow 150ms ease-out;line-height:var(--type-meta-leading);min-height:44px}
-@media(hover:hover){#inner-app-view :is(.notice-button,.terminal-key):hover{transform:translateY(-1px);box-shadow:0 3px 0 #0004}}
+@media(hover:hover){#inner-app-view :is(.notice-button,.terminal-key):hover{transform:scale(1);box-shadow:0 3px 0 #0004}}
 #inner-app-view :is(.notice-button,.terminal-key):active:not(:disabled){transform:scale(.96)!important;box-shadow:0 1px 1px #0003;transition-duration:80ms}
 #inner-app-view :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--inner-crimson)!important;outline-offset:3px}
 #inner-app-view :is(.notice-button,.terminal-key):disabled{transform:none;box-shadow:none}

@@ -1794,7 +1794,7 @@
       function syncUserHeaderUI() {
         if(!currentUser)return;
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
-        byId('intranet-role').textContent='ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
+        byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();

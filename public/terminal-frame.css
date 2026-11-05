@@ -1,0 +1,57 @@
+/* Signal terminal: darker frame, light paper, and a reversible red masthead. */
+body.signal-preview.theme-inner{--inner-bg:#eee7d7;--inner-card-bg:#f5efdf;--inner-card-alt:#e3d9c5;--inner-text-main:#201c18;--inner-text-muted:#64594b;--inner-border:#5a4b3b;--inner-border-soft:#8d7b635e;--inner-crimson:#a12c2f;--sidebar-bg:#cabda5;--topbar-bg:#c7b99e;--topbar-ink:#2b2119;background:#eee7d7!important}
+body.signal-preview.dark-mode.theme-inner{--inner-bg:#151310;--inner-card-bg:#1e1b16;--inner-card-alt:#30291f;--inner-text-main:#eee5d3;--inner-text-muted:#b5a68e;--inner-border:#9a876a;--inner-border-soft:#8d7b6370;--inner-crimson:#ef716b;--sidebar-bg:#0e0d0b;--topbar-bg:#29231b;--topbar-ink:#eee5d3;background:#151310!important}
+body.signal-preview.theme-inner #left-sidebar{background:var(--sidebar-bg)!important}
+body.paper-texture.theme-inner #inner-app-view{--paper-wash:rgba(238,231,215,.65)}
+body.paper-texture.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(245,239,223,.72)}
+body.paper-texture.dark-mode.theme-inner #inner-app-view{--paper-wash:rgba(21,19,16,.95)}
+body.paper-texture.dark-mode.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.dark-mode.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(30,27,22,.95)}
+#inner-app-view #left-sidebar .nav-tab-btn,#inner-app-view #left-sidebar .sidebar-label,#inner-app-view #sidebar-toggle-btn{font-size:var(--type-prose-size)!important;line-height:var(--type-body-leading);opacity:1;letter-spacing:.015em}
+#inner-app-view #sidebar-toggle-btn{min-height:44px;padding-inline:10px}
+#inner-app-view #left-sidebar .nav-tab-btn{opacity:1!important;padding:12px 10px}
+#inner-app-view #left-sidebar .nav-tab-btn:hover .sidebar-label,#inner-app-view #left-sidebar .nav-tab-btn:focus-visible .sidebar-label{text-shadow:1px 0 #ad342d4d,-1px 0 #fff6d9a0,0 0 3px #fff2c5,0 0 7px #f4d79c99}
+#inner-app-view #left-sidebar>div:first-child>div:nth-child(2){letter-spacing:0;overflow-wrap:anywhere}
+#view-news :is(.terminal-page-title,.notice-title-secondary){color:var(--inner-crimson)}
+.terminal-style-name{font-size:13px;line-height:1.4;color:var(--inner-text-muted);padding-bottom:4px}
+/* Hidden values stay mounted so existing account updates keep their references. */
+#inner-app-view>.compact-terminal-header .header-hidden{display:none!important}
+body.signal-preview #inner-app-view>.compact-terminal-header{background:var(--topbar-bg)!important;color:var(--topbar-ink);border-bottom:2px solid var(--inner-crimson);box-shadow:none;padding-block:7px}
+body.red-topbar.signal-preview #inner-app-view>.compact-terminal-header{--topbar-bg:#98282c;--topbar-ink:#fff4df;background:var(--topbar-bg)!important;border-color:#771c22}
+body.red-topbar.dark-mode.signal-preview #inner-app-view>.compact-terminal-header{--topbar-bg:#772329;--topbar-ink:#fff0d7}
+#inner-app-view>.compact-terminal-header>.terminal-topbar{display:flex;align-items:center;gap:14px;padding-block:5px!important}
+.terminal-brand{flex:1 1 180px;min-width:0}
+.terminal-brand>div>div:first-child{font-size:16px;line-height:1.3;letter-spacing:.04em}
+.terminal-brand>div>div:last-child{display:none}
+.terminal-identities{flex:0 1 auto;min-width:0;max-width:100%}
+.terminal-actions{display:flex;gap:8px;align-items:center}
+#inner-app-view>.compact-terminal-header .terminal-header-control{height:48px!important;min-height:48px!important;margin:0!important;padding:11px 16px!important;display:inline-flex;align-items:center;justify-content:center;border:1px solid currentColor!important;border-radius:0!important;background:transparent!important;color:inherit!important;font:14px/1.4 var(--terminal-type)!important;box-shadow:none!important;transform:scale(1);touch-action:manipulation;transition:transform 150ms ease-out,box-shadow 150ms ease-out,text-shadow 150ms ease-out}
+#inner-app-view>.compact-terminal-header #intranet-role{height:auto!important;min-width:210px;white-space:normal;overflow-wrap:anywhere}
+#inner-app-view>.compact-terminal-header .terminal-actions>button{width:96px;min-width:96px}
+#inner-app-view>.compact-terminal-header .terminal-header-control::before,#inner-app-view>.compact-terminal-header .terminal-header-control::after{display:none}
+#inner-app-view>.compact-terminal-header .terminal-actions>button:active{transform:scale(.96)!important;transition-duration:80ms;box-shadow:inset 0 2px 3px #0003!important}
+#inner-app-view>.compact-terminal-header #theme-toggle-btn svg{width:22px;height:22px;display:block}
+#inner-app-view>.compact-terminal-header :focus-visible{outline-color:currentColor!important}
+/* Both landing variants share the same full-bleed top and bottom rules. */
+#landing-view>.landing-edge-line{max-width:none!important;width:100vw;align-self:center;padding-inline:clamp(16px,3vw,40px)}
+.landing-variant-switch{position:relative;z-index:12;display:flex;align-self:flex-end;gap:0;margin:10px 0 0;border:1px solid #ffffff45;color:#ddd7c9;font:11px/1.4 'AVED Plex Mono',serif}
+.landing-variant-switch button{padding:9px 13px;min-height:36px;background:#080909b3;border:0;color:inherit;cursor:pointer;touch-action:manipulation}
+.landing-variant-switch button+button{border-left:1px solid #ffffff45}
+.landing-variant-switch button[aria-pressed=true]{background:#ece5d6;color:#111}
+.landing-variant-switch button:focus-visible{outline:2px solid #fff!important;outline-offset:3px}
+.landing-variant-switch button:active{transform:scale(.96)}
+body.theme-landing.landing-sphere{background:#040506!important;background-image:none!important}
+.landing-sphere #landing-view{background:#040506}
+#landing-sphere-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:none}
+.landing-sphere #landing-sphere-canvas{display:block}
+@media(max-width:767px){
+  #inner-app-view>.compact-terminal-header>.terminal-topbar{gap:10px}
+  .terminal-brand{flex:1 1 110px}
+  .terminal-brand>div>div:first-child{font-size:14px}
+  .terminal-identities{flex:1 1 190px}
+  #inner-app-view>.compact-terminal-header #intranet-role{min-width:0;width:100%;font-size:12px!important;padding-inline:10px!important}
+  .terminal-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  #inner-app-view>.compact-terminal-header .terminal-actions>button{width:100%;min-width:0}
+  #inner-app-view #left-sidebar .nav-tab-btn{padding-inline:7px}
+  .landing-variant-switch{margin-top:8px}
+}
+@media(prefers-reduced-motion:reduce){#inner-app-view>.compact-terminal-header .terminal-header-control,.landing-variant-switch button{transition:none!important}#inner-app-view>.compact-terminal-header .terminal-actions>button:active,.landing-variant-switch button:active{transform:none!important}}
