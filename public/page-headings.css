@@ -1,0 +1,14 @@
+@font-face{font-family:AVED Signal Pixel;src:url('/assets/fonts/Silkscreen-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:AVED Signal Pixel;src:url('/assets/fonts/Silkscreen-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+#inner-app-view{--terminal-copy:'AVED Signal Pixel','Noto Serif SC','Source Han Serif SC',serif;--terminal-type:'AVED Signal Pixel','Noto Serif SC','Source Han Serif SC',serif;font-family:var(--terminal-copy)}
+#view-news{--notice-font:'AVED Signal Pixel','Noto Serif SC','Source Han Serif SC',serif;--notice-heading-1:clamp(28px,3.5vw,42px);--notice-heading-2:24px;--notice-heading-3:18px}
+#inner-app-view :is(input,textarea,select,button){font-family:var(--terminal-copy)}
+#inner-app-view .terminal-page-title{font-family:var(--terminal-copy)!important;font-size:clamp(28px,3.5vw,42px)!important;line-height:1.5!important;font-weight:700!important;letter-spacing:.045em!important;margin-top:10px!important;overflow-wrap:anywhere}
+#inner-app-view .terminal-page-kicker{display:flex!important;flex-wrap:wrap;align-items:baseline;gap:5px 10px;font-family:var(--terminal-type)!important;font-size:11px!important;line-height:1.9!important;letter-spacing:.04em!important;color:var(--inner-text-muted);opacity:1!important;overflow-wrap:anywhere}
+#inner-app-view .terminal-page-kicker bdi{font:400 13px/1.8 'AVED Plex Hebrew',serif;letter-spacing:0}
+#inner-app-view .terminal-page-separator{color:var(--inner-crimson)}
+#view-casino>.terminal-page-heading{padding:20px;border:1px solid var(--inner-border-soft);border-left:3px solid var(--inner-crimson);background:var(--inner-card-bg)}
+#inner-app-view .terminal-page-heading{min-width:0}
+#inner-app-view .flight-readout>strong,#inner-app-view .flight-readout>span{font-family:var(--terminal-type)!important}
+@media(max-width:767px){#view-casino .terminal-game-tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:5px;scrollbar-width:thin}}
+@media(max-width:640px){#view-news{--notice-heading-1:28px;--notice-heading-2:22px}#inner-app-view .terminal-page-kicker{font-size:10px!important}#inner-app-view .terminal-page-kicker bdi{font-size:12px}#inner-app-view .terminal-page-title{font-size:28px!important}}
