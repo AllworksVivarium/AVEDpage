@@ -1,140 +1,58 @@
-# AVED 开发者文档
+# AVED 开发者说明
 
-本文档面向维护本项目的开发者，说明当前已实现能力、上线前仍需补齐项，以及“域名未下发阶段”的最小部署清单。
+本版本以 AllworksVivarium/AVEDpage 的 main 为共同源码。域名已购买，部署目标为东京 AWS Ubuntu。部署步骤见 [AWS-DEPLOY.md](AWS-DEPLOY.md)。功能清单描述代码实现，不代表已通过浏览器、AWS 或多人压力测试。
 
-## 1. 技术栈与目录
+## 两个页面与文件归属
 
-- 后端：Node.js（原生 `http`）+ SQLite，核心文件：`server.mjs`
-- 前端：原生 HTML/CSS/JS，核心目录：`public/`
-- 部署：Docker Compose，核心文件：`compose.yaml`
-- 接口约定：`API.md`
+- 玩家：public/player-terminal.html、public/player.js、public/player-layout.css。保留下载原版黑色开屏和 Logo，后续美工从这些文件继续修改。
+- 管理员：public/admin-terminal.html、public/app.js、public/admin-extra.js、public/admin-layout.css、public/style.css。
+- 后端：server.mjs 处理鉴权与基础业务；player-service.mjs 处理玩家业务、审核、聊天和活动记录；server-content.mjs、server-ticket.mjs、server-cards.mjs 保存玩法配置与结算逻辑。
+- 部署：Dockerfile、compose.yaml、deploy/；管理员恢复工具：admin-account.mjs。
+- 数据：服务器 data/wanyehui.db（含运行时 WAL/SHM）。代码仓库不保存真实数据。Windows 预览使用独立 data-local/。
 
-## 2. 网站已有功能（已实装）
+Node.js 24 + 原生 HTTP + SQLite WAL；无需 npm 安装。两个域名均反代同一个 4173 应用，并保留 Host。aved.space 显示玩家端，authority.aved.space 显示管理员端，后端接口仍按登录权限检查。域名本身不赋予管理员权限。
 
-### 2.1 登录与会话
+## 已有代码能力
 
-- 账号密码登录、退出登录
-- 基于 HttpOnly Cookie 的会话鉴权
-- 管理员接口有角色校验（`admin`）
+- 用户名唯一，角色名不重复时也可登录，密码至少 6 位。浏览器可记用户名；密码、余额、帖子和个人资料不作为本地业务数据保存。
+- 同源 HttpOnly 会话；管理员 API 校验角色。HTTPS 就绪后可显式设置 COOKIE_SECURE=true，HTTP 预览保持 false。
+- 员工录入、资料修改、停用、密码重置、删除；后台余额调整接口与流水；匿名发言对应真人查询接口。删除操作有确认。
+- 公告、档案、论坛、头像、匿名名、签到、余额与成就从数据库读取。
+- 图文主题/回复整条待审，管理员看到文字和图片，批准后公开；纯文字直接发布。
+- activity_logs 保存数据库变更快照、登录及管理请求记录。删帖/删除账号不会清空历史审计快照；不记录明文密码或会话令牌。这是业务操作审计，不是所有鼠标点击的录像。
+- 刮刮乐、老虎机、竞速、空投、牌桌由服务端生成随机种子、结算并写流水；玩家不能提交自己计算的奖金。
+- 聊天使用 SSE 推送，消息持久化；Nginx 必须关闭代理缓冲。
+- 音乐曲目由后台录入 HTTPS 外链。待办已移除。
+- /api/health 检查应用和数据库连接，未登录 /api/me 返回 401 属于预期。
 
-### 2.2 员工端功能
+## 尚未完成或需要验收
 
-- 个人资料：匿名名、简介、头像
-- 每日签到
-- 收容档案浏览
-- 公告阅读与留言
-- 论坛主题与回复
-- 音乐列表读取
-- 游戏结算与历史记录
+1. 需要在真实浏览器逐项联调登录、头像、审核、重复点击、余额、三端布局，再在 AWS 验收。不能把语法检查当作功能验收。
+2. 牌桌目前是简化规则的两位电脑对手，不是完整规则的三人联机斗地主；空投是个人架次，聊天共享。
+3. 还需并发与断线恢复测试、游戏请求幂等键、完整奖励数值审核。随机性本身不等于公平性或可公开验证的抽奖承诺。
+4. 登录已有进程内失败次数限制，但 Nginx 后面的连接可能共用代理 IP；应在可信代理配置完善后按账号及来源细化。密码哈希当前同步计算，高峰集中登录可能短暂阻塞事件循环。
+5. 审计快照可能重复保存图片，数据库会较快增长。后续迁移图片到对象存储并在数据库保存引用；增加必要索引和分页。不要擅自删除历史审计。
+6. 数据库备份恢复、监控告警、部署回滚演练尚未自动完成。备份必须用 SQLite 一致性备份或停服务后复制整个数据目录，不能分别热拷贝正在变化的 DB/WAL/SHM 当作可靠备份。
+7. 当前 SSE 广播仅在单 Node 进程内。单机 20–30 在线可先观察；多实例前需要共享消息通道与数据库方案，不能直接多开 SQLite 容器当成扩容。
 
-### 2.3 管理端功能
+## 下一步顺序
 
-- 员工录入与修改（姓名、QQ、部门、启用状态、密码重置）
-- 员工余额流水调整
-- 档案与公告的新增/删除
-- 帖子与论坛内容管理（删帖、删主题、删回复）
-- 发言记录审查（含匿名身份与真实员工映射）
+1. 东京服务器启动容器；两个域名解析到同一东京 IP；Nginx 转发与 HTTPS 恢复。
+2. 登录管理员，登记一位玩家，验收玩家登录、发帖、图文审核和余额持久化。
+3. 完成备份、活动记录及多人聊天室验收，再逐步调整 UI、交互、美术。
+4. 按真实 CPU、内存、延迟和数据库增长评估是否升级，而非仅按注册人数购买更大服务器。
 
-### 2.4 正在施工
+## 多人协作约定
 
-1. 录入和修改员工数据：**已完成**  
-2. 删帖：**已完成**（公告评论、论坛主题、论坛回复）  
-3. 查看员工发言记录并映射匿名与真人：**已完成**（`/api/admin/posts`、`/api/admin/forum`、`/api/admin/speech-records`）
+- UI 开发改玩家 HTML/CSS/JS；管理员页面单独维护，禁止用玩家页面覆盖它。
+- API.md 是接口约定；后端改字段时同步文档和调用方。美工修改必须保留 API 调用和登录状态处理。
+- 功能分支提交 PR，团队合并 main 后才部署。服务器自动更新只跟踪 main，不代表每次保存文件立即上线。
+- 服务器不编辑被 Git 跟踪的代码；环境配置放 .env，真实内容通过管理端录入。
+- 自动更新遇到本地改动或分叉会停止，不强制覆盖。更新重启会暂时断开聊天，浏览器 SSE 会重连，不是零停机部署。
+- 后续数据库结构升级必须保留旧数据并设计迁移；迁移前做一致性备份。
 
-## 3. 当前“还缺什么”（面向上线可运维）
+## 参考
 
-以下是“功能可用”到“可稳定运营”之间的缺口。
-
-### P0（强烈建议上线前完成）
-
-- 默认管理员口令治理：生产环境禁用默认口令，首登强制改密
-- 备份与恢复演练：数据库定时备份 + 恢复验证
-- 网络暴露收敛：未启用 HTTPS 前仅限内网或白名单访问
-
-### P1（建议尽快补齐）
-
-- 操作审计日志（`audit_logs`）：记录谁在何时删了什么、改了什么
-- 登录防暴力（限流 / 失败次数限制）
-- 会话安全参数加固（生产环境 `Secure`、`SameSite` 策略）
-
-### P2（稳定性增强）
-
-- 监控告警（进程、5xx、磁盘、数据库文件增长）
-- 运维脚本（备份、回滚、健康检查）
-
-## 4. “域名未下发阶段”最小部署清单
-
-> 目标：在没有域名和正式 TLS 证书前，先让团队可用、数据安全可控。
-
-### 4.1 准备服务器
-
-1. 安装 Docker Engine + Docker Compose
-2. 拉取代码并进入目录
-
-```bash
-git clone <your-repo-url> ~/AVED
-cd ~/AVED
-```
-
-3. 准备环境变量和数据目录
-
-```bash
-cp .env.example .env
-mkdir -p data
-```
-
-4. 修改 `.env`（至少）
-
-- `BOOTSTRAP_ADMIN_USERNAME`
-- `BOOTSTRAP_ADMIN_PASSWORD`（>=6 位）
-- `SESSION_SECRET`（建议 >= 32 字符随机串）
-
-### 4.2 启动服务（Docker）
-
-```bash
-docker compose up -d --build
-docker compose ps
-```
-
-### 4.3 验证运行状态
-
-```bash
-docker logs -f aved-web-1
-curl -I http://127.0.0.1:4173
-```
-
-> 容器名可能不是 `aved-web-1`，以 `docker compose ps` 输出为准。
-
-### 4.4 访问策略（无域名阶段）
-
-- 仅开放给内网/办公网访问（推荐）
-- 或云安全组仅放行固定办公 IP
-- 暂不建议“公网全开放 + 明文 HTTP 登录”
-
-### 4.5 数据备份（最低要求）
-
-每日备份 `data/` 目录下数据库文件：
-
-- `wanyehui.db`
-- `wanyehui.db-wal`
-- `wanyehui.db-shm`
-
-建议将备份同步到另一台机器或对象存储。
-
-### 4.6 域名下发后切换
-
-域名完成后再接入 Nginx/Caddy 做 TLS：
-
-- 外部：`https://your-domain`（443）
-- 内部反代到：`http://127.0.0.1:4173`
-
-## 5. 常见运维排查
-
-- 登录失败先确认是否连到了正确数据库（Docker 通常使用 `data/wanyehui.db`）
-- 容器重建后数据丢失，优先检查 `compose.yaml` 的 volume 是否生效
-- 页面功能异常时，先查后端日志，再对照 `API.md` 字段
-
----
-
-如需继续推进，建议下一步优先实现：`audit_logs` 表 + 关键管理操作写审计。
-
+- [Docker Ubuntu 安装](https://docs.docker.com/engine/install/ubuntu/)
+- [Nginx 反向代理](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
+- [AWS EC2 CloudWatch 指标](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html)

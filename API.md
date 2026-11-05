@@ -1,6 +1,6 @@
 # 网站数据接口约定
 
-接口使用同源 `/api/...`。认证使用服务端设置的 HttpOnly 会话 Cookie。除登录外，业务接口都要求登录；写请求会检查来源。前端不能指定余额、签到奖励或游戏开奖结果。
+接口使用同源 `/api/...`。认证使用服务端设置的 HttpOnly 会话 Cookie。登录和 GET /api/health 无需登录；其他业务接口都要求登录；写请求会检查来源。前端不能指定余额、签到奖励或游戏开奖结果。
 
 ## 员工接口
 
@@ -54,3 +54,28 @@
 
 修改 API 字段时应同步调整此文档和前端。视觉重做可以独立进行，但请保留以上路径、认证和字段约定。
 
+
+
+## 玩家原版页面专用接口
+
+所有 `/api/player/*` 均要求登录，使用与管理员相同的 HttpOnly Cookie。不是 Bearer Token。
+
+- `GET /api/player/state`：当前员工、余额、资料、永久成就、签到、公告、档案、部门、目录、论坛首 10 条、持仓、音乐。
+- `GET /api/player/forum?before=id`：后续 10 条论坛主题。`POST /api/player/forum`：`{title,body,imageData?}`。
+- `GET/POST /api/player/forum/:id`：查看回复 / 新回复 `{body,imageData?}`。图文整体待审；文本直接发布。
+- `GET /api/admin/moderation`、`POST /api/admin/moderation/thread/:id` 或 `reply/:id`：完整图文审核；提交 `{action:"approve"|"reject"}`。
+- `GET /api/admin/activity?before=id`：每页 100 条历史快照和操作记录。不会返回密码哈希或会话密钥。
+- `POST /api/player/games/scratch`：`{tier,type}`；服务器根据有效票种生成种子、票面、奖额并结算。
+- `POST /api/player/games/slot`：`{bet}`；返回完整五轮盘面与结算。
+- `POST /api/player/games/derby`：`{bet,runner}`。
+- `POST /api/player/games/sky/start`：`{bet}`；`GET /api/player/games/sky/current`；`POST /api/player/games/sky/jump`：`{round}`。高度与结算依服务器时间。
+- `POST /api/player/games/cards`：`{action:"start"|"bid"|"play"|"pass",round?,cards?:number[]}`。简化电脑对手牌局，服务器持有完整牌堆。
+- `GET/POST /api/player/stocks`：查询 / `{code,action:"buy"|"sell"}`。
+- `GET /api/player/chat/stream?room=sky|derby`：SSE 实时聊天推送。`POST /api/player/chat`：`{room,body}`。
+- `POST /api/player/balance/zero`：主动归零；`POST /api/player/relief`：每日最多领取一次补贴，资格由服务器检查。
+
+API 不接收玩家指定的奖金、余额增量、牌堆或游戏种子。用于管理的接口在后端核验管理员身份。
+
+## 运维
+
+GET /api/health 返回 {"ok":true,"service":"aved"}，检查应用与数据库连接，不返回员工数据。COOKIE_SECURE=true 时登录/退出 Cookie 增加 Secure，只有 HTTPS 可用于登录；默认 false 兼容 HTTP 本地预览。

@@ -1,3 +1,4 @@
+import { installPlayerService } from './player-service.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
@@ -140,12 +141,8 @@ const verifyPassword = (password, stored) => {
 };
 
 const employeeCount = db.prepare('SELECT COUNT(*) AS n FROM employees').get().n;
-if (employeeCount === 0 && process.env.NODE_ENV !== 'production') {
-  db.prepare('INSERT INTO employees (username,password_hash,display_name,department,role) VALUES (?,?,?,?,?)')
-    .run('employee', hashPassword('WanYe2026!'), '林序', '档案管理部', 'admin');
-}
-if (process.env.NODE_ENV !== 'production') db.prepare("UPDATE employees SET role='admin' WHERE username='employee'").run();
-if (employeeCount === 0 && process.env.NODE_ENV === 'production' && process.env.BOOTSTRAP_ADMIN_USERNAME && process.env.BOOTSTRAP_ADMIN_PASSWORD) {
+if (employeeCount === 0 && process.env.BOOTSTRAP_ADMIN_USERNAME && process.env.BOOTSTRAP_ADMIN_PASSWORD) {
+  if(process.env.BOOTSTRAP_ADMIN_PASSWORD.length<6)throw new Error('管理员初始密码至少 6 位。');
   db.prepare('INSERT INTO employees (username,password_hash,display_name,department,role) VALUES (?,?,?,?,?)')
     .run(process.env.BOOTSTRAP_ADMIN_USERNAME, hashPassword(process.env.BOOTSTRAP_ADMIN_PASSWORD), process.env.BOOTSTRAP_ADMIN_NAME || '系统管理员', '管理部', 'admin');
 }
@@ -169,6 +166,8 @@ if (prod && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 
 const secret = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 const sessionDigest = token => createHmac('sha256',secret).update(token).digest('hex');
 const sessionsTtl = 8 * 60 * 60 * 1000;
+// Enable only after HTTPS is working; HTTP IP/local previews keep working by default.
+const cookieSecurity = process.env.COOKIE_SECURE === 'true' ? '; Secure' : '';
 const attempts = new Map();
 const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml' };
 const readBody = (req, maxBytes=32768) => new Promise((resolveBody, reject) => {
@@ -233,9 +232,15 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee});
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
+    if (url.pathname === '/api/health' && req.method === 'GET') {
+      db.prepare('SELECT 1').get();
+      return send(res, 200, { ok:true, service:'aved' });
+    }
+    if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400)playerService.log(actor.id,req.method,url.pathname);});}
     if (url.pathname === '/api/login' && req.method === 'POST') {
       const now = Date.now(), ip = req.socket.remoteAddress || 'unknown';
       const attempt = attempts.get(ip) || { count:0, until:now + 10 * 60 * 1000 };
@@ -249,20 +254,23 @@ const server = createServer(async (req, res) => {
         if (nameMatches.length === 1) employee = nameMatches[0];
         else if (nameMatches.length > 1) return send(res,400,{error:'存在同名员工，请使用唯一用户名登录。'});
       }
-      const valid = employee && typeof password === 'string' && password.length <= 200 && verifyPassword(password, employee.password_hash) && employee.enabled === 1;
+      const valid = employee && typeof password === 'string' && verifyPassword(password, employee.password_hash) && employee.enabled === 1;
       if (!valid) { attempt.count++; attempts.set(ip, attempt); return send(res, 401, { error:'账号或密码不正确，或该员工账号尚未启用。' }); }
       attempts.delete(ip);
       const token = randomBytes(32).toString('base64url');
       db.prepare('INSERT INTO sessions (token_hash,employee_id,expires_at) VALUES (?,?,?)')
         .run(sessionDigest(token), employee.id, now + sessionsTtl);
-      const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`;
+      playerService.log(employee.id,'login');
+      const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${cookieSecurity}`;
       return send(res, 200, { ok:true }, { 'Set-Cookie':cookie });
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
+    if(await playerService.handle(req,res,url))return;
     if (url.pathname === '/api/logout' && req.method === 'POST') {
+      const user=sessionEmployee(req);if(user)playerService.log(user.id,'logout');
       const token = cookieToken(req);
       if (token) db.prepare('DELETE FROM sessions WHERE token_hash=?').run(sessionDigest(token));
-      return send(res, 200, { ok:true }, { 'Set-Cookie':`wy_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0` });
+      return send(res, 200, { ok:true }, { 'Set-Cookie':`wy_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${cookieSecurity}` });
     }
     if (url.pathname === '/api/me' && req.method === 'GET') {
       const employee = requireEmployee(req,res); if (!employee) return;
@@ -273,9 +281,9 @@ const server = createServer(async (req, res) => {
       const topPrize=db.prepare('SELECT COALESCE(MAX(prize),0) AS value FROM game_tickets WHERE employee_id=?').get(employee.id).value;
       const balance=balanceFor(employee.id);
       const achievements=[
-        {id:'zero',title:'归零记录',earned:balance===0},
-        {id:'100k',title:'资产突破 10 万',earned:balance>100000},
-        {id:'1m',title:'资产突破 100 万',earned:balance>1000000},
+        {id:'zero',title:'归零记录',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'zero')},
+        {id:'100k',title:'资产突破 10 万',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'100k')},
+        {id:'1m',title:'资产突破 100 万',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'1m')},
         {id:'jackpot',title:'超级大奖',earned:topPrize>=500000}
       ];
       return send(res,200,{profile:publicProfile(employee.id),achievements});
@@ -296,7 +304,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const date=today(), reward=150;
+      const date=today(), reward=15000;
       db.exec('BEGIN IMMEDIATE');
       try {
         if(db.prepare('SELECT employee_id FROM checkins WHERE employee_id=? AND checkin_date=?').get(employee.id,date)){db.exec('ROLLBACK');return send(res,409,{error:'今天已经签到。'});}
@@ -573,7 +581,10 @@ const server = createServer(async (req, res) => {
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/')) return send(res,404,{error:'未找到此接口。'});
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const hostname=(req.headers.host||'').split(':')[0].toLowerCase();
+    const file=url.pathname==='/'||url.pathname==='/index.html'
+      ? (['aved.space','www.aved.space','localhost','127.0.0.1'].includes(hostname)?'player-terminal.html':'admin-terminal.html')
+      : url.pathname==='/admin'?'admin-terminal.html':url.pathname==='/player'?'player-terminal.html':url.pathname.slice(1);
     if (file.includes('..') || file.includes('\\')) return send(res,404,{error:'not found'});
     try {
       const data = await readFile(resolve(publicDir,file));

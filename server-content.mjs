@@ -1,0 +1,124 @@
+// Content and game rules are loaded by the server only.
+export const scratchTiers = [
+        { id: 't1', name: 'D级配给', cost: 1000, internalEv: 0.50, mult: 1 },
+        { id: 't2', name: '外勤站点', cost: 3000, internalEv: 0.56, mult: 3 },
+        { id: 't3', name: '收容金库', cost: 10000, internalEv: 0.62, mult: 10 },
+        { id: 't4', name: '深渊凭证', cost: 20000, internalEv: 0.68, mult: 20 },
+        { id: 't5', name: '董事特批', cost: 50000, internalEv: 0.74, mult: 50 },
+        { id: 't6', name: 'O5最高秘钥', cost: 100000, internalEv: 0.80, mult: 100 }
+      ];
+export const scratchGameTypes = [
+        {
+          type: 'three_match',
+          sub: '三同矩阵',
+          title: '收容印章三同赏',
+          tagline: '三枚同印，核准即拨付',
+          icon: '🔺',
+          cellsCount: 12,
+          baseTopPrize: 325000,
+          bgBand: 'bg-[#141413] text-white',
+          cardBg: 'bg-[#e8e2d2]',
+          accentColor: 'text-[#9e1b1b]',
+          rules: [
+            '一、刮开 12 枚加密收容印章格',
+            '二、同一收容印章凑满三枚即成一组',
+            '三、组内三格津贴相加，多组可叠加'
+          ]
+        },
+        {
+          type: 'lucky_num',
+          sub: '信标对号',
+          title: '加密信标核对号',
+          tagline: '对上频段，整笔经费入账',
+          icon: '📡',
+          cellsCount: 13,
+          baseTopPrize: 650000,
+          bgBand: 'bg-[#26292e] text-white',
+          cardBg: 'bg-[#dfe3e6]',
+          accentColor: 'text-[#141413]',
+          rules: [
+            '一、刮开上方 3 个基准频段号与倍率印',
+            '二、下方 9 个实测频段每对上一个即得该格经费',
+            '三、对中的经费相加，再乘基准倍率印'
+          ]
+        },
+        {
+          type: 'step_climb',
+          sub: '五阶压制',
+          title: '力场五阶压制表',
+          tagline: '五阶比读数，压制几阶拿几阶',
+          icon: '⚡',
+          cellsCount: 10,
+          baseTopPrize: 325000,
+          bgBand: 'bg-[#4a1612] text-white',
+          cardBg: 'bg-[#ebe4d8]',
+          accentColor: 'text-[#9e1b1b]',
+          rules: [
+            '一、五阶各比一次抑制力场读数（共10格）',
+            '二、右侧我方抑制值高过左侧异常冲击值，赢下该阶',
+            '三、压制几阶，即领几阶对应收容奖金'
+          ]
+        }
+      ];
+export const slot5x3Symbols = [
+        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 136, m4: 720, m5: 4000 },
+        { id: 'rad', icon: '☢️', name: '高危核心', m3: 53, m4: 120, m5: 288 },
+        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 27, m4: 56, m5: 120 },
+        { id: 'file', icon: '📁', name: '机密卷宗', m3: 14, m4: 28, m5: 50 },
+        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 10, m4: 15, m5: 24 },
+        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 7, m4: 10, m5: 13 }
+      ];
+export const slot5x3Lines = [
+        { id: 1, name: '① 中线', rows: [1, 1, 1, 1, 1] },
+        { id: 2, name: '② 上线', rows: [0, 0, 0, 0, 0] },
+        { id: 3, name: '③ 下线', rows: [2, 2, 2, 2, 2] },
+        { id: 4, name: '④ 谷线', rows: [0, 1, 2, 1, 0] },
+        { id: 5, name: '⑤ 山线', rows: [2, 1, 0, 1, 2] }
+      ];
+export const departmentsData = [
+        {
+          code: 'DIV-01 // CONTAINMENT',
+          name: '收容部',
+          minister: '',
+          motto: '以绝对理性构筑牢笼，将不可名状封入几何。',
+          desc: '负责全局异常实体收容单元设计、现实扭曲抑制力场维护及高危收容突破应急响应。',
+          hasBgCard: false
+        },
+        {
+          code: 'DIV-02 // TACTICAL ARMS',
+          name: '武装部',
+          minister: '',
+          motto: '先于黎明封锁，隐于白雾歼灭。',
+          desc: '统辖外勤机动特遣队与重装防卫部队，负责突发超自然现场武力接管、站点防御与高危镇压。',
+          hasBgCard: false
+        },
+        {
+          code: 'DIV-03 // LOGISTICS',
+          name: '后勤部',
+          minister: '',
+          motto: '秩序始于配给，稳定源于细节。',
+          desc: '负责各收容站点物资调拨、员工考勤薪资与低保发放、娱乐室金库核算及基础设施运维。',
+          hasBgCard: false
+        },
+        {
+          code: 'DIV-04 // RESEARCH',
+          name: '科研部',
+          minister: '',
+          motto: '解析异常法则，重构现实边界。',
+          desc: '负责异常项目机理剖析、逆向工程开发、认知危害过滤算法研究及跨维度探测实验。',
+          hasBgCard: false
+        },
+        {
+          code: 'DIV-05 // MEDICAL',
+          name: '医疗部',
+          minister: '',
+          motto: '修补躯壳之伤，锚定理智之弦。',
+          desc: '负责外勤伤员战地急救、精神污染净化、记忆消除药剂调配及全员定期心理理智评估。',
+          hasBgCard: true // 绑定您上传的第3张医疗部宣发卡
+        }
+      ];
+export const stocksData = [
+        { code: 'AVED.VIV', name: 'VIVARIUM BIO-CORE // 活体生态舱指数', price: 4850, change: +3.4, holding: 0 },
+        { code: 'AVED.ANC', name: 'REALITY ANCHOR // 现实扭曲抑制器', price: 3200, change: -1.8, holding: 0 },
+        { code: 'AVED.MEM', name: 'CLASS-B AMNESTICS // 记忆滤除药剂', price: 1650, change: +1.2, holding: 0 }
+      ];

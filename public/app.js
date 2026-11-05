@@ -98,6 +98,7 @@ async function loadPortal() {
     const data = await api("/api/me");
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
+    if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
     $("#greeting").textContent = "欢迎回到公司，" + currentUser.displayName;
     $("#employeeMeta").textContent = isAdmin
       ? "管理员　/　员工资料与内容管理"
@@ -119,14 +120,14 @@ async function loadPortal() {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          isAdmin ? tab.dataset.tab !== "admin" : tab.dataset.tab === "admin",
+          !["admin","content","moderation","activity"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
     if (isAdmin) await renderTab("admin");
     else await Promise.all([renderTab("files"), loadMusic()]);
-  } catch {
-    show(loginCard);
+  } catch(error) {
+    show(loginCard);$("#error").textContent=error.message;
   }
 }
 
@@ -498,7 +499,7 @@ async function deleteContent(path, label = "这条内容") {
 async function deleteEmployee(id, displayName, username) {
   const identity = displayName + "（" + username + "）";
   if (!confirm("确认删除员工“" + identity + "”吗？")) return;
-  if (!confirm("再次确认：删除后，该员工账号及其帖子、论坛发言、余额和签到记录都会一并删除，且无法恢复。继续删除“" + identity + "”？")) return;
+  if (!confirm("再次确认：删除后，该员工账号及其帖子、论坛发言、余额和签到记录都会一并删除，审计记录仍会保留。继续删除“" + identity + "”？")) return;
   try {
     await api("/api/admin/employees/" + id, { method: "DELETE" });
     if (currentUser?.id === Number(id)) {
@@ -517,7 +518,10 @@ async function deleteEmployee(id, displayName, username) {
 async function renderTab(tab) {
   setActive(tab);
   try {
-    if (tab === "files") await renderDossiers();
+    if(tab === 'moderation')await renderModeration();
+    else if(tab === 'activity')await renderActivity();
+    else if(tab === 'content')await renderContentAdmin();
+    else if (tab === "files") await renderDossiers();
     else if (tab === "notice") await renderAnnouncements();
     else if (tab === "admin") await renderAdmin();
     else if (tab === "profile") await renderProfile();

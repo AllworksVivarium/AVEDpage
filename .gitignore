@@ -3,6 +3,7 @@
 !.env.example
 
 data/
+data-local/
 *.db
 *.db-wal
 *.db-shm

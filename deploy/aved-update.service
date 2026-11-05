@@ -1,0 +1,14 @@
+[Unit]
+Description=Update AVED from GitHub main
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+SupplementaryGroups=docker
+WorkingDirectory=/home/ubuntu/AVED
+Environment=GIT_TERMINAL_PROMPT=0
+ExecStart=/bin/bash /home/ubuntu/AVED/deploy/update.sh
+TimeoutStartSec=600
