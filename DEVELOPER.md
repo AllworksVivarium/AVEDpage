@@ -69,6 +69,8 @@ Node.js 24 + 原生 HTTP + SQLite WAL；无需 npm 安装。两个域名均反�
 
 ## 社区维护版本
 
+登录可靠性修复：server-media.mjs 将图片分离为独立授权请求；server-auth.mjs 处理可信代理、重复 Cookie 和失败限额；sessions 新增 issued_at，重复同名 Cookie 优先选择有效的最新登录，不撤销其他设备的会话。密码核验使用异步 PBKDF2。管理员页面确认会话后再显示工作台，忽略过时的自动恢复结果。HTML 不缓存，脚本带版本查询参数。tests/login-flow.test.mjs 覆盖断流/超时、重试、重复 Cookie、双端会话、HTTPS 和大头像下的资料包大小。
+
 - server-community.mjs 在原有玩家模块之后初始化增量表结构，在路由中先于原有处理器匹配；保留线上数据。
 - 新文件 public/player-community.js 和 admin-community.js 分别提供生活记录、修订窗口、内容维护与追溯检索。community.css 负责共享布局；terminology.js 只改展示，编辑控件和词库原词保留原文。
 - 原版开屏和图片字节不变，资源拆到 public/assets；内页背景图和密集网点已移除。

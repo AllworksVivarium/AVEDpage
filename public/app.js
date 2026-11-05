@@ -41,18 +41,7 @@ function esc(value) {
       ],
   );
 }
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "公司网络暂未响应。");
-  return result;
-}
+async function api(path,options={}) {return AVEDHttp.request(path,options);}
 
 // 在主内容区展示统一错误
 function showError(message) {
@@ -71,6 +60,8 @@ $("#back").addEventListener("click", () => show(welcome));
 // ===== 登录与门户初始化 =====
 $("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const button=event.currentTarget.querySelector('button[type=submit]');if(button.disabled)return;button.disabled=true;
+  ++portalGeneration;
   const form = new FormData(event.currentTarget);
   const error = $("#error");
   error.textContent = "";
@@ -88,22 +79,26 @@ $("#loginForm").addEventListener("submit", async (event) => {
     });
     if(form.has("remember")&&window.PasswordCredential&&navigator.credentials){navigator.credentials.store(new PasswordCredential({id:authenticated.employee.username,password:form.get("password"),name:authenticated.employee.displayName})).catch(()=>{});}
     error.textContent = "";
-    await loadPortal();
+    const verified=await AVEDHttp.confirmSession(authenticated.employee?.username);
+    await loadPortal({verified,interactive:true});
     await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-(performance.now()-connectStarted))));
     hideAdminConnecting();
   } catch (e) {
     hideAdminConnecting();show(loginCard);
     error.textContent = e.message || "暂时无法连接，请稍后再试。";
-  }
+  } finally {button.disabled=false;}
 });
 $("#logout").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" }).catch(() => {});
-  currentUser = null;
+  ++portalGeneration;currentUser = null;
   show(welcome);
 });
-async function loadPortal() {
+let portalGeneration=0;
+async function loadPortal({verified=null,interactive=false}={}) {
+  const generation=++portalGeneration;
   try {
-    const data = await api("/api/me");
+    const data=verified||await api('/api/me');if(generation!==portalGeneration)return;
+    if(!data.employee)throw new Error('接入身份未能确认，请重新登录。');
     AVEDTime.sync(data.serverTime);
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
@@ -136,7 +131,9 @@ async function loadPortal() {
     if (isAdmin) await renderTab(location.hash==='#dossiers'?'content':'admin');
     else await Promise.all([renderTab("files"), loadMusic()]);
   } catch(error) {
-    show(loginCard);$("#error").textContent=error.message;
+    if(generation!==portalGeneration)return;
+    if(interactive)throw error;
+    if(error.status!==401){show(loginCard);$("#error").textContent=error.message;}
   }
 }
 
@@ -592,9 +589,7 @@ $("#musicVolume").addEventListener(
 );
 
 // 首次进入时：若已有会话则直接加载门户
-fetch("/api/me")
-  .then((r) => (r.ok ? loadPortal() : null))
-  .catch(() => {});
+loadPortal().catch(()=>{});
 
 // 启动后先探测一次，再每 5 秒更新一次网络灯
 setNetworkSignalStatus("checking");

@@ -56,6 +56,12 @@
 
 ## 社区与内容维护
 
+登录修复：所有终端使用 public/http-client.js，HTTP 200 的截断/无效 JSON 仍视为失败。GET 在短暂网络错误后可重试，写请求不自动重发。POST /api/login 成功后须 GET /api/me 确认浏览器已建立同一身份的会话。
+
+个人资料、员工名录及论坛/生活记录的 imageData、avatarUrl 可返回受登录保护的 `/api/media/avatar|thread|reply|life/:id?v=` 图片地址；登录资料包不再携带 Base64 图片。个人资料更新时可原样传回自己的头像地址，服务器保留原图。未审核图片仅管理员可读。
+
+生产环境启用 COOKIE_SECURE 时，HTTP 页面重定向至 HTTPS，HTTP 登录请求返回 HTTPS_REQUIRED。TRUST_PROXY_IPS 必须按实际代理的精确地址配置，不能信任任意来源的转发头。失败次数限制以来源和账号组合为单位。
+
 - 公告留言 GET /api/posts 返回 displayName 和 department，署名由服务器绑定。
 - 玩家论坛返回当前匿名代号、canEdit、editedAt。PUT /api/player/forum/thread/:id 和 reply/:id 仅允许作者修订，保存完整前后版本；含图修订重新审核。玩家没有删除接口。
 - GET /api/player/life?q=&department=&kind=article|art&order=newest|oldest&before= 读取生活记录，每页 20 项，返回 items,next。POST 接受 title,body,kind,tags,imageData；图片整条待审，纯文字直接归档。

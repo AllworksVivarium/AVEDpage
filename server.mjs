@@ -1,3 +1,6 @@
+import {mediaReference,installMedia} from './server-media.mjs';
+import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
+import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
 import { createServer } from 'node:http';
@@ -5,7 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomBytes, pbkdf2Sync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
+import { randomBytes, pbkdf2, pbkdf2Sync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -132,10 +135,11 @@ const hashPassword = password => {
   const hash = pbkdf2Sync(password, salt, 310000, 32, 'sha256').toString('hex');
   return `${salt}:${hash}`;
 };
-const verifyPassword = (password, stored) => {
+const derivePassword=promisify(pbkdf2);
+const verifyPassword = async (password, stored) => {
   try {
     const [salt, saved] = stored.split(':');
-    const candidate = pbkdf2Sync(password, salt, 310000, 32, 'sha256');
+    const candidate = await derivePassword(password, salt, 310000, 32, 'sha256');
     const expected = Buffer.from(saved, 'hex');
     return candidate.length === expected.length && timingSafeEqual(candidate, expected);
   } catch { return false; }
@@ -169,7 +173,8 @@ const sessionDigest = token => createHmac('sha256',secret).update(token).digest(
 const sessionsTtl = 8 * 60 * 60 * 1000;
 // Enable only after HTTPS is working; HTTP IP/local previews keep working by default.
 const cookieSecurity = process.env.COOKIE_SECURE === 'true' ? '; Secure' : '';
-const attempts = new Map();
+if(!db.prepare('PRAGMA table_info(sessions)').all().some(c=>c.name==='issued_at'))db.exec('ALTER TABLE sessions ADD COLUMN issued_at INTEGER NOT NULL DEFAULT 0');
+const attempts=loginLimiter();
 const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png', '.webp':'image/webp' };
 const readBody = (req, maxBytes=32768) => new Promise((resolveBody, reject) => {
   const chunks = []; let size = 0;
@@ -181,22 +186,19 @@ const send = (res, status, body, headers={}) => {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', ...headers });
   res.end(JSON.stringify(body));
 };
-const cookieToken = req => req.headers.cookie?.split(';').map(x => x.trim()).find(x => x.startsWith('wy_session='))?.slice(11);
 const sessionEmployee = req => {
-  const token = cookieToken(req);
-  if (!token) return null;
-  const tokenHash = sessionDigest(token);
-  const session = db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.role,e.enabled,s.expires_at
-    FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
-  if (!session || session.expires_at < Date.now() || !session.enabled) {
-    db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash); return null;
+  const tokens=sessionTokens(req.headers.cookie),valid=[];
+  for(const [position,token] of tokens.entries()) {
+    const tokenHash=sessionDigest(token);
+    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
+    if(!session||session.expires_at<Date.now()||!session.enabled){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash);continue;}
+    valid.push({session,position});
   }
-
-  return session;
+  return valid.sort((a,b)=>b.session.issuedAt-a.session.issuedAt||b.position-a.position)[0]?.session||null;
 };
 const requireEmployee = (req, res) => {
   const employee = sessionEmployee(req);
-  if (!employee) send(res, 401, { error:'请先登录。' });
+  if (!employee) send(res, 401, { error:'请先登录。',code:sessionTokens(req.headers.cookie).length?'SESSION_EXPIRED':'SESSION_MISSING' });
   return employee;
 };
 const requireAdmin = (req, res) => {
@@ -222,7 +224,7 @@ const secureRoll = (seedHex, range) => {
 };
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:profile.avatarUrl||'' };
+  return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl) };
 };
 const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
 const adminMutation = (req, res) => {
@@ -235,6 +237,7 @@ const adminMutation = (req, res) => {
 };
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
+const media=installMedia({db,send,requireEmployee});
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
@@ -242,37 +245,47 @@ const server = createServer(async (req, res) => {
       db.prepare('SELECT 1').get();
       return send(res, 200, { ok:true, service:'aved' });
     }
+    const network=networkContext(req);
+    if(cookieSecurity&&!network.secure&&url.pathname!=='/api/health') {
+      const hostname=(req.headers.host||'').split(':')[0].toLowerCase();
+      const host=hostname==='authority.aved.space'||['/admin','/admin-terminal.html'].includes(url.pathname)?'authority.aved.space':'aved.space';
+      if(req.method==='GET'||req.method==='HEAD'){res.writeHead(308,{Location:'https://'+host+url.pathname+url.search,'Cache-Control':'no-store'});res.end();}
+      else send(res,400,{error:'请从 https://'+host+' 接入公司终端。',code:'HTTPS_REQUIRED'});
+      return;
+    }
+    if(url.pathname.startsWith('/api/')&&['POST','PUT','PATCH','DELETE'].includes(req.method)&&!adminMutation(req,res))return;
     if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400)playerService.log(actor.id,req.method,url.pathname);});}
     if (url.pathname === '/api/login' && req.method === 'POST') {
-      const now = Date.now(), ip = req.socket.remoteAddress || 'unknown';
-      const attempt = attempts.get(ip) || { count:0, until:now + 10 * 60 * 1000 };
-      if (attempt.until < now) { attempt.count = 0; attempt.until = now + 10 * 60 * 1000; }
-      if (attempt.count >= 10) return send(res, 429, { error:'尝试次数过多，请稍后再试。' });
-      const { identifier, username, password, remember } = await readBody(req);
-      const loginName = typeof identifier === 'string' ? identifier.trim() : (typeof username === 'string' ? username.trim() : '');
+      const now=Date.now();
+      const {identifier,username,password,remember}=await readBody(req);
+      const loginName=typeof identifier==='string'?identifier.trim():(typeof username==='string'?username.trim():'');
+      if(!loginName||loginName.length>80||typeof password!=='string'||password.length>1024)return send(res,400,{error:'请填写有效账号和密码。',code:'CREDENTIALS_REQUIRED'});
+      const attemptKey=createHmac('sha256',secret).update(network.address+'\0'+loginName.normalize('NFKC').toLowerCase()).digest('hex');
+      const retryAfter=attempts.blocked(attemptKey);
+      if(retryAfter)return send(res,429,{error:'本次接入尝试过于频繁，请稍后重试。',code:'LOGIN_LIMITED',retryAfter},{'Retry-After':String(retryAfter)});
       let employee = loginName ? db.prepare('SELECT id,password_hash,enabled FROM employees WHERE username=?').get(loginName) : null;
       if (!employee && loginName) {
         const nameMatches = db.prepare('SELECT id,password_hash,enabled FROM employees WHERE display_name=? ORDER BY id').all(loginName);
         if (nameMatches.length === 1) employee = nameMatches[0];
         else if (nameMatches.length > 1) return send(res,400,{error:'存在同名员工，请使用唯一用户名登录。'});
       }
-      const valid = employee && typeof password === 'string' && verifyPassword(password, employee.password_hash) && employee.enabled === 1;
-      if (!valid) { attempt.count++; attempts.set(ip, attempt); return send(res, 401, { error:'账号或密码不正确，或该员工账号尚未启用。' }); }
-      attempts.delete(ip);
+      const valid = employee && typeof password === 'string' && (await verifyPassword(password, employee.password_hash)) && employee.enabled === 1;
+      if(!valid){attempts.fail(attemptKey);playerService.log(employee?.id||null,'login.failed','terminal',{reason:employee?.enabled===0?'disabled':'credentials'});return send(res,401,{error:'账号或密码不正确，或该员工账号尚未启用。',code:'INVALID_CREDENTIALS'});}
+      attempts.clear(attemptKey);
       const token = randomBytes(32).toString('base64url');
-      db.prepare('INSERT INTO sessions (token_hash,employee_id,expires_at) VALUES (?,?,?)')
-        .run(sessionDigest(token), employee.id, now + (remember ? 30*86400000 : sessionsTtl));
+      db.prepare('INSERT INTO sessions (token_hash,employee_id,expires_at,issued_at) VALUES (?,?,?,?)')
+        .run(sessionDigest(token), employee.id, now + (remember ? 30*86400000 : sessionsTtl),now);
       playerService.log(employee.id,'login');
       const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${remember ? 2592000 : 28800}${cookieSecurity}`;
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
+    if(media.handle(req,res,url))return;
     if(await community.handle(req,res,url))return;
     if(await playerService.handle(req,res,url))return;
     if (url.pathname === '/api/logout' && req.method === 'POST') {
       const user=sessionEmployee(req);if(user)playerService.log(user.id,'logout');
-      const token = cookieToken(req);
-      if (token) db.prepare('DELETE FROM sessions WHERE token_hash=?').run(sessionDigest(token));
+      for(const token of sessionTokens(req.headers.cookie))db.prepare('DELETE FROM sessions WHERE token_hash=?').run(sessionDigest(token));
       return send(res, 200, { ok:true }, { 'Set-Cookie':`wy_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${cookieSecurity}` });
     }
     if (url.pathname === '/api/me' && req.method === 'GET') {
@@ -295,9 +308,11 @@ const server = createServer(async (req, res) => {
       const employee=requireEmployee(req,res); if(!employee)return;
       const {anonymousName,bio,avatarUrl}=await readBody(req,2500000);
       if(typeof anonymousName!=='string'||anonymousName.trim().length<1||anonymousName.trim().length>32||typeof bio!=='string'||bio.length>500) return send(res,400,{error:'请填写匿名名称（最多 32 字），简介最多 500 字。'});
-      let avatar='';
+      const previousAvatar=db.prepare('SELECT avatar_url FROM profiles WHERE employee_id=?').get(employee.id)?.avatar_url||'';
+      let avatar=avatarUrl===undefined?previousAvatar:'';
       if(typeof avatarUrl==='string'&&avatarUrl.trim()) {
-        if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) avatar=avatarUrl;
+        if(avatarUrl===mediaReference('avatar',employee.id,previousAvatar))avatar=previousAvatar;
+        else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) avatar=avatarUrl;
         else { try { const parsed=new URL(avatarUrl); if(parsed.protocol!=='https:'||parsed.href.length>1000) throw new Error(); avatar=parsed.href; } catch { return send(res,400,{error:'头像请使用 PNG/JPG/WEBP 图片，或填写有效的 HTTPS 图片链接。'}); } }
       }
       db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)
@@ -591,7 +606,7 @@ const server = createServer(async (req, res) => {
     if (file.includes('..') || file.includes('\\')) return send(res,404,{error:'not found'});
     try {
       const data = await readFile(resolve(publicDir,file));
-      res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});
+      res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream','Cache-Control':extname(file)==='.html'?'no-store':'no-cache','X-Content-Type-Options':'nosniff'});
       res.end(data);
     } catch { res.writeHead(404); res.end('Not found'); }
   } catch (error) {

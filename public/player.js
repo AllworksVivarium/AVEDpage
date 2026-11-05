@@ -1,19 +1,13 @@
 
     (function() {
       // ======================================================================
-      async function api(path, {method='GET',body}={}) {
-        const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),20000);
-        try {
-          const response=await fetch(path,{method,credentials:'same-origin',cache:'no-store',signal:controller.signal,
-            headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
-          const data=await response.json().catch(()=>({error:'公司网络暂未响应。'}));
-          if(!response.ok)throw new Error(data.error||'请求失败');return data;
-        } catch(error) {if(error.name==='AbortError')throw new Error('连接超时，请重试。');throw error;}
-        finally {clearTimeout(timer);}
+      async function api(path,{method='GET',body,...options}={}) {
+        return AVEDHttp.request(path,{method,...options,body:body?JSON.stringify(body):undefined});
       }
       const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       async function apiLogin(identifier,password,remember) {
-        return await api('/api/login',{method:'POST',body:{identifier,password,remember}});
+        const result=await api('/api/login',{method:'POST',body:{identifier,password,remember}});
+        await AVEDHttp.confirmSession(result.employee?.username);return result;
       }
       async function apiLogout(){await api('/api/logout',{method:'POST'});}
 
@@ -1797,7 +1791,7 @@
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
       async function loadPlayerData() {
-        const data=await api('/api/player/state');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;
+        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;
         employees=data.employees.map(e=>({id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:'',avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''}));
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,

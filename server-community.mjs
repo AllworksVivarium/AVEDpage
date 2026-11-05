@@ -1,3 +1,4 @@
+import {mediaReference} from './server-media.mjs';
 // Persistent community records and moderation. Raw timestamps remain server-side.
 export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log}) {
   const add=(table,name,definition)=>{if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);};
@@ -104,7 +105,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         if(method==='GET') {
           const q='%'+(url.searchParams.get('q')||'').slice(0,120)+'%',kind=url.searchParams.get('kind')||'',department=url.searchParams.get('department')||'',order=url.searchParams.get('order')==='oldest'?'ASC':'DESC',before=Number(url.searchParams.get('before'))||0;
           const rows=db.prepare(`SELECT l.id,l.title,l.body,l.kind,l.tags,l.image_data AS imageData,l.moderation,l.created_at AS createdAt,p.anonymous_name AS anonymousName FROM life_records l JOIN profiles p ON p.employee_id=l.employee_id WHERE l.deleted_at='' ${path.includes('/admin/')?'':"AND l.moderation='approved'"} AND (?='' OR kind=?) AND (title LIKE ? OR body LIKE ?) AND (?='' OR EXISTS(SELECT 1 FROM json_each(l.tags) WHERE value=?)) AND (?=0 OR l.id${order==='ASC'?'>':'<'}?) ORDER BY l.id ${order} LIMIT 21`).all(kind,kind,q,q,department,department,before,before);
-          send(res,200,{items:rows.slice(0,20).map(r=>({...r,tags:JSON.parse(r.tags)})),next:rows.length>20?rows[19].id:null});return true;
+          send(res,200,{items:rows.slice(0,20).map(r=>({...r,tags:JSON.parse(r.tags),imageData:mediaReference('life',r.id,r.imageData)})),next:rows.length>20?rows[19].id:null});return true;
         }
         if(method==='POST'&&path==='/api/player/life') {
           const d=await readBody(req,2500000),img=image(d.imageData),tags=Array.isArray(d.tags)?[...new Set(d.tags.map(x=>String(x).trim()).filter(Boolean))]:[];
@@ -115,7 +116,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
       if(path==='/api/admin/moderation'&&method==='GET') {
         const items=db.prepare(`SELECT 'thread' AS kind,f.id,f.title,f.body,f.image_data AS imageData,f.employee_id AS employeeId,e.username,e.display_name AS displayName,f.created_at AS createdAt FROM forum_threads f JOIN employees e ON e.id=f.employee_id WHERE f.moderation='pending' AND f.deleted_at=''
           UNION ALL SELECT 'reply',r.id,t.title,r.body,r.image_data,r.employee_id,e.username,e.display_name,r.created_at FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id JOIN employees e ON e.id=r.employee_id WHERE r.moderation='pending' AND r.deleted_at='' AND t.deleted_at=''
-          UNION ALL SELECT 'life',l.id,l.title,l.body,l.image_data,l.employee_id,e.username,e.display_name,l.created_at FROM life_records l JOIN employees e ON e.id=l.employee_id WHERE l.moderation='pending' AND l.deleted_at='' ORDER BY createdAt`).all();send(res,200,{items});return true;
+          UNION ALL SELECT 'life',l.id,l.title,l.body,l.image_data,l.employee_id,e.username,e.display_name,l.created_at FROM life_records l JOIN employees e ON e.id=l.employee_id WHERE l.moderation='pending' AND l.deleted_at='' ORDER BY createdAt`).all().map(row=>({...row,imageData:mediaReference(row.kind,row.id,row.imageData)}));send(res,200,{items});return true;
       }
       if(review&&method==='POST') {
         const d=await readBody(req);if(!['approve','reject'].includes(d.action))throw new Error('审核指令无效。');

@@ -24,7 +24,7 @@ test('community identity, edits, moderation, search and retained removals',async
  const cookie=await login('employee','employee123',true),other=await login('other','employee123');const p=(path,m,b)=>request(cookie,path,m,b);
  const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
  const prof=await p('/api/profile','PUT',{anonymousName:'夜班代号',bio:'',avatarUrl:img});await new Promise(r=>setTimeout(r,30));assert.equal(prof.status,200,JSON.stringify(prof.data)+errors);
- let state=(await p('/api/player/state')).data;assert.equal(state.employees.find(e=>e.id===emp).avatarUrl,img);assert.equal(state.stocks.length,5);assert.ok(state.stocks.some(s=>s.name==='医疗部'));
+ let state=(await p('/api/player/state')).data;assert.match(state.employees.find(e=>e.id===emp).avatarUrl,/^\/api\/media\/avatar\//);assert.equal(state.employees.find(e=>e.id===emp).avatarUrl,state.profile.avatarUrl);assert.equal((await fetch(base+state.profile.avatarUrl,{headers:{cookie}})).status,200);assert.equal(state.stocks.length,5);assert.ok(state.stocks.some(s=>s.name==='医疗部'));
  const thread=(await p('/api/player/forum','POST',{title:'主题',body:'修改之前'})).data.id;
  assert.equal((await request(other,'/api/player/forum/thread/'+thread,'PUT',{title:'主题',body:'越权修改'})).status,404);
  assert.equal((await request(other,'/api/admin/forum/threads/'+thread,'DELETE')).status,403);
