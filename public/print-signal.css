@@ -1,0 +1,21 @@
+/* Flat, warm signal display. Every effect is independent of the saved text. */
+body.signal-preview.theme-inner{--inner-bg:#dad4c4;--inner-card-bg:rgba(238,233,221,.96);--inner-card-alt:#cdc6b4;--inner-text-main:#141413;--inner-text-muted:#57534a;--inner-border:#141413;--inner-border-soft:rgba(20,20,19,.32);--inner-crimson:#9e1b1b;--inner-accent:#141413;--inner-accent-text:#f5f2eb;--signal-glow:#9e1b1b35;--signal-phosphor:#fff2c780;background:#dad4c4!important}
+body.signal-preview.dark-mode.theme-inner{--inner-bg:#070708;--inner-card-bg:rgba(16,17,19,.96);--inner-card-alt:#131417;--inner-text-main:#e8e6df;--inner-text-muted:#8c887f;--inner-border:#d4d0c5;--inner-border-soft:rgba(232,230,223,.28);--inner-crimson:#e03e3e;--inner-accent:#e8e6df;--inner-accent-text:#080808;--signal-glow:#f4d9a84d;--signal-phosphor:#fff2cf66;background:#070708!important}
+#inner-app-view{--signal-glow:#9e1b1b35;--signal-phosphor:#fff2c780}
+.dark-mode #inner-app-view{--signal-glow:#f4d9a84d;--signal-phosphor:#fff2cf66}
+body.theme-inner #inner-app-view :is(button,a,summary){transition:text-shadow .22s ease,color .18s ease,background-color .18s ease}
+body.theme-inner #inner-app-view :is(button,a,summary,.terminal-page-title):hover,body.theme-inner #inner-app-view :is(button,a,summary):focus-visible{text-shadow:0 0 2px var(--signal-phosphor),0 0 7px var(--signal-glow)}
+.signal-preview #inner-app-view .terminal-page-title{text-shadow:.25px 0 #9e1b1b25,0 0 2px var(--signal-phosphor)}
+.signal-preview #inner-app-view :is(.notice-body,.notice-summary,.life-record>p.whitespace-pre-wrap,#forum-detail-main-post>p.whitespace-pre-wrap){filter:url('#aved-print-type');text-shadow:.28px 0 #9e1b1b1a;transform:skewX(-.075deg);transform-origin:left top}
+.signal-preview #inner-app-view .notice-body{padding-inline:1px}
+#aved-signal-dust{display:none;position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:27;contain:strict}
+body.signal-preview.theme-inner #aved-signal-dust{display:block}
+.signal-filter-definitions{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.signal-frame{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;color:var(--inner-border-soft)}
+.signal-preview #inner-app-view .signal-framed{position:relative}
+.signal-preview #inner-app-view .signal-framed>.signal-frame{display:block}
+.signal-preview #inner-app-view .notice-card.signal-framed{border-color:transparent}
+.signal-preview #inner-app-view #news-detail-article-box.signal-framed{border-inline-color:transparent;border-bottom-color:transparent}
+.signal-preview #inner-app-view .signal-frame rect{fill:none;stroke:currentColor;stroke-width:1;vector-effect:non-scaling-stroke;filter:url('#aved-print-rule')}
+@media(prefers-reduced-motion:reduce){body.theme-inner #inner-app-view :is(button,a,summary){transition:none}body.signal-preview.theme-inner #aved-signal-dust{display:none!important}}
+@media print{#aved-signal-dust,.signal-frame{display:none!important}body.signal-preview #inner-app-view :is(.notice-body,.notice-summary,.life-record>p.whitespace-pre-wrap,#forum-detail-main-post>p.whitespace-pre-wrap){filter:none;transform:none;text-shadow:none}}

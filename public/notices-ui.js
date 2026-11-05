@@ -3,6 +3,10 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   // Announcement text is already escaped when the player data is loaded.
   root.AVEDNotices = {
+    excerpt(value, limit = 140) {
+      const characters = Array.from(String(value ?? '').replace(/\s+/g, ' ').trim());
+      return characters.length > limit ? characters.slice(0, limit).join('') + '…' : characters.join('');
+    },
     list(items) {
       return items.map(item => `<article class="retro-corner-box notice-card">
         <div class="notice-meta"><span>${item.category} / ${item.code}</span>${time(item.createdAt)}</div>
