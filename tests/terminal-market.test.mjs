@@ -33,7 +33,7 @@ test('audit snapshots display relative labels without altering ordinary text',()
 test('candles preserve OHLC, aggregate periods and survive reinstallation',()=>{
   const db=new DatabaseSync(':memory:');
   db.exec(`CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER);
-    CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER);
+    CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER,cost_basis INTEGER DEFAULT 0,position_notional INTEGER DEFAULT 0,margin_used INTEGER DEFAULT 0,realized_pnl INTEGER DEFAULT 0,stop_loss INTEGER,take_profit INTEGER);
     INSERT INTO stock_prices VALUES('TEST.A','甲',2000,0,0),('TEST.B','乙',4000,0,0);`);
   let at=Date.parse('2026-11-04T12:00:00Z');
   const market=installMarket(db,{clock:()=>at,automatic:false});
@@ -57,6 +57,24 @@ test('candles preserve OHLC, aggregate periods and survive reinstallation',()=>{
   assert.deepEqual(reopened.history('TEST.A'),stored);
   assert.throws(()=>reopened.history('TEST.A',7),/周期/);
   reopened.close();db.close();
+});
+
+test('items fallback to latest open-trade leverage when legacy holdings lack leverage fields',()=>{
+  const db=new DatabaseSync(':memory:');
+  db.exec(`CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER);
+    CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER,cost_basis INTEGER DEFAULT 0,position_notional INTEGER DEFAULT 0,margin_used INTEGER DEFAULT 0,realized_pnl INTEGER DEFAULT 0,stop_loss INTEGER,take_profit INTEGER);
+    CREATE TABLE stock_trades(id INTEGER PRIMARY KEY,employee_id INTEGER,code TEXT,action TEXT,quantity INTEGER,price INTEGER,amount INTEGER,leverage INTEGER,holding_before INTEGER,holding_after INTEGER,cost_before INTEGER,cost_after INTEGER,realized_pnl_change INTEGER,balance_after INTEGER,created_at TEXT);
+    INSERT INTO stock_prices VALUES('TEST.A','甲',497,0,0);
+    INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl) VALUES(1,'TEST.A',10,4990,0,0,0);
+    INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after,created_at)
+    VALUES(1,'TEST.A','buy',10,499,4990,10,0,10,0,4990,0,0,CURRENT_TIMESTAMP);`);
+  const market=installMarket(db,{automatic:false,clock:()=>Date.parse('2026-11-04T12:00:00Z')});
+  const row=market.items(1).find(item=>item.code==='TEST.A');
+  assert.ok(row);
+  assert.equal(row.holding,10);
+  assert.equal(row.effectiveLeverage,10);
+  market.close();
+  db.close();
 });
 
 test('sidebar control is above directory, footer removed, credential storage is browser managed',()=>{
@@ -108,16 +126,43 @@ test('live API uses database login, server-priced trades and persistent quantiti
   async function player(path,body){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{cookie:playerCookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json()};}
   const state=(await player('/api/player/state')).data;assert.ok(state.serverTime);assert.ok(state.market.candles.length);
   const code=state.stocks[0].code;
-  const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,price:1,seed:'client-injected'});
+  const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,leverage:10,price:1,seed:'client-injected'});
   assert.equal(buy.status,200);const stock=buy.data.items.find(s=>s.code===code);
-  assert.equal(stock.holding,3);assert.equal(buy.data.balance,100000-stock.price*3);
+  const expectedNotional=stock.price*3;
+  const expectedMargin=Math.ceil(expectedNotional/10);
+  assert.equal(stock.holding,3);
+  assert.equal(buy.data.balance,100000-expectedMargin);
+  assert.equal(stock.positionNotional,expectedNotional);
+  assert.equal(stock.costBasis,expectedMargin);
+  assert.equal(stock.marginUsed,expectedMargin);
+  assert.ok(stock.effectiveLeverage>=9&&stock.effectiveLeverage<=10);
+  assert.equal(stock.avgCost,stock.price);
   assert.equal(buy.data.market.candles.at(-1).volume,3);
   const rejected=await player('/api/player/stocks',{code,action:'buy',quantity:-2});assert.equal(rejected.status,400);
   assert.equal((await player('/api/me')).data.balance,buy.data.balance);
   const sell=await player('/api/player/stocks?code='+code,{code,action:'sell',quantity:2});assert.equal(sell.status,200);
   const held=sell.data.items.find(s=>s.code===code);assert.equal(held.holding,1);
-  assert.equal(sell.data.balance,buy.data.balance+held.price*2);
+  assert.equal(held.positionNotional,Math.round(expectedNotional/3));
+  assert.equal(held.costBasis,Math.round(expectedMargin/3));
+  assert.equal(held.marginUsed,Math.round(expectedMargin/3));
+  assert.ok(Number.isInteger(held.realizedPnl));
+  assert.ok(Number.isInteger(sell.data.balance));
   const snapshot=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});
-  assert.equal(snapshot.prepare('SELECT quantity FROM stock_holdings WHERE code=?').get(code).quantity,1);
+  const position=snapshot.prepare('SELECT quantity,cost_basis AS costBasis,position_notional AS positionNotional,margin_used AS marginUsed,realized_pnl AS realizedPnl FROM stock_holdings WHERE code=?').get(code);
+  assert.equal(position.quantity,1);
+  assert.equal(position.costBasis,held.costBasis);
+  assert.equal(position.positionNotional,held.positionNotional);
+  assert.equal(position.marginUsed,held.marginUsed);
+  assert.equal(position.realizedPnl,held.realizedPnl);
+  assert.equal(snapshot.prepare('SELECT COUNT(*) AS n FROM stock_trades WHERE code=?').get(code).n,2);
+  const trades=snapshot.prepare('SELECT action,quantity,leverage,holding_before AS before,holding_after AS after FROM stock_trades WHERE code=? ORDER BY id').all(code);
+  assert.deepEqual(trades.map(t=>({action:t.action,quantity:t.quantity,leverage:t.leverage})),[
+    {action:'buy',quantity:3,leverage:10},
+    {action:'sell',quantity:2,leverage:3}
+  ]);
+  assert.equal(trades[0].before,0);
+  assert.equal(trades[0].after,3);
+  assert.equal(trades[1].before,3);
+  assert.equal(trades[1].after,1);
   assert.ok(snapshot.prepare('SELECT COUNT(*) AS n FROM stock_candles').get().n>=4);snapshot.close();
 });

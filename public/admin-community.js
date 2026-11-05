@@ -4,16 +4,19 @@ function showAdminConnecting(){adminConnecting.hidden=false;adminConnecting.clas
 function hideAdminConnecting(){adminConnecting.hidden=true;adminConnecting.classList.remove('admin-connecting-active');}
 document.querySelector('#sidebar').prepend(document.querySelector('#sidebarToggle'));
 const filterMarkup=id=>`<form id="${id}" class="community-filters"><label>起始区间<input name="from" type="date" aria-label="起始日期"></label><label>结束区间<input name="to" type="date" aria-label="结束日期"></label><input name="keyword" maxlength="120" placeholder="关键词、员工或内容" aria-label="查找关键词"><button class="small-action">检索</button></form>`;
+
 async function renderModeration(){
  const {items}=await api('/api/admin/moderation');
  $('#panel').innerHTML='<div class="section-heading"><h3>图文核验</h3><p>待核材料</p></div>'+items.map(x=>`<article class="notice-box"><h4>${esc(x.title)}</h4><small>${esc(x.displayName)} / ${esc(x.username)} · ${AVEDTime.markup(x.createdAt)}</small><p class="announcement-body">${esc(x.body)}</p><img class="moderation-image" src="${esc(x.imageData)}" alt="待核影像"><div class="music-controls"><button data-review="approve" data-kind="${x.kind}" data-id="${x.id}">批准公开</button><button data-review="reject" data-kind="${x.kind}" data-id="${x.id}">拒绝</button></div></article>`).join('')+(items.length?'':'<p>暂无待核材料。</p>');
  document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`/api/admin/moderation/${b.dataset.kind}/${b.dataset.id}`,{method:'POST',body:JSON.stringify({action:b.dataset.review})});await renderModeration();}catch(e){alert(e.message);b.disabled=false;}});
 }
+
 async function renderActivity(){
  $('#panel').innerHTML='<h3>监察记录</h3>'+filterMarkup('activity-filters')+'<div id="activity-list"></div><button id="activityMore" class="small-action" hidden>调阅更早记录</button>';let next=null,request=0;
  async function search(more=false){const serial=++request,q=new URLSearchParams(new FormData($('#activity-filters')));if(more&&next)q.set('before',next);const {items}=await api('/api/admin/activity?'+q);if(serial!==request)return;const html=items.map(x=>`<article class="admin-post"><b>#${x.id} · ${esc(activityActionName(x.action))} · ${esc(activityTargetName(x.target))}</b><small>${esc(x.username||'公司系统')} · ${AVEDTime.markup(x.created_at)} ${AVEDTime.markup(x.created_at,'clock')}</small><details><summary>调阅留存记录</summary><pre class="audit-detail">${esc(JSON.stringify(AVEDTime.sanitize(JSON.parse(x.details)),null,2))}</pre></details></article>`).join('');if(more)$('#activity-list').insertAdjacentHTML('beforeend',html);else $('#activity-list').innerHTML=html||'<p>未检索到记录。</p>';next=items.at(-1)?.id;$('#activityMore').hidden=items.length<100;}
  $('#activity-filters').onsubmit=e=>{e.preventDefault();search().catch(e=>alert(e.message));};$('#activityMore').onclick=()=>search(true).catch(e=>alert(e.message));await search();
 }
+
 async function renderSpeechRecords(){
  $('#panel').innerHTML='<h3>通讯追溯</h3>'+filterMarkup('speech-filters')+'<div id="speech-results"><p>请选择检索范围。</p></div><button id="speech-more" class="small-action" hidden>调阅更多通讯</button>';
  $('#speech-filters').querySelector('button').insertAdjacentHTML('beforebegin','<select name="sourceType" aria-label="通讯来源"><option value="">全部来源</option>'+Object.entries(sourceLabels).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')+'</select>');let serial=0,offset=0;
@@ -23,6 +26,7 @@ async function renderSpeechRecords(){
  }
  $('#speech-filters').onsubmit=e=>{e.preventDefault();search().catch(e=>alert(e.message));};$('#speech-more').onclick=()=>search(true).catch(e=>alert(e.message));
 }
+
 async function renderContentAdmin(){
  const [news,files,music]=await Promise.all([api('/api/announcements'),api('/api/dossiers'),api('/api/admin/music')]);
  const fields=f=>`<label>编号<input name="code" required maxlength="80" value="${esc(f?.code||'')}"></label><label>名称<input name="title" required maxlength="150" value="${esc(f?.title||'')}"></label><label>所属部门<input name="department" maxlength="80" value="${esc(f?.department||'')}"></label><label>收容状态<input name="status" maxlength="80" value="${esc(f?.status||'观察中')}"></label><label>卷宗正文<textarea name="summary" required maxlength="12000" rows="6">${esc(f?.summary||'')}</textarea></label><button class="small-action">${f?'保存修订':'登记卷宗'}</button>`;
@@ -31,6 +35,7 @@ async function renderContentAdmin(){
  document.querySelectorAll('.dossier-edit-form').forEach(form=>form.onsubmit=async e=>{e.preventDefault();const b=form.querySelector('button');b.disabled=true;try{await api('/api/admin/dossiers/'+form.dataset.id,{method:'PUT',body:JSON.stringify(Object.fromEntries(new FormData(form)))});await renderContentAdmin();}catch(err){alert(err.message);b.disabled=false;}});
  document.querySelectorAll('[data-content-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('确认撤下这项内容？'))return;try{await api('/api/admin/'+b.dataset.contentDelete,{method:'DELETE'});await renderContentAdmin();}catch(e){alert(e.message);}});
 }
+
 async function renderTerminology(){
  const {items}=await api('/api/admin/terminology');
  const fields=x=>`<label>原词 / 表达式<input name="pattern" required maxlength="80" value="${esc(x?.pattern||'')}"></label><label>显示用语<input name="replacement" maxlength="160" value="${esc(x?.replacement||'')}"></label><label><span><input name="isRegex" type="checkbox" ${x?.isRegex?'checked':''}>正则匹配</span></label><label><span><input name="enabled" type="checkbox" ${!x||x.enabled?'checked':''}>启用</span></label><button class="small-action">保存词条</button>`;

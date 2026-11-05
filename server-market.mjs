@@ -46,8 +46,64 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
   }
   function items(id) {
     advance();
-    return db.prepare('SELECT s.code,s.name,s.price,COALESCE(h.quantity,0) AS holding FROM stock_prices s LEFT JOIN stock_holdings h ON h.code=s.code AND h.employee_id=?').all(id)
-      .map(s=>({...s,change:quote(s.code).change}));
+    const holdingColumns=new Set(db.prepare('PRAGMA table_info(stock_holdings)').all().map(c=>c.name));
+    const tradeColumns=new Set(db.prepare('PRAGMA table_info(stock_trades)').all().map(c=>c.name));
+    const hasHolding=name=>holdingColumns.has(name);
+    const hasTrade=name=>tradeColumns.has(name);
+    const lastOpenLeverageByCode=new Map();
+    try {
+      if(hasTrade('code')&&hasTrade('leverage')) {
+        const sql=hasTrade('holding_after')
+          ? 'SELECT code,leverage FROM stock_trades WHERE employee_id=? AND holding_after<>0 ORDER BY id DESC'
+          : 'SELECT code,leverage FROM stock_trades WHERE employee_id=? ORDER BY id DESC';
+        for(const row of db.prepare(sql).all(id)) {
+          if(!lastOpenLeverageByCode.has(row.code))lastOpenLeverageByCode.set(row.code,Number(row.leverage)||0);
+        }
+      }
+    } catch {}
+
+    if(lastOpenLeverageByCode.size===0) {
+      try {
+        for(const row of db.prepare("SELECT target,details FROM activity_logs WHERE employee_id=? AND action IN ('stock.buy','stock.sell') ORDER BY id DESC LIMIT 300").all(id)) {
+          if(lastOpenLeverageByCode.has(row.target))continue;
+          const parsed=JSON.parse(row.details||'{}');
+          const leverage=Number(parsed?.leverage)||0;
+          if(leverage>0)lastOpenLeverageByCode.set(row.target,leverage);
+        }
+      } catch {}
+    }
+
+    const holdingsSql=`SELECT s.code,s.name,s.price,
+      COALESCE(h.quantity,0) AS holding,
+      COALESCE(h.cost_basis,0) AS costBasis,
+      ${hasHolding('position_notional')?'COALESCE(h.position_notional,0)':'0'} AS positionNotional,
+      ${hasHolding('margin_used')?'COALESCE(h.margin_used,0)':'0'} AS marginUsed,
+      COALESCE(h.realized_pnl,0) AS realizedPnl,
+      ${hasHolding('leverage')?'COALESCE(h.leverage,0)':'0'} AS holdingLeverage,
+      ${hasHolding('stop_loss')?'h.stop_loss':'NULL'} AS stopLoss,
+      ${hasHolding('take_profit')?'h.take_profit':'NULL'} AS takeProfit
+      FROM stock_prices s LEFT JOIN stock_holdings h ON h.code=s.code AND h.employee_id=?`;
+    return db.prepare(holdingsSql).all(id)
+      .map(s=>{
+        const fallbackLeverage=s.holding!==0?((Number(s.holdingLeverage)||0)||(lastOpenLeverageByCode.get(s.code)||0)):0;
+        const positionNotional=s.positionNotional||((s.holding!==0&&s.costBasis>0)?Math.round(s.costBasis*Math.max(fallbackLeverage,1)):0);
+        const marginUsed=s.marginUsed||((s.holding!==0&&s.costBasis>0)?s.costBasis:0);
+        const hasMissingLeverageMeta=s.holding!==0&&(!(s.positionNotional>0)||!(s.marginUsed>0));
+        const absHolding=Math.abs(s.holding);
+        const side=s.holding===0?'flat':(s.holding>0?'long':'short');
+        const marketValue=s.price*s.holding;
+        const unrealizedPnl=s.holding>0
+          ? marketValue-positionNotional
+          : s.holding<0
+            ? positionNotional+marketValue
+            : 0;
+        const avgCost=absHolding>0?positionNotional/absHolding:0;
+        const calculatedLeverage=marginUsed>0?Math.round((positionNotional/marginUsed)*100)/100:0;
+        const effectiveLeverage=(hasMissingLeverageMeta&&fallbackLeverage>0)
+          ? fallbackLeverage
+          : (calculatedLeverage>0?calculatedLeverage:fallbackLeverage);
+        return {...s,positionNotional,marginUsed,side,avgCost,marketValue,unrealizedPnl,effectiveLeverage,totalPnl:unrealizedPnl+s.realizedPnl,change:quote(s.code).change};
+      });
   }
   function history(code='KARMA',period=1) {
     if(![1,5,15].includes(period))throw new Error('行情周期无效。');

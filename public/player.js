@@ -266,6 +266,7 @@
       const initialForumThreads = [];
 
       const stocksData = [];
+      const stockOrdersData = [];
 
       let employees = JSON.parse(JSON.stringify(defaultEmployees));
       let companyNews = JSON.parse(JSON.stringify(initialCompanyNews));
@@ -1609,6 +1610,7 @@
       // KARMA INDEX 股市
       function applyMarket(data) {
         if(data.items)stocksData.splice(0,stocksData.length,...data.items);
+        if(data.orders)stockOrdersData.splice(0,stockOrdersData.length,...data.orders);
         if(data.market)marketView=data.market;
         if(data.serverTime)AVEDTime.sync(data.serverTime);
         if(typeof data.balance==='number'){currentUser.balance=data.balance;syncUserHeaderUI();}
@@ -1624,36 +1626,70 @@
       }
       function renderStocks() {
         economyUI?.renderHoldings();
+        const availableBalance=currentUser?.balance||0;
+        const movementMeta=(current,previous)=>previous==null?{arrow:'•',className:'tick-flat'}:(current>previous?{arrow:'↑',className:'tick-up'}:(current<previous?{arrow:'↓',className:'tick-down'}:{arrow:'•',className:'tick-flat'}));
         const value=marketView?.index;
         if(value){
+          const indexMove=movementMeta(value.price,previousIndexPrice);
           document.getElementById('karma-index-val').textContent=(value.price/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+          const indexTick=document.getElementById('karma-index-tick');if(indexTick){indexTick.textContent=indexMove.arrow;indexTick.className='market-tick-indicator '+indexMove.className;}
           const delta=document.getElementById('karma-index-delta');delta.textContent=(value.change>=0?'+':'')+value.change.toFixed(2)+'%';delta.className='market-change '+(value.change>=0?'market-up':'market-down');
+          previousIndexPrice=value.price;
         }
         const select=document.getElementById('stock-chart-symbol');
         select.innerHTML='<option value="KARMA">KARMA INDEX</option>'+stocksData.map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+'</option>').join('');select.value=marketCode;
         document.getElementById('stock-chart-period').value=String(marketPeriod);
         const quote=marketView?.quote;
         if(quote){
+          const quotePrev=quote.code==='KARMA'?previousIndexPrice:previousQuotePrices.get(quote.code);
+          const quoteMove=movementMeta(quote.price,quotePrev);
           document.getElementById('market-selected-name').textContent=quote.code==='KARMA'?'KARMA INDEX':stocksData.find(s=>s.code===quote.code)?.name||quote.code;
           document.getElementById('market-selected-price').textContent=quote.code==='KARMA'?(quote.price/100).toFixed(2):fmtMoney(quote.price);
+          const selectedTick=document.getElementById('market-selected-tick');if(selectedTick){selectedTick.textContent=quoteMove.arrow;selectedTick.className='market-tick-indicator '+quoteMove.className;}
           const change=document.getElementById('market-selected-change');change.textContent=(quote.change>=0?'+':'')+quote.change.toFixed(2)+'%';change.className=quote.change>=0?'market-up':'market-down';
           AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA'});
         }
         const container=document.getElementById('stocks-table-body');
-        if(container.contains(document.activeElement)&&document.activeElement.matches('[data-stock-quantity]'))return;
+        if(container.contains(document.activeElement)&&document.activeElement.matches('[data-stock-quantity], [data-stock-stop-input], [data-stock-take-input], [data-stock-leverage-input]'))return;
         const previousInputs=new Map([...container.querySelectorAll('[data-stock-quantity]')].map(input=>[input.dataset.stockQuantity,input.value]));
-        container.innerHTML=stocksData.map((stock,index)=>`<article class="stock-quote-card">
+        const leverageInputs=new Map([...container.querySelectorAll('[data-stock-leverage-input]')].map(input=>[input.dataset.stockLeverageInput,input.value]));
+        const stopInputs=new Map([...container.querySelectorAll('[data-stock-stop-input]')].map(input=>[input.dataset.stockStopInput,input.value]));
+        const takeInputs=new Map([...container.querySelectorAll('[data-stock-take-input]')].map(input=>[input.dataset.stockTakeInput,input.value]));
+        container.innerHTML=stocksData.map((stock,index)=>{const move=movementMeta(stock.price,previousQuotePrices.get(stock.code));const moveColorClass=move.className==='tick-up'?'market-up':(move.className==='tick-down'?'market-down':'');const leverageSelected=leverageInputs.get(stock.code)||'3';const estTrade=stock.price*Number(previousInputs.get(stock.code)||1);const estMargin=Math.ceil(estTrade/Number(leverageSelected||3));return `<article class="stock-quote-card" data-stock-index="${index}" data-stock-code="${esc(stock.code)}">
           <div class="stock-quote-heading"><button type="button" data-stock-chart-code="${esc(stock.code)}">${esc(stock.code)}</button><span class="${stock.change>=0?'market-up':'market-down'}">${stock.change>=0?'+':''}${stock.change.toFixed(2)}%</span></div>
-          <h4>${esc(stock.name)}</h4><strong class="stock-quote-price ${stock.change>=0?'market-up':'market-down'}">${fmtMoney(stock.price)}</strong>
-          <p>持仓 ${stock.holding.toLocaleString()} 股</p>
-          <label>委托数量<input id="stock-quantity-${index}" data-stock-quantity="${esc(stock.code)}" type="number" min="1" max="10000" step="1" value="${esc(previousInputs.get(stock.code)||'1')}"></label>
-          <div class="stock-trade-actions"><button type="button" data-buy-idx="${index}" class="stock-buy-btn">买入</button><button type="button" data-sell-idx="${index}" class="stock-sell-btn">卖出</button></div>
-        </article>`).join('');
+          <h4>${esc(stock.name)}</h4><div class="stock-price-row"><strong class="stock-quote-price ${moveColorClass}">${fmtMoney(stock.price)}</strong><span class="market-tick-indicator ${move.className}" aria-label="实时方向">${move.arrow}</span></div>
+          <p>持仓 ${Math.abs(stock.holding).toLocaleString()} 股（${stock.side==='short'?'买跌':'买涨'}）｜ 保证金 ${fmtMoney(stock.marginUsed||0)} ｜ 名义仓位 ${fmtMoney(stock.positionNotional||0)} ｜ 均价 ${fmtMoney(stock.avgCost||0)}${stock.effectiveLeverage?` ｜ 杠杆 ${stock.effectiveLeverage}x`:''}</p>
+          <label>委托数量<input id="stock-quantity-${index}" data-stock-quantity="${esc(stock.code)}" data-stock-price="${stock.price}" data-stock-holding="${stock.holding}" type="number" min="1" max="10000" step="1" value="${esc(previousInputs.get(stock.code)||'1')}"></label>
+          <label>杠杆倍数<select id="stock-leverage-${index}" data-stock-leverage-input="${esc(stock.code)}"><option value="3" ${leverageSelected==='3'?'selected':''}>3x</option><option value="10" ${leverageSelected==='10'?'selected':''}>10x</option></select></label>
+          <label>止损（可选）<input id="stock-stop-${index}" data-stock-stop-input="${esc(stock.code)}" type="number" min="1" step="1" value="${esc(stopInputs.get(stock.code)||'')}"></label>
+          <label>止盈（可选）<input id="stock-take-${index}" data-stock-take-input="${esc(stock.code)}" type="number" min="1" step="1" value="${esc(takeInputs.get(stock.code)||'')}"></label>
+          <p class="portfolio-empty text-xs">可用余额 ${fmtMoney(availableBalance)} ｜ 预计成交额 <span class="stock-est-trade">${fmtMoney(estTrade)}</span> ｜ 预计保证金 <span class="stock-est-margin">${fmtMoney(estMargin)}</span> ｜ 余额可为负</p>
+          <div class="stock-trade-actions"><button type="button" data-long-idx="${index}" data-long-code="${esc(stock.code)}" class="stock-buy-btn">买涨</button><button type="button" data-short-idx="${index}" data-short-code="${esc(stock.code)}" class="stock-sell-btn">买跌</button></div>
+        </article>`;}).join('');
+        stocksData.forEach(stock=>previousQuotePrices.set(stock.code,stock.price));
       }
       document.getElementById('next-market-tick-btn').addEventListener('click',()=>refreshMarket().catch(e=>showToast(e.message,'warn')));
       document.getElementById('stock-chart-symbol').addEventListener('change',event=>{marketCode=event.target.value;refreshMarket().catch(e=>showToast(e.message,'warn'));});
       document.getElementById('stock-chart-period').addEventListener('change',event=>{marketPeriod=Number(event.target.value);refreshMarket().catch(e=>showToast(e.message,'warn'));});
       document.getElementById('stocks-table-body').addEventListener('click',event=>{const button=event.target.closest('[data-stock-chart-code]');if(button){marketCode=button.dataset.stockChartCode;refreshMarket().catch(e=>showToast(e.message,'warn'));}});
+      document.getElementById('stocks-table-body').addEventListener('input',event=>{
+        const el=event.target;
+        const card=el.closest('.stock-quote-card');
+        if(!card)return;
+        const qtyInput=card.querySelector('[data-stock-quantity]');
+        if(!qtyInput)return;
+        const code=qtyInput.dataset.stockQuantity;
+        const quantity=Number(qtyInput.value)||0;
+        const leverageInput=card.querySelector('[data-stock-leverage-input]');
+        const leverage=Number(leverageInput?.value)||3;
+        const marketPrice=Number(qtyInput.dataset.stockPrice)||0;
+        const dealPrice=marketPrice;
+        card.querySelector('.stock-est-trade')&&(card.querySelector('.stock-est-trade').textContent=fmtMoney(dealPrice*quantity));
+        card.querySelector('.stock-est-margin')&&(card.querySelector('.stock-est-margin').textContent=fmtMoney(Math.ceil((dealPrice*quantity)/leverage)));
+        if(el.matches('[data-stock-stop-input], [data-stock-take-input], [data-stock-quantity], [data-stock-leverage-input]')) {
+          card.dataset.stockCode=code;
+        }
+      });
 
       // 在线牌桌
       const rankOrder = [
@@ -1770,6 +1806,8 @@
       function renderEmployeeRoster(){}
       let economyUI=null,welfareUI=null,economyRevision=0,directoryRequest=0;
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
+      const previousQuotePrices=new Map();
+      let previousIndexPrice=null;
       let playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
       const byId=id=>document.getElementById(id);
       function showToast(message,type='info') {
@@ -1789,7 +1827,7 @@
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',createdAt:n.createdAt,issuer:'万业携生',summary:esc(n.body.slice(0,140)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
-        stocksData.splice(0,stocksData.length,...data.stocks);playerMusic=data.music;
+        stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
         return currentUser;
       }
       function syncUserHeaderUI() {
@@ -1913,7 +1951,7 @@
             renderServerCards(await api('/api/player/games/cards',{method:'POST',body:{action:a,round:cardRound,cards}}));});return;
         }
         const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','slot5x3-verify-tube-btn','derby-start-race-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
-        const trade=button.hasAttribute('data-buy-idx')||button.hasAttribute('data-sell-idx');
+        const trade=button.hasAttribute('data-long-idx')||button.hasAttribute('data-short-idx');
         if(!handled.includes(id)&&!trade)return;stop(event);
         if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','确认后当前余额将清零。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();}));return;}
         action(button,async()=>{
@@ -1939,7 +1977,40 @@
             const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 · 奖金 '+fmtMoney(d.prize);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
           }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);showToast('您已登机');}
           else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
-          else if(trade){const buy=button.hasAttribute('data-buy-idx'),index=Number(button.getAttribute(buy?'data-buy-idx':'data-sell-idx')),quantity=Number(byId('stock-quantity-'+index).value);if(!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('委托数量应为 1 至 10,000 的整数。');const d=await api('/api/player/stocks?code='+encodeURIComponent(marketCode)+'&period='+marketPeriod,{method:'POST',body:{code:stocksData[index].code,action:buy?'buy':'sell',quantity}});applyMarket(d);showToast('委托已成交。');}
+          else if(trade){
+            const long=button.hasAttribute('data-long-idx');
+            const index=Number(button.getAttribute(long?'data-long-idx':'data-short-idx'));
+            const code=button.getAttribute(long?'data-long-code':'data-short-code')||'';
+            const quantityInput=byId('stock-quantity-'+index);
+            if(!quantityInput)throw new Error('未找到委托输入框，请刷新后重试。');
+            const quantity=Number(quantityInput.value);
+            if(!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('委托数量应为 1 至 10,000 的整数。');
+            if(!code)throw new Error('证券代码缺失，请刷新后重试。');
+            const leverageInput=byId('stock-leverage-'+index);
+            if(!leverageInput)throw new Error('未找到杠杆设置，请刷新后重试。');
+            const leverage=Math.round(Number(leverageInput.value));
+            if(![3,10].includes(leverage))throw new Error('杠杆仅支持 3x 或 10x。');
+            const stopRaw=byId('stock-stop-'+index)?.value;
+            const takeRaw=byId('stock-take-'+index)?.value;
+            const parseOptional=value=>value==null||value===''?null:Math.round(Number(value));
+            const stopLoss=parseOptional(stopRaw),takeProfit=parseOptional(takeRaw);
+            if(stopLoss!==null&&(!Number.isSafeInteger(stopLoss)||stopLoss<=0))throw new Error('止损价需为正整数。');
+            if(takeProfit!==null&&(!Number.isSafeInteger(takeProfit)||takeProfit<=0))throw new Error('止盈价需为正整数。');
+            const stock=stocksData.find(item=>item.code===code);
+            const currentPrice=Number(stock?.price);
+            if(Number.isFinite(currentPrice)&&currentPrice>0){
+              if(long){
+                if(stopLoss!==null&&stopLoss>=currentPrice)throw new Error('买涨时止损需低于现价。');
+                if(takeProfit!==null&&takeProfit<=currentPrice)throw new Error('买涨时止盈需高于现价。');
+              }else{
+                if(stopLoss!==null&&stopLoss<=currentPrice)throw new Error('买跌时止损需高于现价。');
+                if(takeProfit!==null&&takeProfit>=currentPrice)throw new Error('买跌时止盈需低于现价。');
+              }
+            }
+            const d=await api('/api/player/stocks?code='+encodeURIComponent(marketCode)+'&period='+marketPeriod,{method:'POST',body:{code,side:long?'long':'short',quantity,leverage,orderType:'market',stopLoss,takeProfit}});
+            applyMarket(d);
+            showToast('委托已成交。');
+          }
           else if(id.startsWith('cloud-music')){
             if(!playerMusic.length)throw new Error('广播频道暂无曲目。');const audio=byId('cloud-music-audio');
             if(id==='cloud-music-prev')musicIndex=(musicIndex-1+playerMusic.length)%playerMusic.length;

@@ -1,8 +1,10 @@
 async function renderEconomy(){
  let config=await api('/api/admin/economy');
+
  const variantNames={three_match:'三同矩阵',lucky_num:'信标对号',step_climb:'阶梯压制'};
  const clone=x=>JSON.parse(JSON.stringify(x));
  const number=(name,value,min,max,step=1)=>`<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" required>`;
+ 
  function poolEditor(pool,key){return `<div class="pool-editor" data-pool="${key}"><div class="pool-heading"><span>返还倍率</span><span>相对权重</span><span></span></div><div class="pool-rows">${pool.map(x=>poolRow(x)).join('')}</div><button type="button" class="small-action" data-pool-add>增加奖档</button><output class="pool-expectation"></output></div>`;}
  function poolRow(x){return `<div class="pool-row"><input aria-label="返还倍率" type="number" data-multiplier min="0" max="10000" step="any" value="${x.multiplier}" required><input aria-label="奖档权重" type="number" data-weight min="0" max="100000000" step="1" value="${x.weight}" required><button type="button" class="small-action" data-pool-remove aria-label="移除此奖档">移除</button></div>`;}
  function readPool(el){return [...el.querySelectorAll('.pool-row')].map(row=>({multiplier:Number(row.querySelector('[data-multiplier]').value),weight:Number(row.querySelector('[data-weight]').value)}));}

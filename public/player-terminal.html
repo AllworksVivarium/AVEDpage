@@ -1591,6 +1591,7 @@
                 <div class="flex items-baseline gap-3 mt-1">
                   <span class="text-lg sm:text-xl font-bold tracking-wider text-white">KARMA INDEX</span>
                   <span id="karma-index-val" class="text-xl sm:text-2xl font-bold text-white">—</span>
+                  <span id="karma-index-tick" class="market-tick-indicator tick-flat" aria-label="指数实时方向">•</span>
                   <span id="karma-index-delta" class="text-xs px-2 py-0.5 bg-white text-black font-bold">—</span>
                 </div>
               </div>
@@ -1605,7 +1606,7 @@
                 <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option></select></label>
                 <span class="market-legend"><i class="market-up">■ 上涨</i><i class="market-down">■ 下跌</i></span>
               </div>
-              <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-change">—</span></div>
+              <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-tick" class="market-tick-indicator tick-flat" aria-label="证券实时方向">•</span><span id="market-selected-change">—</span></div>
               <p id="market-candle-details" class="market-candle-details">等待行情。</p>
               <div id="stock-candles" class="market-chart"></div>
             </section>
