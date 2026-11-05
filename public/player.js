@@ -22,7 +22,7 @@
         window.addEventListener('mousemove', (e) => {
           const ctas = document.querySelectorAll('.magnetic-cta');
           ctas.forEach(btn => {
-            if (btn.disabled || btn.offsetParent === null) return;
+            if (btn.disabled || btn.offsetParent === null || btn.closest('#game-panel-scratch,#ticket-confirm-modal')) return;
             const rect = btn.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
@@ -164,15 +164,17 @@
         const bgmBtn = document.getElementById('audio-bgm-btn');
         const sfxBtn = document.getElementById('audio-sfx-btn');
 
-        masterBtn.textContent = audioMasterOn ? '🔊 总音:开' : '🔇 总音:关';
+        masterBtn.textContent = audioMasterOn ? '声音开启' : '静音';
+        masterBtn.setAttribute('aria-pressed',String(audioMasterOn));
+        const musicAudio=document.getElementById('cloud-music-audio');if(musicAudio)musicAudio.muted=!audioMasterOn;
         masterBtn.className = `px-2 py-1 text-[11px] font-bold cursor-pointer ${audioMasterOn ? 'bg-[var(--inner-accent)] text-[var(--inner-accent-text)]' : 'bg-[#9e1b1b] text-white'}`;
 
         const effectiveBgm = audioMasterOn && audioBgmOn;
-        bgmBtn.textContent = effectiveBgm ? '🎵 背景:开' : '🎵 背景:关';
+        bgmBtn.textContent = effectiveBgm ? '环境音 开' : '环境音 关';bgmBtn.setAttribute('aria-pressed',String(effectiveBgm));
         bgmBtn.className = `px-2 py-1 text-[11px] cursor-pointer ${effectiveBgm ? 'bg-black/15 font-bold' : 'opacity-60'}`;
 
         const effectiveSfx = audioMasterOn && audioSfxOn;
-        sfxBtn.textContent = effectiveSfx ? '🔔 特效:开' : '🔕 特效:关';
+        sfxBtn.textContent = effectiveSfx ? '按键音 开' : '按键音 关';sfxBtn.setAttribute('aria-pressed',String(effectiveSfx));
         sfxBtn.className = `px-2 py-1 text-[11px] cursor-pointer ${effectiveSfx ? 'bg-black/15 font-bold' : 'opacity-60'}`;
 
         syncBgmDrone();
@@ -194,6 +196,7 @@
         updateAudioTrioUI();
         if (audioSfxOn) playSfx('click');
       });
+      updateAudioTrioUI();
 
       // ======================================================================
       // 2. 全局二次确认弹窗
@@ -512,7 +515,7 @@
         }
 
         let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='直属 / 待分配';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='直属 / 待分配').length;extra.hidden=!unassigned;extra.textContent='直属与待分配档案 / '+unassigned+' 人';
-        let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';deptGrid.parentElement.before(leadership);}const leaders=employees.filter(e=>e.isLeadership);leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属领导</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">${e.isNpc?'NPC / ':''}DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属领导">调阅直属档案 ↗</button></article>`).join('')+'</div>';
+        let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';byId('view-departments').append(leadership);}byId('view-departments').append(leadership);const leaders=employees.filter(e=>e.isLeadership);leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属领导</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">${e.isNpc?'NPC / ':''}DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属领导">调阅直属档案 ↗</button></article>`).join('')+'</div>';
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
@@ -524,16 +527,19 @@
         const outerHex = angles.map(a => `${(cx + rMax * Math.cos(a)).toFixed(1)},${(cy + rMax * Math.sin(a)).toFixed(1)}`).join(' ');
         const midHex = angles.map(a => `${(cx + rMax * 0.6 * Math.cos(a)).toFixed(1)},${(cy + rMax * 0.6 * Math.sin(a)).toFixed(1)}`).join(' ');
 
-        dirGrid.innerHTML = employees.filter(emp=>emp.department===window.avedDepartmentFilter).map(emp => {
+        const isHead=emp=>!emp.isLeadership&&emp.positionTitle.includes('部长');
+        const selectedEmployees=employees.filter(emp=>emp.department===window.avedDepartmentFilter).sort((a,b)=>Number(isHead(b))-Number(isHead(a)));
+        dirGrid.innerHTML = selectedEmployees.map((emp,index) => {
           const stats = emp.stats || [80, 85, 80, 85, 80, 85];
           const polyPoints = stats.map((val, i) => {
             const r = (val / 100) * rMax;
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = emp.isLeadership?`公司直属领导 · <strong>${emp.positionTitle}</strong>`:`所属部门：<strong>${emp.department}</strong>${emp.positionTitle?`<br>职务：<strong>${emp.positionTitle}</strong>`:''}`;
+          const deptDisplay = emp.isLeadership?`职务：<strong>${emp.positionTitle}</strong>`:`所属部门：<strong>${emp.department}</strong>${emp.positionTitle?`<br>职务：<strong>${emp.positionTitle}</strong>`:''}`;
 
           return `
+            ${index===0||isHead(emp)!==isHead(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+(emp.isLeadership?'直属职位档案':isHead(emp)?'部长档案':'部门成员')+'</h3>':''}
             <div class="retro-corner-box p-5 space-y-4">
               <div class="flex items-center justify-between border-b-2 border-[var(--inner-border)] pb-2 text-xs font-mono-tech">
                 <span class="font-bold">A.V.E. DIRECTORATE // ID</span>
@@ -1385,7 +1391,7 @@
 
                 <div class="p-4 pt-0">
                   <button type="button" data-pick-game="${g.type}"
-                    class="magnetic-cta pick-scratch-game-btn w-full py-2.5 border border-[#141413] bg-[#141413] text-white hover:opacity-90 font-mono-tech font-bold text-xs transition cursor-pointer">
+                    class="pick-scratch-game-btn terminal-key w-full py-2.5 border border-[#141413] bg-[#141413] text-white hover:opacity-90 font-mono-tech font-bold text-xs transition cursor-pointer">
                     申领此票 · ${fmtMoney(selectedTier.cost)}
                   </button>
                 </div>
@@ -1813,7 +1819,7 @@
         const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,bracketTag:e.isNpc?'NPC 档案':e.isLeadership?'直属领导':e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,bracketTag:esc(e.positionTitle||(e.isNpc?'NPC 档案':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1822,7 +1828,7 @@
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
-          isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
+          positionTitle:data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',createdAt:n.createdAt,issuer:'万业携生',summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
@@ -1911,7 +1917,14 @@
       function startChatStreams(){for(const connection of chatConnections)connection.close();chatConnections=['sky','derby'].map(room=>{const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>renderChat(room,JSON.parse(e.data));return source;});}
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){const target=byId('view-profile');if(!target)return;
-        target.innerHTML=`<div class="retro-corner-box p-5 space-y-4"><h2 class="text-xl font-bold">个人主页</h2><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div><p>${esc(currentUser.name)} · ${esc(currentUser.account)}</p><p>余额：${fmtMoney(currentUser.balance)}</p><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary px-4 py-2">保存</button></form><h3 class="font-bold">成就</h3>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p>${playerAchievements.some(a=>a.code===code)?'◆ 已达成':'◇ 未达成'} · ${title}</p>`).join('')}</div>`;welfareUI?.profile();
+        const crt=document.body.classList.contains('crt-unified');
+        target.innerHTML=`<div class="profile-display-switch" role="group" aria-label="个人主页显示方案"><button type="button" data-presentation="crt" aria-pressed="${crt}">显像管版</button><button type="button" data-presentation="classic" aria-pressed="${!crt}">原版</button></div>
+          <section class="profile-dossier retro-corner-box p-5 space-y-4"><header><h2 class="text-xl font-bold">个人主页</h2></header>
+          <div class="profile-identity-sheet"><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" role="img" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div>
+          <div class="profile-identity-copy"><span class="section-kicker">PERSONNEL / IDENTITY</span><h3>${esc(playerProfile.anonymousName)}</h3><p>${esc(currentUser.name)} · ${esc(currentUser.positionTitle||currentUser.department)}</p><p class="profile-bio">${esc(playerProfile.bio||'档案尚未补充。')}</p></div>
+          <div class="profile-balance-strip"><span>可用余额</span><strong>${fmtMoney(currentUser.balance)}</strong></div></div>
+          <details class="profile-edit-panel"><summary>编辑个人档案</summary><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500" rows="4">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary terminal-key px-4 py-2">保存档案</button></form></details>
+          <section class="profile-achievements"><h3 class="font-bold">成就记录</h3><div>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p><span>${playerAchievements.some(a=>a.code===code)?'已达成':'未达成'}</span>${title}</p>`).join('')}</div></section></section>`;welfareUI?.profile();
       }
       async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌',risk:'历史配给'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
