@@ -354,6 +354,13 @@ async function loadReplies(id) {
 }
 
 // ===== 管理端：员工维护与内容管理 =====
+function enhancePersonnelForms(employees){
+ document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';fields.innerHTML='<legend>档案身份与职务</legend><label><input name="isNpc" type="checkbox"> NPC 档案</label><label><input name="isLeadership" type="checkbox"> 公司直属领导（不归属部门）</label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="例如：董事长、监察长、公司顾问"></label>';form.querySelector('[name=department]').before(fields);fields.querySelector('[name=isNpc]').checked=!!current?.isNpc;fields.querySelector('[name=isLeadership]').checked=!!current?.isLeadership;fields.querySelector('[name=positionTitle]').value=current?.positionTitle||'';
+ const notice=document.createElement('p');notice.className='personnel-kind-note';fields.append(notice);
+ function sync(){const npc=fields.querySelector('[name=isNpc]').checked,leader=fields.querySelector('[name=isLeadership]').checked;fields.querySelector('[name=positionTitle]').required=npc||leader;form.querySelector('[name=department]').disabled=leader;for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=npc;if(name!=='initialBalance')input.required=!npc&&form.id==='employeeCreate';if(npc&&name==='password')input.value='';}const enabled=form.querySelector('[name=enabled]');if(enabled){enabled.disabled=npc;if(npc)enabled.checked=false;}notice.textContent=npc?'NPC 以公司档案展示，无需填写登录账号和密码。':leader?'直属职务单独展示；账号权限沿用原有设置。':'';}
+ fields.addEventListener('change',sync);sync();
+ });
+}
 async function renderAdmin() {
   if (currentUser?.role !== "admin")
     throw new Error("只有管理员可以访问此页面。");
@@ -362,15 +369,15 @@ async function renderAdmin() {
   const content=[];
 
   const employeeRows = employees.map((e) =>
-    "<tr><td>" + esc(e.displayName) + "<small>" + esc(e.username) +
+    "<tr><td>" + esc(e.displayName) + "<small>" + esc(e.isNpc?"NPC · "+e.positionTitle:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
     "</td><td>" + esc(e.department || "未填写") +
     "</td><td>" + Number(e.balance).toLocaleString() +
-    "</td><td>" + (e.role === "admin" ? "管理员" : "员工") +
-    "</td><td>" + (e.enabled ? "启用" : "停用") +
+    "</td><td>" + (e.isNpc ? "—" : e.role === "admin" ? "管理员" : "员工") +
+    "</td><td>" + (e.isNpc ? "NPC 档案" : e.enabled ? "启用" : "停用") +
     '</td><td><details><summary>编辑</summary><form class="employee-edit-form" data-employee-id="' +
     e.id + '"><input name="displayName" required maxlength="80" value="' +
-    esc(e.displayName) + '" placeholder="员工姓名"><input name="qqNumber" maxlength="30" value="' +
+    esc(e.displayName) + '" placeholder="姓名 / NPC名称"><input name="qqNumber" maxlength="30" value="' +
     esc(e.qqNumber || "") + '" placeholder="QQ 号"><input name="department" maxlength="80" value="' +
     esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><label><input name="enabled" type="checkbox" ' +
     (e.enabled ? "checked" : "") +
@@ -400,7 +407,7 @@ async function renderAdmin() {
   $("#panel").innerHTML =
     '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 · 通讯记录</p></div><span class="admin-count">员工 ' +
     employees.length +
-    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 账户名"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
+    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / NPC名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
     ' 位员工　·　登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
@@ -409,12 +416,13 @@ async function renderAdmin() {
   $('#openSpeechRecords').onclick=()=>renderTab('speech');
 
   document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'直属 / 待分配';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['直属 / 待分配','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
+  enhancePersonnelForms(employees);
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
     password: v.get("password"),
     displayName: v.get("displayName"),
     qqNumber: v.get("qqNumber"),
-    department: v.get("department"),
+    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",isNpc:v.has("isNpc"),isLeadership:v.has("isLeadership"),
     initialBalance: Number(v.get("initialBalance") || 0),
   }));
 
@@ -425,7 +433,7 @@ async function renderAdmin() {
       const payload = {
         displayName: v.get("displayName"),
         qqNumber: v.get("qqNumber"),
-        department: v.get("department"),
+        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",isNpc:v.has("isNpc"),isLeadership:v.has("isLeadership"),
         enabled: v.get("enabled") === "on",
       };
       if (v.get("password")) payload.password = v.get("password");

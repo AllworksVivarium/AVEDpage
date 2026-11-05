@@ -511,6 +511,7 @@
         }
 
         let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='直属 / 待分配';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='直属 / 待分配').length;extra.hidden=!unassigned;extra.textContent='直属与待分配档案 / '+unassigned+' 人';
+        let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';deptGrid.parentElement.before(leadership);}const leaders=employees.filter(e=>e.isLeadership);leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属领导</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">${e.isNpc?'NPC / ':''}DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属领导">调阅直属档案 ↗</button></article>`).join('')+'</div>';
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
@@ -529,9 +530,7 @@
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = (emp.department && emp.department !== '—')
-            ? `所属部门：<strong>${emp.department}</strong>`
-            : `所属部门：<span class="opacity-60">无（直属高层）</span>`;
+          const deptDisplay = emp.isLeadership?`公司直属领导 · <strong>${emp.positionTitle}</strong>`:`所属部门：<strong>${emp.department}</strong>${emp.positionTitle?`<br>职务：<strong>${emp.positionTitle}</strong>`:''}`;
 
           return `
             <div class="retro-corner-box p-5 space-y-4">
@@ -1776,7 +1775,7 @@
         const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,bracketTag:e.isNpc?'NPC 档案':e.isLeadership?'直属领导':e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1962,6 +1961,7 @@
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
+      AVEDVisualStyle({byId});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       let rememberedSession=false;
       api('/api/me').then(()=>{try{rememberedSession=!!localStorage.getItem('aved_username');}catch{}}).catch(()=>{});
