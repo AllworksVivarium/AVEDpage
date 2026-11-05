@@ -26,13 +26,14 @@
     return gap+'天前';
   }
   const clock=value=>{const d=parse(value);return Number.isFinite(d.getTime())?hours.format(d):'—';};
+  const display=(value,mode)=>mode==='clock'?clock(value):mode==='relative-clock'?relative(value)+' '+clock(value):relative(value);
   const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function markup(value,mode='relative') {
-    return '<time data-aved-time="'+escape(value)+'" data-time-mode="'+mode+'">'+escape(mode==='clock'?clock(value):relative(value))+'</time>';
+    return '<time data-aved-time="'+escape(value)+'" data-time-mode="'+mode+'">'+escape(display(value,mode))+'</time>';
   }
   function refresh() {
     if(!root.document)return;
-    root.document.querySelectorAll('time[data-aved-time]').forEach(el=>{el.textContent=el.dataset.timeMode==='clock'?clock(el.dataset.avedTime):relative(el.dataset.avedTime);});
+    root.document.querySelectorAll('time[data-aved-time]').forEach(el=>{el.textContent=display(el.dataset.avedTime,el.dataset.timeMode);});
   }
   function sanitize(value,key='') {
     if(Array.isArray(value))return value.map(v=>sanitize(v));

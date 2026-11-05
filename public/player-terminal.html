@@ -341,6 +341,7 @@
 <link rel="stylesheet" href="/economy.css?v=signal-5">
 <link rel="stylesheet" href="/welfare.css?v=signal-5">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
+<link rel="stylesheet" href="/notices.css?v=notices-1">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -694,16 +695,16 @@
           <!-- 使用您上传的第4张高音喇叭图作为公司新闻通告图标 -->
           <button type="button" data-nav="news" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition">
             <img src="/assets/broadcast.jpg" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20">
-            <span class="sidebar-label truncate">公司新闻通告</span>
+            <span class="sidebar-label truncate">内部通告</span>
           </button>
 
           <button type="button" data-nav="departments" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="text-base shrink-0 w-5 text-center">🏛️</span>
+            <span class="sidebar-art-icon icon-disk" aria-hidden="true"><img src="/assets/directory-disk.png" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">部门与员工名录</span>
           </button>
 
           <button type="button" data-nav="containment" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="text-base shrink-0 w-5 text-center">📌</span>
+            <span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/containment-folder.png" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">收容物一览</span>
           </button>
 
@@ -732,12 +733,12 @@
              ==================================================================== -->
         <section id="view-news" class="space-y-6">
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-[var(--inner-crimson)]">
-            <div class="flex items-center gap-4">
+            <div class="notice-masthead flex">
               <img src="/assets/broadcast.jpg" alt="A.V.E.D. 广播喇叭"
                 class="w-14 h-14 object-cover border-2 border-[var(--inner-border)] shrink-0 shadow">
-              <div>
-                <div class="text-[10px] font-mono-tech tracking-widest opacity-60">A.V.E.D. CENTRAL BROADCAST // OFFICIAL BULLETINS</div>
-                <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">《万业携生 · 内部红头通告与广播中心》</h2>
+              <div class="notice-masthead-text">
+                <div class="notice-kicker"><span lang="en">A.V.E.D. CENTRAL BROADCAST // OFFICIAL BULLETINS</span><span class="notice-kicker-separator" aria-hidden="true">|</span><bdi lang="he" dir="rtl">שידור מרכזי // הודעות רשמיות</bdi></div>
+                <h1 class="notice-title-primary">万业协商内部通告</h1>
               </div>
             </div>
             <div class="text-xs font-mono-tech">
@@ -747,9 +748,9 @@
           <div id="news-list-subview" class="space-y-4"></div>
 
           <div id="news-detail-subview" class="hidden space-y-5">
-            <div class="flex items-center justify-between">
-              <button id="back-to-news-list-btn" type="button" class="inner-btn-primary px-4 py-2 text-xs font-mono-tech font-bold cursor-pointer">
-                ← 返回红头通告列表
+            <div class="notice-detail-toolbar">
+              <button id="back-to-news-list-btn" type="button" class="inner-btn-primary notice-button cursor-pointer">
+                ← 返回通告列表
               </button>
               <span id="news-detail-code-badge" class="text-xs font-mono-tech opacity-70"></span>
             </div>
@@ -757,13 +758,13 @@
             <div id="news-detail-article-box" class="retro-corner-box p-6 sm:p-8 border-t-4 border-t-[#9e1b1b]"></div>
 
             <div class="retro-corner-box p-5 sm:p-6 space-y-4">
-              <div class="p-3 bg-[#9e1b1b]/15 border-l-4 border-l-[#9e1b1b] text-[#9e1b1b] text-xs font-mono-tech font-bold flex items-center gap-2">
-                <span>公告下方使用你的匿名名称发表；管理端保留发言记录。</span>
+              <div class="notice-conduct">
+                <span>请谨言慎行。</span>
               </div>
 
-              <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-2 font-mono-tech text-xs">
-                <span id="news-detail-comment-count" class="font-bold">📝 员工实名留言 (0)</span>
-                <span id="news-comment-identity-label" class="text-[var(--inner-crimson)] font-bold"></span>
+              <div class="notice-comments-heading">
+                <h3 id="news-detail-comment-count" class="notice-title-tertiary">员工实名留言 (0)</h3>
+                <span id="news-comment-identity-label"></span>
               </div>
 
               <div id="news-detail-comments-list" class="space-y-3"></div>
@@ -1628,14 +1629,15 @@
        核心交互逻辑层
        ========================================================================== -->
   <script src="/http-client.js?v=signal-5" defer></script>
-  <script src="/terminal-time.js?v=signal-5" defer></script>
+  <script src="/terminal-time.js?v=notices-1" defer></script>
+  <script src="/notices-ui.js?v=notices-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=signal-5" defer></script>
+  <script src="/player-community.js?v=notices-1" defer></script>
   <script src="/sky-ui.js?v=signal-5" defer></script>
   <script src="/economy-ui.js?v=signal-5" defer></script>
   <script src="/welfare-ui.js?v=signal-5" defer></script>
   <script src="/visual-style.js?v=signal-5" defer></script>
-  <script src="/player.js?v=signal-5" defer></script>
+  <script src="/player.js?v=notices-1" defer></script>
 </body>
 </html>

@@ -1818,9 +1818,11 @@
       function renderCompanyNewsView(){
         const n=companyNews.find(n=>n.id===currentNewsId);
         byId('news-list-subview').classList.toggle('hidden',!!n);byId('news-detail-subview').classList.toggle('hidden',!n);
-        if(!n){byId('news-list-subview').innerHTML=companyNews.map(n=>`<article class="retro-corner-box p-5 space-y-3"><span class="text-xs">${n.category} / ${n.code} · ${AVEDTime.markup(n.createdAt)}</span><h3 class="text-lg font-bold">${n.title}</h3><p>${n.summary}</p><button data-cloud-news="${n.id}" class="inner-btn-primary px-4 py-2">查阅全文 →</button></article>`).join('')||'<p>暂无公告。</p>';return;}
-        byId('news-detail-article-box').innerHTML=`<h2 class="text-xl font-bold mb-5">${n.title}</h2><p class="text-xs mb-4">${AVEDTime.markup(n.createdAt)}</p><p class="whitespace-pre-wrap">${n.fullContent}</p>`;
-        api('/api/posts?announcementId='+n.id).then(d=>{if(currentNewsId!==n.id)return;byId('news-detail-comments-list').innerHTML=d.items.map(c=>`<article class="inner-card-alt p-3"><b>${esc(c.displayName)}</b> · ${esc(c.department)}<p class="whitespace-pre-wrap">${esc(c.body)}</p></article>`).join('')||'<p>暂无评论。</p>';byId('news-detail-comment-count').textContent='员工实名留言 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
+        if(!n){byId('news-list-subview').innerHTML=AVEDNotices.list(companyNews);return;}
+        byId('news-detail-article-box').innerHTML=AVEDNotices.article(n);
+        byId('news-comment-identity-label').textContent='署名：'+currentUser.name;
+        byId('news-detail-comments-list').textContent='正在调阅留言…';
+        api('/api/posts?announcementId='+n.id).then(d=>{if(currentNewsId!==n.id)return;byId('news-detail-comments-list').innerHTML=AVEDNotices.comments(d.items);byId('news-detail-comment-count').textContent='员工实名留言 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
       function randomizeScpDualNamePlaceholder(){byId('scp-search-input').placeholder=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)].codeName:'搜索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}

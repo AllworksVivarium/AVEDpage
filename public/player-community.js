@@ -30,7 +30,7 @@ window.AVEDCommunity=function(ctx){
   const ticker=document.createElement('div');ticker.className='company-play-ticker';ticker.setAttribute('aria-label','公司温馨提示您：小赌怡情，大赌伤身。');ticker.innerHTML='<div class="company-ticker-track"><span>公司温馨提示您：小赌怡情，大赌伤身。</span><span aria-hidden="true">公司温馨提示您：小赌怡情，大赌伤身。</span></div>';tabs.parentElement.after(ticker);
   selectGame('home');
   document.querySelector('[data-nav="casino"]').addEventListener('click',()=>selectGame('home'));
-  const nav=document.createElement('button');nav.type='button';nav.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left';nav.dataset.nav='life';nav.setAttribute('aria-label','生活记录');nav.title='生活记录';nav.innerHTML='<span class="w-5 text-center" aria-hidden="true">▤</span><span class="sidebar-label">生活记录</span>';document.querySelector('[data-nav="forum"]').before(nav);
+  const nav=document.createElement('button');nav.type='button';nav.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left';nav.dataset.nav='life';nav.setAttribute('aria-label','生活记录');nav.title='生活记录';nav.innerHTML='<span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/life-newspaper.png" alt="" loading="lazy"></span><span class="sidebar-label">生活记录</span>';document.querySelector('[data-nav="forum"]').before(nav);
   const life=document.createElement('section');life.id='view-life';life.className='hidden space-y-5';byId('view-news').parentElement.append(life);mainViews.push('life');
   let next=null,lifeRequest=0,lifeBusy=false;
   function deptOptions(){return '<option value="">全部部门</option>'+departments().map(d=>'<option value="'+d.name+'">'+d.name+'</option>').join('');}
