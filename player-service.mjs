@@ -10,7 +10,7 @@ import { generateSealedTicket } from './server-ticket.mjs';
 export const DERBY_ODDS=[2.2,3.5,5,8.5];
 export const DERBY_WIN_PROBABILITIES=[0.44,0.28,0.17,0.11];
 
-export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy}) {
+export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal}) {
   const chatStreams=new Map();
   const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[])response.write(payload);}
@@ -68,16 +68,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         INSERT INTO activity_logs(employee_id,username,action,target,details) VALUES(${who},COALESCE((SELECT username FROM employees WHERE id=${who}),''),'${action.toLowerCase()}','${table}',json_object(${snapshot})); END;`);
     }
   }
-  const award=id=>{
-    const b=balanceFor(id);const add=db.prepare('INSERT OR IGNORE INTO earned_achievements(employee_id,code) VALUES(?,?)');
-    if(b===0)add.run(id,'zero');if(b>100000)add.run(id,'100k');if(b>1000000)add.run(id,'1m');
-    if(db.prepare('SELECT id FROM game_tickets WHERE employee_id=? AND prize>=500000 LIMIT 1').get(id))add.run(id,'jackpot');
-  };
-  db.exec(`CREATE TRIGGER IF NOT EXISTS award_balance AFTER INSERT ON balance_ledger BEGIN
-    INSERT OR IGNORE INTO earned_achievements(employee_id,code) SELECT NEW.employee_id,'zero' WHERE (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=NEW.employee_id)=0;
-    INSERT OR IGNORE INTO earned_achievements(employee_id,code) SELECT NEW.employee_id,'100k' WHERE (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=NEW.employee_id)>100000;
-    INSERT OR IGNORE INTO earned_achievements(employee_id,code) SELECT NEW.employee_id,'1m' WHERE (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=NEW.employee_id)>1000000;
-    END;`);
+  const award=()=>{}; // Ledger and settlement triggers award achievements atomically.
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
   db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
@@ -232,8 +223,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
-          achievements:db.prepare('SELECT code,created_at AS createdAt FROM earned_achievements WHERE employee_id=?').all(id),
-          history:db.prepare('SELECT id,game,cost,prize,seed_hash AS seedHash,created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30').all(id),
+          achievements:getPersonal().earned(id),
+          history:[],
           employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
           announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,datetime(created_at) DESC,id DESC').all(),

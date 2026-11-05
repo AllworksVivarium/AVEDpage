@@ -25,7 +25,7 @@
     for(let i=0;i<count;i++){x[i]=(sine[i]*a+cosine[i]*b)*latitude[i]*radius;y[i]=height[i]*radius;vx[i]=0;vy[i]=0;}
     paint(1,false);
   }
-  function active(){return ctx&&variant==='sphere'&&document.body.classList.contains('theme-landing')&&!document.hidden;}
+  function active(){return ctx&&!document.body.classList.contains('effects-off')&&variant==='sphere'&&document.body.classList.contains('theme-landing')&&!document.hidden;}
   function paint(step,moving){
     if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(255,255,255,.78)';
     const a=Math.cos(angle),b=Math.sin(angle),damping=Math.pow(.9,step);

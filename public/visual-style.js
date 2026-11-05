@@ -10,7 +10,7 @@ window.AVEDVisualStyle=function({byId}){
  document.addEventListener('click',event=>{const button=event.target.closest('[data-presentation]');if(button)window.AVEDSetPresentation(button.dataset.presentation);});
  const patternLabel=document.createElement('label');patternLabel.htmlFor='terminal-background-pattern';patternLabel.className='surface-choice-label';patternLabel.innerHTML='背景纹样 <small>GRID</small>';
  const pattern=document.createElement('select');pattern.id='terminal-background-pattern';pattern.innerHTML='<option value="grid">坐标网格</option><option value="dots">点阵网点</option><option value="ascii">ASCII 瀑布</option><option value="plain">无纹样</option>';
- section.append(patternLabel,pattern);
+ section.append(patternLabel,pattern);const fx=document.createElement('button');fx.type='button';fx.dataset.effectsToggle='';section.append(fx);const layouts=document.createElement('div');layouts.className='layout-switch';layouts.innerHTML='<button data-terminal-layout="next">接入终端</button><button data-terminal-layout="previous">旧版界面</button>';section.append(layouts);window.AVEDSyncPreferences?.();
  function applyPattern(value){const selected=['grid','dots','ascii','plain'].includes(value)?value:'grid';document.body.dataset.terminalPattern=selected;pattern.value=selected;}
  let savedPattern='grid';try{savedPattern=localStorage.getItem('aved_terminal_pattern_v1')||'grid';}catch{}
  applyPattern(savedPattern);pattern.addEventListener('change',()=>{applyPattern(pattern.value);try{localStorage.setItem('aved_terminal_pattern_v1',pattern.value);}catch{}});

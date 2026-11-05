@@ -22,7 +22,7 @@
         window.addEventListener('mousemove', (e) => {
           const ctas = document.querySelectorAll('.magnetic-cta');
           ctas.forEach(btn => {
-            if (btn.disabled || btn.offsetParent === null || btn.closest('#game-panel-scratch,#ticket-confirm-modal')) return;
+            if (btn.disabled || btn.offsetParent === null || btn.closest('#game-panel-scratch,#ticket-confirm-modal') || document.body.classList.contains('effects-off')) return;
             const rect = btn.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
@@ -277,7 +277,8 @@
 
       let forumThreads = JSON.parse(JSON.stringify(initialForumThreads));
       let currentUser = null;
-      let isDarkMode = false;
+      let isDarkMode = document.documentElement.dataset.savedTheme==='night';
+      document.body.classList.toggle('dark-mode',isDarkMode);
       let isSidebarCollapsed = false;
       let selectedScpFilter = 'ALL';
       let scpSearchKeyword = '';
@@ -345,6 +346,8 @@
       const themeToggleBtn = document.getElementById('theme-toggle-btn');
       themeToggleBtn.addEventListener('click', () => {
         isDarkMode = !isDarkMode;
+        document.documentElement.dataset.savedTheme=isDarkMode?'night':'day';
+        try{localStorage.setItem('aved_theme_v1',isDarkMode?'night':'day');}catch{}
         if (isDarkMode) {
           document.body.classList.add('dark-mode');
           themeToggleBtn.textContent = '☀️ 日间模式';
@@ -459,13 +462,14 @@
       const mainViews = ['welcome', 'news', 'departments', 'containment', 'forum', 'casino'];
 
       function switchMainView(target) {
+        if(target==='welcome'&&currentUser&&document.body.classList.contains('terminal-next')){showProfile().catch(e=>showToast(e.message));return;}
         if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();refreshDirectory().catch(e=>showToast(e.message));}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
           const isHidden = b.classList.contains('hidden');
           const navKey = b.getAttribute('data-nav');
-          if (navKey === target) {
+          if (navKey === target || target==='profile'&&navKey==='welcome'&&document.body.classList.contains('terminal-next')) {
             b.className = `nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition ${isHidden ? 'hidden' : ''}`;
           } else {
             b.className = `nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition ${isHidden ? 'hidden' : ''}`;
@@ -592,6 +596,7 @@
 
       // 每次打开收容物页面时，概率性将随机收容物名字的部分字变成黑色方块 █，并在 650ms 后恢复正常
       function triggerScpTitleRedactionGlitch() {
+        if(document.body.classList.contains('effects-off'))return;
         if(prefersReducedMotion)return;
         const titles=[...document.querySelectorAll('.scp-glitchable-title')];
         if(!titles.length)return;
@@ -1823,7 +1828,7 @@
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
-        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;
+        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
@@ -1841,6 +1846,8 @@
         byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         byId('welcome-real-name').textContent=currentUser.name;
         byId('welcome-anonymous-id').textContent=currentUser.savedAlias||playerProfile.anonymousName||'未登记';
+        if(byId('hub-balance'))byId('hub-balance').textContent=fmtMoney(currentUser.balance);
+        if(lastProfileBalance!==null&&lastProfileBalance!==currentUser.balance)profileFreshAt=0;lastProfileBalance=currentUser.balance;
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
@@ -1850,8 +1857,8 @@
         byId('admin-nav-tab').hidden=!currentUser.serverAdmin;
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
-      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
-      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
+      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
+      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       function completeEnterIntranet(emp){
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
@@ -1916,17 +1923,18 @@
       let chatConnections=[];
       function startChatStreams(){for(const connection of chatConnections)connection.close();chatConnections=['sky','derby'].map(room=>{const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>renderChat(room,JSON.parse(e.data));return source;});}
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
-      function renderProfile(){const target=byId('view-profile');if(!target)return;
+      function renderProfile(){if(document.body.classList.contains('terminal-next')){personalUI.render();return;}const target=byId('view-profile');if(!target)return;
         const crt=document.body.classList.contains('crt-unified');
-        target.innerHTML=`<div class="profile-display-switch" role="group" aria-label="个人主页显示方案"><button type="button" data-presentation="crt" aria-pressed="${crt}">显像管版</button><button type="button" data-presentation="classic" aria-pressed="${!crt}">原版</button></div>
+        target.innerHTML=`<div class="personal-toolbar"><button data-terminal-layout="next">接入终端</button><button data-terminal-layout="previous" aria-pressed="true">旧版主页</button><button data-effects-toggle></button></div><div class="profile-display-switch" role="group" aria-label="个人主页显示方案"><button type="button" data-presentation="crt" aria-pressed="${crt}">显像管版</button><button type="button" data-presentation="classic" aria-pressed="${!crt}">原版</button></div>
           <section class="profile-dossier retro-corner-box p-5 space-y-4"><header><h2 class="text-xl font-bold">个人主页</h2></header>
           <div class="profile-identity-sheet"><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" role="img" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div>
-          <div class="profile-identity-copy"><span class="section-kicker">PERSONNEL / IDENTITY</span><h3>${esc(playerProfile.anonymousName)}</h3><p>${esc(currentUser.name)} · ${esc(currentUser.positionTitle||currentUser.department)}</p><p class="profile-bio">${esc(playerProfile.bio||'档案尚未补充。')}</p></div>
+          <div class="profile-identity-copy"><span class="section-kicker">PERSONNEL / IDENTITY</span><h3>${esc(playerProfile.anonymousName)}</h3><p>${esc(currentUser.name)} · ${esc(currentUser.positionTitle||currentUser.department)}</p></div>
           <div class="profile-balance-strip"><span>可用余额</span><strong>${fmtMoney(currentUser.balance)}</strong></div></div>
-          <details class="profile-edit-panel"><summary>编辑个人档案</summary><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500" rows="4">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary terminal-key px-4 py-2">保存档案</button></form></details>
-          <section class="profile-achievements"><h3 class="font-bold">成就记录</h3><div>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p><span>${playerAchievements.some(a=>a.code===code)?'已达成':'未达成'}</span>${title}</p>`).join('')}</div></section></section>`;welfareUI?.profile();
+          <details class="profile-edit-panel"><summary>编辑个人档案</summary><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary terminal-key px-4 py-2">保存档案</button></form></details>
+          <section class="profile-achievements"><h3 class="font-bold">成就记录</h3><div>${playerAchievements.map(a=>`<p><strong>${esc(a.title)}</strong> · ${esc(a.description)}</p>`).join('')||'<p>当前没有已解锁记录。</p>'}</div></section></section>`;welfareUI?.profile();window.AVEDSyncPreferences?.();
       }
-      async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌',risk:'历史配给'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
+      let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
+      async function showProfile(){switchMainView('profile');renderProfile();if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
       async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
       document.addEventListener('submit',event=>{
@@ -1948,7 +1956,7 @@
           }else if(id==='cloud-profile-form'){
             const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');
             if(file?.size){if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
-            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio'),avatarUrl}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;await loadPlayerData();renderDepartmentsAndPersonnel();await refreshForum();showToast('个人资料已保存。');renderProfile();
+            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:'',avatarUrl}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});showToast('个人资料已保存。');renderProfile();
           }
         });
       },true);
@@ -1958,6 +1966,7 @@
         const button=event.target.closest('button,a');if(!button)return;const id=button.id;
         if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();byId('news-detail-subview').scrollIntoView({block:'start'});return;}
         if(button.dataset.cloudThread){stop(event);currentForumThreadId=button.dataset.cloudThread;renderForumView();byId('view-forum').scrollIntoView({block:'start'});return;}
+        if(button.dataset.nav==='welcome'&&document.body.classList.contains('terminal-next')){stop(event);showProfile().catch(e=>showToast(e.message));return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.nav){api('/api/player/view',{method:'POST',body:{page:button.dataset.nav}}).catch(()=>{});}
         if(button.dataset.game==='doudizhu'&&!cardRound)initDoudizhu();
@@ -1969,7 +1978,7 @@
         const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','slot5x3-verify-tube-btn','derby-start-race-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
         const trade=button.hasAttribute('data-long-idx')||button.hasAttribute('data-short-idx');
         if(!handled.includes(id)&&!trade)return;stop(event);
-        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','确认后当前余额将清零。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();}));return;}
+        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','确认后当前余额将清零。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
           if(id==='forum-load-more')return loadMoreForum();
@@ -2049,6 +2058,10 @@
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
+      const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,welfare:()=>welfareUI,showToast});
+      window.AVEDRefreshPersonal=()=>{if(currentUser&&!byId('view-profile').classList.contains('hidden'))renderProfile();};
+      AVEDRewardsUI({api,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
+      AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
       AVEDVisualStyle({byId});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       let rememberedSession=false;

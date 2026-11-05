@@ -1,3 +1,6 @@
+import {installPersonal} from './server-personal.mjs';
+import {installDerby} from './server-derby.mjs';
+import {installOriginalMusic} from './server-original-music.mjs';
 import {mediaReference,installMedia} from './server-media.mjs';
 import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
 import {promisify} from 'node:util';
@@ -241,11 +244,14 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
-let economy;
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy});
+let economy,personal;
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy});
+personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today});
+const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger});
+const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
 const server = createServer(async (req, res) => {
@@ -291,6 +297,9 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(media.handle(req,res,url))return;
+    if(await originalMusic.handle(req,res,url))return;
+    if(await personal.handle(req,res,url))return;
+    if(await derby.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
     if(await sky.handle(req,res,url))return;
@@ -304,18 +313,6 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/me' && req.method === 'GET') {
       const employee = requireEmployee(req,res); if (!employee) return;
       return send(res, 200, { employee:{ id:employee.id, username:employee.username, displayName:employee.displayName, department:employee.department, role:employee.role }, balance:balanceFor(employee.id),serverTime:Date.now() });
-    }
-    if (url.pathname === '/api/profile' && req.method === 'GET') {
-      const employee=requireEmployee(req,res); if(!employee)return;
-      const topPrize=db.prepare('SELECT COALESCE(MAX(prize),0) AS value FROM game_tickets WHERE employee_id=?').get(employee.id).value;
-      const balance=balanceFor(employee.id);
-      const achievements=[
-        {id:'zero',title:'归零记录',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'zero')},
-        {id:'100k',title:'资产突破 10 万',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'100k')},
-        {id:'1m',title:'资产突破 100 万',earned:!!db.prepare('SELECT 1 FROM earned_achievements WHERE employee_id=? AND code=?').get(employee.id,'1m')},
-        {id:'jackpot',title:'超级大奖',earned:topPrize>=500000}
-      ];
-      return send(res,200,{profile:publicProfile(employee.id),achievements});
     }
     if (url.pathname === '/api/profile' && req.method === 'PUT') {
       const employee=requireEmployee(req,res); if(!employee)return;
