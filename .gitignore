@@ -10,3 +10,6 @@ data-local/
 
 *.tar.gz
 
+# local-only release notes
+UPDATE-NOTES-*.md
+
