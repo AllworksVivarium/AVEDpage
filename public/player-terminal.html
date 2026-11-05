@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================================
        【美工图片与配色替换区 — 零圆角直角硬朗网点拼贴 SCP 档案风格】
@@ -338,8 +338,14 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css">
   <link rel="stylesheet" href="/community.css">
-<link rel="stylesheet" href="/economy.css?v=welfare-4">
-<link rel="stylesheet" href="/welfare.css?v=welfare-4">
+<link rel="stylesheet" href="/economy.css?v=signal-5">
+<link rel="stylesheet" href="/welfare.css?v=signal-5">
+<link rel="stylesheet" href="/signal-preview.css?v=signal-5">
+<link rel="stylesheet" href="/notices.css?v=notices-1">
+<link rel="stylesheet" href="/page-headings.css?v=warm-1">
+<link rel="stylesheet" href="/print-signal.css?v=reading-1">
+<link rel="stylesheet" href="/terminal-reading.css?v=frame-1">
+<link rel="stylesheet" href="/terminal-frame.css?v=frame-1">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -374,7 +380,7 @@
        模块 0：老式机器柔和信号“登录中”过渡层
        ========================================================================== -->
   <div id="signal-Connecting-overlay" role="dialog" aria-label="公司终端连接" aria-busy="false" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
-    <div class="w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
+    <div class="signal-mesh w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
         <span>\\UPLINK\A.V.E.D.\TERMINAL_09</span>
         <span id="signal-noise-code">CARRIER: 82% [SYNCING]</span>
@@ -404,17 +410,17 @@
        ========================================================================== -->
   <main id="landing-view" class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
     
-    <div class="w-full max-w-6xl flex flex-wrap justify-between items-center text-[10px] sm:text-[11px] tracking-[0.2em] text-neutral-400 font-mono-tech border-b border-white/15 pb-3 z-10">
+    <div class="landing-edge-line w-full max-w-6xl flex flex-wrap justify-between items-center text-[10px] sm:text-[11px] tracking-[0.2em] text-neutral-400 font-mono-tech border-b border-white/15 pb-3 z-10">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 bg-white animate-pulse"></span>
         <span>\\A.V.E.D.\TERMINAL_GATEWAY</span>
       </div>
-      <div class="hidden md:block text-neutral-300">ALLWORKS VIVARIUM ENGINEERING DIRECTORATE</div>
+      <div class="landing-float hidden md:block text-neutral-300">ALLWORKS VIVARIUM ENGINEERING DIRECTORATE</div>
       <div>STATUS // STANDBY</div>
     </div>
 
     <div class="w-full max-w-6xl my-auto py-6 flex flex-col items-center z-10">
-      <div class="text-center mb-5 sm:mb-7 space-y-1">
+      <div class="landing-float text-center mb-5 sm:mb-7 space-y-1">
         <div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.28em] sm:tracking-[0.38em] text-white/70 uppercase">
           Allworks Vivarium Engineering Directorate
         </div>
@@ -460,10 +466,10 @@
       </div>
 
       <!-- 三语标语：我们控制，我们收容，我们保护 -->
-      <div class="mt-5 mb-8 text-center space-y-2 max-w-xl px-2">
+      <div class="landing-float landing-motto mt-5 mb-8 text-center space-y-2 max-w-xl px-2">
         <div class="pt-3 border-t border-white/20 space-y-1.5">
           <p class="text-xs sm:text-sm tracking-[0.32em] text-white/85 font-serif-sc font-semibold">
-            我们控制，我们收容，我们保护
+            控制、收容、保护
           </p>
           <p class="text-[11px] sm:text-xs font-mono-tech tracking-[0.28em] text-white/60 uppercase">
             SECURE. CONTAIN. PROTECT.
@@ -493,7 +499,7 @@
       </div>
     </div>
 
-    <div class="w-full max-w-6xl flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] font-mono-tech text-neutral-400 tracking-widest border-t border-white/15 pt-3 z-10 text-center">
+    <div class="landing-edge-line w-full max-w-6xl flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] font-mono-tech text-neutral-400 tracking-widest border-t border-white/15 pt-3 z-10 text-center">
       <span>WARNING: UNAUTHORIZED ACCESS TO A.V.E.D. ARCHIVES IS PROHIBITED.</span>
       <span>PROJECT VIVARIUM // ALLWORKS DIRECTORATE</span>
     </div>
@@ -693,16 +699,16 @@
           <!-- 使用您上传的第4张高音喇叭图作为公司新闻通告图标 -->
           <button type="button" data-nav="news" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition">
             <img src="/assets/broadcast.jpg" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20">
-            <span class="sidebar-label truncate">公司新闻通告</span>
+            <span class="sidebar-label truncate">内部通告</span>
           </button>
 
           <button type="button" data-nav="departments" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="text-base shrink-0 w-5 text-center">🏛️</span>
+            <span class="sidebar-art-icon icon-disk" aria-hidden="true"><img src="/assets/directory-disk.png" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">部门与员工名录</span>
           </button>
 
           <button type="button" data-nav="containment" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="text-base shrink-0 w-5 text-center">📌</span>
+            <span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/containment-folder.png" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">收容物一览</span>
           </button>
 
@@ -731,12 +737,12 @@
              ==================================================================== -->
         <section id="view-news" class="space-y-6">
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-[var(--inner-crimson)]">
-            <div class="flex items-center gap-4">
+            <div class="notice-masthead flex">
               <img src="/assets/broadcast.jpg" alt="A.V.E.D. 广播喇叭"
                 class="w-14 h-14 object-cover border-2 border-[var(--inner-border)] shrink-0 shadow">
-              <div>
-                <div class="text-[10px] font-mono-tech tracking-widest opacity-60">A.V.E.D. CENTRAL BROADCAST // OFFICIAL BULLETINS</div>
-                <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">《万业携生 · 内部红头通告与广播中心》</h2>
+              <div class="notice-masthead-text">
+                <div class="notice-kicker"><span lang="en">A.V.E.D. CENTRAL BROADCAST // OFFICIAL BULLETINS</span><span class="notice-kicker-separator" aria-hidden="true">|</span><bdi lang="he" dir="rtl">שידור מרכזי // הודעות רשמיות</bdi></div>
+                <h1 class="notice-title-primary">万业携生内部通告</h1>
               </div>
             </div>
             <div class="text-xs font-mono-tech">
@@ -746,9 +752,9 @@
           <div id="news-list-subview" class="space-y-4"></div>
 
           <div id="news-detail-subview" class="hidden space-y-5">
-            <div class="flex items-center justify-between">
-              <button id="back-to-news-list-btn" type="button" class="inner-btn-primary px-4 py-2 text-xs font-mono-tech font-bold cursor-pointer">
-                ← 返回红头通告列表
+            <div class="notice-detail-toolbar">
+              <button id="back-to-news-list-btn" type="button" class="inner-btn-primary notice-button cursor-pointer">
+                ← 返回通告列表
               </button>
               <span id="news-detail-code-badge" class="text-xs font-mono-tech opacity-70"></span>
             </div>
@@ -756,13 +762,13 @@
             <div id="news-detail-article-box" class="retro-corner-box p-6 sm:p-8 border-t-4 border-t-[#9e1b1b]"></div>
 
             <div class="retro-corner-box p-5 sm:p-6 space-y-4">
-              <div class="p-3 bg-[#9e1b1b]/15 border-l-4 border-l-[#9e1b1b] text-[#9e1b1b] text-xs font-mono-tech font-bold flex items-center gap-2">
-                <span>公告下方使用你的匿名名称发表；管理端保留发言记录。</span>
+              <div class="notice-conduct">
+                <span>请谨言慎行。</span>
               </div>
 
-              <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-2 font-mono-tech text-xs">
-                <span id="news-detail-comment-count" class="font-bold">📝 员工实名留言 (0)</span>
-                <span id="news-comment-identity-label" class="text-[var(--inner-crimson)] font-bold"></span>
+              <div class="notice-comments-heading">
+                <h3 id="news-detail-comment-count" class="notice-title-tertiary">员工实名留言 (0)</h3>
+                <span id="news-comment-identity-label"></span>
               </div>
 
               <div id="news-detail-comments-list" class="space-y-3"></div>
@@ -770,8 +776,8 @@
               <form id="news-detail-comment-form" class="flex flex-col sm:flex-row gap-2 pt-2 font-mono-tech">
                 <input id="news-detail-comment-input" type="text" placeholder="发表评论..." required
                   class="flex-1 px-3 py-2.5 border border-[var(--inner-border-soft)] bg-white text-black text-xs focus:outline-none">
-                <button type="submit" class="magnetic-cta inner-btn-primary px-6 py-2.5 font-bold text-xs whitespace-nowrap cursor-pointer">
-                  [ 签署留言 ]
+                <button type="submit" class="terminal-key inner-btn-primary px-6 py-2.5 font-bold text-xs whitespace-nowrap cursor-pointer">
+                  留言
                 </button>
               </form>
             </div>
@@ -928,7 +934,7 @@
             <div>
               <div class="text-[10px] font-mono-tech opacity-60">A.V.E.D. ANONYMOUS CHANNEL // INTERNAL</div>
               <h2 class="text-lg sm:text-xl font-bold font-serif-sc">《内部匿名论坛》</h2>
-              <p id="forum-current-balance" class="text-xs mt-2"></p>
+              <p id="forum-current-balance" hidden></p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
               <button id="forum-refresh-skeleton-btn" type="button" class="px-3 py-2 border border-[var(--inner-border)] text-xs font-mono-tech font-bold hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] cursor-pointer">
@@ -1627,14 +1633,20 @@
   <!-- ==========================================================================
        核心交互逻辑层
        ========================================================================== -->
-  <script src="/http-client.js?v=welfare-4" defer></script>
-  <script src="/terminal-time.js?v=welfare-4" defer></script>
-  <script src="/market-chart.js?v=welfare-4" defer></script>
-  <script src="/terminology.js?v=welfare-4" defer></script>
-  <script src="/player-community.js?v=welfare-4" defer></script>
-  <script src="/sky-ui.js?v=welfare-4" defer></script>
-  <script src="/economy-ui.js?v=welfare-4" defer></script>
-  <script src="/welfare-ui.js?v=welfare-4" defer></script>
-  <script src="/player.js?v=welfare-4" defer></script>
+  <script src="/http-client.js?v=signal-5" defer></script>
+  <script src="/terminal-time.js?v=notices-1" defer></script>
+  <script src="/notices-ui.js?v=reading-1" defer></script>
+  <script src="/market-chart.js?v=signal-5" defer></script>
+  <script src="/terminology.js?v=signal-5" defer></script>
+  <script src="/player-community.js?v=notices-1" defer></script>
+  <script src="/sky-ui.js?v=signal-5" defer></script>
+  <script src="/economy-ui.js?v=signal-5" defer></script>
+  <script src="/welfare-ui.js?v=signal-5" defer></script>
+  <script src="/visual-style.js?v=frame-1" defer></script>
+  <script src="/player.js?v=frame-1" defer></script>
+  <script src="/page-headings.js?v=serif-1" defer></script>
+  <script src="/print-signal.js?v=reading-1" defer></script>
+  <script src="/terminal-frame.js?v=frame-1" defer></script>
+  <script src="/landing-sphere.js?v=frame-1" defer></script>
 </body>
 </html>

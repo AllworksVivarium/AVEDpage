@@ -1,0 +1,57 @@
+/* Each size token is delivered with a unitless leading token. */
+#inner-app-view,#landing-view,#signal-Connecting-overlay{
+  --type-display-size:clamp(1.75rem,1.1rem + 2.1vw,2.625rem);--type-display-leading:1.15;
+  --type-heading-size:clamp(1.25rem,1.1rem + .45vw,1.5rem);--type-heading-leading:1.3;
+  --type-small-heading-size:clamp(1rem,.92rem + .25vw,1.125rem);--type-small-heading-leading:1.3;
+  --type-body-size:clamp(.9375rem,.9rem + .15vw,1rem);--type-body-leading:1.65;
+  --type-prose-size:var(--type-body-size);--type-prose-leading:1.7;
+  --type-meta-size:clamp(.6875rem,.65rem + .12vw,.75rem);--type-meta-leading:1.4;
+  --type-paragraph-gap:.8em;
+}
+#inner-app-view{font-size:var(--type-body-size);line-height:var(--type-body-leading)}
+#inner-app-view .terminal-page-title{font-size:var(--type-display-size)!important;line-height:var(--type-display-leading)!important;text-wrap:balance}
+#inner-app-view h2:not(.terminal-page-title),#view-news .notice-title-secondary{font-size:var(--type-heading-size)!important;line-height:var(--type-heading-leading)!important}
+#inner-app-view :is(h3,h4):not(.terminal-page-title),#view-news .notice-title-tertiary{font-size:var(--type-small-heading-size)!important;line-height:var(--type-small-heading-leading)!important}
+#inner-app-view :is(p,.notice-summary){font-size:var(--type-body-size);line-height:var(--type-body-leading)}
+#inner-app-view p:is([class~="text-xs"],[class~="text-[10px]"],[class~="text-[11px]"]){font-size:var(--type-meta-size);line-height:var(--type-meta-leading)}
+#inner-app-view :is(.terminal-prose,.notice-body,.notice-comment-body,.notice-summary,p.whitespace-pre-wrap){font-size:var(--type-prose-size);line-height:var(--type-prose-leading)}
+#inner-app-view :is(.terminal-prose,.notice-body,.notice-comment-body)>p{margin:0;font-size:inherit;line-height:inherit;overflow-wrap:anywhere}
+#inner-app-view :is(.terminal-prose,.notice-body,.notice-comment-body)>p+p,#inner-app-view p+p{margin-block-start:var(--type-paragraph-gap)}
+#inner-app-view :is(.notice-body,.notice-comment-body){max-width:42em}
+#inner-app-view :is(.terminal-page-kicker,.notice-meta,.notice-comment-department,.notice-comment-heading time,.notice-kicker,.notice-conduct,#news-comment-identity-label){font-size:var(--type-meta-size)!important;line-height:var(--type-meta-leading)!important}
+#inner-app-view .terminal-page-kicker bdi{font-size:calc(var(--type-meta-size) + 1px);line-height:var(--type-meta-leading)}
+#inner-app-view .notice-comment-author{font-size:var(--type-small-heading-size);line-height:var(--type-small-heading-leading)}
+#inner-app-view :is(input,textarea,select){line-height:var(--type-body-leading)}
+#inner-app-view .notice-article-heading{margin-bottom:1.25em;padding-bottom:1em}
+#inner-app-view :is(.notice-summary,.notice-comment-body){margin-block-start:.8em}
+/* Physical square keys. The press and release have separate timings. */
+#inner-app-view :is(.notice-button,.terminal-key){border-radius:0!important;touch-action:manipulation;transform:scale(1);box-shadow:0 2px 0 #0003;transition:transform 150ms ease-out,box-shadow 150ms ease-out,background-color 150ms ease-out,text-shadow 150ms ease-out;line-height:var(--type-meta-leading);min-height:44px}
+@media(hover:hover){#inner-app-view :is(.notice-button,.terminal-key):hover{transform:scale(1);box-shadow:0 3px 0 #0004}}
+#inner-app-view :is(.notice-button,.terminal-key):active:not(:disabled){transform:scale(.96)!important;box-shadow:0 1px 1px #0003;transition-duration:80ms}
+#inner-app-view :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--inner-crimson)!important;outline-offset:3px}
+#inner-app-view :is(.notice-button,.terminal-key):disabled{transform:none;box-shadow:none}
+/* Texture is an independently reversible surface layer, never a text filter. */
+body.paper-texture.theme-inner #inner-app-view{--paper-wash:rgba(218,212,196,.64);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.png')!important;background-repeat:repeat;background-size:auto,720px 720px}
+body.paper-texture.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(238,233,221,.72);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.png');background-repeat:repeat;background-size:auto,720px 720px}
+body.paper-texture.dark-mode.theme-inner #inner-app-view{--paper-wash:rgba(7,7,8,.94)}
+body.paper-texture.dark-mode.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.dark-mode.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(16,17,19,.94)}
+.visual-style-choice .surface-choice-label{margin-top:14px}
+/* Static dot mesh remains visible throughout authentication. */
+#signal-Connecting-overlay{background-image:radial-gradient(rgba(245,242,235,.13) .65px,transparent .9px);background-size:3px 3px}
+#signal-Connecting-overlay .signal-mesh{isolation:isolate}
+#signal-Connecting-overlay .signal-mesh::before{content:'';position:absolute;inset:0;z-index:-1;background-image:radial-gradient(rgba(255,255,255,.12) .6px,transparent .9px);background-size:3px 3px;pointer-events:none}
+#signal-Connecting-overlay :is(#signal-status-title){font-size:var(--type-small-heading-size);line-height:var(--type-small-heading-leading)}
+#signal-Connecting-overlay :is(#signal-log-lines,span){line-height:var(--type-meta-leading)}
+#landing-view .landing-float{animation:terminalTextDrift 9s ease-in-out infinite alternate;will-change:transform}
+#landing-view .landing-motto{animation-delay:-4s}
+#landing-view .landing-float p{line-height:var(--type-body-leading)}
+@keyframes terminalTextDrift{from{transform:translate3d(0,1px,0)}to{transform:translate3d(.4px,-2px,0)}}
+body.theme-landing #aved-signal-dust{display:block;z-index:25}
+.signal-preview #inner-app-view :is(.notice-comment-identity,.notice-comment-body){filter:url('#aved-print-type');text-shadow:.35px 0 #9e1b1b24;transform:skewX(-.09deg);transform-origin:left top}
+@media(prefers-reduced-motion:reduce){
+  #landing-view .landing-float{animation:none;transform:none;will-change:auto}
+  body.theme-landing #aved-signal-dust{display:none!important}
+  #inner-app-view :is(.notice-button,.terminal-key){transition:none!important}
+  #inner-app-view :is(.notice-button,.terminal-key):is(:active,:hover){transform:none!important;box-shadow:0 1px 0 #0004}
+}
+@media print{body.paper-texture #inner-app-view,body.paper-texture #inner-app-view .retro-corner-box{background-image:none!important}.signal-preview #inner-app-view :is(.notice-comment-identity,.notice-comment-body){filter:none;transform:none;text-shadow:none}}

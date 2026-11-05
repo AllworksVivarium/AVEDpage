@@ -78,7 +78,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE id<? AND (?='' OR date(created_at,'+8 hours')>=?) AND (?='' OR date(created_at,'+8 hours')<=?) AND (username LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?) ORDER BY id DESC LIMIT 100").all(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,from,from,to,to,q,q,q,q)});return true;
       }
       if(path==='/api/posts') {
-        if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department FROM posts s JOIN employees e ON e.id=s.employee_id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY s.id DESC").all(Number(url.searchParams.get('announcementId')))});return true;}
+        if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department,e.position_title AS positionTitle FROM posts s JOIN employees e ON e.id=s.employee_id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY julianday(s.created_at) ASC,s.id ASC").all(Number(url.searchParams.get('announcementId')))});return true;}
         if(method==='POST'){const d=await readBody(req);if(!db.prepare('SELECT id FROM announcements WHERE id=?').get(Number(d.announcementId))||!valid(d.body,2000))throw new Error('请选择有效通告并填写留言。');const r=db.prepare('INSERT INTO posts(announcement_id,employee_id,anonymous_name,body) VALUES(?,?,?,?)').run(Number(d.announcementId),user.id,user.displayName,d.body.trim());send(res,201,{id:Number(r.lastInsertRowid)});return true;}
       }
       if(edit&&method==='PUT') {

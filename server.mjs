@@ -126,8 +126,10 @@ CREATE TABLE IF NOT EXISTS music_tracks (
 );
 `);
 const employeeColumns = new Set(db.prepare('PRAGMA table_info(employees)').all().map(column => column.name));
+for(const [name,type] of [['position_title',"TEXT NOT NULL DEFAULT ''"],['is_npc','INTEGER NOT NULL DEFAULT 0'],['is_leadership','INTEGER NOT NULL DEFAULT 0']])if(!employeeColumns.has(name))db.exec('ALTER TABLE employees ADD COLUMN '+name+' '+type);
 if (!employeeColumns.has('qq_number')) db.exec('ALTER TABLE employees ADD COLUMN qq_number TEXT');
 if (!employeeColumns.has('created_at')) db.exec("ALTER TABLE employees ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+for(const action of ['INSERT','UPDATE','DELETE'])db.exec('DROP TRIGGER IF EXISTS audit_employees_'+action);
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS employees_qq_number_unique ON employees(qq_number)');
 for (const [table,column] of [['forum_threads','status'],['forum_replies','status']]) {
   const columns=new Set(db.prepare(`PRAGMA table_info(${table})`).all().map(item=>item.name));
@@ -526,32 +528,36 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
-      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.role,e.enabled,
+      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,
         COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance FROM employees e ORDER BY e.id`).all()});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { username,password,displayName,qqNumber,department,role,initialBalance } = await readBody(req);
-      if (!validText(username,40) || typeof password !== 'string' || password.length < 6 || !validText(displayName,80)) return send(res,400,{error:'请填写唯一用户名、员工姓名，并设置至少 6 位密码。'});
+      const { username,password,displayName,qqNumber,department,role,initialBalance,isNpc=false,isLeadership=false,positionTitle='' } = await readBody(req);
+      if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
+      if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或 NPC 名称（最多 80 字）。'});
+      if (!isNpc&&(!validText(username,40)||typeof password!=='string'||password.length<6)) return send(res,400,{error:'请填写唯一用户名、员工姓名，并设置至少 6 位密码。'});
       if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||initialBalance<0||initialBalance>100000000))return send(res,400,{error:'初始余额必须是 0 到 100,000,000 之间的整数。'});
       try {
-        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role) VALUES (?,?,?,?,?,?)')
-          .run(username.trim(),hashPassword(password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,directoryDepartment(department),role==='admin'?'admin':'employee');
+        db.exec('BEGIN IMMEDIATE');
+        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled) VALUES (?,?,?,?,?,?,?,?,?,?)')
+          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),hashPassword(isNpc?randomBytes(32).toString('hex'):password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,isLeadership?'公司直属领导':directoryDepartment(department),!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1);
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name) VALUES(?,?)').run(id,`匿名员工-${id}`);
-        if(initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
-        return send(res,201,{id});
-      } catch { return send(res,409,{error:'账号或 QQ 号已存在，请检查后重试。'}); }
+        if(!isNpc&&initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
+        db.exec('COMMIT');return send(res,201,{id});
+      } catch { if(db.isTransaction)db.exec('ROLLBACK');return send(res,409,{error:'账号或 QQ 号已存在，请检查后重试。'}); }
     }
     if (url.pathname.startsWith('/api/admin/employees/') && !url.pathname.endsWith('/balance') && req.method === 'PUT') {
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
-      const {displayName,qqNumber,department,enabled,password}=await readBody(req);
+      const {displayName,qqNumber,department,enabled,password,...extra}=await readBody(req);const previous=db.prepare('SELECT is_npc AS isNpc,is_leadership AS isLeadership,position_title AS positionTitle FROM employees WHERE id=?').get(employeeId);if(!previous)return send(res,404,{error:'员工档案不存在。'});const isNpc=extra.isNpc??!!previous.isNpc,isLeadership=extra.isLeadership??!!previous.isLeadership,positionTitle=extra.positionTitle??previous.positionTitle;if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
       if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80||typeof enabled!=='boolean')return send(res,400,{error:'员工姓名、部门或启用状态无效。'});
       const qq=qqNumber==null||qqNumber===''?null:(validText(qqNumber,30)?qqNumber.trim():undefined);
       if(qq===undefined)return send(res,400,{error:'QQ 号最多 30 个字符。'});
+      if(previous.isNpc&&!isNpc&&enabled&&(!password||password.length<6))return send(res,400,{error:'启用员工账号前请设置登录密码。'});
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=? WHERE id=?').run(displayName.trim(),qq,directoryDepartment(department),enabled?1:0,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=? WHERE id=?').run(displayName.trim(),qq,isLeadership?'公司直属领导':directoryDepartment(department),isNpc?0:enabled?1:0,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(hashPassword(password),employeeId);
         return send(res,200,{ok:true});

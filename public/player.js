@@ -512,6 +512,7 @@
         }
 
         let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='直属 / 待分配';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='直属 / 待分配').length;extra.hidden=!unassigned;extra.textContent='直属与待分配档案 / '+unassigned+' 人';
+        let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';deptGrid.parentElement.before(leadership);}const leaders=employees.filter(e=>e.isLeadership);leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属领导</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">${e.isNpc?'NPC / ':''}DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属领导">调阅直属档案 ↗</button></article>`).join('')+'</div>';
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
@@ -530,9 +531,7 @@
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = (emp.department && emp.department !== '—')
-            ? `所属部门：<strong>${emp.department}</strong>`
-            : `所属部门：<span class="opacity-60">无（直属高层）</span>`;
+          const deptDisplay = emp.isLeadership?`公司直属领导 · <strong>${emp.positionTitle}</strong>`:`所属部门：<strong>${emp.department}</strong>${emp.positionTitle?`<br>职务：<strong>${emp.positionTitle}</strong>`:''}`;
 
           return `
             <div class="retro-corner-box p-5 space-y-4">
@@ -1814,7 +1813,7 @@
         const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,bracketTag:e.isNpc?'NPC 档案':e.isLeadership?'直属领导':e.enabled===0?'暂停接入':esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1824,7 +1823,7 @@
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
           isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
-        companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',createdAt:n.createdAt,issuer:'万业携生',summary:esc(n.body.slice(0,140)),fullContent:esc(n.body),realComments:[]}));
+        companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',createdAt:n.createdAt,issuer:'万业携生',summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
@@ -1833,7 +1832,7 @@
       function syncUserHeaderUI() {
         if(!currentUser)return;
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
-        byId('intranet-role').textContent='ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
+        byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
@@ -1857,9 +1856,11 @@
       function renderCompanyNewsView(){
         const n=companyNews.find(n=>n.id===currentNewsId);
         byId('news-list-subview').classList.toggle('hidden',!!n);byId('news-detail-subview').classList.toggle('hidden',!n);
-        if(!n){byId('news-list-subview').innerHTML=companyNews.map(n=>`<article class="retro-corner-box p-5 space-y-3"><span class="text-xs">${n.category} / ${n.code} · ${AVEDTime.markup(n.createdAt)}</span><h3 class="text-lg font-bold">${n.title}</h3><p>${n.summary}</p><button data-cloud-news="${n.id}" class="inner-btn-primary px-4 py-2">查阅全文 →</button></article>`).join('')||'<p>暂无公告。</p>';return;}
-        byId('news-detail-article-box').innerHTML=`<h2 class="text-xl font-bold mb-5">${n.title}</h2><p class="text-xs mb-4">${AVEDTime.markup(n.createdAt)}</p><p class="whitespace-pre-wrap">${n.fullContent}</p>`;
-        api('/api/posts?announcementId='+n.id).then(d=>{if(currentNewsId!==n.id)return;byId('news-detail-comments-list').innerHTML=d.items.map(c=>`<article class="inner-card-alt p-3"><b>${esc(c.displayName)}</b> · ${esc(c.department)}<p class="whitespace-pre-wrap">${esc(c.body)}</p></article>`).join('')||'<p>暂无评论。</p>';byId('news-detail-comment-count').textContent='员工实名留言 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
+        if(!n){byId('news-list-subview').innerHTML=AVEDNotices.list(companyNews);return;}
+        byId('news-detail-article-box').innerHTML=AVEDNotices.article(n);
+        byId('news-comment-identity-label').textContent='署名：'+currentUser.name;
+        byId('news-detail-comments-list').textContent='正在调阅留言…';
+        api('/api/posts?announcementId='+n.id).then(d=>{if(currentNewsId!==n.id)return;byId('news-detail-comments-list').innerHTML=AVEDNotices.comments(d.items);byId('news-detail-comment-count').textContent='员工实名留言 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
       function randomizeScpDualNamePlaceholder(){byId('scp-search-input').placeholder=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)].codeName:'搜索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
@@ -2033,6 +2034,7 @@
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
+      AVEDVisualStyle({byId});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       let rememberedSession=false;
       api('/api/me').then(()=>{try{rememberedSession=!!localStorage.getItem('aved_username');}catch{}}).catch(()=>{});
