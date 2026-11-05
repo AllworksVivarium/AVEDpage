@@ -8,4 +8,10 @@ window.AVEDVisualStyle=function({byId}){
  const surface=byId('terminal-paper-texture');let texture='paper';try{texture=localStorage.getItem('aved_paper_texture_v1')||'paper';}catch{}
  function applySurface(value){const paper=value!=='plain';document.body.classList.toggle('paper-texture',paper);surface.value=paper?'paper':'plain';}
  applySurface(texture);surface.onchange=()=>{applySurface(surface.value);try{localStorage.setItem('aved_paper_texture_v1',surface.value);}catch{}};
+ const patternLabel=document.createElement('label');patternLabel.htmlFor='terminal-background-pattern';patternLabel.className='surface-choice-label';patternLabel.innerHTML='背景纹样 <small>GRID</small>';
+ const pattern=document.createElement('select');pattern.id='terminal-background-pattern';pattern.innerHTML='<option value="grid">坐标网格</option><option value="dots">点阵网点</option><option value="ascii">ASCII 字符</option><option value="plain">无纹样</option>';
+ section.append(patternLabel,pattern);
+ function applyPattern(value){const selected=['grid','dots','ascii','plain'].includes(value)?value:'grid';document.body.dataset.terminalPattern=selected;pattern.value=selected;}
+ let savedPattern='grid';try{savedPattern=localStorage.getItem('aved_terminal_pattern_v1')||'grid';}catch{}
+ applyPattern(savedPattern);pattern.addEventListener('change',()=>{applyPattern(pattern.value);try{localStorage.setItem('aved_terminal_pattern_v1',pattern.value);}catch{}});
 };

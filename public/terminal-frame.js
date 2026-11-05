@@ -4,6 +4,13 @@
   const header=app.querySelector(':scope > header'),bar=header.firstElementChild;
   header.classList.add('compact-terminal-header');bar.classList.add('terminal-topbar');
   bar.children[0].classList.add('terminal-brand');bar.children[1].classList.add('terminal-identities');bar.children[2].classList.add('terminal-actions');
+  app.querySelector(':scope > div > div:last-child').classList.add('terminal-content-pane');
+  const brand=bar.children[0].firstElementChild.firstElementChild;
+  brand.innerHTML='<span>万业携生</span><span class="terminal-brand-code"> // A.V.E.D.</span>';
+  const profile=document.getElementById('cloud-profile-open');
+  profile.innerHTML='<span class="profile-desktop-label">个人主页</span><span class="profile-mobile-label" aria-hidden="true">主页</span>';
+  profile.setAttribute('aria-label','个人主页');
+  document.getElementById('logout-btn').textContent='登出';
   for(const el of [document.getElementById('welcome-employee-banner').parentElement,document.getElementById('top-balance-val').parentElement,document.getElementById('system-realtime-clock').parentElement]){
     el.classList.add('header-hidden');el.setAttribute('aria-hidden','true');
   }
