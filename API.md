@@ -79,3 +79,16 @@ API 不接收玩家指定的奖金、余额增量、牌堆或游戏种子。用�
 ## 运维
 
 GET /api/health 返回 {"ok":true,"service":"aved"}，检查应用与数据库连接，不返回员工数据。COOKIE_SECURE=true 时登录/退出 Cookie 增加 Secure，只有 HTTPS 可用于登录；默认 false 兼容 HTTP 本地预览。
+
+## 终端显示与证券行情
+
+- POST /api/login 成功返回 `{ok:true,employee:{username,displayName}}`，允许连接框先显示员工称呼，再获取完整资料。
+- GET /api/me、GET /api/player/state 返回 `serverTime`（毫秒时间戳），供前端校准相对时间。后端仍保留完整真实记录时间。
+- GET /api/player/state 的 `market` 提供 KARMA 指数及默认 1 分钟 K 线。
+- GET /api/player/stocks?code=KARMA&period=1 返回 `{items,balance,market,serverTime}`。code 为 KARMA 或已有证券代码，period 仅允许 1、5、15（分钟）。
+- `market` 包含 code、period、index、quote、candles。每根 candle 包含 bucket（毫秒）、open、high、low、close、volume、turnover。
+- POST /api/player/stocks?code=AVED.VIV&period=1 提交 `{code,action:"buy"|"sell",quantity:整数}`；quantity 可省略，默认 1，范围 1–10000。价格、总金额及成交量由后端确认；客户端 price/seed 参数不参与定价。
+- 行情每 5 秒由服务器生成报价并合并为分钟 K 线；数据库保存 candle 与随机种子。刷新页面不会重新随机历史，初次运行不补造过去的 K 线。
+- 这里是企划内部证券玩法，不连接现实交易所。红色上涨、绿色下跌。
+- 系统日期在前端按 Asia/Shanghai 自然日显示今天、昨天、前天、N天前；聊天室仅显示时分，不输出真实或虚构年月日。
+- “记住账号和密码”使用浏览器密码管理器；网页只可本地保存用户名，不保存明文密码或业务数据。

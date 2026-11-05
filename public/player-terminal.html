@@ -370,7 +370,7 @@
   <!-- ==========================================================================
        模块 0：老式机器柔和信号“登录中”过渡层
        ========================================================================== -->
-  <div id="signal-Connecting-overlay" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
+  <div id="signal-Connecting-overlay" role="dialog" aria-label="公司终端连接" aria-busy="false" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
     <div class="w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
         <span>\\UPLINK\A.V.E.D.\TERMINAL_09</span>
@@ -528,9 +528,9 @@
           <div class="flex items-center justify-between text-xs font-mono-tech text-neutral-300">
             <label class="flex items-center gap-2 cursor-pointer">
               <input id="remember-credentials-checkbox" type="checkbox" checked class="accent-white">
-              <span>在此终端记住用户名</span>
+              <span>记住账号和密码</span>
             </label>
-            <span class="text-[10px] text-neutral-500">USERNAME ONLY</span>
+
           </div>
           <button type="submit" class="magnetic-cta w-full py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] uppercase transition cursor-pointer font-mono-tech">
             &gt; CONNECT TO A.V.E.D. &lt;
@@ -601,17 +601,13 @@
        模块 4：公司内网主系统（已彻底删除顶部与侧边栏的无用上箭头 ▲）
        ========================================================================== -->
   <div id="inner-app-view" class="hidden flex-1 flex flex-col min-h-screen">
-    
+
     <!-- 顶部固定员工栏 -->
     <header class="border-b-2 border-[var(--inner-border)] bg-[var(--inner-card-alt)] sticky top-0 z-30">
       <div class="max-w-none mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
-        
+
         <!-- 左区：边栏折叠按钮 + 机构名称（已删除多余上箭头 ▲） -->
         <div class="flex items-center gap-2.5">
-          <button id="sidebar-toggle-btn" type="button" title="展开/收起侧边导航栏"
-            class="w-9 h-9 border border-[var(--inner-border)] bg-[var(--inner-accent)] text-[var(--inner-accent-text)] flex items-center justify-center font-mono-tech text-sm cursor-pointer hover:opacity-85 transition shrink-0">
-            ◀
-          </button>
           <div>
             <div class="font-bold text-xs sm:text-sm tracking-wider font-serif-sc">万业携生 // A.V.E.D.</div>
             <div class="text-[10px] font-mono-tech opacity-60">INTRANET TERMINAL</div>
@@ -679,9 +675,13 @@
 
     <!-- 主体布局：左侧可收起展开侧边栏（已去掉所有 01/02 序号与上箭头） + 右侧独立分页内容区 -->
     <div class="flex-1 flex max-w-none w-full mx-auto relative">
-      
+
       <aside id="left-sidebar" class="w-52 shrink-0 border-r-2 border-[var(--inner-border)] flex flex-col justify-between select-none z-20">
         <div class="p-2 space-y-1.5 font-mono-tech text-xs">
+          <div class="sidebar-control-row"><button id="sidebar-toggle-btn" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-controls="left-sidebar" aria-expanded="true"
+            class="w-9 h-9 border border-[var(--inner-border)] bg-[var(--inner-accent)] text-[var(--inner-accent-text)] flex items-center justify-center font-mono-tech text-sm cursor-pointer hover:opacity-85 transition shrink-0">
+            ◀
+          </button></div>
           <div class="px-3 py-2 text-[10px] opacity-60 tracking-widest border-b border-[var(--inner-border-soft)]">
             <span class="sidebar-label">TERMINAL DIRECTORY</span>
           </div>
@@ -703,7 +703,7 @@
           </button>
 
           <!-- 新增：员工执勤待办看板（三列等宽看板） -->
-          
+
 
           <button type="button" data-nav="forum" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
             <span class="text-base shrink-0 w-5 text-center">💬</span>
@@ -715,14 +715,7 @@
             <span class="sidebar-label truncate">员工娱乐室</span>
           </button>
 
-          <a href="/admin-terminal.html" class="nav-tab-btn block p-3" id="admin-nav-tab" hidden>管理终端 ↗</a>
-        </div>
-
-        <div class="p-2 border-t border-[var(--inner-border-soft)] space-y-1.5">
-          <button id="sidebar-collapse-footer-btn" type="button" class="w-full py-2 px-3 text-xs font-mono-tech opacity-75 hover:opacity-100 flex items-center justify-center gap-2 cursor-pointer border border-[var(--inner-border-soft)]">
-            <span id="collapse-arrow-icon">◀</span>
-            <span class="sidebar-label">收起侧边栏</span>
-          </button>
+          <a href="/admin-terminal.html" class="nav-tab-btn flex items-center gap-3 p-3" id="admin-nav-tab" aria-label="管理终端" hidden><span class="w-5 text-center">⌘</span><span class="sidebar-label">管理终端 ↗</span></a>
         </div>
       </aside>
 
@@ -743,7 +736,6 @@
               </div>
             </div>
             <div class="text-xs font-mono-tech">
-              <span class="px-2.5 py-1 bg-[var(--inner-accent)] text-[var(--inner-accent-text)]">CLICK TO INSPECT // 点击查阅红头全文</span>
             </div>
           </div>
 
@@ -799,7 +791,7 @@
           <div class="space-y-4">
             <h3 class="text-sm font-bold font-mono-tech uppercase tracking-wider flex items-center gap-2 border-b border-[var(--inner-border)] pb-2">
               <span class="w-2 h-4 bg-[var(--inner-crimson)] inline-block"></span>
-              <span>PART 01 // 五大常设部门编制（医疗部已实装宣发档案底卡）</span>
+              <span>PART 01 // 五大直属部门编制</span>
             </h3>
             <div id="departments-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
           </div>
@@ -807,7 +799,7 @@
           <div class="space-y-4">
             <h3 class="text-sm font-bold font-mono-tech uppercase tracking-wider flex items-center gap-2 border-b border-[var(--inner-border)] pb-2">
               <span class="w-2 h-4 bg-[var(--inner-accent)] inline-block"></span>
-              <span>PART 02 // 在册人员档案夹（参考宣发图3拼贴样式）</span>
+              <span>PART 02 // 在册人员档案夹</span>
             </h3>
             <div id="personnel-directory-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
           </div>
@@ -851,9 +843,7 @@
             <div class="lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner min-h-[460px] flex flex-col justify-between">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
                 <span>ARCHIVE PINBOARD // 点击收容物名称查阅卷宗</span>
-                <button id="scp-Empty-sim-btn" type="button" class="underline opacity-75 hover:opacity-100 cursor-pointer">
-                  [模拟清空归档]
-                </button>
+
               </div>
 
               <!-- 有数据网格 -->
@@ -921,7 +911,7 @@
         <!-- ====================================================================
              独立分页 4：执勤待办看板（Kanban Board Pattern：三列等宽看板 + 列头状态与计数 + 相邻列即时移动按钮 + 个人添加与管理员全员派发）
              ==================================================================== -->
-        
+
 
         <!-- ====================================================================
              独立分页 5：匿名论坛
@@ -1069,7 +1059,7 @@
              6. KARMA INDEX）
              ==================================================================== -->
         <section id="view-casino" class="hidden space-y-4">
-          
+
           <div class="retro-corner-box p-2.5 flex flex-wrap items-center justify-between gap-2 font-mono-tech">
             <div class="flex flex-wrap gap-1.5">
               <button type="button" data-game="skydive" class="game-tab-btn px-3.5 py-2 text-xs font-bold bg-[var(--inner-accent)] text-[var(--inner-accent-text)] cursor-pointer">
@@ -1104,12 +1094,12 @@
                ================================================================ -->
           <div id="game-panel-skydive" class="space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-              
+
               <div class="lg:col-span-8 space-y-4">
                 <!-- 高空夜视战术视窗 (高 480px) -->
                 <div class="relative h-[480px] bg-[#0b0d0e] text-[#f5f2eb] border-2 border-[var(--inner-border)] overflow-hidden select-none flex flex-col justify-between"
                   style="background-image: linear-gradient(180deg, #090a0c 0%, #12161b 65%, #2b1414 92%, #471212 100%);">
-                  
+
                   <!-- 左侧深度标尺柱 -->
                   <div class="absolute left-0 top-0 bottom-0 w-14 bg-black/70 border-r border-white/15 z-20 flex flex-col justify-between py-4 px-1.5 font-mono-tech text-[10px] text-neutral-400">
                     <div class="text-white font-bold">机舱门</div>
@@ -1135,7 +1125,7 @@
                   <!-- 顶部中央：A.V.E.D. 战术武装直升机 SVG + 机舱内真实玩家与特遣干员头像展示 -->
                   <div class="relative z-10 pt-4 pl-16 pr-6 flex items-start justify-between">
                     <div class="text-[10px] font-mono-tech text-neutral-400">CHOPPER // A.V.E.D.-HELI-09</div>
-                    
+
                     <div id="skydive-airship-box" class="relative flex flex-col items-center">
                       <!-- 旋转螺旋桨顶翼 -->
                       <div class="w-48 h-1 bg-white/80 rotor-spin mb-1"></div>
@@ -1198,7 +1188,7 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                     <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">连续下坠</strong>
-                      <span class="opacity-85">从 100 米起算，按服务器时间下降，每秒 35 米</span>
+                      <span class="opacity-85">初始高度 100 米 · 下降速度 35 米 / 秒</span>
                     </div>
                     <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">津贴赔付</strong>
@@ -1226,7 +1216,7 @@
 
               <!-- 右侧 4 列：1. 登机面板；2. 机上人员名单（多样化特遣干员代号）；3. 机舱无线电（真实玩家发言后头像同步高亮在直升机上） -->
               <div class="lg:col-span-4 space-y-4">
-                
+
                 <div class="retro-corner-box p-4 space-y-3 font-mono-tech text-xs">
                   <div class="flex items-center justify-between text-[11px] text-[#9e1b1b] font-bold">
                     <span id="skydive-flight-no-label">— 第 45267 架次 · 20s 后关舱门</span>
@@ -1290,7 +1280,7 @@
                ================================================================ -->
           <div id="game-panel-slots" class="hidden space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-              
+
               <div class="lg:col-span-8 space-y-4">
                 <div class="bg-[#121316] text-[#f5f2eb] p-5 border-2 border-[var(--inner-border)] shadow-xl space-y-4">
                   <div class="flex items-center justify-between text-xs font-mono-tech text-neutral-300 border-b border-white/20 pb-2">
@@ -1602,8 +1592,8 @@
                 <div class="text-[10px] text-neutral-400 tracking-[0.25em]">A.V.E.D. BENCHMARK COMPOSITE</div>
                 <div class="flex items-baseline gap-3 mt-1">
                   <span class="text-lg sm:text-xl font-bold tracking-wider text-white">KARMA INDEX</span>
-                  <span id="karma-index-val" class="text-xl sm:text-2xl font-bold text-white">14,820.50</span>
-                  <span id="karma-index-delta" class="text-xs px-2 py-0.5 bg-white text-black font-bold">+2.45%</span>
+                  <span id="karma-index-val" class="text-xl sm:text-2xl font-bold text-white">—</span>
+                  <span id="karma-index-delta" class="text-xs px-2 py-0.5 bg-white text-black font-bold">—</span>
                 </div>
               </div>
               <button id="next-market-tick-btn" type="button" class="px-4 py-2 bg-white text-black font-bold text-xs tracking-wider hover:bg-neutral-200 transition cursor-pointer">
@@ -1611,6 +1601,16 @@
               </button>
             </div>
 
+            <section class="market-terminal" aria-label="证券行情">
+              <div class="market-toolbar">
+                <label>证券 <select id="stock-chart-symbol"><option value="KARMA">KARMA INDEX</option></select></label>
+                <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option></select></label>
+                <span class="market-legend"><i class="market-up">■ 上涨</i><i class="market-down">■ 下跌</i></span>
+              </div>
+              <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-change">—</span></div>
+              <p id="market-candle-details" class="market-candle-details">等待行情。</p>
+              <div id="stock-candles" class="market-chart"></div>
+            </section>
             <div id="stocks-table-body" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
           </div>
 
@@ -1619,7 +1619,7 @@
         <!-- ====================================================================
              独立分页 7：监察院特殊资料
              ==================================================================== -->
-        
+
 
       </div>
     </div>
@@ -1628,6 +1628,8 @@
   <!-- ==========================================================================
        核心交互逻辑层
        ========================================================================== -->
+  <script src="/terminal-time.js" defer></script>
+  <script src="/market-chart.js" defer></script>
   <script src="/player.js" defer></script>
 </body>
 </html>

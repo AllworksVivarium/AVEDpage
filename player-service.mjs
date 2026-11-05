@@ -1,3 +1,4 @@
+import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, slot5x3Symbols, slot5x3Lines, departmentsData, stocksData } from './server-content.mjs';
@@ -52,7 +53,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     END;`);
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
-  db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
+  db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片请使用不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
   const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -67,11 +68,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     });
   }
   const bet=n=>{if(!Number.isSafeInteger(n)||n<100||n>1000000)throw new Error('投入应为 100 至 1,000,000 的整数。');return n;};
-  function market(id) {
-    const tick=Math.floor(Date.now()/60000);
-    for(const s of db.prepare('SELECT * FROM stock_prices').all())if(s.tick<tick){const proof=random(),change=Math.round((proof.random()-.5)*1000)/100,price=Math.max(300,Math.round(s.price*(1+change/100)));db.prepare('UPDATE stock_prices SET price=?,change=?,tick=? WHERE code=?').run(price,change,tick,s.code);}
-    return db.prepare('SELECT s.*,COALESCE(h.quantity,0) AS holding FROM stock_prices s LEFT JOIN stock_holdings h ON h.code=s.code AND h.employee_id=?').all(id);
-  }
+  // Only replace the exact system-generated starter copy; preserve authored notices.
+  db.prepare('UPDATE announcements SET body=? WHERE title=? AND body=?').run('公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。','员工终端已启用','这里发布的公告会保存在服务器数据库中。员工可以在公告下方匿名留言。');
+  db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('卷宗待核。','WY-002','档案内容由管理人员录入。');
+  db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
+  const marketService=installMarket(db);
+  const market=id=>marketService.items(id);
   function forum(before=Number.MAX_SAFE_INTEGER) {
     const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,f.anonymous_name AS anonymousName,f.created_at AS createdAt,
       (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,
@@ -91,7 +93,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     const phase=Date.now()<s.startedAt+20000?'BOARDING':depth>=s.crashDepth||s.settled?'SETTLED':'DROPPING';
     return {phase,depth,remaining:Math.max(0,Math.ceil((s.startedAt+20000-Date.now())/1000)),cost:s.cost,prize:s.prize||0,seedHash:s.seedHash, ...(phase==='SETTLED'?{seed:s.seed,crashDepth:s.crashDepth}:{})};
   }
-  return {log, async handle(req,res,url) {
+  return {log,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
@@ -100,7 +102,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,2500000);
       if(path==='/api/player/state'&&req.method==='GET') {
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,
+        send(res,200,{employee,balance:balanceFor(id),profile,serverTime:Date.now(),market:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:db.prepare('SELECT code,created_at AS createdAt FROM earned_achievements WHERE employee_id=?').all(id),
@@ -195,11 +197,27 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,{...publicCards(state,data.round),balance:balanceFor(id)});return true;
       }
       if(path==='/api/player/stocks') {
-        if(req.method==='POST')transaction(()=>{market(id);const s=db.prepare('SELECT * FROM stock_prices WHERE code=?').get(data.code);if(!s||!['buy','sell'].includes(data.action))throw new Error('交易无效。');
-          const held=db.prepare('SELECT quantity FROM stock_holdings WHERE employee_id=? AND code=?').get(id,s.code)?.quantity||0;
-          if(data.action==='buy'&&balanceFor(id)<s.price)throw new Error('余额不足。');if(data.action==='sell'&&held<1)throw new Error('没有可出售的持仓。');
-          recordLedger(id,data.action==='buy'?-s.price:s.price,'股票'+data.action+' '+s.code);db.prepare('INSERT INTO stock_holdings VALUES(?,?,?) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity').run(id,s.code,held+(data.action==='buy'?1:-1));award(id);});
-        send(res,200,{items:market(id),balance:balanceFor(id)});return true;
+        if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
+        const code=url.searchParams.get('code')||'KARMA',period=Number(url.searchParams.get('period')||1);
+        // Validate chart selection before committing any trade.
+        marketService.history(code,period);
+        if(req.method==='POST')transaction(()=>{
+          market(id);const stock=db.prepare('SELECT * FROM stock_prices WHERE code=?').get(data.code);
+          const quantity=data.quantity??1;
+          if(!stock||!['buy','sell'].includes(data.action)||!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('交易指令无效。');
+          const held=db.prepare('SELECT quantity FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code)?.quantity||0;
+          const amount=stock.price*quantity;
+          if(!Number.isSafeInteger(amount))throw new Error('委托金额超出限额。');
+          if(data.action==='buy'&&balanceFor(id)<amount)throw new Error('可用余额不足。');
+          if(data.action==='sell'&&held<quantity)throw new Error('可出售持仓不足。');
+          const next=held+(data.action==='buy'?quantity:-quantity);
+          if(!Number.isSafeInteger(next))throw new Error('持仓超出限额。');
+          recordLedger(id,data.action==='buy'?-amount:amount,(data.action==='buy'?'买入 ':'卖出 ')+stock.code+' × '+quantity);
+          db.prepare('INSERT INTO stock_holdings VALUES(?,?,?) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity').run(id,stock.code,next);
+          marketService.trade(stock.code,quantity,stock.price);award(id);
+          log(id,'stock.'+data.action,stock.code,{quantity,price:stock.price,amount});
+        });
+        send(res,200,{items:market(id),balance:balanceFor(id),market:marketService.history(code,period),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');

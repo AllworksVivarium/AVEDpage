@@ -33,3 +33,66 @@
 }
 
 #skydive-ruler-fill{position:absolute;left:0;width:100%;height:3px!important;top:0;transition:top 1.5s linear}#skydive-chat-list{max-height:240px;overflow-y:auto;overflow-wrap:anywhere}#skydive-wax-hash{overflow-wrap:anywhere}
+
+/* Navigation stays with the directory, including narrow screens. */
+:root{--terminal-header-height:76px;--market-up:#cb3232;--market-down:#228b5b}
+#inner-app-view,#inner-app-view>div,#inner-app-view>header>div{max-width:100%;min-width:0}
+#left-sidebar{top:var(--terminal-header-height);min-height:calc(100dvh - var(--terminal-header-height));max-height:calc(100dvh - var(--terminal-header-height));justify-content:flex-start;transition:width .16s ease}
+.sidebar-control-row{display:flex;align-items:center;min-height:44px;padding:4px 8px 9px;border-bottom:1px solid var(--inner-border-soft)}
+#sidebar-toggle-btn{width:36px;height:36px;min-width:36px;min-height:36px;transform:none!important;touch-action:manipulation}
+#sidebar-toggle-btn:focus-visible{outline:2px solid var(--inner-crimson);outline-offset:3px}
+#left-sidebar.w-16 .sidebar-control-row{padding:4px 0 9px;justify-content:center}
+#left-sidebar .cloud-music{margin-top:auto}
+#sidebar-backdrop{position:fixed;inset:0;z-index:35;background:#0007;border:0}
+#sidebar-backdrop[hidden]{display:none}
+#inner-app-view>div>div:last-child{width:0;min-width:0;overflow-wrap:anywhere}
+#inner-app-view>header>div>div{min-width:0;max-width:100%}
+#inner-app-view .retro-corner-box{min-width:0}
+#signal-Connecting-overlay>div{max-height:calc(100dvh - 32px);overflow-y:auto}
+#login-modal{overflow-y:auto}
+#login-modal>div{max-height:calc(100dvh - 32px);overflow-y:auto}
+.market-terminal{border:1px solid var(--inner-border);padding:clamp(12px,2vw,22px);min-width:0;background:var(--inner-card-bg)}
+.market-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px;border-bottom:1px solid var(--inner-border-soft);padding-bottom:12px}
+.market-toolbar label{display:flex;align-items:center;gap:6px;min-width:0}
+.market-toolbar select{background:var(--inner-card-bg);border:1px solid var(--inner-border-soft);color:inherit;padding:7px;max-width:230px}
+.market-legend{display:flex;gap:12px;margin-left:auto}.market-legend i{font-style:normal}
+.market-up{color:var(--market-up)!important}.market-down{color:var(--market-down)!important}
+.market-change{border:1px solid currentColor;padding:3px 7px;font-size:12px;white-space:nowrap}
+.market-selected-quote{display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;padding-top:15px;font-family:monospace}
+#market-selected-price{font-size:clamp(20px,2.4vw,30px);font-weight:bold}
+.market-candle-details{font:11px/1.9 monospace;min-height:42px;overflow-wrap:anywhere;margin:8px 0 0}
+.market-chart{width:100%;min-width:0;overflow:hidden}.market-chart svg{display:block;width:100%;height:auto;min-height:180px}
+.market-grid{stroke:currentColor;opacity:.13;stroke-dasharray:3 4}.market-axis{fill:currentColor;opacity:.65;font:11px monospace}
+.market-chart [data-candle-index]{cursor:crosshair}.market-chart [data-candle-index]:focus{outline:none;filter:drop-shadow(0 0 2px currentColor)}
+.market-empty{padding:80px 20px;text-align:center;opacity:.6}
+#stocks-table-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.stock-quote-card{border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);padding:16px;min-width:0;font-size:12px;display:flex;flex-direction:column;gap:10px}
+.stock-quote-heading{display:flex;justify-content:space-between;gap:8px;font:12px monospace}.stock-quote-heading>button{text-decoration:underline;text-underline-offset:3px}
+.stock-quote-card h4{line-height:1.6;overflow-wrap:anywhere;min-height:38px}.stock-quote-price{font:700 24px monospace}
+.stock-quote-card label{display:flex;align-items:center;gap:12px}.stock-quote-card input{width:90px;padding:6px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg);color:inherit}
+.stock-trade-actions{display:flex;gap:10px;margin-top:auto}.stock-trade-actions button{padding:9px 18px;border:1px solid currentColor;flex:1}
+.stock-buy-btn{color:var(--market-up)}.stock-sell-btn{color:var(--market-down)}
+.dark-mode{--market-up:#ff6464;--market-down:#51c58b}
+@media(min-width:768px){#sidebar-backdrop{display:none!important}#left-sidebar.w-52{width:208px}#left-sidebar.w-16{width:64px}}
+@media(max-width:1023px){#inner-app-view #personnel-directory-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}#inner-app-view #departments-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}}
+@media(max-width:767px){
+  #left-sidebar{position:sticky;top:var(--terminal-header-height);min-height:calc(100dvh - var(--terminal-header-height));max-height:calc(100dvh - var(--terminal-header-height))}
+  #left-sidebar.w-52{position:fixed;top:var(--terminal-header-height);bottom:0;width:min(264px,85vw);max-height:calc(100dvh - var(--terminal-header-height));box-shadow:none;z-index:40}
+  #left-sidebar.w-16{width:52px}#left-sidebar .sidebar-control-row{padding-inline:0}
+  #inner-app-view>header>div{gap:8px}#inner-app-view>header>div>div{flex-wrap:wrap;gap:6px}
+  #inner-app-view>div>div:last-child{padding:12px 10px}
+  #inner-app-view .grid.grid-cols-2{grid-template-columns:minmax(0,1fr)}
+  #inner-app-view .grid.grid-cols-3:not(#slot5x3-grid),#inner-app-view .grid.grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .market-toolbar{gap:9px}.market-toolbar select{max-width:175px}.market-legend{width:100%;margin-left:0}
+  .market-chart svg{min-height:170px}.market-candle-details{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){#left-sidebar{transition:none}}
+@media(max-width:767px){
+  #view-casino>div:first-child>div:first-child{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:5px;scrollbar-width:thin}
+  #view-casino .game-tab-btn{flex-shrink:0;white-space:nowrap}
+  #game-panel-stocks>div:first-child>div>div{flex-wrap:wrap;gap:8px 12px}
+  #game-panel-stocks>div:first-child>div>div>span:first-child{flex-basis:100%;white-space:nowrap}
+  #karma-index-val,#karma-index-delta{white-space:nowrap}
+  #game-panel-stocks{padding:12px}
+  #next-market-tick-btn{align-self:flex-start;font-size:10px;padding:8px 10px}
+}

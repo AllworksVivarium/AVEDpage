@@ -10,7 +10,7 @@
   <main id="app" class="shell">
     <section class="welcome" id="welcome">
       <div class="welcome-top"><span class="signal"><i></i> INTERNAL NETWORK</span></div>
-      <div class="hero"><div class="rule"></div><div class="mark" aria-label="公司标志占位"><span></span><b>W</b></div><div class="rule"></div></div>
+      <div class="hero"><div class="rule"></div><div class="mark" aria-label="公司标志"><span></span><b>W</b></div><div class="rule"></div></div>
       <p class="eyebrow">万业携生收容公司 Allworks Vivarium Engineering Derec</p><h1>每一份记录，都在此处留存。</h1>
       <p class="intro">管理员控制台</p>
       <button class="primary enter" id="enter">进入管理通道 <span>→</span></button>
@@ -37,9 +37,9 @@
           </nav>
           <section class="music-box"><p class="eyebrow">音乐盒 / MUSIC</p><div id="musicTitle" class="music-title">还没有音乐</div>
             <audio id="musicAudio" preload="none"></audio><div class="music-controls"><button id="musicPrev" aria-label="上一首">|◀</button><button id="musicPlay" aria-label="播放或暂停">▶</button><button id="musicNext" aria-label="下一首">▶|</button></div>
-            <label class="music-volume">音量 <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.35"></label><p class="fine">播放需要你手动点击；曲目由管理员维护。</p>
+            <label class="music-volume">音量 <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.35"></label><p class="fine">公司广播频道。</p>
           </section>
-          <div class="sidebar-foot">数据保存在公司服务器</div>
+          <div class="sidebar-foot">监察记录 · 内部留存</div>
         </aside>
         <main class="portal-main">
           <div class="welcome-banner"><div><p class="eyebrow">EMPLOYEE PORTAL · ACCESS GRANTED</p><h2 id="greeting">欢迎回来</h2><p id="employeeMeta" class="muted"></p></div><div class="access-stamp"><span>身份核验</span><b>已通过</b><small>AUTHORIZED</small></div></div>
@@ -49,6 +49,7 @@
       </div>
     </section>
   </main>
+  <script src="/terminal-time.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/admin-extra.js" defer></script>
 </body>

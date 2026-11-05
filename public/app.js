@@ -50,7 +50,7 @@ async function api(path, options = {}) {
     },
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "服务器暂时无法处理请求。");
+  if (!response.ok) throw new Error(result.error || "公司网络暂未响应。");
   return result;
 }
 
@@ -96,6 +96,7 @@ $("#logout").addEventListener("click", async () => {
 async function loadPortal() {
   try {
     const data = await api("/api/me");
+    AVEDTime.sync(data.serverTime);
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
     if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
@@ -140,7 +141,7 @@ async function renderDossiers() {
 async function renderAnnouncements() {
   const { items } = await api("/api/announcements");
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>内部公告</h3><p>SERVER BULLETINS / ${String(items.length).padStart(2, "0")}</p></div>${items.map((item) => `<article class="notice-box"><h4>${item.pinned ? "◆ " : ""}${esc(item.title)}</h4><p class="announcement-body">${esc(item.body)}</p><small>${esc(item.createdAt)}　/　${item.postCount} 条讨论</small><div class="post-list" id="posts-${item.id}"><p class="muted">正在读取讨论…</p></div><form class="post-form" data-announcement="${item.id}"><input name="anonymousName" maxlength="32" required placeholder="匿名名称"><textarea name="body" maxlength="2000" required placeholder="写一条匿名留言"></textarea><button class="small-action" type="submit">匿名发表</button></form></article>`).join("") || "<p>暂无公告。</p>"}`;
+    `<div class="section-heading"><h3>内部公告</h3><p>SERVER BULLETINS / ${String(items.length).padStart(2, "0")}</p></div>${items.map((item) => `<article class="notice-box"><h4>${item.pinned ? "◆ " : ""}${esc(item.title)}</h4><p class="announcement-body">${esc(item.body)}</p><small>${AVEDTime.markup(item.createdAt)}　/　${item.postCount} 条讨论</small><div class="post-list" id="posts-${item.id}"><p class="muted">正在读取讨论…</p></div><form class="post-form" data-announcement="${item.id}"><input name="anonymousName" maxlength="32" required placeholder="匿名名称"><textarea name="body" maxlength="2000" required placeholder="写一条匿名留言"></textarea><button class="small-action" type="submit">匿名发表</button></form></article>`).join("") || "<p>暂无公告。</p>"}`;
   for (const item of items) loadPosts(item.id);
   document.querySelectorAll(".post-form").forEach((form) =>
     form.addEventListener("submit", async (event) => {
@@ -176,7 +177,7 @@ async function loadPosts(id) {
       ? items
           .map(
             (post) =>
-              `<div class="post"><b>${esc(post.anonymousName)}</b><span>余额 ${Number(post.balance).toLocaleString()}</span><p>${esc(post.body)}</p><small>${esc(post.createdAt)}</small></div>`,
+              `<div class="post"><b>${esc(post.anonymousName)}</b><span>余额 ${Number(post.balance).toLocaleString()}</span><p>${esc(post.body)}</p><small>${AVEDTime.markup(post.createdAt)}</small></div>`,
           )
           .join("")
       : '<p class="muted">还没有留言。</p>';
@@ -196,7 +197,7 @@ async function renderProfile() {
     ? `<img class="profile-avatar" src="${esc(profile.avatarUrl)}" alt="员工头像">`
     : '<div class="profile-avatar default-avatar" aria-label="默认员工头像"><span>?</span></div>';
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>个人主页</h3><p>PROFILE / SERVER SAVED</p></div><div class="profile-layout"><section class="profile-card">${avatar}<h4>${esc(me.employee.displayName)}</h4><p>${esc(me.employee.department || "员工")}</p><p class="balance-large">${Number(me.balance).toLocaleString()} <small>点</small></p><form class="admin-form" id="profileForm"><h4>个人资料</h4><input name="anonymousName" required maxlength="32" value="${esc(profile.anonymousName)}" placeholder="论坛匿名名称"><textarea name="bio" maxlength="500" placeholder="个人简介">${esc(profile.bio)}</textarea><label class="file-label">上传头像（PNG/JPG/WEBP）<input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><input name="avatarUrl" type="url" value="${profile.avatarUrl.startsWith("data:") ? "" : esc(profile.avatarUrl)}" placeholder="或填写头像 HTTPS 图片链接（可留空）"><button class="small-action">保存到服务器</button></form></section><section><h4>成就记录</h4><div class="achievement-list">${achievements.map((a) => `<div class="achievement ${a.earned ? "earned" : ""}"><span>${a.earned ? "◆" : "◇"}</span><b>${esc(a.title)}</b><small>${a.earned ? "已达成" : "尚未达成"}</small></div>`).join("")}</div><div class="checkin-card"><h4>每日签到</h4><p>${checkin.checkedIn ? `今日已签到，获得 ${checkin.reward} 点。` : "完成签到可领取服务器记录的每日积分。"}</p><button id="checkinButton" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "签到领取 150 点"}</button></div></section></div>`;
+    `<div class="section-heading"><h3>个人主页</h3><p>PERSONNEL PROFILE</p></div><div class="profile-layout"><section class="profile-card">${avatar}<h4>${esc(me.employee.displayName)}</h4><p>${esc(me.employee.department || "员工")}</p><p class="balance-large">${Number(me.balance).toLocaleString()} <small>点</small></p><form class="admin-form" id="profileForm"><h4>个人资料</h4><input name="anonymousName" required maxlength="32" value="${esc(profile.anonymousName)}" placeholder="论坛匿名名称"><textarea name="bio" maxlength="500" placeholder="个人简介">${esc(profile.bio)}</textarea><label class="file-label">上传头像（PNG/JPG/WEBP）<input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><input name="avatarUrl" type="url" value="${profile.avatarUrl.startsWith("data:") ? "" : esc(profile.avatarUrl)}" placeholder="或填写头像 HTTPS 图片链接（可留空）"><button class="small-action">保存档案</button></form></section><section><h4>成就记录</h4><div class="achievement-list">${achievements.map((a) => `<div class="achievement ${a.earned ? "earned" : ""}"><span>${a.earned ? "◆" : "◇"}</span><b>${esc(a.title)}</b><small>${a.earned ? "已达成" : "尚未达成"}</small></div>`).join("")}</div><div class="checkin-card"><h4>每日签到</h4><p>${checkin.checkedIn ? `今日已签到，获得 ${checkin.reward} 点。` : "完成签到后领取当日配给。"}</p><button id="checkinButton" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "签到领取 150 点"}</button></div></section></div>`;
   $("#profileForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget,
@@ -221,7 +222,7 @@ async function renderProfile() {
           avatarUrl,
         }),
       });
-      alert("个人资料和头像已保存到服务器。");
+      alert("个人资料和头像已保存档案。");
       await renderProfile();
     } catch (err) {
       alert(err.message);
@@ -249,7 +250,7 @@ async function renderGames() {
     api("/api/games/history"),
   ]);
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，奖励由服务器确认并写入余额流水。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>服务器生成随机种子、开奖并记录票据与余额变化。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>服务器完成随机抽取和派奖，页面只显示开奖结果。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>由服务器数据库读取</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th><th>服务器随机种子校验值</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${esc(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td><td class="hash-cell">${esc(x.seedHash)}</td></tr>`).join("") || '<tr><td colspan="5">暂无记录</td></tr>'}</tbody></table></div>`;
+    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开封印。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th><th>封签编号</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td><td class="hash-cell">${esc(x.seedHash)}</td></tr>`).join("") || '<tr><td colspan="5">暂无记录</td></tr>'}</tbody></table></div>`;
   $("#gameCheckin").addEventListener("click", async (e) => {
     e.currentTarget.disabled = true;
     try {
@@ -293,7 +294,7 @@ async function renderGames() {
 async function renderForum() {
   const { items } = await api("/api/forum");
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>匿名论坛</h3><p>服务器帖子 / ${items.length}</p></div><form class="admin-form forum-create" id="forumCreate"><h4>发布新帖</h4><input name="title" required maxlength="120" placeholder="帖子标题"><textarea name="body" required maxlength="3000" placeholder="写下内容"></textarea><button class="small-action">匿名发布</button></form><div class="forum-list">${items.map((item) => `<article class="forum-post"><div class="forum-head"><b>${esc(item.title)}</b><small>${esc(item.anonymousName)}　·　余额 ${Number(item.balance).toLocaleString()} 点　·　${esc(item.createdAt)}</small></div><p>${esc(item.body)}</p><details data-thread="${item.id}"><summary>回复（${item.replyCount}）</summary><div class="reply-list" id="replies-${item.id}">正在读取…</div><form class="reply-form" data-thread="${item.id}"><textarea name="body" required maxlength="2000" placeholder="匿名回复"></textarea><button class="small-action">发送回复</button></form></details></article>`).join("") || '<p class="muted">还没有帖子。</p>'}</div>`;
+    `<div class="section-heading"><h3>匿名论坛</h3><p>匿名通讯 / ${items.length}</p></div><form class="admin-form forum-create" id="forumCreate"><h4>发布新帖</h4><input name="title" required maxlength="120" placeholder="帖子标题"><textarea name="body" required maxlength="3000" placeholder="写下内容"></textarea><button class="small-action">匿名发布</button></form><div class="forum-list">${items.map((item) => `<article class="forum-post"><div class="forum-head"><b>${esc(item.title)}</b><small>${esc(item.anonymousName)}　·　余额 ${Number(item.balance).toLocaleString()} 点　·　${AVEDTime.markup(item.createdAt)}</small></div><p>${esc(item.body)}</p><details data-thread="${item.id}"><summary>回复（${item.replyCount}）</summary><div class="reply-list" id="replies-${item.id}">正在读取…</div><form class="reply-form" data-thread="${item.id}"><textarea name="body" required maxlength="2000" placeholder="匿名回复"></textarea><button class="small-action">发送回复</button></form></details></article>`).join("") || '<p class="muted">还没有帖子。</p>'}</div>`;
   $("#forumCreate").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget,
@@ -339,7 +340,7 @@ async function loadReplies(id) {
       items
         .map(
           (x) =>
-            `<div class="reply"><b>${esc(x.anonymousName)}</b><small>余额 ${Number(x.balance).toLocaleString()} 点　·　${esc(x.createdAt)}</small><p>${esc(x.body)}</p></div>`,
+            `<div class="reply"><b>${esc(x.anonymousName)}</b><small>余额 ${Number(x.balance).toLocaleString()} 点　·　${AVEDTime.markup(x.createdAt)}</small><p>${esc(x.body)}</p></div>`,
         )
         .join("") || '<p class="muted">暂无回复。</p>';
   } catch (e) {
@@ -390,7 +391,7 @@ async function renderAdmin() {
       : item.itemType === "comment" ? "所属公告：" + item.title : "独立论坛主题";
     return '<article class="admin-post"><div class="admin-post-head"><div><b>' +
       esc(label) + "</b><small>" + esc(item.anonymousName || "匿名员工") +
-      "　·　" + esc(item.createdAt || "") + "　·　" +
+      "　·　" + AVEDTime.markup(item.createdAt) + "　·　" +
       (item.status === "hidden" ? "已隐藏" : "展示中") +
       '</small></div><button class="small-action danger" data-delete-type="' +
       esc(item.itemType) + '" data-delete-id="' + item.id +
@@ -400,11 +401,11 @@ async function renderAdmin() {
   }).join("") || '<p class="muted">暂无发帖记录。</p>';
 
   $("#panel").innerHTML =
-    '<div class="section-heading"><div><h3>管理工作台</h3><p>员工资料与帖子记录均读取服务器数据</p></div><span class="admin-count">员工 ' +
+    '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 · 通讯记录</p></div><span class="admin-count">员工 ' +
     employees.length + "　/　内容 " + content.length +
     '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 账户名"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
-    ' 位员工　·　编辑后立即保存</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
+    ' 位员工　·　登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
     '</tbody></table></div></section><section class="admin-section"><div class="section-heading"><div><h3>发帖记录与帖子管理</h3><p>显示完整内容；删除前会再次确认</p></div></div><div class="admin-post-list">' +
     postRows + "</div></section>";
@@ -554,7 +555,7 @@ async function loadMusic() {
       $("#musicTitle").textContent = items[0].title;
       musicIndex = 0;
       musicAudio.src = items[0].url;
-    } else $("#musicTitle").textContent = "管理员尚未添加曲目";
+    } else $("#musicTitle").textContent = "广播频道暂无曲目";
   } catch {}
 }
 const musicAudio = $("#musicAudio");

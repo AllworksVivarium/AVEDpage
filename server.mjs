@@ -149,11 +149,11 @@ if (employeeCount === 0 && process.env.BOOTSTRAP_ADMIN_USERNAME && process.env.B
 if (db.prepare('SELECT COUNT(*) AS n FROM dossiers').get().n === 0) {
   const add = db.prepare('INSERT INTO dossiers (code,title,department,status,summary) VALUES (?,?,?,?,?)');
   add.run('WY-001', '咖啡机', '设施维护部', '观察中', '需要混脸熟，不然会很难喝。');
-  add.run('WY-002', '一个电话', '档案管理部', '待补充', '档案内容由管理人员录入。');
+  add.run('WY-002', '一个电话', '档案管理部', '待补充', '卷宗待核。');
 }
 if (db.prepare('SELECT COUNT(*) AS n FROM announcements').get().n === 0) {
   db.prepare('INSERT INTO announcements (title,body,pinned) VALUES (?,?,1)')
-    .run('员工终端已启用', '这里发布的公告会保存在服务器数据库中。员工可以在公告下方匿名留言。');
+    .run('员工终端已启用', '公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。');
 }
 db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now());
 db.prepare("INSERT OR IGNORE INTO profiles(employee_id,anonymous_name) SELECT id,'匿名员工-'||id FROM employees").run();
@@ -262,7 +262,7 @@ const server = createServer(async (req, res) => {
         .run(sessionDigest(token), employee.id, now + sessionsTtl);
       playerService.log(employee.id,'login');
       const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${cookieSecurity}`;
-      return send(res, 200, { ok:true }, { 'Set-Cookie':cookie });
+      return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(await playerService.handle(req,res,url))return;
@@ -274,7 +274,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/me' && req.method === 'GET') {
       const employee = requireEmployee(req,res); if (!employee) return;
-      return send(res, 200, { employee:{ id:employee.id, username:employee.username, displayName:employee.displayName, department:employee.department, role:employee.role }, balance:balanceFor(employee.id) });
+      return send(res, 200, { employee:{ id:employee.id, username:employee.username, displayName:employee.displayName, department:employee.department, role:employee.role }, balance:balanceFor(employee.id),serverTime:Date.now() });
     }
     if (url.pathname === '/api/profile' && req.method === 'GET') {
       const employee=requireEmployee(req,res); if(!employee)return;
