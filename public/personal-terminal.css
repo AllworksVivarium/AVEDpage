@@ -1,0 +1,115 @@
+/* Layout v2 is opt-in by body class; existing terminal styles remain available. */
+.personal-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.personal-toolbar>div:last-child,.layout-switch{display:flex;gap:6px;flex-wrap:wrap}
+.personal-toolbar button,.layout-switch button,[data-effects-toggle]{border:1px solid var(--inner-border);padding:7px 12px;font-size:12px;line-height:1.4;background:var(--inner-bg);color:var(--inner-text-main)}
+.personal-toolbar button[aria-pressed=true]{background:var(--inner-text-main);color:var(--inner-bg)}
+.personal-toolbar .section-kicker{font-size:11px;line-height:1.4;letter-spacing:.08em}
+.terminal-next #cloud-profile-open{display:none!important}
+.terminal-next.crt-unified #view-profile{--inner-bg:#eeece5;--inner-card-bg:#eeece5;--inner-card-alt:#e2e1dc;--inner-text-main:#1c1d1e;--inner-text-muted:#595d60;--inner-border:#969997;--inner-border-soft:#262b2d38;--inner-crimson:#a62c31;--inner-accent:#17191a;--inner-accent-text:#fff;background:transparent;color:var(--inner-text-main);padding:0;border:0;max-width:1280px}
+.terminal-next.crt-unified.dark-mode #view-profile{--inner-bg:#111315;--inner-card-bg:#191b1d;--inner-card-alt:#222527;--inner-text-main:#e8e9e5;--inner-text-muted:#a3a7a8;--inner-border:#636769;--inner-border-soft:#e8eded30;--inner-crimson:#df696e;--inner-accent:#eee;--inner-accent-text:#111}
+.terminal-next.crt-unified #view-profile :is(input,textarea,select){background:var(--inner-bg);color:var(--inner-text-main);border-color:var(--inner-border)}
+.terminal-next.crt-unified #view-profile .finance-grid>article{background:var(--inner-card-bg);border:1px solid var(--inner-border-soft);border-top:2px solid #a52e34}
+.terminal-next.crt-unified #view-profile .personal-finance{border-color:var(--inner-border)}
+.personal-toolbar button[aria-pressed=true]{background:#a62c31;color:#fff}
+.personal-hub{--hub-bg:#eeece5;--hub-ink:#161719;--hub-line:#adaeaa;background:var(--hub-bg);color:var(--hub-ink);border:1px solid var(--hub-line);margin-bottom:22px}
+.dark-mode .personal-hub{--hub-bg:#111315;--hub-ink:#e8e8e5;--hub-line:#4b4d4e}
+.hub-masthead{display:flex;justify-content:space-between;gap:12px;padding:15px 24px;border-bottom:1px solid var(--hub-line);font-family:var(--font-mono,'Courier New',monospace);font-size:12px;line-height:1.4;letter-spacing:.06em}
+.hub-intro{display:grid;grid-template-columns:1.15fr 1fr;min-height:355px}
+.hub-welcome{padding:clamp(25px,4vw,58px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:16px}
+.hub-welcome h1{font-size:clamp(40px,5.3vw,88px);line-height:1.15;font-weight:700;letter-spacing:.02em;overflow-wrap:anywhere;margin:0;color:var(--hub-ink)}
+.hub-welcome>.section-kicker{font-size:18px!important;line-height:1.3!important;color:#bb3337;letter-spacing:.25em}
+.hub-alias{font-size:15px;line-height:1.65;display:flex;gap:15px;flex-wrap:wrap}
+.hub-alias strong{font-weight:400}
+.hub-welcome>p:last-of-type{font-size:13px;line-height:1.4;opacity:.7}
+.hub-quick-actions{display:flex;gap:9px;margin-top:12px}
+.hub-quick-actions button,.hub-identity>button{padding:8px 14px;border:1px solid var(--hub-line);font-size:13px;line-height:1.4}
+.hub-signal{margin:20px 20px 20px 0;background:#0a0b0c;color:#e6e6e1;position:relative;border:1px solid #454749;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.hub-signal figcaption{display:flex;justify-content:space-between;font-family:var(--font-mono,monospace);padding:13px 16px;letter-spacing:.13em;font-size:10px;line-height:1.4;border-bottom:1px solid #343638;z-index:1}
+#personal-sphere{display:block;flex:1;width:100%;height:260px;min-height:200px;touch-action:pan-y}
+.hub-signal>p{font-size:9px;line-height:1.4;letter-spacing:.2em;padding:10px 16px;border-top:1px solid #343638;margin:0}
+.hub-signal-static{display:none;min-height:260px;align-items:center;justify-content:center;font-size:clamp(16px,2vw,32px);letter-spacing:.25em}
+.hub-identity{border-top:1px solid var(--hub-line);display:flex;align-items:center;gap:24px;padding:24px clamp(24px,4vw,58px)}
+.hub-avatar{width:76px;height:88px;border:1px solid var(--hub-line);flex:none;display:grid;place-items:center;font-family:monospace}
+.hub-avatar img{width:100%;height:100%;object-fit:cover;filter:grayscale(1)}
+.hub-identity>div:nth-child(2){flex:1;min-width:0}
+.hub-identity strong{display:block;font-family:var(--font-mono,monospace);font-size:clamp(26px,3vw,44px);line-height:1.3;margin-top:8px;overflow-wrap:anywhere}
+.hub-identity>button{align-self:flex-end;white-space:nowrap}
+.hub-editor{border-top:1px solid var(--hub-line);padding:18px 24px;font-size:14px;line-height:1.65}
+.hub-editor summary,.hub-history summary,.personal-finance summary{cursor:pointer;font-weight:700;min-height:32px;line-height:1.65}
+.hub-editor form{display:grid;grid-template-columns:1fr 1fr auto;gap:18px;align-items:end;margin-top:20px}
+.hub-editor label{display:grid;gap:8px;min-width:0}
+.hub-editor input{width:100%;min-width:0;padding:10px;background:transparent;border:1px solid var(--hub-line);color:inherit}
+.hub-achievements{border-top:1px solid var(--hub-line);padding:32px 24px}
+.hub-achievements header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}
+.hub-achievements h2{font-size:22px;line-height:1.3;margin:0}
+.earned-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.earned-grid article{border:1px solid var(--hub-line);padding:19px;min-width:0}
+.achievement-mark{font-family:var(--font-mono,monospace);font-size:10px;line-height:1.4;letter-spacing:.15em;color:#bd363b}
+.earned-grid h3{font-size:18px;line-height:1.3;margin:10px 0}
+.earned-grid p{font-size:13px;line-height:1.65;margin:0;opacity:.75}
+.achievement-empty{padding:25px 0;opacity:.65;font-size:14px;line-height:1.65}
+.hub-history{padding:24px;border:1px solid var(--inner-border);margin-top:22px}
+.hub-history article,#personal-ledger article{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--inner-border-soft);font-size:13px;line-height:1.65}
+.terminal-next #personal-finance{background:var(--inner-bg);border:1px solid var(--inner-border);padding:24px}
+.terminal-next #personal-finance .finance-grid article{border:1px solid var(--inner-border-soft);border-top:2px solid #ad2c31;background:transparent}
+.terminal-next #personal-finance #profile-identity-form{grid-template-columns:1fr 1fr auto;align-items:end}
+.terminal-next #personal-finance .donation-form{margin:26px 0}
+.terminal-next #personal-finance h3{font-size:22px;line-height:1.3}
+.reward-allocation{display:grid;gap:0;border-top:1px solid var(--inner-border);margin-top:24px}
+.reward-allocation>article{display:grid;grid-template-columns:38px minmax(180px,1fr) auto 150px;gap:18px;align-items:center;padding:22px 5px;border-bottom:1px solid var(--inner-border-soft)}
+.reward-no{font-family:monospace;color:var(--inner-crimson);font-size:18px;line-height:1.3}
+.reward-allocation h3{font-size:18px;line-height:1.3;margin-bottom:8px}
+.reward-allocation p{font-size:13px;line-height:1.65;margin:0;opacity:.7}
+.reward-allocation time{font-family:monospace;font-variant-numeric:tabular-nums;font-size:13px;line-height:1.4}
+.reward-allocation button{width:100%;min-height:40px;padding:8px 12px;border:1px solid var(--inner-border);background:var(--inner-text-main);color:var(--inner-bg);font-size:13px;line-height:1.4}
+.reward-allocation button:disabled{opacity:.45}
+.derby-live-layout{display:grid;grid-template-columns:minmax(0,2.15fr) minmax(250px,1fr);gap:24px}
+.derby-live-layout>*,.derby-live-layout aside>*{min-width:0}
+.derby-stage{padding:24px;background:#101214;color:#e9e9e4;border:1px solid #626466}
+.derby-live-top{display:flex;justify-content:space-between;gap:14px;font-size:12px;line-height:1.4;margin-bottom:28px}
+.race-lane{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:center;min-height:84px;border-top:1px solid #3c3e40}
+.race-lane>div:first-child{display:grid;gap:6px;font-size:14px;line-height:1.4}
+.race-lane small{font-family:monospace;font-size:12px;line-height:1.4;opacity:.6}
+.race-rail{height:54px;margin-right:36px;position:relative;border-bottom:1px solid #65676a;background:repeating-linear-gradient(90deg,transparent 0 34px,#ffffff10 34px 35px)}
+.race-rail:after{content:'';position:absolute;right:0;height:100%;border-right:2px dashed #a92b30}
+.race-rail>span{position:absolute;top:10px;left:0;width:32px;transition:left .75s linear;color:#dedfdb}
+.race-rail svg{width:40px;height:30px;transform:translateX(-50%)}
+.race-lane.winner{color:#ef7479}
+.race-lane.winner svg{color:#ef7479}
+#derby-commentary{margin-top:26px;min-height:36px;font-size:14px;line-height:1.65;color:#c8c9c5}
+.derby-recent{padding:20px 0;font-size:12px;line-height:1.65;min-height:58px}
+.derby-radio,.derby-proof,#shared-race-form{padding:20px;border:1px solid var(--inner-border);margin-bottom:20px}
+.derby-radio h3{font-size:18px;line-height:1.3;padding-bottom:18px}
+.derby-radio small{display:block;letter-spacing:.12em;font-size:10px;line-height:1.4;margin-top:7px}
+#derby-chat-messages{height:265px;overflow-y:auto;margin-bottom:18px}
+#shared-runner-options{display:grid;gap:8px}
+#shared-runner-options label{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px;border:1px solid var(--inner-border-soft)}
+#shared-runner-options label span{margin-left:auto}
+#shared-runner-options input{width:auto}
+.derby-proof p{overflow-wrap:anywhere;font-size:11px;line-height:1.65;margin-top:15px}
+.terminal-next .flight-layout{grid-template-columns:minmax(0,2.15fr) minmax(270px,1fr);gap:24px}
+.terminal-next .flight-scene{min-height:560px;background:linear-gradient(180deg,#101315,#171a1c 70%,#281619)}
+.terminal-next .flight-readout strong{font-size:clamp(56px,7vw,106px);line-height:1.15;color:#d0494f;font-variant-numeric:tabular-nums}
+.terminal-next .flight-readout{top:48%}
+.terminal-next .flight-sidebar>section,.terminal-next .flight-sidebar>form{border:1px solid var(--inner-border);box-shadow:none;padding:22px}
+.terminal-next .flight-manifest{max-height:330px;overflow:auto}
+.terminal-next .flight-radio #skydive-chat-list{height:270px}
+.terminal-next .flight-protocol,.terminal-next .game-rule-card{border:1px solid var(--inner-border);border-top:2px solid #ac3035;margin-top:24px;padding:26px}
+.terminal-next #game-panel-slots>.grid{display:grid;grid-template-columns:minmax(0,2.15fr) minmax(250px,1fr);gap:24px}
+.terminal-next #game-panel-slots>.grid>div{grid-column:auto}
+.terminal-next #game-panel-slots .game-rule-card{width:100%}
+.terminal-next #scratch-lobby-view{padding:12px 0}
+.terminal-next #scratch-play-table-view{padding:24px;border:1px solid var(--inner-border);background:var(--inner-bg)}
+.terminal-next .personal-toolbar button:hover,.terminal-next .hub-quick-actions button:hover{text-shadow:0 0 5px currentColor}
+.personal-hub button,.personal-toolbar button,.shared-derby button{border-radius:0;transition:transform 150ms ease,box-shadow 150ms ease;touch-action:manipulation}
+.personal-hub button:active,.personal-toolbar button:active,.shared-derby button:active{transform:scale(.96);transition-duration:80ms;box-shadow:0 1px 1px #0002}
+.personal-hub :focus-visible,.personal-toolbar :focus-visible,.shared-derby :focus-visible,.reward-allocation :focus-visible{outline:2px solid #d34248;outline-offset:4px}
+body.effects-off *,body.effects-off *::before,body.effects-off *::after{animation:none!important;transition:none!important;filter:none!important;backdrop-filter:none!important;text-shadow:none!important}
+body.effects-off #aved-signal-dust,body.effects-off #landing-sphere-canvas,body.effects-off .signal-frame,body.effects-off #personal-sphere,body.effects-off .flight-danmaku,body.effects-off .flight-clouds,body.effects-off .flight-drops{display:none!important}
+body.effects-off .terminal-content-pane::before,body.effects-off .terminal-content-pane::after,body.effects-off .landing-noise,body.effects-off .landing-scanlines{display:none!important}
+body.effects-off .hub-signal-static{display:flex}
+body.effects-off .company-ticker-track{transform:none!important}
+body.effects-off .company-play-ticker{overflow-x:auto}
+@media(max-width:900px){.hub-intro{grid-template-columns:1fr 1fr}.hub-welcome{padding:28px}.hub-welcome h1{font-size:44px}.derby-live-layout,.terminal-next .flight-layout,.terminal-next #game-panel-slots>.grid{grid-template-columns:1fr}.terminal-next .flight-scene{min-height:450px}.reward-allocation>article{grid-template-columns:30px 1fr auto}.reward-allocation time,.reward-allocation>article>span:last-of-type:not(.reward-no){grid-column:2}.reward-allocation>article>div:last-child,.reward-allocation>article>button{grid-column:3;grid-row:1 / span 2}.reward-allocation>article{position:relative}.reward-allocation time{grid-row:2}.hub-editor form{grid-template-columns:1fr}.terminal-next #personal-finance #profile-identity-form{grid-template-columns:1fr}}
+@media(max-width:600px){.hub-masthead{padding:12px 18px;font-size:9px}.hub-intro{grid-template-columns:1fr}.hub-welcome{padding:32px 24px}.hub-welcome h1{font-size:clamp(38px,10vw,60px)}.hub-signal{margin:0 20px 20px}#personal-sphere{height:200px}.hub-identity{gap:15px;padding:20px;flex-wrap:wrap}.hub-avatar{width:55px;height:65px}.hub-identity>button{margin-left:auto}.hub-achievements{padding:24px 20px}.hub-achievements header{display:block}.hub-achievements h2{margin-top:10px}.earned-grid{grid-template-columns:1fr}.personal-toolbar{gap:12px}.personal-toolbar button{font-size:11px;padding:7px 9px}.reward-allocation>article{gap:10px;grid-template-columns:25px minmax(100px,1fr) 100px}.reward-allocation p{font-size:12px}.reward-allocation button{font-size:12px}.derby-stage{padding:15px}.race-lane{grid-template-columns:80px 1fr;gap:10px}.race-lane>div:first-child{font-size:12px}.terminal-next .flight-scene{min-height:400px}}
+@media(prefers-reduced-motion:reduce){.personal-hub *, .shared-derby *{animation:none!important;transition:none!important}.personal-hub button:active,.shared-derby button:active{transform:none}.hub-signal canvas{opacity:.8}}

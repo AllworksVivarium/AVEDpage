@@ -32,7 +32,7 @@
     const count = landing()?Math.min(260,Math.max(100,Math.round(width*height/5000))):Math.min(34, Math.max(12, Math.round(width * height / 40000)));
     motes = Array.from({length:count}, () => ({x:Math.random()*width,y:Math.random()*height,r:.35+Math.random()*.5,phase:Math.random()*Math.PI*2,speed:.05+Math.random()*.08}));
   }
-  function active() { return context && !document.hidden && !reduced.matches && (landing() || document.body.classList.contains('theme-inner') && document.body.classList.contains('signal-preview')); }
+  function active() { return context && !document.body.classList.contains('effects-off') && !document.hidden && !reduced.matches && (landing() || document.body.classList.contains('theme-inner') && document.body.classList.contains('signal-preview')); }
   function draw(now) {
     frame = 0;
     if (!active()) return;
@@ -54,7 +54,7 @@
   let framesPending = false;
   function decorateFrames() {
     framesPending = false;
-    if (!document.body.classList.contains('signal-preview')) return;
+    if (document.body.classList.contains('effects-off') || !document.body.classList.contains('signal-preview')) return;
     for (const box of app.querySelectorAll('.notice-card,#news-detail-article-box')) {
       if (box.querySelector(':scope > .signal-frame')) continue;
       box.classList.add('signal-framed');

@@ -15,6 +15,7 @@
     for (const [id, english, hebrew] of pages) {
       const page = document.getElementById(id);
       if (!page) continue;
+      if (id === 'view-profile' && page.querySelector('.personal-hub')) continue;
       let heading;
       if (id === 'view-casino') {
         let masthead = page.querySelector(':scope > .terminal-page-heading');

@@ -533,6 +533,7 @@ async function renderTab(tab) {
     if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
     else if(tab === 'economy')await renderEconomy();
+    else if(tab === 'achievements')await renderAchievements();
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();

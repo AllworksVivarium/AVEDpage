@@ -21,14 +21,13 @@ window.AVEDCommunity=function(ctx){
   audio.addEventListener('play',syncPlayer);audio.addEventListener('pause',syncPlayer);audio.addEventListener('ended',syncPlayer);
   const games=byId('view-casino'),tabs=games.querySelector('[data-game]').parentElement;
   const home=document.createElement('button');home.type='button';home.dataset.game='home';home.className='game-tab-btn community-button';home.textContent='愉乐室首页';tabs.prepend(home);
-  const homePanel=document.createElement('section');homePanel.id='game-panel-home';homePanel.className='retro-corner-box p-5 space-y-4';homePanel.innerHTML='<div class="section-kicker">PERSONNEL COMMON ROOM</div><h2 class="text-xl font-bold">员工愉乐室</h2><p>值班间隙，领取本日配给。余额低于 10,000 可领低保，每次 10,000，不限次数。</p><div id="daily-allocation" class="community-actions"></div><div class="common-room-links"></div>';
+  const homePanel=document.createElement('section');homePanel.id='game-panel-home';homePanel.className='retro-corner-box p-5 space-y-4';homePanel.innerHTML='<div class="section-kicker">PERSONNEL COMMON ROOM</div><h2 class="text-xl font-bold">员工愉乐室</h2><p>值班间隙，领取本日配给。余额低于 10,000 可领低保，每次 10,000，不限次数。</p><div id="daily-allocation" class="community-actions"></div>';
   games.querySelector('[id^="game-panel-"]').before(homePanel);
   byId('daily-allocation').append(byId('header-quick-checkin-btn'),byId('header-quick-relief-btn'));
   // The older relief button is replaced by the same server-authoritative action.
   byId('claim-relief-btn').hidden=true;
   function selectGame(name){games.querySelectorAll('[id^="game-panel-"]').forEach(panel=>panel.classList.toggle('hidden',panel.id!=='game-panel-'+name));tabs.querySelectorAll('[data-game]').forEach(button=>{button.classList.toggle('game-selected',button.dataset.game===name);button.setAttribute('aria-pressed',String(button.dataset.game===name));});renderTicker(name==='stocks');}
   tabs.addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(b)selectGame(b.dataset.game);});
-  for(const b of [...tabs.querySelectorAll('[data-game]')].filter(x=>x!==home)){const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='community-button';shortcut.textContent=b.textContent.trim();shortcut.onclick=()=>b.click();homePanel.querySelector('.common-room-links').append(shortcut);}
   const ticker=document.createElement('div');ticker.className='company-play-ticker';ticker.tabIndex=0;tabs.parentElement.after(ticker);
   function renderTicker(stocks){const message=stocks?'公司温馨提示：股市有风险，入市需谨慎。':'公司温馨提示：请您劳逸结合，适度娱乐，小赌怡情，大赌伤身。';ticker.setAttribute('aria-label',message);const copy='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 21H2Z" fill="none" stroke="currentColor"/><path d="M12 8v6m0 3v1" stroke="currentColor"/></svg><span>'+message+'</span>';ticker.innerHTML='<div class="company-ticker-track" aria-hidden="true"><div class="ticker-copy">'+copy+'</div><div class="ticker-copy">'+copy+'</div></div>';}
   selectGame('home');
