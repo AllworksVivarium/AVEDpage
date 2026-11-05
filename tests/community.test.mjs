@@ -19,7 +19,7 @@ test('community identity, edits, moderation, search and retained removals',async
  const admin=await login('community-admin','community-review-123');
  const request=async(cookie,path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};};
  const a=(p,m,b)=>request(admin,p,m,b);
- const emp=(await a('/api/admin/employees','POST',{username:'employee',displayName:'实名员工',password:'employee123',qqNumber:'100001',department:'医疗部',initialBalance:100000})).data.id;
+ const emp=(await a('/api/admin/employees','POST',{username:'employee',displayName:'实名员工',password:'employee123',qqNumber:'100001',department:'医疗部',positionTitle:'值班医师',initialBalance:100000})).data.id;
  await a('/api/admin/employees','POST',{username:'other',displayName:'另一员工',password:'employee123'});
  const cookie=await login('employee','employee123',true),other=await login('other','employee123');const p=(path,m,b)=>request(cookie,path,m,b);
  const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
@@ -33,6 +33,7 @@ test('community identity, edits, moderation, search and retained removals',async
  let row=(await p('/api/player/forum')).data.items.find(x=>x.id===thread);assert.equal(row.anonymousName,'新代号');assert.equal(row.body,'修改之后');assert.ok(row.editedAt);assert.equal(row.canEdit,1);assert.equal('employeeId' in row,false);
  let records=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('修改之后'))).data.items;assert.equal(records[0].qqNumber,'100001');assert.ok(records[0].aliases.includes('夜班代号'));assert.equal(records[0].revisions[0].before.body,'修改之前');assert.equal(records[0].revisions[0].after.body,'修改之后');
  const news=state.announcements[0];await p('/api/posts','POST',{announcementId:news.id,anonymousName:'伪造名',body:'实名评论'});const comment=(await p('/api/posts?announcementId='+news.id)).data.items[0];assert.equal(comment.displayName,'实名员工');assert.equal('anonymousName' in comment,false);
+ await p('/api/posts','POST',{announcementId:news.id,body:'第二条实名评论'});const orderedComments=(await p('/api/posts?announcementId='+news.id)).data.items;assert.equal(orderedComments[0].body,'实名评论');assert.equal(orderedComments[1].body,'第二条实名评论');assert.ok(orderedComments[0].id<orderedComments[1].id);assert.equal(orderedComments[0].positionTitle,'值班医师');
  const dossier=state.dossiers[0];await p('/api/player/dossiers/'+dossier.id+'/comments','POST',{body:'持久评论'});assert.equal((await p('/api/player/dossiers/'+dossier.id+'/comments')).data.items[0].body,'持久评论');
  assert.equal((await a('/api/admin/dossiers/'+dossier.id,'PUT',{code:dossier.code,title:'修订档案',department:'医疗部',status:'观察中',summary:'档案内容'})).status,200);
  const pending=(await p('/api/player/forum','POST',{title:'图文主题',body:'待审核',imageData:img})).data;assert.equal(pending.pending,true);assert.equal((await p('/api/player/forum')).data.items.some(x=>x.id===pending.id),false);
