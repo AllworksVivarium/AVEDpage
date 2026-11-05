@@ -348,6 +348,7 @@
 <link rel="stylesheet" href="/terminal-frame.css?v=frame-1">
 <link rel="stylesheet" href="/terminal-patterns.css?v=welcome-1">
 <link rel="stylesheet" href="/terminal-welcome.css?v=welcome-1">
+<link rel="stylesheet" href="/terminal-unified.css?v=crt-1">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -411,7 +412,7 @@
        模块 1：外层欢迎页面（融合宣发大图1 + 零圆角 + 磁吸主登录按钮）
        ========================================================================== -->
   <main id="landing-view" class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
-    
+
     <div class="landing-edge-line w-full max-w-6xl flex flex-wrap justify-between items-center text-[10px] sm:text-[11px] tracking-[0.2em] text-neutral-400 font-mono-tech border-b border-white/15 pb-3 z-10">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 bg-white animate-pulse"></span>
@@ -600,7 +601,7 @@
           <button id="ticket-modal-cancel-btn" type="button" class="py-3 border border-[#141413]/50 hover:bg-black/5 font-bold cursor-pointer">
             取消
           </button>
-          <button id="ticket-modal-confirm-btn" type="button" class="magnetic-cta col-span-2 py-3 bg-[#141413] text-[#f5f2eb] hover:opacity-90 font-bold cursor-pointer">
+          <button id="ticket-modal-confirm-btn" type="button" class="terminal-key col-span-2 py-3 bg-[#141413] text-[#f5f2eb] hover:opacity-90 font-bold cursor-pointer">
             确认出票
           </button>
         </div>
@@ -806,7 +807,7 @@
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div class="text-[10px] font-mono-tech tracking-widest opacity-60">ORGANIZATIONAL STRUCTURE &amp; PERSONNEL DIRECTORY</div>
-              <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">《五大直属部门编制与在册人员档案夹》</h2>
+              <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">五大直属部门编制与在册人员档案夹</h2>
             </div>
             <span class="text-xs font-mono-tech px-3 py-1 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] self-start sm:self-auto">
               5 DIVISIONS // ACTIVE
@@ -840,7 +841,7 @@
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b-2 border-[var(--inner-border)] pb-3">
             <div>
               <div class="text-[10px] font-mono-tech opacity-60">VIVARIUM ARCHIVE BOARD // CONTAINMENT FILES</div>
-              <h2 class="text-lg sm:text-xl font-bold font-serif-sc">《异常收容物调查档案板》</h2>
+              <h2 class="text-lg sm:text-xl font-bold font-serif-sc">异常收容物调查档案板</h2>
             </div>
 
             <!-- 搜索框（浅色随机现有双人名字占位提示）+ 等级筛选 -->
@@ -948,7 +949,7 @@
           <div class="retro-corner-box p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div class="text-[10px] font-mono-tech opacity-60">A.V.E.D. ANONYMOUS CHANNEL // INTERNAL</div>
-              <h2 class="text-lg sm:text-xl font-bold font-serif-sc">《内部匿名论坛》</h2>
+              <h2 class="text-lg sm:text-xl font-bold font-serif-sc">内部匿名论坛</h2>
               <p id="forum-current-balance" hidden></p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -1304,7 +1305,7 @@
                 <div class="bg-[#121316] text-[#f5f2eb] p-5 border-2 border-[var(--inner-border)] shadow-xl space-y-4">
                   <div class="flex items-center justify-between text-xs font-mono-tech text-neutral-300 border-b border-white/20 pb-2">
                     <span>FIVE-REEL MATRIX // 五轮五线</span>
-                    <span class="px-2.5 py-0.5 bg-[#9e1b1b] text-white font-bold">⚙️ 暗藏收容协议</span>
+
                     <span>从最左一列连起</span>
                   </div>
 
@@ -1331,7 +1332,7 @@
                 </div>
 
                 <!-- 赔付簿与三处隐藏收容协议 -->
-                <div class="retro-corner-box p-5 space-y-4">
+                <div class="retro-corner-box game-rule-card p-5 space-y-4">
                   <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 倍数 × 每线押注 · 从最左一轮连起</div>
                   <h4 class="text-lg font-bold font-serif-sc">收容矩阵赔付簿</h4>
 
@@ -1653,15 +1654,15 @@
   <script src="/notices-ui.js?v=reading-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=welcome-1" defer></script>
-  <script src="/sky-ui.js?v=signal-5" defer></script>
+  <script src="/player-community.js?v=crt-1" defer></script>
+  <script src="/sky-ui.js?v=crt-1" defer></script>
   <script src="/economy-ui.js?v=signal-5" defer></script>
-  <script src="/welfare-ui.js?v=signal-5" defer></script>
-  <script src="/visual-style.js?v=welcome-1" defer></script>
-  <script src="/player.js?v=welcome-1" defer></script>
-  <script src="/page-headings.js?v=serif-1" defer></script>
+  <script src="/welfare-ui.js?v=crt-1" defer></script>
+  <script src="/visual-style.js?v=crt-1" defer></script>
+  <script src="/player.js?v=crt-1" defer></script>
+  <script src="/page-headings.js?v=crt-1" defer></script>
   <script src="/print-signal.js?v=reading-1" defer></script>
-  <script src="/terminal-frame.js?v=welcome-1" defer></script>
+  <script src="/terminal-frame.js?v=crt-1" defer></script>
   <script src="/landing-sphere.js?v=patterns-1" defer></script>
 </body>
 </html>

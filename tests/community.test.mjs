@@ -41,6 +41,14 @@ test('community identity, edits, moderation, search and retained removals',async
  assert.ok((await a('/api/admin/moderation')).data.items.some(x=>x.kind==='life'&&x.id===life.id));await a('/api/admin/moderation/life/'+life.id,'POST',{action:'approve'});
  const lifeResult=(await p('/api/player/life?kind=art&department='+encodeURIComponent('医疗部')+'&q='+encodeURIComponent('值班'))).data.items;assert.equal(lifeResult.length,1);assert.equal(lifeResult[0].anonymousName,'新代号');
  const rules=await a('/api/admin/terminology','POST',{pattern:'收容',replacement:'封存',isRegex:false});assert.equal(rules.status,200);assert.equal((await a('/api/admin/terminology','POST',{pattern:'(a+)+$',replacement:'',isRegex:true})).status,400);
+ const donation={amount:1973,requestId:'custom-donation-check-01'};
+ const gift=await p('/api/player/donate','POST',donation);assert.equal(gift.status,200);assert.equal(gift.data.personal.balance,98027);assert.equal(gift.data.fund.donated,1973);
+ const repeatedGift=await p('/api/player/donate','POST',donation);assert.equal(repeatedGift.data.personal.balance,98027);assert.equal(repeatedGift.data.fund.donated,1973);
+ assert.equal((await p('/api/player/donate','POST',{amount:1.5,requestId:'invalid-fraction-01'})).status,400);
+ const excessiveGift=await p('/api/player/donate','POST',{amount:1000000001,requestId:'over-balance-check-01'});assert.equal(excessiveGift.status,400);assert.match(excessiveGift.data.error,/余额不足/);
+ const minister=await a('/api/admin/employees','POST',{displayName:'医疗部长',department:'医疗部',positionTitle:'部长',isNpc:true});assert.equal(minister.status,201);
+ const leader=await a('/api/admin/employees','POST',{displayName:'监察长',positionTitle:'执行监察长',isNpc:true,isLeadership:true});assert.equal(leader.status,201);
+ const directory=(await p('/api/player/directory')).data.items;assert.equal(directory.find(e=>e.id===minister.data.id).positionTitle,'部长');assert.equal(directory.find(e=>e.id===leader.data.id).positionTitle,'执行监察长');
  await a('/api/admin/forum/threads/'+thread,'DELETE');assert.equal((await p('/api/player/forum')).data.items.some(x=>x.id===thread),false);records=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('修改之后'))).data.items;assert.ok(records[0].deletedAt);assert.ok(records[0].deletedBy);
  const snapshot=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});assert.equal(snapshot.prepare('SELECT COUNT(*) AS n FROM dossier_comments').get().n,1);assert.equal(snapshot.prepare("SELECT COUNT(*) AS n FROM activity_logs WHERE target='profiles'").get().n,0);assert.equal(snapshot.prepare('SELECT COUNT(*) AS n FROM speech_revisions').get().n,1);snapshot.close();
 });

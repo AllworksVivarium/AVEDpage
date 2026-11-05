@@ -28,7 +28,10 @@
         }
         heading = masthead.querySelector('h2');
       } else heading = page.querySelector('h1, h2');
-      if (!heading || heading.classList.contains('terminal-page-title')) continue;
+      if (!heading) continue;
+      const title=heading.textContent.replace(/^[《〈]\s*|\s*[》〉]$/g,'');
+      if(heading.textContent!==title)heading.textContent=title;
+      if (heading.classList.contains('terminal-page-title')) continue;
       heading.classList.add('terminal-page-title');
       if (id === 'view-news') heading.textContent = '万业携生内部通告';
       const parent = heading.parentElement;

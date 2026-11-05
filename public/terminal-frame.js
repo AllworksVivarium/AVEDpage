@@ -5,10 +5,11 @@
   header.classList.add('compact-terminal-header');bar.classList.add('terminal-topbar');
   bar.children[0].classList.add('terminal-brand');bar.children[1].classList.add('terminal-identities');bar.children[2].classList.add('terminal-actions');
   app.querySelector(':scope > div > div:last-child').classList.add('terminal-content-pane');
+  const matrixRules=app.querySelector('#game-panel-slots .game-rule-card');if(matrixRules)document.getElementById('game-panel-slots').append(matrixRules);
   const brand=bar.children[0].firstElementChild.firstElementChild;
-  brand.innerHTML='<span>万业携生</span><span class="terminal-brand-code"> // A.V.E.D.</span>';
+  brand.innerHTML='<span class="terminal-brand-name">万业携生</span><span class="terminal-brand-code">AVED<small>ALLWORKS VIVARIUM</small></span>';
   header.classList.add('minimal-terminal-header');
-  for(const group of [bar.children[0],bar.children[1]]){group.classList.add('header-hidden');group.setAttribute('aria-hidden','true');}
+  bar.children[1].classList.add('header-hidden');bar.children[1].setAttribute('aria-hidden','true');
   document.getElementById('logout-btn').textContent='登出';
   for(const el of [document.getElementById('welcome-employee-banner').parentElement,document.getElementById('top-balance-val').parentElement,document.getElementById('system-realtime-clock').parentElement]){
     el.classList.add('header-hidden');el.setAttribute('aria-hidden','true');

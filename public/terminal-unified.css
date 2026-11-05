@@ -1,0 +1,96 @@
+/* Brand stays visible while the controls occupy a single compact row. */
+#inner-app-view>.minimal-terminal-header>.terminal-topbar{justify-content:space-between;padding-inline:clamp(14px,2.2vw,36px)!important;min-height:58px}
+#inner-app-view>.minimal-terminal-header .terminal-brand{display:flex;flex:1 1 auto;margin-right:auto}
+.terminal-brand>div>div:first-child{display:flex;align-items:center;gap:17px;white-space:nowrap}
+.terminal-brand-name{font-size:24px;font-weight:700;line-height:1.15;letter-spacing:.12em}
+.terminal-brand-code{display:grid;gap:3px;padding-left:16px;border-left:1px solid #fff6;font:14px/1.15 'AVED Plex Mono',monospace;letter-spacing:.12em}
+.terminal-brand-code small{font:8px/1.4 'AVED Plex Mono',monospace;letter-spacing:.13em;opacity:.7}
+#inner-app-view>.minimal-terminal-header .terminal-actions{flex:none}
+@media(max-width:1024px){
+ #inner-app-view>.minimal-terminal-header>.terminal-topbar{min-height:46px;padding-inline:14px!important}
+ .terminal-brand>div>div:first-child{gap:9px}
+ .terminal-brand-name{font-size:17px;line-height:1.3;letter-spacing:.07em}
+ .terminal-brand-code{display:block;padding-left:9px;font-size:10px;line-height:1.4;letter-spacing:.06em}
+ .terminal-brand-code small{display:none}
+}
+/* Two equal copies share one timeline; the notice remains available as a label. */
+.company-play-ticker{container-type:inline-size;overflow:hidden;line-height:1.4;padding:10px 0}
+.company-play-ticker .company-ticker-track{display:flex;width:max-content;animation:terminalMarquee 30s linear infinite}
+.company-ticker-track .ticker-copy{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:24px;min-width:100vw;min-width:100cqw;padding-inline:32px;box-sizing:border-box}
+.company-ticker-track .ticker-copy span{display:block;min-width:0;padding:0;white-space:nowrap;text-align:left;font-size:12px;line-height:1.4}
+.ticker-copy svg{display:block;width:22px;height:22px;flex:none;filter:grayscale(1);opacity:.65}
+.company-play-ticker:is(:hover,:focus-within) .company-ticker-track{animation-play-state:paused}
+@keyframes terminalMarquee{to{transform:translateX(-50%)}}
+/* Compact sound controls, with less-used channels behind a disclosure. */
+#left-sidebar .terminal-audio{padding:12px 10px;margin-top:0}
+.audio-primary{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#left-sidebar .audio-primary h3{font-size:12px!important;line-height:1.3!important;margin:0}
+#left-sidebar .audio-primary button{border:1px solid var(--inner-border-soft);border-radius:0;min-height:32px}
+.audio-options{margin-top:10px;font:11px/1.4 var(--terminal-type);color:var(--inner-text-muted)}
+.audio-options summary{cursor:pointer;padding-block:4px}
+#terminal-audio-controls{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+#left-sidebar .terminal-radio{box-shadow:none;padding:12px 10px!important;border-top:1px solid var(--inner-border-soft)}
+#left-sidebar .terminal-radio .radio-heading{font:12px/1.4 var(--terminal-copy);margin:0 0 10px}
+#cloud-music-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:24px;font-size:11px;line-height:1.4;opacity:.7}
+#left-sidebar .terminal-radio>div:last-child{display:flex;gap:6px}
+#left-sidebar .terminal-radio .radio-key{display:grid;place-items:center;flex:1;min-height:34px;padding:6px;border:1px solid var(--inner-border-soft);background:transparent;color:inherit}
+.radio-key svg{width:18px;height:18px;display:block}
+#left-sidebar .terminal-radio.playing #cloud-music-play{border-color:var(--inner-crimson);color:var(--inner-crimson)}
+.donation-form label{flex:1 1 230px;font-size:13px}
+.donation-form input{min-height:46px;font-size:18px;border-color:var(--inner-text-main)}
+.donation-form>div:first-child{flex-basis:100%}
+.donation-presets button{min-height:40px}
+.directory-role-heading{grid-column:1/-1;padding:14px 0 8px;border-bottom:1px solid var(--inner-border-soft);color:var(--inner-crimson)}
+.company-leadership{margin-top:28px}
+#inner-app-view .game-rule-card{padding:clamp(20px,2.5vw,32px);margin-top:24px;border:1px solid var(--inner-border-soft);border-top:3px solid var(--inner-crimson);background:var(--inner-card-bg);box-shadow:2px 2px 0 #0002}
+#inner-app-view .game-rule-card :is(h3,h4){margin:0 0 16px;font-size:var(--type-small-heading-size)!important;line-height:1.3!important}
+#inner-app-view .game-rule-card p{font-size:var(--type-body-size);line-height:1.7;opacity:.85}
+.flight-rule-grid{gap:22px}
+/* Scratch controls never follow the pointer, including the purchase dialog. */
+#game-panel-scratch button,#ticket-confirm-modal button{border-radius:0!important;touch-action:manipulation;transform:scale(1)!important;box-shadow:0 2px 0 #0003;transition:transform 150ms ease-out,box-shadow 150ms ease-out,background-color 150ms ease-out!important}
+#game-panel-scratch button:hover,#ticket-confirm-modal button:hover{transform:scale(1)!important}
+#game-panel-scratch button:active:not(:disabled),#ticket-confirm-modal button:active:not(:disabled){transform:scale(.96)!important;box-shadow:0 1px 1px #0003!important;transition-duration:80ms!important}
+/* Opt-in CRT presentation; the original palette remains selectable. */
+body.crt-unified.dark-mode.theme-inner{--inner-bg:#0c0d0f;--inner-card-bg:#141618;--inner-card-alt:#202225;--inner-text-main:#e7e8e5;--inner-text-muted:#9c9fa0;--inner-border:#939698;--inner-border-soft:#ffffff24;--sidebar-bg:#101113;--topbar-bg:#181a1c;--inner-crimson:#e46566;background:#0c0d0f!important}
+.crt-unified.dark-mode .terminal-content-pane::before{--pattern-ink:#d7dde21a;--pattern-fine:#d7dde209}
+.crt-unified.dark-mode #inner-app-view{--signal-phosphor:#edf3f64d;--signal-glow:#e9eef233}
+.crt-unified #inner-app-view .retro-corner-box{box-shadow:2px 2px 0 #0002}
+.profile-display-switch{display:flex;justify-content:flex-end;gap:0;margin-bottom:16px}
+.profile-display-switch button{border:1px solid var(--inner-border-soft);padding:7px 12px;min-height:34px;font:11px/1.4 var(--terminal-type);background:var(--inner-card-bg);color:var(--inner-text-main)}
+.profile-display-switch button+button{border-left:0}
+.profile-display-switch button[aria-pressed=true]{background:var(--inner-crimson);color:#fff}
+.profile-identity-sheet{display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;padding:20px 0}
+.profile-identity-copy{flex:1;min-width:min(100%,220px)}
+.profile-identity-copy h3{margin:6px 0 12px}
+.profile-bio{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:16px!important}
+.profile-balance-strip{display:flex;justify-content:space-between;align-items:baseline;gap:18px;flex-basis:100%;border-top:1px solid currentColor;padding-top:16px}
+.profile-edit-panel{border-block:1px solid var(--inner-border-soft);padding:16px 0}
+.profile-edit-panel summary{cursor:pointer;font-size:13px;line-height:1.4}
+.profile-edit-panel form{margin-top:22px;max-width:680px}
+.profile-achievements{padding-top:16px}
+.profile-achievements>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.profile-achievements p{padding:12px;border:1px solid var(--inner-border-soft);font-size:12px!important;line-height:1.65!important;margin:0!important}
+.profile-achievements p span{display:block;font:10px/1.4 var(--terminal-type);opacity:.6;margin-bottom:7px}
+.crt-unified #view-profile{--inner-bg:#0d0e10;--inner-card-bg:#141618;--inner-card-alt:#1c1e20;--inner-text-main:#e9e9e5;--inner-text-muted:#a1a5a7;--inner-border:#a4a7a9;--inner-border-soft:#ffffff2b;--inner-crimson:#e26769;--inner-accent:#e9e9e5;--inner-accent-text:#131415;max-width:1180px;margin-inline:auto;padding:clamp(18px,3vw,36px);background:#0d0e10;color:var(--inner-text-main);border:1px solid #ffffff28}
+.crt-unified #view-profile .profile-dossier{padding:0;border:0;background:transparent;box-shadow:none}
+.crt-unified #view-profile .profile-dossier::before,.crt-unified #view-profile .profile-dossier::after{display:none}
+.crt-unified #view-profile .profile-identity-sheet{background:#e8e7e2;color:#191a1b;border-left:4px solid #b83339;padding:24px;box-shadow:0 0 18px #eff0dc0a}
+.crt-unified #view-profile .profile-identity-copy .section-kicker{color:#94272d}
+.crt-unified #view-profile .profile-identity-copy h3{font-size:clamp(24px,3vw,40px)!important;line-height:1.3!important;color:#171819;text-shadow:.35px 0 #a92a3033}
+.crt-unified #view-profile .cloud-avatar{width:108px;height:128px;padding:0;filter:grayscale(1);border:1px solid #333;background:#d1d2cf}
+.crt-unified #view-profile .profile-balance-strip{border-color:#18191a40;font:12px/1.4 var(--terminal-type)}
+.crt-unified #view-profile .profile-balance-strip strong{color:#9b232c;font-size:24px;line-height:1.3}
+.crt-unified #view-profile .personal-finance{background:transparent}
+.crt-unified #view-profile .finance-grid>article{background:#181a1c;border-top:1px solid #9b343b}
+.crt-unified #view-profile :is(.personal-finance,.profile-achievements,.profile-edit-panel){border-color:#ffffff2b}
+.crt-unified #view-profile :is(input,textarea,select){background:#0c0e10;color:#eee;border-color:#ffffff40}
+.crt-unified #view-profile .profile-edit-panel button{background:#9c2d34;color:#fff}
+@media(max-width:640px){.profile-achievements>div{grid-template-columns:1fr}.profile-identity-sheet{gap:16px}.profile-balance-strip{flex-wrap:wrap}.crt-unified #view-profile .profile-identity-sheet{padding:18px}}
+@media(prefers-reduced-motion:reduce){
+ .company-play-ticker{overflow-x:auto}
+ .company-play-ticker .company-ticker-track{animation:none;transform:none}
+ .company-ticker-track .ticker-copy{min-width:0;padding-inline:16px}
+ .company-ticker-track .ticker-copy+ .ticker-copy{display:none}
+ #game-panel-scratch button,#ticket-confirm-modal button{transition:none!important}
+ #game-panel-scratch button:active:not(:disabled),#ticket-confirm-modal button:active:not(:disabled){transform:none!important}
+}
