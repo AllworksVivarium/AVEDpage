@@ -3,6 +3,8 @@ import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
 import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
+import {installEconomy,proofRandom} from './server-economy.mjs';
+import {installSky} from './server-sky.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
@@ -235,7 +237,10 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee});
+let economy;
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy});
+economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
+const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
 const server = createServer(async (req, res) => {
@@ -281,6 +286,8 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(media.handle(req,res,url))return;
+    if(await economy.handle(req,res,url))return;
+    if(await sky.handle(req,res,url))return;
     if(await community.handle(req,res,url))return;
     if(await playerService.handle(req,res,url))return;
     if (url.pathname === '/api/logout' && req.method === 'POST') {
@@ -322,7 +329,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const date=today(), reward=15000;
+      const date=today(), reward=50000+Math.floor(proofRandom().random()*50001);
       db.exec('BEGIN IMMEDIATE');
       try {
         if(db.prepare('SELECT employee_id FROM checkins WHERE employee_id=? AND checkin_date=?').get(employee.id,date)){db.exec('ROLLBACK');return send(res,409,{error:'今天已经签到。'});}
@@ -355,7 +362,7 @@ const server = createServer(async (req, res) => {
       const seed=randomBytes(32).toString('hex'),seedHash=createHash('sha256').update(seed).digest('hex');
       const symbols=['◆','●','▲','✚','★']; const rolls=[secureRoll(seed,5),secureRoll(createHash('sha256').update(seed+'b').digest('hex'),5),secureRoll(createHash('sha256').update(seed+'c').digest('hex'),5)];
       const result=rolls.map(n=>symbols[n]);let multiplier=0;
-      if(result.every(x=>x===result[0]))multiplier=result[0]==='★'?100:20;else if(new Set(result).size===2)multiplier=2;
+      if(result.every(x=>x===result[0]))multiplier=result[0]==='★'?25:5;else if(new Set(result).size===2)multiplier=.5;
       const prize=cost*multiplier;
       db.exec('BEGIN IMMEDIATE');
       try{if(balanceFor(employee.id)<cost){db.exec('ROLLBACK');return send(res,400,{error:'余额不足，无法启动老虎机。'});}

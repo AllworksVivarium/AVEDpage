@@ -124,7 +124,7 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","moderation","activity","speech","terminology"].includes(tab.dataset.tab),
+          !["admin","content","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
@@ -519,6 +519,7 @@ async function renderTab(tab) {
   try {
     if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
+    else if(tab === 'economy')await renderEconomy();
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();

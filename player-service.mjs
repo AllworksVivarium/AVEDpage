@@ -1,11 +1,12 @@
 import {mediaReference} from './server-media.mjs';
+import {weighted} from './server-economy.mjs';
 import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, slot5x3Symbols, slot5x3Lines, departmentsData, stocksData } from './server-content.mjs';
 import { generateSealedTicket } from './server-ticket.mjs';
 
-export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee}) {
+export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy}) {
   const chatStreams=new Map();
   const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[])response.write(payload);}
@@ -88,11 +89,6 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const saveRound=(id,game,state)=>Number(db.prepare('INSERT INTO player_rounds(employee_id,game,state_json) VALUES(?,?,?)').run(id,game,JSON.stringify(state)).lastInsertRowid);
   const loadRound=(id,round,game)=>{const r=db.prepare('SELECT state_json FROM player_rounds WHERE id=? AND employee_id=? AND game=?').get(round,id,game);if(!r)throw new Error('该局不存在，请重新开始。');return JSON.parse(r.state_json);};
   const updateRound=(round,state)=>db.prepare('UPDATE player_rounds SET state_json=? WHERE id=?').run(JSON.stringify(state),round);
-  function skyState(s) {
-    const elapsed=Math.max(0,Date.now()-s.startedAt-20000),depth=s.settled?s.jumpDepth:Math.min(1600,Math.round(100+elapsed*.035));
-    const phase=Date.now()<s.startedAt+20000?'BOARDING':depth>=s.crashDepth||s.settled?'SETTLED':'DROPPING';
-    return {phase,depth,remaining:Math.max(0,Math.ceil((s.startedAt+20000-Date.now())/1000)),cost:s.cost,prize:s.prize||0,seedHash:s.seedHash, ...(phase==='SETTLED'?{seed:s.seed,crashDepth:s.crashDepth}:{})};
-  }
   return {log,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
@@ -102,7 +98,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,2500000);
       if(path==='/api/player/state'&&req.method==='GET') {
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,serverTime:Date.now(),market:marketService.history(),
+        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:db.prepare('SELECT code,created_at AS createdAt FROM earned_achievements WHERE employee_id=?').all(id),
@@ -116,7 +112,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
       if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,id));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published'").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');send(res,200,{items:replies(Number(thread[1]),id)});return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,p.anonymous_name AS anonymousName,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:topic,items:replies(Number(thread[1]),id)});return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
@@ -142,11 +138,11 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(dossier){if(!db.prepare('SELECT id FROM dossiers WHERE id=?').get(dossier[1]))throw new Error('档案不存在。');
         if(req.method==='POST'){if(!valid(data.body,2000))throw new Error('评议最多 2000 字。');db.prepare('INSERT INTO dossier_comments(dossier_id,employee_id,body) VALUES(?,?,?)').run(dossier[1],id,data.body.trim());}
         send(res,200,{items:db.prepare(`SELECT c.id,c.body,e.display_name AS displayName,e.department,c.created_at AS createdAt FROM dossier_comments c JOIN employees e ON e.id=c.employee_id WHERE dossier_id=? AND c.deleted_at='' ORDER BY c.id`).all(dossier[1])});return true;}
-      if(path==='/api/player/balance/zero'&&req.method==='POST'){transaction(()=>{const b=balanceFor(id);if(b)recordLedger(id,-b,'主动归零');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
-      if(path==='/api/player/relief'&&req.method==='POST'){transaction(()=>{if(balanceFor(id)>=10000)throw new Error('余额低于 10,000 才能领取。');if(db.prepare('SELECT 1 FROM player_daily WHERE employee_id=? AND day=? AND action=?').get(id,today(),'relief'))throw new Error('今日已经领取。');db.prepare('INSERT INTO player_daily VALUES(?,?,?)').run(id,today(),'relief');recordLedger(id,25000,'应急低保');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
+      if(path==='/api/player/balance/zero'&&req.method==='POST'){transaction(()=>{const b=balanceFor(id);if(b<0)throw new Error('负债不能通过主动归零撤销。');if(b)recordLedger(id,-b,'主动归零');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
+      if(path==='/api/player/relief'&&req.method==='POST'){transaction(()=>{if(balanceFor(id)>=10000)throw new Error('余额低于 10,000 才能领取。');recordLedger(id,10000,'应急低保');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/games/scratch'&&req.method==='POST') {
-        const tier=scratchTiers.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!tier||!game)throw new Error('请选择有效票种。');
-        const proof=random(),ticket=generateSealedTicket(tier,game,proof.seed,proof.random);
+        const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {
@@ -155,34 +151,15 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const winningCells=[],notes=[],mechanisms=[];let prize=0;
         for(const line of slot5x3Lines){const first=board[line.rows[0]][0];let n=1;while(n<5&&board[line.rows[n]][n].id===first.id)n++;
           if(n>=3){prize+=first['m'+n]*Math.max(1,Math.round(cost/5));notes.push(line.name+' '+n+'连');for(let c=0;c<n;c++)winningCells.push(`${line.rows[c]}_${c}`);}}
-        if(board.flat().filter(s=>s.id==='eye').length>=3){prize+=cost*5;mechanisms.push(0);}
-        if(board.some(row=>row[0].id==='rad')&&board.some(row=>row[4].id==='rad')){prize+=cost;mechanisms.push(1);}
-        if(new Set(board[1].map(s=>s.id)).size===5){prize+=cost*3;mechanisms.push(2);}
+        if(board.flat().filter(s=>s.id==='eye').length>=3){prize+=cost*3;mechanisms.push(0);}
+        if(board.some(row=>row[0].id==='rad')&&board.some(row=>row[4].id==='rad')){prize+=Math.floor(cost*.5);mechanisms.push(1);}
+        if(new Set(board[1].map(s=>s.id)).size===5){prize+=cost*2;mechanisms.push(2);}
         send(res,200,settle(id,'slot',cost,prize,{board,winningCells,notes,mechanisms},proof));return true;
       }
       if(path==='/api/player/games/derby'&&req.method==='POST') {
         const cost=bet(data.bet);if(!Number.isInteger(data.runner)||data.runner<0||data.runner>3)throw new Error('请选择跑道。');
         const proof=random(),r=proof.random(),winner=r<.42?0:r<.70?1:r<.88?2:3,prize=winner===data.runner?Math.round(cost*[2.2,3.5,5,8.5][winner]):0;
         send(res,200,settle(id,'derby',cost,prize,{winner},proof));return true;
-      }
-      if(path==='/api/player/games/sky/start'&&req.method==='POST') {
-        const cost=bet(data.bet),proof=random(),state={cost,startedAt:Date.now(),seed:proof.seed,seedHash:proof.seedHash,crashDepth:150+Math.floor(proof.random()*1300),settled:false};
-        const round=transaction(()=>{if(balanceFor(id)<cost)throw new Error('余额不足。');const active=db.prepare("SELECT state_json FROM player_rounds WHERE employee_id=? AND game='sky' ORDER BY id DESC LIMIT 1").get(id);if(active&&skyState(JSON.parse(active.state_json)).phase!=='SETTLED')throw new Error('已有一局空投进行中。');if(active){const previous=JSON.parse(active.state_json);if(!previous.settled){previous.settled=true;previous.prize=0;previous.jumpDepth=previous.crashDepth;db.prepare("UPDATE player_rounds SET state_json=? WHERE employee_id=? AND game='sky' AND id=(SELECT MAX(id) FROM player_rounds WHERE employee_id=? AND game='sky')").run(JSON.stringify(previous),id,id);db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,'sky',previous.cost,0,previous.seed,previous.seedHash,JSON.stringify({crashDepth:previous.crashDepth,expired:true}));}}recordLedger(id,-cost,'空投登机');const rid=saveRound(id,'sky',state);log(id,'sky.start',rid,{cost,seedHash:proof.seedHash});return rid;});send(res,200,{round,...skyState(state),balance:balanceFor(id)});return true;
-      }
-      if(path==='/api/player/games/sky/current'&&req.method==='GET') {
-        const row=db.prepare("SELECT id,state_json FROM player_rounds WHERE employee_id=? AND game='sky' ORDER BY id DESC LIMIT 1").get(id);
-        if(!row){send(res,200,{round:null});return true;}data.round=row.id;
-      }
-      if(path==='/api/player/games/sky/current'||path==='/api/player/games/sky/jump') {
-        const state=loadRound(id,Number(data.round),'sky'),view=skyState(state);
-        if(path.endsWith('/jump')&&req.method!=='POST')throw new Error('无效操作。');
-        if(path.endsWith('/jump')&&view.phase==='BOARDING')throw new Error('尚未开始下降。');
-        if(!state.settled&&(view.phase==='SETTLED'||path.endsWith('/jump')))transaction(()=>{
-          state.settled=true;state.prize=view.phase==='DROPPING'?Math.floor(state.cost*(view.depth/200)):0;state.jumpDepth=view.depth;
-          if(state.prize)recordLedger(id,state.prize,'空投开伞结算');
-          db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,'sky',state.cost,state.prize,state.seed,state.seedHash,JSON.stringify({depth:view.depth,crashDepth:state.crashDepth}));updateRound(data.round,state);award(id);
-        });
-        send(res,200,{round:data.round,...skyState(state),jumpDepth:state.jumpDepth,balance:balanceFor(id)});return true;
       }
       if(path==='/api/player/games/cards'&&req.method==='POST') {
         const action=data.action;
@@ -233,6 +210,6 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,{items:db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse()});return true;
       }
       send(res,404,{error:'接口不存在。'});return true;
-    }catch(error){send(res,400,{error:error.message});return true;}
+    }catch(error){send(res,400,{error:error.message,...(error.code?{code:error.code}:{})});return true;}
   }};
 }

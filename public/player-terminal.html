@@ -338,6 +338,7 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css">
   <link rel="stylesheet" href="/community.css">
+<link rel="stylesheet" href="/economy.css?v=economy-3">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -622,7 +623,7 @@
             <span id="welcome-employee-banner" class="font-bold">当前用户</span>
           </div>
 
-          <span id="intranet-role" class="terminal-role-box">内网身份：员工</span>
+          <span id="intranet-role" class="terminal-role-box">ID：[未登记]</span>
           <div class="px-2.5 py-1.5 retro-corner-box flex items-center gap-2">
             <span class="opacity-70">余额:</span>
             <strong id="top-balance-val" class="text-xs sm:text-sm font-bold text-[var(--inner-crimson)]">¤ —</strong>
@@ -682,7 +683,7 @@
         <div class="p-2 space-y-1.5 font-mono-tech text-xs">
           <div class="sidebar-control-row"><button id="sidebar-toggle-btn" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-controls="left-sidebar" aria-expanded="true"
             class="w-9 h-9 border border-[var(--inner-border)] bg-[var(--inner-accent)] text-[var(--inner-accent-text)] flex items-center justify-center font-mono-tech text-sm cursor-pointer hover:opacity-85 transition shrink-0">
-            ◀ 收起侧边栏
+            ◀ 收起
           </button></div>
           <div class="px-3 py-2 text-[10px] opacity-60 tracking-widest border-b border-[var(--inner-border-soft)]">
             <span class="sidebar-label">TERMINAL DIRECTORY</span>
@@ -1080,7 +1081,7 @@
 
             <div class="flex items-center gap-2 text-xs">
               <button id="claim-relief-btn" type="button" class="px-3 py-1.5 border border-[var(--inner-crimson)] text-[var(--inner-crimson)] hover:bg-[var(--inner-crimson)] hover:text-white font-bold cursor-pointer">
-                🆘 应急低保 (+¤25,000)
+                🆘 应急低保 (+¤10,000)
               </button>
             </div>
           </div>
@@ -1624,11 +1625,13 @@
   <!-- ==========================================================================
        核心交互逻辑层
        ========================================================================== -->
-  <script src="/http-client.js?v=login-2" defer></script>
-  <script src="/terminal-time.js?v=login-2" defer></script>
-  <script src="/market-chart.js?v=login-2" defer></script>
-  <script src="/terminology.js?v=login-2" defer></script>
-  <script src="/player-community.js?v=login-2" defer></script>
-  <script src="/player.js?v=login-2" defer></script>
+  <script src="/http-client.js?v=economy-3" defer></script>
+  <script src="/terminal-time.js?v=economy-3" defer></script>
+  <script src="/market-chart.js?v=economy-3" defer></script>
+  <script src="/terminology.js?v=economy-3" defer></script>
+  <script src="/player-community.js?v=economy-3" defer></script>
+  <script src="/sky-ui.js?v=economy-3" defer></script>
+  <script src="/economy-ui.js?v=economy-3" defer></script>
+  <script src="/player.js?v=economy-3" defer></script>
 </body>
 </html>

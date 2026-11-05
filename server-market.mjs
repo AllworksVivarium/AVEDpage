@@ -28,7 +28,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       const before=indexValue(),seed=randomBytes(32).toString('hex');
       for(const s of db.prepare('SELECT code,price FROM stock_prices').all()) {
         const roll=createHmac('sha256',Buffer.from(seed,'hex')).update(s.code).digest().readUInt32BE(0)/4294967296;
-        const price=Math.max(300,Math.round(s.price*(1+(roll-.5)*.0036)));
+        const price=Math.max(30,Math.round(s.price*(1+(roll-.5)*.012)));
         candle(s.code,s.price,price,seed,at);
         db.prepare('UPDATE stock_prices SET price=?,tick=? WHERE code=?').run(price,Math.floor(at/60000),s.code);
       }

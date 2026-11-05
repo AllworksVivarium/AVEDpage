@@ -1,22 +1,7 @@
 const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
-      export function generateSealedTicket(tier, gameTypeObj, seed, random) {
-        const ev = tier.internalEv;
+      export function generateSealedTicket(tier, gameTypeObj, seed, random, configuredPayout) {
         const cost = tier.cost;
-        const mult = tier.mult;
-
-        const r = random();
-        let targetPayout = 0;
-        if (r < 0.015 * (ev / 0.5)) {
-          targetPayout = gameTypeObj.baseTopPrize * mult;
-        } else if (r < 0.08 * (ev / 0.5)) {
-          targetPayout = cost * Math.floor(6 + random() * 12);
-        } else if (r < 0.26 * (ev / 0.5)) {
-          targetPayout = Math.round(cost * (1.2 + random() * 1.5));
-        } else if (r < 0.45) {
-          targetPayout = Math.round(cost * 0.2);
-        } else {
-          targetPayout = 0;
-        }
+        const targetPayout = configuredPayout ?? 0;
 
         const cells = [];
 

@@ -316,7 +316,7 @@
           sidebar.classList.remove('w-16');
           sidebar.classList.add('w-52');
           labels.forEach(l => l.classList.remove('hidden'));
-          if (arrow) arrow.textContent = '◀'; document.getElementById('sidebar-toggle-btn').textContent='◀ 收起侧边栏';
+          if (arrow) arrow.textContent = '◀'; document.getElementById('sidebar-toggle-btn').textContent='◀ 收起';
         }
         const toggle=document.getElementById('sidebar-toggle-btn');
         toggle.setAttribute('aria-expanded',String(!isSidebarCollapsed));
@@ -455,6 +455,7 @@
       const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
 
       function switchMainView(target) {
+        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
@@ -506,31 +507,13 @@
       function renderDepartmentsAndPersonnel() {
         const deptGrid = document.getElementById('departments-grid');
         if (deptGrid) {
-          deptGrid.innerHTML = departmentsData.map(d => `
-            <div class="retro-corner-box p-5 flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between text-[10px] font-mono-tech opacity-70 border-b border-[var(--inner-border-soft)] pb-1.5 mb-2.5">
-                  <span>${d.code}</span>
-                  <span class="font-bold text-[var(--inner-crimson)]">${d.minister}</span>
-                </div>
-                <h4 class="text-base font-bold font-serif-sc mb-1.5"><button type="button" data-department-filter="${d.name}" class="department-filter-btn">${d.name}</button></h4>
-                <p class="text-xs opacity-85 leading-relaxed mb-3">${d.desc}</p>
-                ${d.hasBgCard ? `
-                  <div class="mb-3 border border-[var(--inner-border)] overflow-hidden">
-                    <img src="/assets/medical.jpg" alt="医疗部背景档案卡" class="w-full h-28 object-cover">
-                    <div class="px-2 py-1 bg-black text-white text-[10px] font-mono-tech">MEDICAL DIVISION // 医疗部档案</div>
-                  </div>
-                ` : ''}
-              </div>
-              <div class="pt-2.5 border-t border-[var(--inner-border-soft)] text-[11px] font-mono-tech text-[var(--inner-crimson)]">
-                &gt; “${d.motto}”
-              </div>
-            </div>
-          `).join('');
+          deptGrid.innerHTML = departmentsData.map((d,i) => `<button type="button" data-department-filter="${d.name}" class="department-sheet ${window.avedDepartmentFilter===d.name?'department-selected':''}"><div class="department-meta"><span>AVED / ${esc(d.code)}</span><span>DIVISION ${String(i+1).padStart(2,'0')}</span></div><h3>${d.name}</h3><div class="department-summary"><p>${d.desc}</p><span class="department-number">${String(i+1).padStart(2,'0')}</span></div><footer><span>${d.motto}</span><b>调阅人员 ↗</b></footer></button>`).join('');
         }
 
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
+        dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
+        if(!window.avedDepartmentFilter){dirGrid.replaceChildren();return;}
 
         const labels = ['力量', '意志', '体质', '智力', '敏捷', '洞察'];
         const cx = 65, cy = 65, rMax = 44;
@@ -538,7 +521,7 @@
         const outerHex = angles.map(a => `${(cx + rMax * Math.cos(a)).toFixed(1)},${(cy + rMax * Math.sin(a)).toFixed(1)}`).join(' ');
         const midHex = angles.map(a => `${(cx + rMax * 0.6 * Math.cos(a)).toFixed(1)},${(cy + rMax * 0.6 * Math.sin(a)).toFixed(1)}`).join(' ');
 
-        dirGrid.innerHTML = employees.filter(emp=>!window.avedDepartmentFilter||emp.department===window.avedDepartmentFilter).map(emp => {
+        dirGrid.innerHTML = employees.filter(emp=>emp.department===window.avedDepartmentFilter).map(emp => {
           const stats = emp.stats || [80, 85, 80, 85, 80, 85];
           const polyPoints = stats.map((val, i) => {
             const r = (val / 100) * rMax;
@@ -590,7 +573,7 @@
               </div>
             </div>
           `;
-        }).join('');
+        }).join('')||'<p class="p-5">本部门暂无在册人员。</p>';
       }
 
       // ======================================================================
@@ -1132,12 +1115,12 @@
       // 分页 6-2：五轮五线 · 收容抑制矩阵（已全部替换为 SCP 工业收容符号，无猫咪）
       // ======================================================================
       const slot5x3Symbols = [
-        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 136, m4: 720, m5: 4000 },
-        { id: 'rad', icon: '☢️', name: '高危核心', m3: 53, m4: 120, m5: 288 },
-        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 27, m4: 56, m5: 120 },
-        { id: 'file', icon: '📁', name: '机密卷宗', m3: 14, m4: 28, m5: 50 },
-        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 10, m4: 15, m5: 24 },
-        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 7, m4: 10, m5: 13 }
+        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 88, m4: 468, m5: 2600 },
+        { id: 'rad', icon: '☢️', name: '高危核心', m3: 34, m4: 78, m5: 187 },
+        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 17, m4: 36, m5: 78 },
+        { id: 'file', icon: '📁', name: '机密卷宗', m3: 9, m4: 18, m5: 32 },
+        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 6, m4: 9, m5: 15 },
+        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 4, m4: 6, m5: 8 }
       ];
 
       const slot5x3Lines = [
@@ -1149,9 +1132,9 @@
       ];
 
       const slot5x3Mechanisms = [
-        { id: 'mech_1', title: '协议一 · 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×5 倍特别津贴', discovered: false },
-        { id: 'mech_2', title: '协议二 · 辐射共振回响', desc: '首尾两列同时出现高危核心，全额返还本转押注', discovered: false },
-        { id: 'mech_3', title: '协议三 · 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×3 倍科研奖金', discovered: false }
+        { id: 'mech_1', title: '协议一 · 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×3 倍特别津贴', discovered: false },
+        { id: 'mech_2', title: '协议二 · 辐射共振回响', desc: '首尾两列同时出现高危核心，返还本转投入的 50%', discovered: false },
+        { id: 'mech_3', title: '协议三 · 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×2 倍科研奖金', discovered: false }
       ];
 
       let slot5x3State = {
@@ -1364,7 +1347,7 @@
 
         if (lobbyView) {
           lobbyView.innerHTML = scratchGameTypes.map(g => {
-            const topPrize = g.baseTopPrize * selectedTier.mult;
+            const topPrize = selectedTier.topPrizes?.[g.type] ?? selectedTier.cost*100;
             return `
               <div class="${g.cardBg} text-[#141413] border-2 border-[#141413] shadow-md flex flex-col justify-between overflow-hidden">
                 <div>
@@ -1431,7 +1414,8 @@
         document.getElementById('ticket-modal-title').textContent = g.title;
         document.getElementById('ticket-modal-tagline').textContent = g.tagline;
         document.getElementById('ticket-modal-price').textContent = fmtMoney(selectedTier.cost);
-        document.getElementById('ticket-modal-top-prize').textContent = fmtMoney(g.baseTopPrize * selectedTier.mult);
+        document.getElementById('ticket-modal-price').dataset.cost=selectedTier.cost;document.getElementById('ticket-modal-price').dataset.revision=economyRevision;
+        document.getElementById('ticket-modal-top-prize').textContent = fmtMoney(selectedTier.topPrizes?.[g.type] ?? selectedTier.cost*100);
         document.getElementById('ticket-modal-balance-preview').textContent =
           `${currentUser.balance.toLocaleString()} → ${(currentUser.balance - selectedTier.cost).toLocaleString()}`;
 
@@ -1639,6 +1623,7 @@
         } finally {marketBusy=false;if(code!==marketCode||period!==marketPeriod)refreshMarket().catch(e=>showToast(e.message));}
       }
       function renderStocks() {
+        economyUI?.renderHoldings();
         const value=marketView?.index;
         if(value){
           document.getElementById('karma-index-val').textContent=(value.price/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1783,6 +1768,7 @@
       function renderPendingImagesQueue(){}
       function renderAnonAuditLog(){}
       function renderEmployeeRoster(){}
+      let economyUI=null,economyRevision=0;
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       let playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
       const byId=id=>document.getElementById(id);
@@ -1790,8 +1776,10 @@
         const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
+      function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
       async function loadPlayerData() {
         const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;
+        if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(e=>({id:String(e.id),name:esc(e.displayName),department:esc(e.department),bracketTag:esc(e.department),stats:[0,0,0,0,0,0],location:'',abilityNote:'',avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''}));
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
@@ -1804,19 +1792,19 @@
       }
       function syncUserHeaderUI() {
         if(!currentUser)return;
-        byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name+' ['+(currentUser.department||'公司员工')+']';
-        byId('intranet-role').textContent=currentUser.serverAdmin?'内网身份：监察管理':'内网身份：正式员工';
+        byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
+        byId('intranet-role').textContent='ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
-        byId('header-quick-checkin-btn').textContent=checked?'今日已签到':'每日签到 (+¤15,000)';byId('header-quick-checkin-btn').disabled=checked;
-        byId('header-quick-relief-btn').classList.toggle('hidden',currentUser.balance>=10000);
-        byId('claim-relief-btn').textContent='应急低保（每日一次，余额低于 10,000）';
+        byId('header-quick-checkin-btn').textContent=checked?'今日已签到':'每日签到 · 5万—10万';byId('header-quick-checkin-btn').disabled=checked;
+        byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领低保 · +¤10,000';
+        byId('claim-relief-btn').textContent='余额低于 10,000 可领低保';
         byId('admin-nav-tab').hidden=!currentUser.serverAdmin;
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));}catch(e){showToast(e.message,'warn');}}
-      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('已领取今日补贴。');}catch(e){showToast(e.message,'warn');}}
+      async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');}catch(e){showToast(e.message,'warn');}}
       function completeEnterIntranet(emp){
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
@@ -1851,7 +1839,7 @@
           byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> · ${AVEDTime.markup(r.createdAt)} · ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
           byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
-      async function refreshForum(){const d=await api('/api/player/forum');forumThreads=d.items;forumNext=d.next;renderForumView();}
+      async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
       async function loadMoreForum(){if(!forumNext||forumLoading)return;forumLoading=true;const el=byId('forum-load-more');if(el){el.disabled=true;el.innerHTML='<span class="animate-pulse">正在载入更多帖子… ▰ ▰ ▰</span>';byId('forum-skeleton-container').classList.remove('hidden');}
         try{const d=await api('/api/player/forum?before='+forumNext);forumThreads.push(...d.items);forumNext=d.next;renderForumView();}finally{forumLoading=false;byId('forum-skeleton-container').classList.add('hidden');}}
       window.addEventListener('scroll',()=>{if(currentUser&&!byId('view-forum').classList.contains('hidden')&&!currentForumThreadId&&innerHeight+scrollY>document.documentElement.scrollHeight-200)loadMoreForum().catch(e=>showToast(e.message));},{passive:true});
@@ -1868,23 +1856,8 @@
         byId('ddz-turn-indicator').textContent=data.phase==='ended'?(data.winner===0?'本局获胜，奖金已入账。':'本局结束，电脑对手获胜。'):data.phase==='bidding'?'点击抢地主开始':'轮到你出牌：单张、对子、三张、炸弹';
         if(data.lastPlay)renderTableCards(data.lastPlay.cards,'上一手出牌');else byId('ddz-last-played-cards').replaceChildren();renderDoudizhuUI();
       }
-      function renderSky(state){
-        if(!state.round){byId('skydive-board-btn').disabled=false;byId('skydive-center-main-num').textContent='待登机';byId('skydive-open-chute-btn').disabled=true;byId('skydive-passenger-stats').textContent='暂无乘员';byId('skydive-airship-extra-count').textContent='0';return;}
-        skyRound=state.round;skydiveState.phase=state.phase;skydiveState.currentDepth=state.depth;
-        byId('skydive-board-btn').disabled=state.phase!=='SETTLED';
-        byId('skydive-open-chute-btn').disabled=state.phase!=='DROPPING';
-        const display=byId('skydive-center-subtitle');if(display)display.textContent=state.phase==='BOARDING'?'您已登机 · '+state.remaining+' 秒后开始下降':state.phase==='DROPPING'?`下降读数 ${state.depth} 米`:state.round?`本班结束 · 结算 ${fmtMoney(state.prize)}`:'等待登机';
-        const marker=byId('skydive-ruler-fill');if(marker)marker.style.top=Math.min(95,Math.max(0,state.depth/1600*95))+'%';
-        byId('skydive-center-main-num').textContent=state.phase==='BOARDING'?state.remaining+'s':state.depth+'m';
-        byId('skydive-center-subinfo').textContent=state.phase==='SETTLED'?'本班奖金 '+fmtMoney(state.prize):'200 米约回本；超过安全线未开伞会损失投入。';
-        byId('skydive-flight-no-label').textContent='架次 #'+state.round;
-        byId('skydive-wax-hash').textContent=state.seed?'种子 '+state.seed+' / SHA-256 '+state.seedHash:state.seedHash;
-        byId('skydive-passenger-stats').textContent='个人架次';
-        byId('skydive-passengers-list').textContent=playerProfile.anonymousName+' · '+(state.phase==='SETTLED'?'已结算':state.phase==='BOARDING'?'已登机':'下降中');
-        byId('skydive-airship-extra-count').textContent='1';
-        if(typeof state.balance==='number'){currentUser.balance=state.balance;syncUserHeaderUI();}
-      }
-      async function pollSky(){if(!currentUser||skyPollBusy)return;skyPollBusy=true;try{renderSky(await api('/api/player/games/sky/current'));}finally{skyPollBusy=false;}}
+      function renderSky(state){skyRound=state.round;skyUI.render(state);}
+      async function pollSky(){return skyUI.poll();}
       async function refreshChat(room){renderChat(room,await api('/api/player/chat?room='+room));}
       function renderChat(room,d){const box=byId(room==='sky'?'skydive-chat-list':'derby-chat-messages');if(!box)return;
         const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80;const last=box.dataset.lastId;const next=String(d.items.at(-1)?.id||'')+d.items.map(m=>m.alias).join('|');if(last===next)return;
@@ -1896,9 +1869,9 @@
       function renderProfile(){const target=byId('view-profile');if(!target)return;
         target.innerHTML=`<div class="retro-corner-box p-5 space-y-4"><h2 class="text-xl font-bold">个人主页</h2><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div><p>${esc(currentUser.name)} · ${esc(currentUser.account)}</p><p>余额：${fmtMoney(currentUser.balance)}</p><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">简介<textarea class="cloud-input" name="bio" maxlength="500">${esc(playerProfile.bio)}</textarea></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary px-4 py-2">保存</button></form><h3 class="font-bold">成就</h3>${[['zero','个人资产归零'],['100k','个人资产超过 10 万'],['1m','个人资产超过 100 万'],['jackpot','赢得超级大奖']].map(([code,title])=>`<p>${playerAchievements.some(a=>a.code===code)?'◆ 已达成':'◇ 未达成'} · ${title}</p>`).join('')}</div>`;
       }
-      async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
+      async function showProfile(){const d=await api('/api/player/state');playerProfile=d.profile;playerAchievements=d.achievements;playerHistory=d.history;currentUser.balance=d.balance;switchMainView('profile');renderProfile();byId('view-profile').insertAdjacentHTML('beforeend','<section class="retro-corner-box p-5 mt-4"><h3>最近玩法记录</h3>'+playerHistory.map(h=>'<p class="text-xs py-2">#'+h.id+' · '+esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌',risk:'深潜授信'})[h.game]||h.game)+' · 投入 '+fmtMoney(h.cost)+' · 奖金 '+fmtMoney(h.prize)+' · '+AVEDTime.markup(h.createdAt)+'</p>').join('')+'</section>');}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
-      async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
+      async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
       document.addEventListener('submit',event=>{
         const form=event.target;const id=form.id;
         const handled=['new-forum-topic-form','forum-detail-reply-form','news-detail-comment-form','scp-realname-comment-form','skydive-chat-form','derby-chat-form','cloud-profile-form'];
@@ -1946,7 +1919,7 @@
           if(id==='forum-refresh-skeleton-btn')return refreshForum();
           if(id==='ticket-modal-confirm-btn'||id==='scratch-next-ticket'){
             const type=id==='scratch-next-ticket'?activeIssuedTicket?.gameType:pendingTicketType;if(!type)throw new Error('请先选择票种。');
-            const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:selectedTier.id,type:type.type}});
+            const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:selectedTier.id,type:type.type,cost:id==='scratch-next-ticket'?selectedTier.cost:Number(byId('ticket-modal-price').dataset.cost),revision:id==='scratch-next-ticket'?economyRevision:Number(byId('ticket-modal-price').dataset.revision)}});
             activeIssuedTicket=d.result;currentUser.balance=d.balance;syncUserHeaderUI();
             byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');
             byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');
@@ -1961,8 +1934,8 @@
             const d=await api('/api/player/games/derby',{method:'POST',body:{bet:Number(byId('derby-bet-amount').value),runner:derbyState.selectedHorseId}});
             derbyState.running=true;byId('derby-start-race-btn').classList.add('hidden');byId('derby-pre-hash').textContent=d.seedHash;let ticks=0;
             const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 · 奖金 '+fmtMoney(d.prize);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
-          }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||1000)}});renderSky(d);showToast('您已登机');}
-          else if(id==='skydive-open-chute-btn'){if(!skyRound)throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyRound}}));}
+          }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);showToast('您已登机');}
+          else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
           else if(trade){const buy=button.hasAttribute('data-buy-idx'),index=Number(button.getAttribute(buy?'data-buy-idx':'data-sell-idx')),quantity=Number(byId('stock-quantity-'+index).value);if(!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('委托数量应为 1 至 10,000 的整数。');const d=await api('/api/player/stocks?code='+encodeURIComponent(marketCode)+'&period='+marketPeriod,{method:'POST',body:{code:stocksData[index].code,action:buy?'buy':'sell',quantity}});applyMarket(d);showToast('委托已成交。');}
           else if(id.startsWith('cloud-music')){
             if(!playerMusic.length)throw new Error('广播频道暂无曲目。');const audio=byId('cloud-music-audio');
@@ -1981,6 +1954,8 @@
       const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-back-lobby-btn').after(nextTicket);
       byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');
 
+      const skyUI=AVEDSkyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
+      economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       let rememberedSession=false;
@@ -1991,7 +1966,7 @@
         const started=performance.now();(async()=>{try{await nextPaint();const employee=await loadPlayerData();signalPhase('欢迎回到公司，'+employee.name,85,'正在调阅公司档案……');await new Promise(r=>setTimeout(r,Math.max(0,1000-(performance.now()-started))));completeEnterIntranet(employee);signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');await new Promise(r=>setTimeout(r,420));}catch{loginModal.classList.remove('hidden');loginModal.classList.add('flex');}finally{signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');}})();
       },true);
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('game-panel-stocks').classList.contains('hidden'))refreshMarket().catch(()=>{});},5000);
-      setInterval(()=>{if(!currentUser||document.hidden)return;pollSky().catch(()=>{});},1500);
+
       setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)renderForumView();},10000);
 
 

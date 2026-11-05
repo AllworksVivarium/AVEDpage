@@ -61,12 +61,12 @@ export const scratchGameTypes = [
         }
       ];
 export const slot5x3Symbols = [
-        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 136, m4: 720, m5: 4000 },
-        { id: 'rad', icon: '☢️', name: '高危核心', m3: 53, m4: 120, m5: 288 },
-        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 27, m4: 56, m5: 120 },
-        { id: 'file', icon: '📁', name: '机密卷宗', m3: 14, m4: 28, m5: 50 },
-        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 10, m4: 15, m5: 24 },
-        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 7, m4: 10, m5: 13 }
+        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 88, m4: 468, m5: 2600 },
+        { id: 'rad', icon: '☢️', name: '高危核心', m3: 34, m4: 78, m5: 187 },
+        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 17, m4: 36, m5: 78 },
+        { id: 'file', icon: '📁', name: '机密卷宗', m3: 9, m4: 18, m5: 32 },
+        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 6, m4: 9, m5: 15 },
+        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 4, m4: 6, m5: 8 }
       ];
 export const slot5x3Lines = [
         { id: 1, name: '① 中线', rows: [1, 1, 1, 1, 1] },
