@@ -2,8 +2,8 @@
  const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
  const save=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
  document.documentElement.dataset.savedTheme=read('aved_theme_v1','day');
- const palette=read('aved_palette_preview_v1','ember');
- document.documentElement.dataset.palettePreview=['original','ember','oxblood'].includes(palette)?palette:'ember';
+ const palette=read('aved_palette_preview_v1','mineral');
+ document.documentElement.dataset.palettePreview=['oxblood','darkroom','mineral'].includes(palette)?palette:'mineral';
  function apply(){
   document.body.classList.toggle('dark-mode',document.documentElement.dataset.savedTheme==='night');
   document.body.classList.toggle('effects-off',read('aved_effects_v1','on')==='off');
