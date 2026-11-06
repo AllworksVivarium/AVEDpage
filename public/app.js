@@ -109,11 +109,11 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","robots"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(location.hash==='#dossiers'?'dossiers':'admin');
+    if (isAdmin) await renderTab(['dossiers','robots'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
     else await Promise.all([renderTab("files"), loadMusic()]);
   } catch(error) {
     if(generation!==portalGeneration)return;
@@ -516,7 +516,6 @@ async function renderTab(tab) {
     if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
-    else if(tab === 'economy')await renderEconomy();
     else if(tab === 'achievements')await renderAchievements();
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
