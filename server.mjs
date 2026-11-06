@@ -332,7 +332,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const date=today(), reward=50000+Math.floor(proofRandom().random()*50001);
+      const date=today(), reward=10000;
       db.exec('BEGIN IMMEDIATE');
       try {
         if(db.prepare('SELECT employee_id FROM checkins WHERE employee_id=? AND checkin_date=?').get(employee.id,date)){db.exec('ROLLBACK');return send(res,409,{error:'今天已经签到。'});}

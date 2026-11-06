@@ -29,11 +29,20 @@
     filter: none !important;
   }
 
+  /* Text-only CRT feedback, without restoring any button shadows. */
+  #left-sidebar .nav-tab-btn:is(:hover,:active,:focus-visible,[aria-current="page"]) .sidebar-label {
+    text-shadow:0 0 1px currentColor,0 0 5px color-mix(in srgb,currentColor 38%,transparent) !important;
+  }
+  body.effects-off #left-sidebar .nav-tab-btn .sidebar-label {text-shadow:none !important}
+
   @media (hover: hover) and (pointer: fine) {
     #view-containment .magnetic-cta:not(:disabled):not([aria-disabled="true"]) {
       transform: translate(var(--aved-magnet-x, 0px), var(--aved-magnet-y, 0px)) scale(var(--aved-press-scale)) !important;
     }
   }
+
+  /* The drawer scrim is a dismissal surface rather than a visible key. */
+  #sidebar-backdrop {transform:none !important;transition:none !important}
 
   body.effects-off :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])),
   body.effects-off #view-containment .magnetic-cta {

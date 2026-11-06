@@ -1,0 +1,49 @@
+/* One optical icon size and one type treatment across the directory. */
+@layer aved-interactions {
+  #left-sidebar :is(.sidebar-label,#sidebar-toggle-btn,summary,.audio-primary h3,.terminal-audio label,.palette-preview label>span) {
+    filter:url('#aved-sidebar-type') !important;
+    text-shadow:.55px 0 color-mix(in srgb,var(--brand-red) 45%,transparent),-.35px 0 color-mix(in srgb,currentColor 35%,transparent) !important;
+  }
+  body.effects-off #left-sidebar :is(.sidebar-label,#sidebar-toggle-btn,summary,.audio-primary h3,.terminal-audio label,.palette-preview label>span) {
+    filter:none !important;text-shadow:none !important;
+  }
+  @media (prefers-reduced-motion:reduce) {
+    #left-sidebar :is(.sidebar-label,#sidebar-toggle-btn,summary,.audio-primary h3,.terminal-audio label,.palette-preview label>span) {filter:none !important;text-shadow:none !important}
+  }
+}
+@layer aved-site {
+  #left-sidebar :is(.nav-tab-btn,.sidebar-label,#sidebar-toggle-btn) {
+    font-family:var(--terminal-copy,'Noto Serif SC',serif) !important;
+    font-size:16px !important;font-weight:400;line-height:1.4 !important;
+  }
+  #left-sidebar #sidebar-toggle-btn {justify-content:flex-end !important}
+  #left-sidebar.w-16 #sidebar-toggle-btn {justify-content:center !important}
+  .sidebar-type-definitions {position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+  #left-sidebar .nav-tab-btn>.sidebar-symbol,
+  #inner-app-view .sidebar-symbol {
+    display:block !important;position:relative !important;flex:0 0 28px !important;
+    width:28px !important;height:28px !important;overflow:hidden !important;
+    background:transparent !important;border:0 !important;isolation:isolate;
+  }
+  #inner-app-view .sidebar-symbol::before {
+    content:'';display:block !important;position:absolute;inset:0;
+    background:currentColor !important;
+    mask-image:var(--symbol-image);mask-mode:luminance;
+    mask-repeat:no-repeat;mask-position:center;mask-size:var(--symbol-size,contain);
+  }
+  #inner-app-view .notice-broadcast-symbol {
+    flex:0 0 56px !important;width:56px !important;height:56px !important;
+    color:var(--inner-text-main) !important;
+  }
+  #inner-app-view #header-quick-relief-btn {
+    background:var(--brand-red) !important;color:var(--study-on-red,#fff2d5) !important;
+    border-color:var(--brand-red) !important;
+  }
+  #inner-app-view #header-quick-relief-btn:hover {background:var(--brand-red-hover) !important}
+  #inner-app-view #header-quick-relief-btn:disabled {opacity:.55 !important;cursor:not-allowed}
+  #view-casino>.terminal-game-header {
+    position:sticky;top:var(--terminal-header-height,58px);z-index:18;
+    background:var(--inner-bg) !important;padding-top:8px;
+  }
+  #view-casino .terminal-game-header>.company-play-ticker {margin:12px 0 0 !important}
+}

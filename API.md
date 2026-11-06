@@ -10,7 +10,7 @@
 | POST | `/api/logout` | 退出并撤销会话 |
 | GET | `/api/me` | 当前员工和服务器计算的余额 |
 | GET / PUT | `/api/profile` | 读取/保存匿名名、简介和头像 |
-| GET / POST | `/api/checkin` | 查询/领取每日签到；每天一次 |
+| GET / POST | `/api/checkin` | 查询/领取每日签到；每天一次，固定 10,000 |
 | GET | `/api/dossiers` | 读取收容物档案 |
 | GET | `/api/announcements` | 读取公告 |
 | GET | `/api/posts?announcementId=1` | 读取公告下的实名留言 |
@@ -48,6 +48,7 @@
 
 - 余额保存在不可由前端覆盖的流水表中，展示余额由服务器求和计算。
 - 签到使用员工编号和上海日期作为唯一键；重复签到会被拒绝。
+- `GET /api/player/rewards` 返回签到和整点补给状态、重置时间及额度；`POST /api/player/rewards/hourly` 每个整点周期领取一次 5,000，重复请求不重复入账。历史已领取金额保留。
 - 每次游戏由 Node.js `crypto.randomBytes(32)` 生成 256 位随机种子，开奖结果通过 HMAC 派生。种子、SHA-256 校验值、玩法、开奖结果和对应的余额流水写入数据库；游戏请求不接受客户端的结果参数。
 - 公告、留言、个人资料、论坛主题/回复、收容物档案、曲目和员工账户均保存在服务器 SQLite 数据库中。
 - 前端仅展示 API 返回的数据；页面刷新后重新从服务器读取，不以 localStorage/sessionStorage 作为业务数据存储。
