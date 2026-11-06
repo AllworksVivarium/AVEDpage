@@ -1,3 +1,4 @@
+import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {mediaReference} from './server-media.mjs';
 import {weighted} from './server-economy.mjs';
 import {directoryEmployees} from './server-directory.mjs';
@@ -73,7 +74,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const award=()=>{}; // Ledger and settlement triggers award achievements atomically.
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
+  if(!db.prepare("SELECT 1 FROM content_initializations WHERE name='aved-007'").get()){
   db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
+    db.prepare("INSERT INTO content_initializations VALUES('aved-007')").run();
+  }
   for(const [code,name] of [['AVED.VIV','收容部'],['AVED.ANC','武装部'],['AVED.MEM','后勤部'],['AVED.RES','科研部'],['AVED.MED','医疗部']]){db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,3200,?)').run(code,name,Math.floor(Date.now()/60000));db.prepare('UPDATE stock_prices SET name=? WHERE code=?').run(name,code);}
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片请使用不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
@@ -255,8 +259,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(moderation&&req.method==='POST') {
         if(!['approve','reject'].includes(data.action))throw new Error('审核操作无效。');
         const table=moderation[1]==='thread'?'forum_threads':'forum_replies';
-        const result=db.prepare(`UPDATE ${table} SET status=?,moderation=? WHERE id=? AND moderation='pending'`).run(data.action==='approve'?'published':'hidden',data.action==='approve'?'approved':'rejected',moderation[2]);
-        if(!result.changes)throw new Error('内容已处理或已删除。');log(id,'moderation',table+'/'+moderation[2],{decision:data.action});send(res,200,{ok:true});return true;
+        transaction(()=>{checkImageVersion(db,moderation[1],Number(moderation[2]),data.archiveId);const result=db.prepare(`UPDATE ${table} SET status=?,moderation=? WHERE id=? AND moderation='pending'`).run(data.action==='approve'?'published':'hidden',data.action==='approve'?'approved':'rejected',moderation[2]);
+        if(!result.changes)throw new Error('内容已处理或已删除。');recordImageReview(db,moderation[1],Number(moderation[2]),employee,data.action);});log(id,'moderation',table+'/'+moderation[2],{decision:data.action});send(res,200,{ok:true});return true;
       }
       if(path==='/api/admin/activity'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages') AND id<? ORDER BY id DESC LIMIT 100").all(before)});return true;}
       const dossier=path.match(/^\/api\/player\/dossiers\/(\d+)\/comments$/);

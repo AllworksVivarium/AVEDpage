@@ -4,7 +4,7 @@ import {existsSync} from 'node:fs';
 const path=resolve(process.argv[2]||'data/wanyehui.db');
 if(!existsSync(path))throw new Error('Database does not exist: '+path);
 const db=new DatabaseSync(path);db.exec('PRAGMA busy_timeout=10000');
-const keep="action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages')";
+const keep="action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages','life_records')";
 const count=()=>db.prepare(`SELECT COUNT(*) AS total,SUM(CASE WHEN ${keep} THEN 1 ELSE 0 END) AS retained FROM activity_logs`).get();
 console.log('Before:',count());
 if(process.argv.includes('--apply')){
