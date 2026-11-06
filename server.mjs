@@ -1,3 +1,4 @@
+import {announcementPublicationTime} from './server-announcement-time.mjs';
 import {installGameHighlights} from './server-game-highlights.mjs';
 import {installPersonnel,personnelAssignment} from './server-personnel.mjs';
 import {installPersonal} from './server-personal.mjs';
@@ -130,6 +131,8 @@ CREATE TABLE IF NOT EXISTS music_tracks (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `);
+if(!db.prepare('PRAGMA table_info(announcements)').all().some(c=>c.name==='published_at'))db.exec("ALTER TABLE announcements ADD COLUMN published_at TEXT NOT NULL DEFAULT ''");
+db.exec("UPDATE announcements SET published_at=created_at WHERE published_at=''");
 const employeeColumns = new Set(db.prepare('PRAGMA table_info(employees)').all().map(column => column.name));
 for(const [name,type] of [['position_title',"TEXT NOT NULL DEFAULT ''"],['is_npc','INTEGER NOT NULL DEFAULT 0'],['is_leadership','INTEGER NOT NULL DEFAULT 0']])if(!employeeColumns.has(name))db.exec('ALTER TABLE employees ADD COLUMN '+name+' '+type);
 installPersonnel(db);
@@ -522,9 +525,9 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.created_at AS createdAt,
+      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,
         (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published') AS postCount
-        FROM announcements a ORDER BY a.pinned DESC,a.id DESC`).all() });
+        FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all() });
     }
     if (url.pathname === '/api/posts' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
@@ -627,15 +630,17 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/announcements' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { title,body,pinned } = await readBody(req);
+      const { title,body,pinned,publishedAt } = await readBody(req);
       if (!validText(title,150)||!validText(body,5000)) return send(res,400,{error:'公告标题最多 150 字，正文最多 5000 字。'});
-      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by) VALUES (?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id);
+      let publication;try{publication=announcementPublicationTime(publishedAt)||new Date().toISOString();}catch(error){return send(res,400,{error:error.message});}
+      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,published_at) VALUES (?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,publication);
       return send(res,201,{id:Number(result.lastInsertRowid)});
     }
     if (/^\/api\/admin\/announcements\/\d+$/.test(url.pathname) && req.method === 'PUT') {
-      if(!requireAdmin(req,res))return;const {title,body,pinned}=await readBody(req);
+      if(!requireAdmin(req,res))return;const {title,body,pinned,publishedAt}=await readBody(req);
       if(!validText(title,150)||!validText(body,5000)||typeof pinned!=='boolean')return send(res,400,{error:'请填写公告标题、正文及置顶状态。'});
-      if(!db.prepare('UPDATE announcements SET title=?,body=?,pinned=? WHERE id=?').run(title.trim(),body.trim(),pinned?1:0,Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
+      let publication;try{publication=announcementPublicationTime(publishedAt);}catch(error){return send(res,400,{error:error.message});}
+      if(!db.prepare("UPDATE announcements SET title=?,body=?,pinned=?,published_at=COALESCE(?,NULLIF(published_at,''),created_at) WHERE id=?").run(title.trim(),body.trim(),pinned?1:0,publication??null,Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/admin/announcements/') && req.method === 'DELETE') {

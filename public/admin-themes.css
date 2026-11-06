@@ -57,3 +57,20 @@ html[data-admin-theme] .dashboard.admin-mode :is(.pool-expectation,#sky-mean){co
 @media(max-width:600px){html[data-admin-theme] .dashboard.admin-mode .sidebar .tab{flex-basis:30%;font-size:13px}.economy-save>*{max-width:100%}}
 @media(prefers-reduced-motion:reduce){html[data-admin-theme] #welcome .hero,html[data-admin-theme] #loginCard .mini-mark{animation:none}}
 body.effects-off :is(#welcome .hero,#loginCard .mini-mark){animation:none!important}
+
+/* A visibly curved phosphor screen for the administrator entry only. */
+html[data-admin-theme] body:has(#dashboard.hidden){background:#04090a;background-image:radial-gradient(ellipse at 50% 38%,#23392c66,transparent 68%),repeating-linear-gradient(0deg,#0000 0 2px,#0007 2px 4px)}
+html[data-admin-theme] :is(#welcome,#loginCard){position:relative;isolation:isolate;overflow:hidden;border-radius:22px / 14px;background-image:radial-gradient(ellipse at 50% 40%,#233a292d,transparent 70%);box-shadow:inset 0 0 90px #000b,inset 0 0 7px #b8d3a630,0 0 50px #8daa7820,0 28px 90px #000b}
+html[data-admin-theme] :is(#welcome,#loginCard)::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;background:repeating-linear-gradient(0deg,#0000 0 2px,#0007 2px 3px,#cce9c20b 3px 4px),repeating-linear-gradient(90deg,#d3edc604 0 1px,#0000 1px 3px),radial-gradient(ellipse at center,#0000 40%,#0008 100%);box-shadow:inset 0 0 55px #0009}
+html[data-admin-theme] :is(#welcome,#loginCard)::before{content:"";position:absolute;inset:-100% 0;z-index:2;pointer-events:none;background:linear-gradient(0deg,#0000 46%,#d5edb810 50%,#0000 54%);animation:admin-crt-sweep 14s linear infinite;will-change:transform}
+html[data-admin-theme] #welcome h1{margin-bottom:0;text-shadow:0 0 2px #e5f1d79c,0 0 18px #c9dfaa66,0 0 44px #aeca8438}
+html[data-admin-theme] #welcome #enter{margin-top:clamp(36px,5vh,56px)}
+html[data-admin-theme] :is(#welcome,#loginCard) :is(.eyebrow,.mini-mark,.back,.primary,label){text-shadow:0 0 3px #dcebdc45,0 0 12px #bdd3af45}
+html[data-admin-theme] #loginCard h2{text-shadow:0 0 3px #e5f1d775,0 0 18px #c9dfaa66,0 0 32px #aeca8430}
+html[data-admin-theme] :is(#welcome,#loginCard) .primary{position:relative;transition:box-shadow .2s,border-color .2s,filter .2s;box-shadow:inset 0 0 15px #b9cfa00b,0 0 16px #b9cfa015}
+html[data-admin-theme] :is(#welcome,#loginCard) :is(.primary,.back):is(:hover,:focus-visible){outline:1px solid #e7e0d0;outline-offset:5px;box-shadow:0 0 24px #c8ddaa40;text-shadow:0 0 4px #e5efdb80,0 0 14px #d6edbb70}
+html[data-admin-theme] #loginCard input:not([type=checkbox]):focus{border-color:#bbd0a9;box-shadow:0 0 0 2px #bbd0a92b,0 0 18px #b7d3a52b}
+@keyframes admin-crt-sweep{from{transform:translateY(-22%)}to{transform:translateY(22%)}}
+@media(max-width:600px){html[data-admin-theme] :is(#welcome,#loginCard){border-radius:15px / 10px}html[data-admin-theme] #welcome #enter{margin-top:36px}}
+@media(prefers-reduced-motion:reduce){html[data-admin-theme] :is(#welcome,#loginCard)::before{animation:none;will-change:auto}html[data-admin-theme] :is(#welcome,#loginCard) :is(.primary,.back){transition:none}}
+body.effects-off :is(#welcome,#loginCard)::before{animation:none!important;will-change:auto}

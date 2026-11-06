@@ -72,6 +72,27 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await p('/api/profile','PUT',{anonymousName:'玩家',bio:'',balance:999999999,delta:999999999})).status,200);
  assert.equal((await p('/api/admin/employees/'+emp.data.id+'/balance','POST',{delta:999999999})).status,403);
  assert.equal((await p('/api/me')).data.balance,balanceBefore);
+ // Display time can change independently of real creation time, and both reads use it for ordering.
+ const oldPinned=await a('/api/admin/announcements','POST',{title:'置顶历史公告',body:'测试',pinned:true,publishedAt:'2000-01-01T08:00:00'});
+ const future=await a('/api/admin/announcements','POST',{title:'最新公告',body:'测试',pinned:false,publishedAt:'2030-01-01T08:00:00'});
+ const past=await a('/api/admin/announcements','POST',{title:'旧公告',body:'测试',pinned:false,publishedAt:'2020-01-01T08:00:00'});
+ for(const item of [oldPinned,future,past])assert.equal(item.status,201);
+ const timeDb=new DatabaseSync(join(folder,'wanyehui.db'));
+ const created=timeDb.prepare('SELECT created_at FROM announcements WHERE id=?').get(news.data.id).created_at;
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'同步后的正文',pinned:false,publishedAt:'2026-11-06T18:14:12'})).status,200);
+ const ids=[oldPinned.data.id,future.data.id,news.data.id,past.data.id];
+ for(const path of ['/api/announcements','/api/player/state']){
+  const data=(await p(path)).data,items=data.items||data.announcements;
+  assert.deepEqual(items.filter(x=>ids.includes(x.id)).map(x=>x.id),ids);
+  const edited=items.find(x=>x.id===news.data.id);assert.equal(edited.createdAt,'2026-11-06T10:14:12.000Z');assert.equal(edited.publishedAt,edited.createdAt);
+ }
+ assert.equal(timeDb.prepare('SELECT created_at FROM announcements WHERE id=?').get(news.data.id).created_at,created);
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'仅改正文',pinned:false})).status,200);
+ assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z','older clients must preserve the edited publication date');
+ assert.equal((await a('/api/admin/announcements','POST',{title:'无效日期',body:'测试',pinned:false,publishedAt:'2026-02-30T08:00'})).status,400);
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'无效日期',body:'测试',pinned:false,publishedAt:'2026-02-30T08:00'})).status,400);
+ await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
+ assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z');timeDb.close();
  // Delete all defaults as well: they must not be re-seeded on restart.
  for(const track of (await a('/api/admin/music')).data.items)assert.equal((await a('/api/admin/music/'+track.id,'DELETE')).status,200);
  for(const item of (await p('/api/dossiers')).data.items)assert.equal((await a('/api/admin/dossiers/'+item.id,'DELETE')).status,200);

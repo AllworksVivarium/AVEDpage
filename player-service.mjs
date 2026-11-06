@@ -233,7 +233,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           history:[],
           employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,datetime(created_at) DESC,id DESC').all(),
+          announcements:db.prepare("SELECT id,title,body,pinned,COALESCE(NULLIF(published_at,''),created_at) AS createdAt,COALESCE(NULLIF(published_at,''),created_at) AS publishedAt FROM announcements ORDER BY pinned DESC,datetime(COALESCE(NULLIF(published_at,''),created_at)) DESC,id DESC").all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
           forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),stockOrders:pendingOrders(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
