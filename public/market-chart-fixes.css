@@ -1,0 +1,24 @@
+/* Trading colors are semantic and independent of the terminal art palette. */
+@layer aved-site {
+  #game-panel-stocks, #game-panel-stocks * {
+    --market-up:#cb3232 !important;
+    --market-down:#228b5b !important;
+  }
+  body.dark-mode #game-panel-stocks, body.dark-mode #game-panel-stocks * {
+    --market-up:#ff6464 !important;
+    --market-down:#51c58b !important;
+  }
+  #game-panel-stocks :is(.market-up,.stock-buy-btn,.tick-up) {color:var(--market-up) !important}
+  #game-panel-stocks :is(.market-down,.stock-sell-btn,.tick-down) {color:var(--market-down) !important}
+
+  #game-panel-stocks .market-crosshair-tooltip {
+    background:var(--study-panel,#f5efdf) !important;
+    color:var(--study-ink,#201c18) !important;
+    border:1px solid var(--inner-border) !important;
+    opacity:1 !important;backdrop-filter:none !important;
+  }
+  body.dark-mode #game-panel-stocks .market-crosshair-tooltip {
+    background:var(--study-panel,#171511) !important;
+    color:var(--study-ink,#eee5d3) !important;
+  }
+}
