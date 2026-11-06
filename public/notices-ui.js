@@ -2,10 +2,6 @@
   const time = (value, mode = 'relative') => root.AVEDTime.markup(value, mode);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const paragraphs = escaped => String(escaped).trim().split(/\r?\n\s*\r?\n/).map(text => `<p class="whitespace-pre-wrap">${text}</p>`).join('');
-  const issueDate = item => {
-    const value=String(item.issuedOn||item.createdAt||'').trim().slice(0,10),match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    return match?`${match[1]}年${Number(match[2])}月${Number(match[3])}日`:'';
-  };
   // Announcement text is already escaped when the player data is loaded.
   root.AVEDNotices = {
     excerpt(value, limit = 140) {
@@ -24,8 +20,8 @@
     },
     article(item) {
       return `<header class="notice-article-heading"><div class="notice-meta"><span>${item.category}</span>${time(item.createdAt)}</div>
-        <h2 class="notice-title-secondary">${item.title}</h2>${item.drafter?`<p class="notice-drafter">起草：${escape(item.drafter)}</p>`:''}</header>
-        <div class="notice-body terminal-prose">${String(item.fullContent).trim().split(/\r?\n+/).filter(text => text.trim()).map(text => `<p>${text}</p>`).join('')}</div><footer class="notice-signature"><p>${escape(item.issuer||'万业携生')}</p><p data-keep-original>${issueDate(item)}</p></footer>`;
+        <h2 class="notice-title-secondary">${item.title}</h2></header>${item.recipient?.trim()?`<p class="notice-recipient">${escape(item.recipient)}</p>`:''}
+        <div class="notice-body terminal-prose">${String(item.fullContent).trim().split(/\r?\n+/).filter(text => text.trim()).map(text => `<p>${text}</p>`).join('')}</div>${item.issuer?.trim()?`<footer class="notice-signature"><p>${escape(item.issuer)}</p></footer>`:''}`;
     },
     comments(items) {
       return items.map(item => `<article class="notice-comment inner-card-alt">

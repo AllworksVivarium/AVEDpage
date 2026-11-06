@@ -528,7 +528,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,
+      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,
         (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount
         FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all() });
     }
@@ -633,19 +633,19 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/announcements' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { title,body,pinned,publishedAt,issuer='万业携生',drafter='',issuedOn='' } = await readBody(req);
-      if(!validText(issuer,80)||typeof drafter!=='string'||drafter.length>80||typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
+      const { title,body,pinned,publishedAt,recipient='',issuer='',drafter='',issuedOn='' } = await readBody(req);
+      if(typeof recipient!=='string'||recipient.length>200||(typeof issuer!=='string'||issuer.length>80)||typeof drafter!=='string'||drafter.length>80||typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
       if (!validText(title,150)||!validText(body,5000)) return send(res,400,{error:'公告标题最多 150 字，正文最多 5000 字。'});
       let publication;try{publication=announcementPublicationTime(publishedAt)||new Date().toISOString();}catch(error){return send(res,400,{error:error.message});}
-      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,issuer,drafter,issued_on,published_at) VALUES (?,?,?,?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,issuer.trim(),drafter.trim(),issuedOn,publication);
+      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,recipient,issuer,issuer_explicit,drafter,issued_on,published_at) VALUES (?,?,?,?,?,?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,recipient.trim(),issuer.trim(),issuer.trim()?1:0,drafter.trim(),issuedOn,publication);
       return send(res,201,{id:Number(result.lastInsertRowid)});
     }
     if (/^\/api\/admin\/announcements\/\d+$/.test(url.pathname) && req.method === 'PUT') {
-      if(!requireAdmin(req,res))return;const {title,body,pinned,publishedAt,issuer,drafter,issuedOn}=await readBody(req);
-      if((issuer!==undefined&&!validText(issuer,80))||(drafter!==undefined&&(typeof drafter!=='string'||drafter.length>80))||(issuedOn!==undefined&&(typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
+      if(!requireAdmin(req,res))return;const {title,body,pinned,publishedAt,recipient,issuer,drafter,issuedOn}=await readBody(req);
+      if((recipient!==undefined&&(typeof recipient!=='string'||recipient.length>200))||(issuer!==undefined&&(typeof issuer!=='string'||issuer.length>80))||(drafter!==undefined&&(typeof drafter!=='string'||drafter.length>80))||(issuedOn!==undefined&&(typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
       if(!validText(title,150)||!validText(body,5000)||typeof pinned!=='boolean')return send(res,400,{error:'请填写公告标题、正文及置顶状态。'});
       let publication;try{publication=announcementPublicationTime(publishedAt);}catch(error){return send(res,400,{error:error.message});}
-      if(!db.prepare("UPDATE announcements SET title=?,body=?,pinned=?,published_at=COALESCE(?,NULLIF(published_at,''),created_at),issuer=COALESCE(?,issuer),drafter=COALESCE(?,drafter),issued_on=COALESCE(?,issued_on) WHERE id=?").run(title.trim(),body.trim(),pinned?1:0,publication??null,issuer?.trim()??null,drafter?.trim()??null,issuedOn??null,Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
+      if(!db.prepare("UPDATE announcements SET title=?,body=?,pinned=?,published_at=COALESCE(?,NULLIF(published_at,''),created_at),recipient=COALESCE(?,recipient),issuer=COALESCE(?,issuer),issuer_explicit=COALESCE(?,issuer_explicit),drafter=COALESCE(?,drafter),issued_on=COALESCE(?,issued_on) WHERE id=?").run(title.trim(),body.trim(),pinned?1:0,publication??null,recipient?.trim()??null,issuer?.trim()??null,issuer===undefined?null:(issuer.trim()?1:0),drafter?.trim()??null,issuedOn??null,Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/admin/announcements/') && req.method === 'DELETE') {

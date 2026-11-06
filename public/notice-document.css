@@ -1,7 +1,7 @@
 /* Announcement document, independent of the administrative application. */
 @layer aved-restored-art {
  #inner-app-view #view-news .notice-title-secondary {color:var(--brand-red-ink)!important}
- #view-news .notice-drafter {margin:12px 0 0;text-align:left;color:var(--inner-text-muted)}
+ #view-news .notice-recipient {margin:20px 0 12px;text-align:left;text-indent:0;color:var(--inner-text-main)}
  #view-news .notice-signature {display:block;margin:32px 0 8px auto;text-align:right;color:var(--inner-text-main)}
  #view-news .notice-signature p {margin:4px 0;text-indent:0;line-height:1.8}
  #view-news .notice-comment-total {display:inline-block;margin-left:12px;color:var(--inner-text-muted)}
@@ -32,3 +32,5 @@
  #view-news #news-comment-identity-label {font-size:calc(var(--type-prose-size,16px) * .75)!important}
 }
 @keyframes noticeDiscipline {0%,28% {transform:translateY(0)}33%,61% {transform:translateY(-25%)}66%,94% {transform:translateY(-50%)}99%,100% {transform:translateY(-75%)}}
+
+@layer aved-type-system {#view-news .notice-recipient,#view-news .notice-recipient * {font-size:var(--type-prose-size,16px)!important;line-height:1.9!important;text-align:left!important;text-indent:0!important}}

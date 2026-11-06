@@ -18,7 +18,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
   };
-  addColumn('announcements','issuer',"TEXT NOT NULL DEFAULT '万业携生'");
+  addColumn('announcements','recipient',"TEXT NOT NULL DEFAULT ''");
+  addColumn('announcements','issuer',"TEXT NOT NULL DEFAULT ''");
+  if(!db.prepare('PRAGMA table_info(announcements)').all().some(c=>c.name==='issuer_explicit')){
+    addColumn('announcements','issuer_explicit','INTEGER NOT NULL DEFAULT 0');
+    db.prepare("UPDATE announcements SET issuer_explicit=1 WHERE trim(issuer)<>'' AND issuer<>'万业携生'").run();
+  }
   addColumn('announcements','drafter',"TEXT NOT NULL DEFAULT ''");
   addColumn('announcements','issued_on',"TEXT NOT NULL DEFAULT ''");
   for(const table of ['forum_threads','forum_replies']) {
@@ -236,7 +241,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           history:[],
           employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
+          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
           forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),stockOrders:pendingOrders(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
