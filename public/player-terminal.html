@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <script src="terminal-preferences.js?v=window-1"></script>
+  <script src="terminal-preferences.js?v=palette-study-1"></script>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/interaction-motion.css?v=motion-1">
+  <link rel="stylesheet" href="/interaction-motion.css?v=motion-3">
+  <link rel="stylesheet" href="/site-refinements.css?v=mobile-sidebar-4">
+  <link rel="stylesheet" href="/palette-preview.css?v=day-night-2">
+  <link rel="stylesheet" href="/sidebar-art.css?v=sidebar-art-1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -433,33 +436,16 @@
         </div>
       </div>
 
-      <!-- 对称阵列：[左白线] — [萬業] — [三角Logo槽位] — [攜生] — [右白线] -->
-      <div class="w-full flex items-center justify-center gap-1.5 sm:gap-4 md:gap-7 my-2 px-1">
+      <!-- 对称阵列：[左白线] — [萬業] — [公司Logo] — [攜生] — [右白线] -->
+      <div class="landing-brand-row w-full flex items-center justify-center gap-1.5 sm:gap-4 md:gap-7 my-2 px-1">
         <div class="flex-1 min-w-[16px] sm:min-w-[60px] tech-line-left"></div>
 
         <div class="font-cover-tc font-black text-2xl xs:text-3xl sm:text-5xl md:text-7xl floating-kanji tracking-[0.12em] sm:tracking-[0.22em] shrink-0">
           萬業
         </div>
 
-        <div id="cover-logo-slot" class="relative w-24 h-24 xs:w-28 xs:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 flex items-center justify-center logo-glow shrink-0">
-          <svg viewBox="0 0 220 220" class="w-full h-full">
-            <rect x="24" y="24" width="172" height="172" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="4 4" />
-            <g stroke="rgba(255,255,255,0.22)" stroke-width="0.8">
-              <line x1="110" y1="22" x2="110" y2="174" />
-              <line x1="22" y1="174" x2="198" y2="174" />
-              <line x1="66" y1="98" x2="154" y2="98" />
-              <line x1="110" y1="122" x2="22" y2="174" />
-              <line x1="110" y1="122" x2="198" y2="174" />
-              <line x1="110" y1="122" x2="110" y2="22" />
-            </g>
-            <polygon points="110,22 198,174 22,174" fill="rgba(10, 10, 10, 0.82)" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="miter" />
-            <polygon points="110,154 70,86 150,86" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255,255,255,0.75)" stroke-width="1.5" />
-            <rect x="96" y="98" width="28" height="28" fill="none" stroke="#ffffff" stroke-width="1.5" />
-            <rect x="106" y="108" width="8" height="8" fill="#ffffff" />
-            <rect x="107" y="10" width="6" height="6" fill="none" stroke="#ffffff" stroke-width="1.2" />
-            <rect x="200" y="174" width="6" height="6" fill="none" stroke="#ffffff" stroke-width="1.2" />
-            <rect x="14" y="174" width="6" height="6" fill="none" stroke="#ffffff" stroke-width="1.2" />
-          </svg>
+        <div id="cover-logo-slot" class="relative flex items-center justify-center shrink-0">
+          <img class="company-emblem" src="/assets/company-emblem.svg?v=logo-1" alt="万业携生公司标志" width="342" height="303" decoding="async">
         </div>
 
         <div class="font-cover-tc font-black text-2xl xs:text-3xl sm:text-5xl md:text-7xl floating-kanji tracking-[0.12em] sm:tracking-[0.22em] shrink-0">
@@ -487,11 +473,11 @@
       <!-- 按压主 CTA 登录触发按钮 -->
       <div class="flex flex-col items-center gap-2 p-4">
         <button id="open-login-btn" type="button" class="press-cta login-trigger-btn px-6 py-3.5 text-left group cursor-pointer">
-          <div class="flex items-center gap-4">
-            <div class="px-2.5 py-2 border border-white/60 bg-white/10 flex items-center justify-center text-white font-mono-tech font-bold text-xs tracking-wider group-hover:bg-white group-hover:text-black transition-colors">
+          <div class="login-trigger-content flex items-center gap-4">
+            <div class="login-trigger-badge px-2.5 py-2 border border-white/60 bg-white/10 flex items-center justify-center text-white font-mono-tech font-bold text-xs tracking-wider group-hover:bg-white group-hover:text-black transition-colors">
               LOGIN
             </div>
-            <div>
+            <div class="login-trigger-copy">
               <div class="text-sm font-bold tracking-[0.16em] text-white flex items-center gap-2">
                 <span>员工终端确认权限</span>
                 <span class="group-hover:translate-x-1 transition-transform font-mono-tech">→</span>
@@ -688,7 +674,7 @@
     </header>
 
     <!-- 主体布局：左侧可收起展开侧边栏（已去掉所有 01/02 序号与上箭头） + 右侧独立分页内容区 -->
-    <div class="flex-1 flex max-w-none w-full mx-auto relative">
+    <div class="terminal-workspace flex-1 flex max-w-none w-full mx-auto relative">
 
       <aside id="left-sidebar" class="w-52 shrink-0 border-r-2 border-[var(--inner-border)] flex flex-col justify-between select-none z-20">
         <div class="p-2 space-y-1.5 font-mono-tech text-xs">
@@ -707,7 +693,7 @@
 
           <!-- 使用您上传的第4张高音喇叭图作为公司新闻通告图标 -->
           <button type="button" data-nav="news" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition">
-            <img src="/assets/broadcast.jpg" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20">
+            <span class="sidebar-icon-slot" aria-hidden="true"><img src="/assets/broadcast.jpg" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20"></span>
             <span class="sidebar-label truncate">内部通告</span>
           </button>
 
@@ -744,14 +730,6 @@
         <!-- ====================================================================
              独立分页 1：公司新闻通告（嵌入您上传的第4张高音喇叭图作为通告视觉徽标）
              ==================================================================== -->
-        <section id="view-welcome" class="terminal-welcome hidden" aria-labelledby="welcome-real-name">
-          <div class="welcome-type-block">
-            <p class="welcome-salutation">欢迎您，</p>
-            <h1 class="welcome-character"><span id="welcome-real-name"></span><span class="welcome-punctuation">！</span></h1>
-            <p class="welcome-identity">当前 ID：<bdi id="welcome-anonymous-id"></bdi></p>
-          </div>
-        </section>
-
         <section id="view-news" class="space-y-6 hidden">
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-[var(--inner-crimson)]">
             <div class="notice-masthead flex">
@@ -847,7 +825,7 @@
 
             <!-- 搜索框（浅色随机现有双人名字占位提示）+ 等级筛选 -->
             <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tech">
-              <div class="relative flex items-center">
+              <div class="scp-search-control relative flex items-center">
                 <input id="scp-search-input" type="search"
                   placeholder="检索责任人：蒋正一 / 溟座..."
                   class="w-60 sm:w-64 px-3 py-1.5 border border-[var(--inner-border)] bg-white text-black placeholder:text-neutral-400 text-xs focus:outline-none">
@@ -1655,16 +1633,16 @@
   <script src="/notices-ui.js?v=window-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=window-1" defer></script>
+  <script src="/player-community.js?v=shared-ticker-2" defer></script>
   <script src="/sky-ui.js?v=window-1" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/welfare-ui.js?v=window-1" defer></script>
-  <script src="/visual-style.js?v=window-1" defer></script>
-  <script src="/personal-ui.js?v=window-1" defer></script>
-<script src="/rewards-ui.js?v=hub-1" defer></script>
+  <script src="/visual-style.js?v=sidebar-art-2" defer></script>
+  <script src="/personal-ui.js?v=unified-home-2" defer></script>
+<script src="/rewards-ui.js?v=rewards-2" defer></script>
 <script src="/derby-ui.js?v=window-1" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
-<script src="/player.js?v=motion-1" defer></script>
+<script src="/player.js?v=sidebar-rewards-3" defer></script>
   <script src="/page-headings.js?v=hub-1" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=crt-1" defer></script>

@@ -3,9 +3,8 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
  const money=n=>'¤ '+Number(n).toLocaleString();
  function render(){
   sphereCleanup();const user=getUser(),profile=getProfile(),target=byId('view-profile');if(!user||!target)return;
-  const next=document.body.classList.contains('terminal-next');
   target.innerHTML=`<div class="personal-toolbar"><div class="section-kicker">A.V.E.D. / PERSONNEL TERMINAL <span dir="rtl" lang="he">מסוף עובדים</span></div><div><button data-display-settings>显示设置</button><button data-effects-toggle></button></div></div>
-   <section class="personal-hub ${next?'hub-next':'hub-previous'}">
+   <section class="personal-hub hub-next">
 
     <div class="hub-intro"><div class="hub-welcome"><span class="section-kicker">欢迎您</span><h1>${esc(user.name)}</h1><p class="hub-alias">当前 ID <strong>${esc(profile.anonymousName||'未登记')}</strong></p><p>${esc(user.positionTitle||user.department)}</p><div class="hub-quick-actions"><button data-personal-edit>编辑档案</button><button data-personal-nav="news">内部通告 ↗</button></div></div>
      <figure class="hub-signal"><figcaption><span>SIGNAL / 01</span><span>接入信号</span></figcaption><canvas id="personal-sphere" aria-hidden="true"></canvas><div class="hub-signal-static" aria-hidden="true">A / V / E / D</div><p>CONTROL CONTAIN PROTECT</p></figure></div>
@@ -20,7 +19,7 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
   let loaded=false,busy=false,cursor=null;const version=++request,history=target.querySelector('.hub-history');
   async function loadHistory(){if(busy)return;busy=true;const more=byId('hub-history-more');more.disabled=true;try{const d=await api('/api/player/history'+(cursor?'?before='+cursor:''));if(version!==request)return;const box=byId('hub-history-list');if(!loaded)box.replaceChildren();box.insertAdjacentHTML('beforeend',d.items.map(h=>`<article><span>${esc(({scratch:'封印配给',slot:'抑制矩阵',sky:'高空速降',derby:'异常竞速',cards:'牌桌'})[h.game]||h.game)}</span><span>投入 ${money(h.cost)} / 返还 ${money(h.prize)}</span><small>${AVEDTime.markup(h.createdAt)}</small></article>`).join('')||'<p>暂无玩法记录。</p>');loaded=true;cursor=d.next;more.hidden=!cursor;}catch(e){showToast(e.message);}finally{busy=false;more.disabled=false;}}
   history.addEventListener('toggle',()=>{if(history.open&&!loaded)loadHistory();});byId('hub-history-more').onclick=loadHistory;
-  if(next)sphereCleanup=miniSphere(byId('personal-sphere'));
+  sphereCleanup=miniSphere(byId('personal-sphere'));
  }
  function miniSphere(canvas){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)return()=>{};const reduced=matchMedia('(prefers-reduced-motion: reduce)');
