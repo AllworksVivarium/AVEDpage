@@ -17,10 +17,17 @@ test('all-employee leaderboards and employee donations preserve balances and rej
  const recordLedger=(id,amount,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,amount,reason);
  const service=installWelfare({db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:(req,res)=>{if(!req.uid){Object.assign(res,{status:401});return null;}return {id:req.uid};},balanceFor,recordLedger});
  const request=async(path,method='GET',body,uid=1)=>{const res={};assert.equal(await service.handle({uid,method,body},res,new URL(path,'http://localhost')),true);return res;};
- assert.deepEqual(service.preferences(1),{rankingIdentity:'real',forumIdentity:'anonymous'});
+ assert.deepEqual(service.preferences(1),{rankingIdentity:'anonymous',forumIdentity:'anonymous'});
  await request('/api/player/preferences','PUT',{rankingIdentity:'anonymous'},4);
  const initial=(await request('/api/player/welfare')).data;
  assert.deepEqual(initial.lowest.map(x=>x.id),[4,2,3,1]);assert.equal(initial.highest[0].id,1);assert.equal(initial.lowest[0].identityMode,'anonymous');assert.equal(initial.lowest[0].name,'代号丁');
+ for(const key of ['highest','lowest'])assert.ok(initial[key].every(x=>x.identityMode==='anonymous'));
+ await request('/api/player/preferences','PUT',{forumIdentity:'real'},1);
+ assert.equal(service.preferences(1).rankingIdentity,'anonymous','forum selection does not opt into real-name rankings');
+ await request('/api/player/preferences','PUT',{rankingIdentity:'real'},2);
+ const opted=(await request('/api/player/welfare')).data;
+ for(const key of ['highest','lowest'])assert.ok(opted[key].some(x=>x.id===2&&x.identityMode==='real'&&x.name==='负余额员工'));
+ assert.equal(installWelfare({db,balanceFor}).preferences(2).rankingIdentity,'real','explicit choice survives reinstall');
  const body={recipientId:2,amount:2500,requestId:'employee-gift-0001'},total=()=>[1,2,3,4].reduce((sum,id)=>sum+balanceFor(id),0),before=total();
  const first=await request('/api/player/donate/employee','POST',body);assert.equal(first.status,200);assert.equal(balanceFor(1),7500);assert.equal(balanceFor(2),-2500);assert.equal(total(),before);
  const replay=await request('/api/player/donate/employee','POST',body);assert.equal(replay.status,200);assert.equal(balanceFor(1),7500);assert.equal(db.prepare('SELECT COUNT(*) n FROM employee_donations').get().n,1);
