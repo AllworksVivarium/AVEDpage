@@ -15,9 +15,14 @@
   @media(min-width:1200px) {#view-departments #departments-grid {grid-template-columns:repeat(5,minmax(0,1fr))!important}}
   @media(max-width:600px) {#view-departments #departments-grid {grid-template-columns:1fr!important}#view-departments .department-sheet {min-height:180px}}
 
+  /* Clip horizontal paint without creating a non-scrolling sticky ancestor. */
+  body.theme-inner {overflow-x:clip!important;overflow-y:visible!important}
+  #inner-app-view,#inner-app-view>.terminal-workspace {overflow:visible!important}
   #inner-app-view .terminal-content-pane {overflow-x:clip!important;overflow-y:visible!important}
+  #inner-app-view .terminal-content-pane>section {overflow:visible!important}
+
   #inner-app-view .player-section-masthead {
-    position:sticky;top:var(--terminal-header-height,58px);z-index:24;
+    position:sticky!important;top:var(--terminal-header-height,58px)!important;z-index:24!important;align-self:start;
     display:grid!important;grid-template-columns:60px minmax(0,1fr);align-items:center!important;gap:20px!important;
     box-sizing:border-box;min-height:144px;padding:22px!important;margin:0 0 22px!important;
     border:1px solid var(--inner-border-soft)!important;border-left:3px solid var(--brand-red)!important;
