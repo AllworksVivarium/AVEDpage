@@ -21,10 +21,12 @@ async function synth(track){
  return buffer;
 }
 export function installOriginalMusic({db,requireEmployee}) {
+ db.prepare("UPDATE music_tracks SET kind='音乐' WHERE kind IN ('lofi','synthwave')").run();
  const cache=new Map();
- for(const track of tracks){const url='/api/music/original/'+track.id+'.wav';if(!db.prepare('SELECT 1 FROM music_tracks WHERE url=?').get(url))db.prepare('INSERT INTO music_tracks(title,url,kind) VALUES(?,?,?)').run(track.title,url,'synthwave');}
+ for(const track of tracks){const url='/api/music/original/'+track.id+'.wav';if(!db.prepare('SELECT 1 FROM music_tracks WHERE url=?').get(url))db.prepare('INSERT INTO music_tracks(title,url,kind) VALUES(?,?,?)').run(track.title,url,'音乐');}
  return {async handle(req,res,url){
   const match=url.pathname.match(/^\/api\/music\/original\/([-a-z]+)\.wav$/);if(!match)return false;if(!requireEmployee(req,res))return true;
+  if(!db.prepare('SELECT 1 FROM music_tracks WHERE url=? AND enabled=1').get(url.pathname)){res.writeHead(404);res.end();return true;}
   const track=tracks.find(x=>x.id===match[1]);if(!track){res.writeHead(404);res.end();return true;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return true;}
   if(!cache.has(track.id))cache.set(track.id,synth(track).catch(e=>{cache.delete(track.id);throw e;}));const data=await cache.get(track.id);

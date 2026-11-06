@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS music_tracks (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
   url TEXT NOT NULL,
-  kind TEXT NOT NULL DEFAULT 'lofi',
+  kind TEXT NOT NULL DEFAULT '音乐',
   enabled INTEGER NOT NULL DEFAULT 1,
   created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -411,7 +411,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/music' && req.method === 'GET') {
       if(!requireAdmin(req,res))return;
-      return send(res,200,{items:db.prepare('SELECT id,title,url,kind FROM music_tracks ORDER BY id').all()});
+      return send(res,200,{items:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});
     }
     if (url.pathname === '/api/admin/forum' && req.method === 'GET') {
       if(!requireAdmin(req,res))return;
@@ -491,10 +491,11 @@ const server = createServer(async (req, res) => {
       const admin=requireAdmin(req,res);if(!admin)return;const {title,url:trackUrl,kind}=await readBody(req);
       if(!validText(title,100)||!validText(trackUrl,1000))return send(res,400,{error:'请填写音乐名称和音频链接。'});
       try{const parsed=new URL(trackUrl);if(!['https:'].includes(parsed.protocol))return send(res,400,{error:'音乐链接必须使用 HTTPS。'});}catch{return send(res,400,{error:'音乐链接格式无效。'});}
-      const row=db.prepare('INSERT INTO music_tracks(title,url,kind,created_by) VALUES(?,?,?,?)').run(title.trim(),trackUrl.trim(),String(kind||'lofi').slice(0,30),admin.id);return send(res,201,{id:Number(row.lastInsertRowid)});
+      if(!['环境音','白噪音','音乐'].includes(kind||'音乐'))return send(res,400,{error:'请选择环境音、白噪音或音乐。'});
+      const row=db.prepare('INSERT INTO music_tracks(title,url,kind,created_by) VALUES(?,?,?,?)').run(title.trim(),trackUrl.trim(),String(kind||'音乐'),admin.id);return send(res,201,{id:Number(row.lastInsertRowid)});
     }
     if (url.pathname.startsWith('/api/admin/music/') && req.method === 'DELETE') {
-      if(!requireAdmin(req,res))return;db.prepare('DELETE FROM music_tracks WHERE id=?').run(Number(url.pathname.split('/').at(-1)));return send(res,200,{ok:true});
+      if(!requireAdmin(req,res))return;db.prepare('UPDATE music_tracks SET enabled=0 WHERE id=?').run(Number(url.pathname.split('/').at(-1)));return send(res,200,{ok:true});
     }
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;

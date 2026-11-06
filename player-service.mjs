@@ -53,14 +53,13 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       ),leverage)
       WHERE quantity<>0 AND COALESCE(leverage,0)<=0;`);
   } catch {}
-  const log=(id,action,target='',details={})=>{
-    const name=db.prepare('SELECT username FROM employees WHERE id=?').get(id)?.username||'';
-    db.prepare('INSERT INTO activity_logs(employee_id,username,action,target,details) VALUES(?,?,?,?,?)').run(id,name,action,String(target),JSON.stringify(details));
-  };
+  const log=()=>{}; // Result-only database triggers own activity records.
   // Database snapshots survive deletion of the original account or post. Passwords and session tokens are excluded.
   for(const table of ['employees','profiles','balance_ledger','checkins','game_tickets','forum_threads','forum_replies','posts','dossiers','announcements','dossier_comments','chat_messages','stock_holdings']) {
     const columns=db.prepare(`PRAGMA table_info(${table})`).all().map(c=>c.name).filter(n=>!['password_hash','seed'].includes(n));
     for(const action of ['INSERT','UPDATE','DELETE']) {
+      db.exec(`DROP TRIGGER IF EXISTS audit_${table}_${action}`);
+      if(action!=='INSERT'||!['balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages'].includes(table))continue;
       const row=action==='DELETE'?'OLD':'NEW';
       const who=table==='employees'?`${row}.id`:columns.includes('employee_id')?`${row}.employee_id`:'NULL';
       const snapshot=columns.flatMap(n=>[`'${n}'`,`${row}.${n}`]).join(',');
@@ -68,6 +67,9 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         INSERT INTO activity_logs(employee_id,username,action,target,details) VALUES(${who},COALESCE((SELECT username FROM employees WHERE id=${who}),''),'${action.toLowerCase()}','${table}',json_object(${snapshot})); END;`);
     }
   }
+  db.exec(`CREATE TRIGGER IF NOT EXISTS activity_results_only BEFORE INSERT ON activity_logs
+    WHEN NEW.action <> 'insert' OR NEW.target NOT IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages')
+    BEGIN SELECT RAISE(IGNORE); END;`);
   const award=()=>{}; // Ledger and settlement triggers award achievements atomically.
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
