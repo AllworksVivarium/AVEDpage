@@ -31,7 +31,7 @@ window.AVEDVisualStyle=function({byId}){
   swatches.innerHTML=colors.map(color=>'<span title="'+color+'"><i style="--swatch:'+color+'" aria-hidden="true"></i><small>'+color.slice(1)+'</small></span>').join('');
   swatches.setAttribute('aria-label',palette.name+(night?'夜间':'日间')+'：'+colors.join('、'));
  }
- document.addEventListener('aved-theme-change',()=>applyPalette(paletteSelect.value));
+ byId('theme-toggle-btn')?.addEventListener('click',()=>queueMicrotask(()=>applyPalette(paletteSelect.value)));
  applyPalette(document.documentElement.dataset.palettePreview);
  paletteSelect.addEventListener('change',()=>{applyPalette(paletteSelect.value);try{localStorage.setItem('aved_palette_preview_v1',paletteSelect.value);}catch{}});
  section.querySelector('[data-window-style]').value=document.documentElement.dataset.windowStyle||'radix';

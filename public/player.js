@@ -326,9 +326,8 @@
       // 日间模式 / 夜间模式 切换（去掉“复古”二字）
       const themeToggleBtn = document.getElementById('theme-toggle-btn');
       themeToggleBtn.addEventListener('click', () => {
-        isDarkMode = !document.body.classList.contains('dark-mode');
+        isDarkMode = !isDarkMode;
         document.documentElement.dataset.savedTheme=isDarkMode?'night':'day';
-        document.dispatchEvent(new Event('aved-theme-change'));
         try{localStorage.setItem('aved_theme_v1',isDarkMode?'night':'day');}catch{}
         if (isDarkMode) {
           document.body.classList.add('dark-mode');
