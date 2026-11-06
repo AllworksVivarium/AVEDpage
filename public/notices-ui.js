@@ -3,7 +3,7 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const paragraphs = escaped => String(escaped).trim().split(/\r?\n\s*\r?\n/).map(text => `<p class="whitespace-pre-wrap">${text}</p>`).join('');
   const issueDate = item => {
-    const value=item.issuedOn||String(item.createdAt||'').slice(0,10),match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const value=String(item.issuedOn||item.createdAt||'').trim().slice(0,10),match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     return match?`${match[1]}年${Number(match[2])}月${Number(match[3])}日`:'';
   };
   // Announcement text is already escaped when the player data is loaded.
