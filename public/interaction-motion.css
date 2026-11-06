@@ -1,0 +1,51 @@
+/* Load before aved-window: important layers use their first-declared order. */
+@layer aved-interactions {
+  :where(a[href], [role="button"], [role="tab"], [role="menuitem"]) {
+    display: inline-block;
+  }
+
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])) {
+    --aved-press-scale: 1;
+    transform: scale(var(--aved-press-scale)) !important;
+    touch-action: manipulation;
+    transition: transform 250ms ease-out, background-color 250ms ease-out, color 250ms ease-out, border-color 250ms ease-out !important;
+  }
+
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])):active:not(:disabled):not([aria-disabled="true"]) {
+    --aved-press-scale: .96;
+  }
+
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])):is(:disabled, [aria-disabled="true"]) {
+    transform: none !important;
+  }
+
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])),
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"]) *,
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"])::before,
+  :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"])::after,
+  input::file-selector-button {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #view-containment .magnetic-cta:not(:disabled):not([aria-disabled="true"]) {
+      transform: translate(var(--aved-magnet-x, 0px), var(--aved-magnet-y, 0px)) scale(var(--aved-press-scale)) !important;
+    }
+  }
+
+  body.effects-off :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])),
+  body.effects-off #view-containment .magnetic-cta {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"], input:is([type="button"], [type="submit"], [type="reset"])),
+    #view-containment .magnetic-cta:not(:disabled):not([aria-disabled="true"]) {
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+}
