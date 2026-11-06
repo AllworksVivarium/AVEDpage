@@ -11,20 +11,17 @@ import {publicCards,newCards} from '../server-cards.mjs';
 
 function rng(seed=0x89712345){return()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return (seed>>>0)/4294967296;};}
 
-test('new rules migrate once, preserve prices, and retain later administrator settings',()=>{
+test('fixed rules replace stale administrator configuration once and remain stable on restart',()=>{
  const db=new DatabaseSync(':memory:');
  try{
-  db.exec('CREATE TABLE economy_config(id INTEGER PRIMARY KEY,revision INTEGER,config_json TEXT);CREATE TABLE economy_migrations(code TEXT PRIMARY KEY)');
-  for(const code of ['affordable-shares','sky-rules-v2','scratch-percent-and-full-sky-loss','tiered-scratch-prizes-v2'])db.prepare('INSERT INTO economy_migrations VALUES(?)').run(code);
-  const before=defaultEconomy();before.scratch[0].cost=725;before.scratch[0].returnPercent=65;before.sky.boardingSeconds=35;before.sky.speed=40;
+  db.exec('CREATE TABLE economy_config(id INTEGER PRIMARY KEY,revision INTEGER,config_json TEXT);CREATE TABLE economy_migrations(code TEXT PRIMARY KEY);CREATE TABLE stock_prices(code TEXT,price INTEGER)');
+  const before=defaultEconomy();before.scratch[0].cost=725;before.scratch[0].returnPercent=65;before.sky.speed=40;
   db.prepare('INSERT INTO economy_config VALUES(1,42,?)').run(JSON.stringify(before));
-  const service=installEconomy({db});const after=service.get();assert.equal(after.revision,46);assert.equal(after.scratch[0].cost,725);
-  assert.ok(after.scratch.every(t=>t.returnPercent===130&&Object.values(t.variants).every(p=>Math.abs(expectedReturn(p)-1.3)<1e-8)));
-  assert.equal(after.sky.boardingSeconds,35);assert.equal(after.sky.speed,40);assert.equal(after.sky.lossFraction,1);
-  const mass=after.sky.ranges.reduce((s,r)=>s+r.weight,0);assert.equal(after.sky.ranges.filter(r=>r.max<200).reduce((s,r)=>s+r.weight,0)/mass,.18);
-  after.scratch.forEach(t=>t.returnPercent=104.25);validateEconomy(after);db.prepare('UPDATE economy_config SET config_json=? WHERE id=1').run(JSON.stringify(after));
-  assert.equal(installEconomy({db}).get().scratch[0].returnPercent,104.25);assert.equal(service.get().revision,46);
-  assert.equal(service.publicRules().tiers[0].topPrizes.three_match,72500);
+  const service=installEconomy({db}),after=service.get(),{revision,...rules}=after;
+  assert.ok(revision>42);assert.deepEqual(rules,defaultEconomy());
+  assert.ok(after.scratch.every(t=>Object.values(t.variants).every(p=>Math.abs(expectedReturn(p)-1.3)<1e-8)));
+  assert.deepEqual(installEconomy({db}).get(),after);
+  assert.equal(service.publicRules().tiers[0].topPrizes.three_match,100000);
  }finally{db.close();}
 });
 
