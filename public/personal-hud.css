@@ -237,3 +237,133 @@
  #view-profile.personal-hud .hud-account-layout .hud-channel canvas {height:100%;min-height:0;min-width:0}
  @container(max-width:259px){#view-profile.personal-hud .hud-account-layout{height:122px}}
 }
+
+/* Stationary panel depth; colors follow the selected palette in day and night. */
+@layer aved-personal {
+ #view-profile.personal-hud .hud-frame {
+  --hud-panel-glow:color-mix(in srgb,var(--inner-text-main) 7%,transparent);
+  --hud-panel-edge:color-mix(in srgb,var(--inner-text-main) 11%,transparent);
+  box-shadow:0 3px 8px #00000024,0 0 8px var(--hud-panel-glow),inset 0 1px 0 var(--hud-panel-edge)!important;
+ }
+ #view-profile.personal-hud .hud-frame:is(button,details),#view-profile.personal-hud .hud-data-row {
+  transition:background-color .15s ease,border-color .15s ease,box-shadow .18s ease!important;
+ }
+ #view-profile.personal-hud .hud-avatar {box-shadow:inset 0 0 16px #0005,0 3px 8px #00000024,0 0 8px var(--hud-panel-glow)!important}
+ #view-profile.personal-hud .hud-frame:active {transform:none!important}
+ @media(hover:hover){
+  #view-profile.personal-hud :is(button.hud-frame:not(:disabled),details.hud-frame):hover {
+   border-color:color-mix(in srgb,var(--inner-text-main) 55%,var(--inner-border-soft))!important;
+   box-shadow:0 4px 12px #00000030,0 0 12px color-mix(in srgb,var(--inner-text-main) 12%,transparent),inset 0 1px 0 color-mix(in srgb,var(--inner-text-main) 18%,transparent)!important;
+  }
+ }
+ body.effects-off #view-profile.personal-hud .hud-frame {box-shadow:0 2px 5px #00000020!important;transition:none!important}
+ body.effects-off #view-profile.personal-hud .hud-frame:hover {box-shadow:0 2px 5px #00000020!important}
+ @media(prefers-reduced-motion:reduce){#view-profile.personal-hud .hud-frame{transition:none!important}}
+}
+
+@font-face {font-family:'AVED HUD Pixel';src:url('/assets/fonts/Silkscreen-Regular.ttf') format('truetype');font-display:swap;font-weight:400}
+@layer aved-personal {
+ #view-profile.personal-hud .hud-top-grid {grid-template-columns:minmax(0,1fr)!important;gap:12px!important;background:none}
+ #view-profile.personal-hud .hud-identity-block {display:grid;grid-template-columns:104px minmax(0,1fr);gap:14px;align-items:center;min-width:0}
+ #view-profile.personal-hud .hud-top-grid .hud-avatar {height:118px!important;width:100%}
+ #view-profile.personal-hud .hud-identity-block .hud-name-row {display:block;min-width:0;padding:0}
+ #view-profile.personal-hud .hud-identity-block .hud-name-row h1 {font-size:clamp(18px,calc((100cqi - 118px)/var(--hud-name-count)),48px)!important;letter-spacing:-.055em!important;margin:0 0 8px!important;white-space:nowrap}
+ #view-profile.personal-hud .hud-identity-block .hud-personnel-tag {display:block;margin:5px 0 0;font-size:6px!important}
+ #view-profile.personal-hud .hud-identity-block .hud-clock {display:flex;align-items:baseline;justify-content:flex-start;gap:8px;border:0;padding:0;margin-top:10px}
+ #view-profile.personal-hud .hud-identity-block .hud-clock time {font-size:15px!important}
+ #view-profile.personal-hud .hud-identity-block .hud-clock>span {font-size:6px!important}
+ #view-profile.personal-hud .hud-top-grid .hud-controls {width:100%;height:69px!important;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr;gap:7px;align-self:start}
+ #view-profile.personal-hud .hud-controls .hud-key {min-height:0;height:69px;padding:5px 2px!important;gap:4px;font-size:10px!important}
+ #view-profile.personal-hud .hud-controls .hud-key svg {width:18px;height:18px}
+ #view-profile.personal-hud .hud-controls .hud-palette-chip {width:18px;height:18px}
+ #view-profile.personal-hud .hud-top-terminal {grid-column:auto;height:24px;min-height:0;opacity:.45;padding:0 7px;display:flex;align-items:center;gap:8px;box-shadow:none!important;background:transparent!important;border-color:var(--inner-border-soft)!important}
+ #view-profile.personal-hud .hud-top-terminal::after {opacity:.25}
+ #view-profile.personal-hud .hud-top-terminal>header {flex:none;width:64px;height:auto;border:0;font-size:5px!important;gap:4px}
+ #view-profile.personal-hud .hud-top-terminal .hud-terminal-lines {height:18px;flex:1;min-width:0;padding:0;mask-image:none;scroll-behavior:smooth}
+ #view-profile.personal-hud .hud-top-terminal :is(header,header>span,.hud-terminal-lines>span) {font-family:'AVED HUD Pixel',monospace!important;font-weight:400!important;font-style:normal!important}
+ #view-profile.personal-hud .hud-top-terminal .hud-terminal-lines>span {font-size:7px!important;line-height:18px!important;min-height:18px}
+ #view-profile.personal-hud .hud-top-terminal .hud-console-dots {font-size:7px!important;width:12px}
+ @container(max-width:259px){
+  #view-profile.personal-hud .hud-identity-block {grid-template-columns:84px minmax(0,1fr);gap:12px}
+  #view-profile.personal-hud .hud-top-grid .hud-avatar {height:108px!important}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row h1 {font-size:clamp(17px,calc((100cqi - 96px)/var(--hud-name-count)),42px)!important}
+  #view-profile.personal-hud .hud-controls .hud-key {font-size:9px!important}
+  #view-profile.personal-hud .hud-controls .hud-key-en {font-size:5px!important}
+ }
+ @container(min-width:500px){
+  #view-profile.personal-hud .hud-top-grid {grid-template-columns:minmax(150px,240px) 164px minmax(110px,1fr)!important;gap:18px!important}
+  #view-profile.personal-hud .hud-identity-block {display:block}
+  #view-profile.personal-hud .hud-top-grid .hud-avatar {height:184px!important}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row {margin-top:10px}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row h1 {font-size:clamp(18px,calc(min(232px,calc(100cqi - 318px))/var(--hud-name-count)),48px)!important;margin:0 0 6px!important}
+  #view-profile.personal-hud .hud-top-grid .hud-controls {height:184px!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:1fr 1fr;gap:8px}
+  #view-profile.personal-hud .hud-controls .hud-key {height:auto;font-size:12px!important;gap:7px;padding:8px!important}
+  #view-profile.personal-hud .hud-controls .hud-key svg {width:22px;height:22px}
+  #view-profile.personal-hud .hud-controls .hud-palette-chip {width:23px;height:23px}
+  #view-profile.personal-hud .hud-top-terminal {display:flex;flex-direction:column;align-items:stretch;gap:0;height:184px!important;min-height:184px;max-height:184px;align-self:start;overflow:hidden;opacity:1;padding:0 9px;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000012 3px 4px),var(--inner-card-bg)!important;box-shadow:0 3px 8px #00000024,0 0 8px var(--hud-panel-glow),inset 0 0 16px #0003!important}
+  #view-profile.personal-hud .hud-top-terminal::after {opacity:.65}
+  #view-profile.personal-hud .hud-top-terminal>header {width:auto;height:26px;border-bottom:1px solid var(--inner-border-soft);font-size:6px!important}
+  #view-profile.personal-hud .hud-top-terminal .hud-terminal-lines {flex:1;min-height:0;height:0;padding:3px 0;mask-image:linear-gradient(transparent,#000 6px,#000 calc(100% - 5px),transparent)}
+  #view-profile.personal-hud .hud-top-terminal .hud-terminal-lines>span {font-size:8px!important;line-height:27px!important;min-height:27px}
+ }
+ body.effects-off #view-profile.personal-hud .hud-top-terminal {box-shadow:none!important}
+}
+
+/* Mobile portrait and controls share the first row; the name uses the full width. */
+@layer aved-personal {
+ @container(max-width:499px){
+  #view-profile.personal-hud .hud-top-grid {grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)!important;gap:12px!important}
+  #view-profile.personal-hud .hud-identity-block {display:contents}
+  #view-profile.personal-hud .hud-top-grid .hud-avatar {grid-column:1;grid-row:1;height:168px!important}
+  #view-profile.personal-hud .hud-top-grid .hud-controls {grid-column:2;grid-row:1;height:168px!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+  #view-profile.personal-hud .hud-controls .hud-key {height:auto;min-height:0;font-size:10px!important}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row {grid-column:1/-1;grid-row:2;display:block;height:auto;margin:0;padding:0;text-align:left}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row>div:first-child {display:flex;flex-direction:column;align-items:flex-start;gap:0}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row h1 {order:0;width:100%;margin:0!important;text-align:left;font-size:clamp(32px,calc((100cqi - 2px)/var(--hud-name-count)),80px)!important;line-height:1.08!important}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row .hud-department {order:1;margin:8px 0 0;font-size:11px!important;line-height:1.3!important;letter-spacing:.08em!important;text-align:left}
+  #view-profile.personal-hud .hud-identity-block .hud-personnel-tag {display:none}
+  #view-profile.personal-hud .hud-identity-block .hud-clock {justify-content:flex-start;margin:8px 0 0;text-align:left}
+  #view-profile.personal-hud .hud-top-terminal {grid-column:1/-1;grid-row:3}
+  #view-profile.personal-hud .hud-avatar-code {white-space:nowrap;font-size:7px!important;letter-spacing:.03em!important}
+ }
+ @container(max-width:259px){
+  #view-profile.personal-hud .hud-top-grid .hud-avatar,#view-profile.personal-hud .hud-top-grid .hud-controls {height:148px!important}
+  #view-profile.personal-hud .hud-controls .hud-key {font-size:9px!important}
+ }
+}
+
+@layer aved-personal {
+ #view-profile.personal-hud .hud-controls .hud-key {aspect-ratio:1/1}
+ @container(max-width:499px){
+  #view-profile.personal-hud .hud-top-grid .hud-controls {height:auto!important;aspect-ratio:1/1;grid-template-rows:repeat(2,minmax(0,1fr))}
+  #view-profile.personal-hud .hud-controls .hud-key {height:auto;min-height:0}
+ }
+ @container(min-width:500px){
+  #view-profile.personal-hud .hud-top-grid {grid-template-columns:minmax(150px,240px) 184px minmax(110px,1fr)!important}
+  #view-profile.personal-hud .hud-top-grid .hud-controls {width:184px;height:184px!important;aspect-ratio:1/1}
+  #view-profile.personal-hud .hud-identity-block .hud-name-row h1 {font-size:clamp(18px,calc(min(232px,calc(100cqi - 338px))/var(--hud-name-count)),48px)!important}
+ }
+}
+
+@layer aved-personal {
+ @container(max-width:259px){
+  #view-profile.personal-hud .hud-controls .hud-key {padding:2px!important;gap:3px}
+  #view-profile.personal-hud .hud-controls .hud-key svg {width:16px;height:16px}
+  #view-profile.personal-hud .hud-controls .hud-palette-chip {width:16px;height:16px}
+ }
+}
+
+@layer aved-personal {
+ #view-profile.personal-hud .hud-quick-stack {display:contents}
+ @container(max-width:499px){
+  #view-profile.personal-hud .hud-top-grid {--hud-portrait-height:max(168px,calc((100cqi - 12px)/2.2 + 44px))}
+  #view-profile.personal-hud .hud-top-grid .hud-avatar {height:var(--hud-portrait-height)!important}
+  #view-profile.personal-hud .hud-quick-stack {grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:8px;height:var(--hud-portrait-height);min-width:0;min-height:0}
+  #view-profile.personal-hud .hud-quick-stack .hud-controls {flex:0 0 auto;width:100%;height:auto!important}
+  #view-profile.personal-hud .hud-quick-stack>.hud-channel {display:grid;grid-template-rows:auto minmax(0,1fr);gap:2px;flex:1 1 0;min-height:0;width:100%;padding:4px 6px!important;overflow:hidden;background:var(--inner-card-bg)!important}
+  #view-profile.personal-hud .hud-quick-stack>.hud-channel canvas {display:block;width:100%;height:100%;min-height:0;pointer-events:none}
+  #view-profile.personal-hud .hud-quick-stack .hud-micro-label,#view-profile.personal-hud .hud-quick-stack .hud-micro-label [lang=en] {font-size:6px!important;line-height:1!important}
+  #view-profile.personal-hud.hud-wave-in-header .hud-account-layout {grid-template-columns:minmax(0,1fr)}
+ }
+ @container(max-width:259px){#view-profile.personal-hud .hud-top-grid{--hud-portrait-height:max(148px,calc((100cqi - 12px)/2.2 + 44px))}}
+}

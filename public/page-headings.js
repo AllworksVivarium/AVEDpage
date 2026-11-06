@@ -10,7 +10,7 @@
   ];
   const app=document.getElementById('inner-app-view');if(!app)return;
   app.querySelector('#view-casino [data-game]')?.parentElement.classList.add('terminal-game-tabs');
-  const icons={'view-news':['broadcast.jpg','130% auto'],'view-departments':['directory-disk.png','165% auto'],'view-containment':['containment-folder.png','155% auto'],'view-life':['life-newspaper.png','120% auto'],'view-forum':['forum-computer.jpeg','auto 125%'],'view-casino':['recreation-cards.jpeg','auto 115%']};
+  const icons={'view-news':['broadcast-ui-v1.png','130% auto'],'view-departments':['directory-disk-ui-v1.png','165% auto'],'view-containment':['containment-folder-ui-v1.png','155% auto'],'view-life':['life-newspaper-ui-v1.png','120% auto'],'view-forum':['forum-computer-ui-v1.png','auto 125%'],'view-casino':['recreation-cards-ui-v1.png','auto 115%']};
   const measure=new ResizeObserver(entries=>{for(const {target} of entries){const size=target.getBoundingClientRect().height;if(size)target.parentElement.style.setProperty('--section-masthead-height',size+'px');}});
   function update(){
     for(const [id,english,hebrew] of pages){

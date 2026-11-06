@@ -50,3 +50,16 @@ html[data-time-display="absolute"] .login-card input[type=checkbox]{width:16px;h
 html[data-time-display="absolute"] .login-card label:has(input[type=checkbox])>span{display:flex;align-items:center;gap:8px}
 .admin-open-dialog{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .admin-post>.admin-button-panel{display:inline-block;margin-right:10px}
+
+/* Keep robot balances separate from the human personnel editor. */
+.admin-mode .company-robots-panel{max-width:960px}
+.admin-mode .company-robots-panel h2{margin:0 0 8px}
+.admin-mode .company-robots-panel h3{margin:16px 0 8px;font-size:15px}
+.admin-mode .company-robots-panel>p{margin:0 0 12px;font-size:13px}
+.admin-mode .company-robots-panel .robot-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,.55fr) auto;gap:8px 12px;align-items:end;max-width:none;padding:10px 0;margin:0;border-bottom:1px solid var(--line,#697078)}
+.admin-mode .robot-row label{display:grid;gap:4px;margin:0;min-width:0;font-size:12px}
+.admin-mode .robot-row input{width:100%;min-width:0;box-sizing:border-box;min-height:44px;padding:8px 10px;margin:0;font-size:14px}
+.admin-mode .robot-row button{margin:0;white-space:nowrap;min-height:44px;padding:8px 12px}
+.admin-mode .robot-row [role=status]{grid-column:1/-1;font-size:12px;overflow-wrap:anywhere}
+.admin-mode .robot-row [role=status]:empty{display:none}
+@media(max-width:480px){.admin-mode .company-robots-panel .robot-row{grid-template-columns:minmax(0,1fr) minmax(78px,.6fr) auto;gap:6px}.admin-mode .robot-row button{padding:8px}.admin-mode .robot-row input{padding:8px}}

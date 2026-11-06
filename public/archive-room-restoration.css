@@ -28,7 +28,10 @@
   }
   #view-containment .scp-item-card[aria-current=true] {border:2px solid var(--brand-red-ink,var(--inner-crimson))!important;box-shadow:inset 3px 0 var(--brand-red-ink,var(--inner-crimson)),3px 4px 0 #0002!important}
   #view-containment .scp-item-card:hover {background:var(--inner-card-alt)!important}
-  #view-containment .scp-glitchable-title {border:0!important;background:transparent!important;box-shadow:none!important;padding-inline:0!important}
+  #view-containment .scp-glitchable-title {border:0!important;background:transparent!important;box-shadow:none!important;padding-inline:0!important;color:var(--inner-text-main)!important}
+  /* Redaction glyphs replace text in these nodes and inherit the same theme ink. */
+  #view-containment .scp-glitchable-summary {color:var(--inner-text-muted)!important}
+  #view-containment :is(.scp-glitchable-title,.scp-glitchable-summary) * {color:inherit!important}
   #view-containment .clue-pin {background:var(--brand-red-ink,var(--inner-crimson))!important;border:1px solid var(--inner-text-main)!important;box-shadow:0 2px 3px #0006!important}
   #view-containment .archive-evidence-strip {background:var(--screen,#101214)!important;color:var(--study-screen-ink,#eee)!important;border:1px solid var(--inner-border)!important}
   #view-containment .archive-evidence-strip * {color:inherit!important}

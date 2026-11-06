@@ -96,9 +96,12 @@
  @media(prefers-reduced-motion:reduce){#inner-app-view #left-sidebar{transition:none!important}}
 }
 
-/* Match the dark button's perceived edge to the adjacent light outline. */
+/* Both header controls use the same box and painted edge. */
 @layer aved-section-ui {
- #inner-app-view>.compact-terminal-header #logout-btn:not(:focus-visible) {outline:1px solid #050505!important;outline-offset:0!important}
+ #inner-app-view>.compact-terminal-header .terminal-actions {align-items:center!important}
+ #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn) {margin:0!important;align-self:center!important;line-height:16px!important;border-radius:0!important}
+ #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn):not(:focus-visible) {outline:none!important}
+ #inner-app-view>.compact-terminal-header #logout-btn {border-color:currentColor!important}
 }
 /* Never let expanding labels reflow the fixed icon slots. */
 @layer aved-section-ui {

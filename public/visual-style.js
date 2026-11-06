@@ -8,9 +8,9 @@ window.AVEDVisualStyle=function({byId}){
 
  // Preserve the original bitmap grain; luminance masks remove its black canvas.
  const symbols={
-  welcome:['personnel-moon-icon-v1.png','145% auto'],news:['broadcast.jpg','130% auto'],
-  departments:['directory-disk.png','165% auto'],containment:['containment-folder.png','155% auto'],
-  life:['life-newspaper.png','120% auto'],forum:['forum-computer.jpeg','155% auto'],casino:['recreation-cards.jpeg','145% auto']
+  welcome:['personnel-moon-icon-v1.png','145% auto'],news:['broadcast-ui-v1.png','130% auto'],
+  departments:['directory-disk-ui-v1.png','165% auto'],containment:['containment-folder-ui-v1.png','155% auto'],
+  life:['life-newspaper-ui-v1.png','120% auto'],forum:['forum-computer-ui-v1.png','155% auto'],casino:['recreation-cards-ui-v1.png','145% auto']
  };
  function symbol(name){const [file,size]=symbols[name],el=document.createElement('span');el.className='sidebar-symbol';el.setAttribute('aria-hidden','true');el.style.setProperty('--symbol-image','url("/assets/'+file+'")');el.style.setProperty('--symbol-size',size);return el;}
  for(const [name] of Object.entries(symbols)){const button=sidebar.querySelector('[data-nav="'+name+'"]');if(button){button.firstElementChild.replaceWith(symbol(name));button.setAttribute('aria-label',button.querySelector('.sidebar-label').textContent.trim());}}
