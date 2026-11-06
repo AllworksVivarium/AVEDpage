@@ -1,16 +1,18 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-time-display="absolute" data-admin-theme="black">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101411"><title>万业携生收容公司 管理终端</title>
+  <script src="/admin-theme.js?v=admin-practical-6"></script>
   <link rel="stylesheet" href="/interaction-motion.css?v=motion-3">
   <link rel="stylesheet" href="/site-refinements.css?v=brand-layout-2">
   <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/admin-layout.css">
+<link rel="stylesheet" href="/admin-layout.css?v=admin-controls-4">
 <link rel="stylesheet" href="/community.css">
 <link rel="stylesheet" href="/economy.css?v=signal-5">
 <link rel="stylesheet" href="/welfare.css?v=signal-5">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
+<link rel="stylesheet" href="/admin-themes.css?v=crt-publication-8">
 </head>
 <body>
   <main id="app" class="shell">
@@ -23,7 +25,7 @@
       <div class="welcome-foot"><span>ACCESS REQUIRES AUTHORIZATION</span></div>
     </section>
     <section class="login-card hidden" id="loginCard">
-      <button class="back" id="back">← 返回入口</button><div class="mini-mark">W</div>
+      <div class="login-top"><button class="back" id="back">← 返回入口</button><span class="signal checking"><i></i> INTERNAL NETWORK</span></div><div class="mini-mark">W</div>
       <p class="eyebrow">ADMINISTRATOR LOGIN</p><h2>管理员登录</h2>
       <form id="loginForm" method="post" action="/api/login" autocomplete="on"><label>用户名 / 员工姓名<input name="loginIdentifier" autocomplete="username" required placeholder="请输入用户名或员工姓名"></label>
         <label>登录密码<input name="password" type="password" autocomplete="current-password" required placeholder="请输入密码"></label>
@@ -31,13 +33,15 @@
 
     </section>
     <section class="dashboard hidden" id="dashboard">
-      <header class="app-header"><div class="app-header-left"><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="收起侧边栏" title="收起侧边栏"><span aria-hidden="true">◀</span></button><div class="brand"><div class="brand-mark">W</div><div><b>万业携生收容公司</b><small>管理终端 / ADMIN</small></div></div></div><button class="logout" id="logout">退出登录</button></header>
+      <header class="app-header"><div class="app-header-left"><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="收起侧边栏" title="收起侧边栏"><span aria-hidden="true">◀</span></button><div class="brand"><div class="brand-mark">W</div><div><b>万业携生收容公司</b><small>管理终端 / ADMIN</small></div></div></div><div class="admin-header-actions"><button type="button" class="admin-theme-toggle" id="adminThemeToggle" aria-label="切换显示模式">☾ 黑色模式</button><button class="logout" id="logout">退出登录</button></div></header>
       <div class="portal-layout">
         <aside class="sidebar" id="sidebar">
           <div class="side-heading"><span class="eyebrow">导航 / NAVIGATION</span></div>
           <nav class="tabs" aria-label="管理导航">
-            <button class="tab active" data-tab="admin">员工与帖子管理</button>
-            <button class="tab" data-tab="content">公告与档案</button>
+            <button class="tab active" data-tab="admin">员工管理</button>
+            <button class="tab" data-tab="content">公告</button>
+            <button class="tab" data-tab="dossiers">收容卷宗</button>
+            <button class="tab" data-tab="broadcast">广播</button>
             <button class="tab" data-tab="moderation">图文审核</button>
             <button class="tab" data-tab="activity">活动记录</button><button class="tab" data-tab="speech">通讯追溯</button><button class="tab" data-tab="terminology">用语规范</button><button class="tab" data-tab="economy">配给与架次</button><button class="tab" data-tab="achievements">成就档案</button>
           </nav>
@@ -48,7 +52,6 @@
           <div class="sidebar-foot">监察记录 内部留存</div>
         </aside>
         <main class="portal-main">
-          <div class="welcome-banner"><div><p class="eyebrow">ADMINISTRATION</p><h2 id="greeting">欢迎回来</h2><p id="employeeMeta" class="muted"></p></div></div>
           <div id="panel" aria-live="polite"></div>
           <footer class="app-footer"><span>万业携生收容公司 内部资料</span><span>ACCESS LOGGED</span></footer>
         </main>
@@ -56,14 +59,15 @@
     </section>
   </main>
   <script src="/http-client.js?v=signal-5" defer></script>
-  <script src="/terminal-time.js?v=signal-5" defer></script>
-  <script src="/terminology.js?v=signal-5" defer></script>
+  <script src="/admin-time.js?v=admin-only-1" defer></script>
+  <script src="/admin-terminology.js?v=admin-only-1" defer></script>
   <script src="/interaction-motion.js?v=motion-1" defer></script>
-  <script src="/app.js?v=window-1" defer></script>
+  <script src="/app.js?v=admin-practical-6" defer></script>
   <script src="/admin-extra.js?v=results-music-2" defer></script>
-<script src="/admin-community.js?v=notice-fields-1" defer></script>
-<script src="/admin-economy.js?v=window-1" defer></script>
+<script src="/admin-community.js?v=notice-fields-2" defer></script>
+<script src="/admin-economy.js?v=tiered-prizes-7" defer></script>
 <script src="/admin-achievements.js?v=hub-1" defer></script>
+<script src="/admin-interactions.js?v=admin-practical-6" defer></script>
 </body>
 </html>
 

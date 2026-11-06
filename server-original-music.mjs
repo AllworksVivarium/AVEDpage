@@ -23,7 +23,11 @@ async function synth(track){
 export function installOriginalMusic({db,requireEmployee}) {
  db.prepare("UPDATE music_tracks SET kind='音乐' WHERE kind IN ('lofi','synthwave')").run();
  const cache=new Map();
+ db.exec('CREATE TABLE IF NOT EXISTS content_initializations(name TEXT PRIMARY KEY)');
+ if(!db.prepare("SELECT 1 FROM content_initializations WHERE name='original-music'").get()){
  for(const track of tracks){const url='/api/music/original/'+track.id+'.wav';if(!db.prepare('SELECT 1 FROM music_tracks WHERE url=?').get(url))db.prepare('INSERT INTO music_tracks(title,url,kind) VALUES(?,?,?)').run(track.title,url,'音乐');}
+ db.prepare("INSERT INTO content_initializations VALUES('original-music')").run();
+ }
  return {async handle(req,res,url){
   const match=url.pathname.match(/^\/api\/music\/original\/([-a-z]+)\.wav$/);if(!match)return false;if(!requireEmployee(req,res))return true;
   if(!db.prepare('SELECT 1 FROM music_tracks WHERE url=? AND enabled=1').get(url.pathname)){res.writeHead(404);res.end();return true;}

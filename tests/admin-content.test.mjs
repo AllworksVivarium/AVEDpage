@@ -1,0 +1,110 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
+import {createServer} from 'node:net';
+import {DatabaseSync} from 'node:sqlite';
+
+test('content edits reach players, removals survive restart, and balance rejects client tampering',async t=>{
+ const folder=mkdtempSync(join(tmpdir(),'aved-content-')),password=randomBytes(20).toString('hex');
+ const port=await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});
+ const base='http://127.0.0.1:'+port;
+ const env={...process.env,DATA_DIR:folder,PORT:String(port),HOST:'127.0.0.1',COOKIE_SECURE:'false',SESSION_SECRET:randomBytes(32).toString('hex'),BOOTSTRAP_ADMIN_USERNAME:'content-admin',BOOTSTRAP_ADMIN_PASSWORD:password};
+ let child,errors='';
+ async function start(){
+  child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env,stdio:['ignore','pipe','pipe']});child.stdout.resume();child.stderr.on('data',x=>errors+=x);
+  let ready=false;for(let i=0;i<100;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,50));}assert.ok(ready,errors);
+ }
+ async function stop(){if(child?.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}}
+ t.after(async()=>{await stop();rmSync(folder,{recursive:true,force:true});});await start();
+ async function login(identifier){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password})});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];}
+ async function request(cookie,path,method='GET',data){const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});return {status:r.status,data:await r.json()};}
+ let admin=await login('content-admin');const a=(...args)=>request(admin,...args);
+ const emp=await a('/api/admin/employees','POST',{username:'content-player',password,displayName:'投稿玩家',initialBalance:10000});assert.equal(emp.status,201);
+ let playerCookie=await login('content-player');const p=(...args)=>request(playerCookie,...args);
+ const news=await a('/api/admin/announcements','POST',{title:'原公告',body:'原正文',pinned:false});assert.equal(news.status,201);
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'同步后的正文',pinned:true})).status,200);
+ let publicNews=(await p('/api/announcements')).data.items.find(x=>x.id===news.data.id);assert.equal(publicNews.title,'修改后公告');assert.equal(publicNews.body,'同步后的正文');assert.equal(publicNews.pinned,1);
+ assert.equal((await p('/api/admin/announcements/'+news.data.id,'PUT',{title:'篡改',body:'不允许',pinned:false})).status,403);
+ const doc=await a('/api/admin/dossiers','POST',{code:'TEST-EDIT',title:'原卷宗',department:'科研部',status:'观察中',summary:'原档案'});assert.equal(doc.status,201);
+ assert.equal((await a('/api/admin/dossiers/'+doc.data.id,'PUT',{code:'TEST-EDIT',title:'新卷宗',department:'科研部',status:'稳定',summary:'同步后的档案'})).status,200);
+ assert.equal((await p('/api/dossiers')).data.items.find(x=>x.id===doc.data.id).summary,'同步后的档案');
+ const tracks=(await a('/api/admin/music')).data.items;assert.equal(tracks.length,3);
+ assert.equal((await a('/api/admin/music/'+tracks[0].id,'PUT',{title:'曲目改名',url:'https://example.com/new-audio.mp3',kind:'环境音'})).status,200);
+ assert.equal((await p('/api/music')).data.items.find(x=>x.id===tracks[0].id).title,'曲目改名');
+ assert.equal((await a('/api/admin/music/'+tracks[1].id,'PUT',{title:'内置音乐改名',url:tracks[1].url,kind:'音乐'})).status,200);
+ const external=await a('/api/admin/music','POST',{title:'白噪音',url:'https://example.com/noise.mp3',kind:'白噪音'});assert.equal(external.status,201);
+ const imageData='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
+ const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
+ const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData,tags:[]})).data.id;
+ const queue=(await a('/api/admin/moderation')).data.items;
+ for(const [kind,id,board] of [['thread',thread,'匿名聊天论坛'],['life',life,'生活记录']]){const item=queue.find(x=>x.kind===kind&&x.id===id);assert.equal(item.sourceBoard,board);assert.equal(item.username,'content-player');assert.equal(item.displayName,'投稿玩家');assert.equal(item.employeeId,emp.data.id);}
+ assert.equal((await a('/api/admin/moderation/thread/'+thread,'POST',{action:'approve'})).status,200);
+ assert.equal((await a('/api/admin/moderation/life/'+life,'POST',{action:'reject'})).status,200);
+ assert.ok((await p('/api/player/forum')).data.items.some(x=>x.id===thread));assert.ok(!(await p('/api/player/life')).data.items.some(x=>x.id===life));
+ const archived=(await a('/api/admin/activity?category=image')).data.items;
+ assert.equal(archived.length,2);
+ assert.equal(archived.find(x=>x.source_type==='thread').moderation,'approved');
+ assert.equal(archived.find(x=>x.source_type==='life').moderation,'rejected');
+ assert.ok(archived.every(x=>x.reviewer_name&&x.reviewed_at));
+ assert.equal((await p(archived[0].imageUrl)).status,403);
+ const originalBytes=Buffer.from(imageData.split(',')[1],'base64');
+ const secondBytes=Buffer.concat([originalBytes,Buffer.from([1])]),secondImage='data:image/png;base64,'+secondBytes.toString('base64');
+ const oldArchiveId=archived.find(x=>x.source_type==='thread').id;
+ assert.equal((await p('/api/player/forum/thread/'+thread,'PUT',{title:'换图后的主题',body:'换图正文',imageData:secondImage})).status,200);
+ assert.equal((await a('/api/admin/moderation/thread/'+thread,'POST',{action:'approve',archiveId:oldArchiveId})).status,400);
+ const updatedQueue=(await a('/api/admin/moderation')).data.items.find(x=>x.kind==='thread'&&x.id===thread);
+ assert.ok(updatedQueue.archiveId!==oldArchiveId);
+ assert.equal((await a('/api/admin/moderation/thread/'+thread,'POST',{action:'reject',archiveId:updatedQueue.archiveId})).status,200);
+ assert.equal((await a('/api/admin/forum/threads/'+thread,'DELETE')).status,200);
+ const versions=(await a('/api/admin/activity?category=image')).data.items;
+ assert.equal(versions.length,3);assert.equal(versions.find(x=>x.id===oldArchiveId).moderation,'approved');
+ assert.equal((await a('/api/admin/activity?category=image&status=rejected')).data.items.length,2);
+ assert.equal((await a('/api/admin/activity?category=image&status=approved')).data.items.length,1);
+ assert.equal((await a('/api/admin/activity?category=image&status=invalid')).status,400);
+ const fetchArchive=async id=>{const response=await fetch(base+'/api/admin/image-archive/'+id,{headers:{cookie:admin}});assert.equal(response.status,200);return Buffer.from(await response.arrayBuffer());};
+ assert.deepEqual(await fetchArchive(oldArchiveId),originalBytes);
+ assert.deepEqual(await fetchArchive(updatedQueue.archiveId),secondBytes);
+ const balanceBefore=(await p('/api/me')).data.balance;
+ assert.equal((await p('/api/profile','PUT',{anonymousName:'玩家',bio:'',balance:999999999,delta:999999999})).status,200);
+ assert.equal((await p('/api/admin/employees/'+emp.data.id+'/balance','POST',{delta:999999999})).status,403);
+ assert.equal((await p('/api/me')).data.balance,balanceBefore);
+ // Display time can change independently of real creation time, and both reads use it for ordering.
+ const oldPinned=await a('/api/admin/announcements','POST',{title:'置顶历史公告',body:'测试',pinned:true,publishedAt:'2000-01-01T08:00:00'});
+ const future=await a('/api/admin/announcements','POST',{title:'最新公告',body:'测试',pinned:false,publishedAt:'2030-01-01T08:00:00'});
+ const past=await a('/api/admin/announcements','POST',{title:'旧公告',body:'测试',pinned:false,publishedAt:'2020-01-01T08:00:00'});
+ for(const item of [oldPinned,future,past])assert.equal(item.status,201);
+ const timeDb=new DatabaseSync(join(folder,'wanyehui.db'));
+ const created=timeDb.prepare('SELECT created_at FROM announcements WHERE id=?').get(news.data.id).created_at;
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'同步后的正文',pinned:false,publishedAt:'2026-11-06T18:14:12'})).status,200);
+ const ids=[oldPinned.data.id,future.data.id,news.data.id,past.data.id];
+ for(const path of ['/api/announcements','/api/player/state']){
+  const data=(await p(path)).data,items=data.items||data.announcements;
+  assert.deepEqual(items.filter(x=>ids.includes(x.id)).map(x=>x.id),ids);
+  const edited=items.find(x=>x.id===news.data.id);assert.equal(edited.createdAt,'2026-11-06T10:14:12.000Z');assert.equal(edited.publishedAt,edited.createdAt);
+ }
+ assert.equal(timeDb.prepare('SELECT created_at FROM announcements WHERE id=?').get(news.data.id).created_at,created);
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'仅改正文',pinned:false})).status,200);
+ assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z','older clients must preserve the edited publication date');
+ assert.equal((await a('/api/admin/announcements','POST',{title:'无效日期',body:'测试',pinned:false,publishedAt:'2026-02-30T08:00'})).status,400);
+ assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'无效日期',body:'测试',pinned:false,publishedAt:'2026-02-30T08:00'})).status,400);
+ await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
+ assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z');timeDb.close();
+ // Delete all defaults as well: they must not be re-seeded on restart.
+ for(const track of (await a('/api/admin/music')).data.items)assert.equal((await a('/api/admin/music/'+track.id,'DELETE')).status,200);
+ for(const item of (await p('/api/dossiers')).data.items)assert.equal((await a('/api/admin/dossiers/'+item.id,'DELETE')).status,200);
+ for(const item of (await p('/api/announcements')).data.items)assert.equal((await a('/api/admin/announcements/'+item.id,'DELETE')).status,200);
+ assert.equal((await p('/api/music')).data.items.length,0);
+ await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
+ for(const endpoint of ['/api/music','/api/admin/music','/api/dossiers','/api/announcements'])assert.equal((await a(endpoint)).data.items.length,0,endpoint);
+ assert.equal((await p('/api/me')).data.balance,balanceBefore);
+ assert.equal((await a('/api/admin/activity?category=ledger')).status,400);
+ assert.equal((await a('/api/admin/activity?category=image')).data.items.length,3);
+ const stored=new DatabaseSync(join(folder,'wanyehui.db'));stored.prepare('DELETE FROM life_records WHERE employee_id=?').run(emp.data.id);stored.prepare('DELETE FROM forum_threads WHERE employee_id=?').run(emp.data.id);stored.close();
+ const removal=await a('/api/admin/employees/'+emp.data.id,'DELETE');await new Promise(r=>setTimeout(r,20));assert.equal(removal.status,200,JSON.stringify(removal.data)+' '+errors);
+ assert.equal((await a('/api/admin/activity?category=image')).data.items.length,3);
+ assert.deepEqual(await fetchArchive(oldArchiveId),originalBytes);
+});

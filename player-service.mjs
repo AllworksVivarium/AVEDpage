@@ -1,5 +1,6 @@
+import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {mediaReference} from './server-media.mjs';
-import {weighted} from './server-economy.mjs';
+import {weighted,scratchPrizeMultipliers} from './server-economy.mjs';
 import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
@@ -10,7 +11,7 @@ import { generateSealedTicket } from './server-ticket.mjs';
 export const DERBY_ODDS=[2.2,3.5,5,8.5];
 export const DERBY_WIN_PROBABILITIES=[0.44,0.28,0.17,0.11];
 
-export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal}) {
+export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
   const chatStreams=new Map();
   const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[])response.write(payload);}
@@ -76,7 +77,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const award=()=>{}; // Ledger and settlement triggers award achievements atomically.
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
+  if(!db.prepare("SELECT 1 FROM content_initializations WHERE name='aved-007'").get()){
   db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
+    db.prepare("INSERT INTO content_initializations VALUES('aved-007')").run();
+  }
   for(const [code,name] of [['AVED.VIV','收容部'],['AVED.ANC','武装部'],['AVED.MEM','后勤部'],['AVED.RES','科研部'],['AVED.MED','医疗部']]){db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,3200,?)').run(code,name,Math.floor(Date.now()/60000));db.prepare('UPDATE stock_prices SET name=? WHERE code=?').run(name,code);}
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片请使用不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
@@ -89,7 +93,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(balanceFor(id)<cost)throw new Error('余额不足。');
       if(cost)recordLedger(id,-cost,game+'投入');if(prize)recordLedger(id,prize,game+'奖金');
       const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,game,cost,prize,proof.seed,proof.seedHash,JSON.stringify(result));
-      award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash};
+      award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash,gameHighlight:getHighlights().event(id,Number(row.lastInsertRowid))};
     });
   }
   const bet=n=>{if(!Number.isSafeInteger(n)||n<100||n>1000000)throw new Error('投入应为 100 至 1,000,000 的整数。');return n;};
@@ -228,11 +232,11 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
-          achievements:getPersonal().earned(id),
+          achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
           history:[],
           employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,a.created_at AS createdAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(a.created_at) DESC,a.id DESC`).all(),
+          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
           forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),stockOrders:pendingOrders(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
@@ -258,8 +262,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(moderation&&req.method==='POST') {
         if(!['approve','reject'].includes(data.action))throw new Error('审核操作无效。');
         const table=moderation[1]==='thread'?'forum_threads':'forum_replies';
-        const result=db.prepare(`UPDATE ${table} SET status=?,moderation=? WHERE id=? AND moderation='pending'`).run(data.action==='approve'?'published':'hidden',data.action==='approve'?'approved':'rejected',moderation[2]);
-        if(!result.changes)throw new Error('内容已处理或已删除。');log(id,'moderation',table+'/'+moderation[2],{decision:data.action});send(res,200,{ok:true});return true;
+        transaction(()=>{checkImageVersion(db,moderation[1],Number(moderation[2]),data.archiveId);const result=db.prepare(`UPDATE ${table} SET status=?,moderation=? WHERE id=? AND moderation='pending'`).run(data.action==='approve'?'published':'hidden',data.action==='approve'?'approved':'rejected',moderation[2]);
+        if(!result.changes)throw new Error('内容已处理或已删除。');recordImageReview(db,moderation[1],Number(moderation[2]),employee,data.action);});log(id,'moderation',table+'/'+moderation[2],{decision:data.action});send(res,200,{ok:true});return true;
       }
       if(path==='/api/admin/activity'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages') AND id<? ORDER BY id DESC LIMIT 100").all(before)});return true;}
       const dossier=path.match(/^\/api\/player\/dossiers\/(\d+)\/comments$/);
@@ -270,7 +274,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/relief'&&req.method==='POST'){transaction(()=>{if(balanceFor(id)>=10000)throw new Error('余额低于 10,000 才能领取。');recordLedger(id,10000,'应急低保');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/games/scratch'&&req.method==='POST') {
         const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
-        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {
@@ -298,8 +302,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           const round=saveRound(id,'cards',state);log(id,'cards.start',round,{seedHash:proof.seedHash});send(res,200,{...publicCards(state,round),balance:balanceFor(id)});return true;
         }
         const state=loadRound(id,Number(data.round),'cards');
-        transaction(()=>{cardsAction(state,action,data.cards);if(state.phase==='ended'&&!state.settled){state.settled=true;const prize=state.winner===0?20000:0;if(prize)recordLedger(id,prize,'牌桌获胜');db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,'cards',0,prize,state.seed,state.seedHash,JSON.stringify({winner:state.winner}));award(id);}updateRound(data.round,state);log(id,'cards.'+action,data.round,{cards:data.cards||[],winner:state.winner});});
-        send(res,200,{...publicCards(state,data.round),balance:balanceFor(id)});return true;
+        transaction(()=>{cardsAction(state,action,data.cards);if(state.phase==='ended'&&!state.settled){state.settled=true;const prize=state.winner===0?20000:0;if(prize)recordLedger(id,prize,'牌桌获胜');db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,'cards',0,prize,state.seed,state.seedHash,JSON.stringify({winner:state.winner,round:Number(data.round)}));award(id);}updateRound(data.round,state);log(id,'cards.'+action,data.round,{cards:data.cards||[],winner:state.winner});});
+        send(res,200,{...publicCards(state,data.round),balance:balanceFor(id),gameHighlight:getHighlights().roundEvent(id,'cards',Number(data.round))});return true;
       }
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}

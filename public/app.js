@@ -3,27 +3,24 @@ const $ = (selector) => document.querySelector(selector);
 const welcome = $("#welcome"),
   loginCard = $("#loginCard"),
   dashboard = $("#dashboard");
-const networkSignal = document.querySelector(".signal");
-let currentUser = null,
-  musicItems = [],
-  musicIndex = -1;
-
-// 更新 welcome 区域左上角网络灯状态：online(绿) / offline(红)
+const networkSignals = document.querySelectorAll('.signal');
+let currentUser = null,musicItems = [],musicIndex = -1;
+let networkProbe = null;
 function setNetworkSignalStatus(status) {
-  if (!networkSignal) return;
-  networkSignal.classList.remove("online", "offline", "checking");
-  networkSignal.classList.add(status);
+ for(const signal of networkSignals){signal.classList.remove('online','offline','checking');signal.classList.add(status);signal.setAttribute('role','status');signal.setAttribute('aria-label',status==='online'?'服务器连接正常':status==='offline'?'服务器忙碌或无法连接':'正在检查服务器');signal.title=signal.getAttribute('aria-label');}
 }
-
-// 使用同源请求探测服务可达性：能收到任意 HTTP 响应即视为在线
-async function probeServerStatus() {
-  try {
-    await fetch("/api/me", { cache: "no-store" });
-    setNetworkSignalStatus("online");
-  } catch {
-    setNetworkSignalStatus("offline");
-  }
+function probeServerStatus() {
+ if(networkProbe)return networkProbe;
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),3000);
+ networkProbe=(async()=>{try{
+  const response=await fetch('/api/health',{cache:'no-store',signal:controller.signal});
+  if(!response.ok)throw new Error('unavailable');
+  const data=await response.json();setNetworkSignalStatus(data.ok===true?'online':'offline');
+ }catch{setNetworkSignalStatus('offline');}finally{clearTimeout(timeout);networkProbe=null;}})();
+ return networkProbe;
 }
+window.addEventListener('offline',()=>setNetworkSignalStatus('offline'));
+window.addEventListener('online',probeServerStatus);
 
 // 切换欢迎页 / 登录页 / 主面板显示状态
 function show(section) {
@@ -103,32 +100,20 @@ async function loadPortal({verified=null,interactive=false}={}) {
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
     if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
-    $("#greeting").textContent = "当前用户：" + currentUser.displayName + " [管理员]";
-    $("#employeeMeta").textContent = isAdmin
-      ? "管理员　/　员工资料与内容管理"
-      : (currentUser.department || "员工") +
-        "　/　余额 " +
-        Number(data.balance).toLocaleString() +
-        " 点";
     dashboard.classList.toggle("admin-mode", isAdmin);
     document.querySelector(".brand small").textContent = isAdmin
-      ? "管理终端 / ADMIN CONSOLE"
+      ? "A.V.E.D. / ADMIN"
       : "员工内部终端 / INTERNAL";
-    document.querySelector(
-      ".portal-main .welcome-banner .eyebrow",
-    ).textContent = isAdmin
-      ? "SYSTEM ADMINISTRATION ACCESS GRANTED"
-      : "EMPLOYEE PORTAL ACCESS GRANTED";
     document
       .querySelectorAll(".tabs .tab")
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(location.hash==='#dossiers'?'content':'admin');
+    if (isAdmin) await renderTab(location.hash==='#dossiers'?'dossiers':'admin');
     else await Promise.all([renderTab("files"), loadMusic()]);
   } catch(error) {
     if(generation!==portalGeneration)return;
@@ -354,34 +339,47 @@ async function loadReplies(id) {
 }
 
 // ===== 管理端：员工维护与内容管理 =====
+const personnelIdentityNames={player_employee:'玩家 · 部门员工',player_containment:'玩家 · 收容物',planning_member:'企划组 · 领导',company_containment:'公司提供 · 收容物'};
 function enhancePersonnelForms(employees){
- document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';fields.innerHTML='<legend>档案身份与职务</legend><label><input name="isNpc" type="checkbox"> NPC 档案</label><label><input name="isLeadership" type="checkbox"> 公司直属领导（不归属部门）</label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="例如：董事长、监察长、公司顾问"></label>';form.querySelector('[name=department]').before(fields);fields.querySelector('[name=isNpc]').checked=!!current?.isNpc;fields.querySelector('[name=isLeadership]').checked=!!current?.isLeadership;fields.querySelector('[name=positionTitle]').value=current?.positionTitle||'';
- const notice=document.createElement('p');notice.className='personnel-kind-note';fields.append(notice);
- const position=fields.querySelector('[name=positionTitle]'),roleLabel=document.createElement('label');roleLabel.innerHTML='职务类别<select name="positionPreset"><option value="成员">部门成员</option><option value="部长">部长</option><option value="副部长">副部长</option><option value="custom">自定义职称</option></select>';position.parentElement.before(roleLabel);const preset=roleLabel.querySelector('select');preset.value=['成员','部长','副部长'].includes(position.value)?position.value:position.value?'custom':current?.isLeadership||current?.isNpc?'custom':'成员';
- function applyPreset(){if(preset.value!=='custom')position.value=preset.value;position.readOnly=preset.value!=='custom';position.placeholder='填写实际职称，例如：董事长、监察长、公司顾问';}
- preset.addEventListener('change',()=>{if(preset.value==='custom'&&['成员','部长','副部长'].includes(position.value))position.value='';applyPreset();});
- fields.querySelector('[name=isLeadership]').addEventListener('change',event=>{if(event.target.checked){preset.value='custom';if(['成员','部长','副部长'].includes(position.value))position.value='';applyPreset();}});applyPreset();
- function sync(){const npc=fields.querySelector('[name=isNpc]').checked,leader=fields.querySelector('[name=isLeadership]').checked;fields.querySelector('[name=positionTitle]').required=npc||leader;form.querySelector('[name=department]').disabled=leader;for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=npc;if(name!=='initialBalance')input.required=!npc&&form.id==='employeeCreate';if(npc&&name==='password')input.value='';}const enabled=form.querySelector('[name=enabled]');if(enabled){enabled.disabled=npc;if(npc)enabled.checked=false;}notice.textContent=npc?'NPC 以公司档案展示，无需填写登录账号和密码。':leader?'直属职务单独展示；账号权限沿用原有设置。':'';}
- fields.addEventListener('change',sync);sync();
+ document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
+  const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>职务 / 身份显示文本<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  const department=form.querySelector('[name=department]');department.before(fields);
+  const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
+  kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';let wasMinister=false;
+  function sync(){
+   const leader=kind.value==='planning_member',containment=kind.value.endsWith('_containment'),company=kind.value==='company_containment';
+   fields.querySelector('[data-archive-only]').hidden=!leader;fields.querySelector('[data-archive-bio]').hidden=!containment;fields.querySelector('[name=archiveBio]').disabled=!containment;
+   if(!leader)npc.checked=company;
+   if(containment)department.value='公司直属';department.disabled=containment;
+   const minister=leader&&department.value!=='公司直属';
+   if(minister){position.value='部长';}else if(wasMinister&&leader){position.value='';}else if(!leader&&['部长','副部长'].includes(position.value)){position.value='';}
+   wasMinister=minister;position.readOnly=minister;position.required=leader;position.placeholder=containment?'例如：AVED-021 / 自定义收容身份':leader?'例如：人工智能、监察长、公司顾问':'例如：成员、值班医师';
+   const noLogin=company||(leader&&npc.checked);
+   for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
+   const enabled=form.querySelector('[name=enabled]');if(enabled){enabled.disabled=noLogin;if(noLogin)enabled.checked=false;}
+   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，身份与职务由管理员分配。':leader?'选择具体部门即为该部门部长；公司直属请填写自定义职务。此身份不自动授予后台管理权限。':'玩家为部门成员，不分配领导职务。';
+  }
+  fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
 }
+function rosterDepartment(value){const text=String(value||'');return /收容/.test(text)?'收容部':/武器|武装|武裝|作战/.test(text)?'武装部':/研究|科研/.test(text)?'科研部':/后勤|後勤/.test(text)?'后勤部':/医疗|醫療|医療/.test(text)?'医疗部':'公司直属';}
 async function renderAdmin() {
   if (currentUser?.role !== "admin")
     throw new Error("只有管理员可以访问此页面。");
 
-  const {items:employees}=await api('/api/admin/employees');
-  const content=[];
+  const {items:employees}=await api('/api/admin/employees?roster=personnel');
 
   const employeeRows = employees.map((e) =>
-    "<tr><td>" + esc(e.displayName) + "<small>" + esc(e.isNpc?"NPC "+e.positionTitle:e.username) +
+    '<tr data-roster-department="'+esc(rosterDepartment(e.department))+'"><td>' + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
     "</td><td>" + esc(e.department || "未填写") +
     "</td><td>" + Number(e.balance).toLocaleString() +
     "</td><td>" + (e.isNpc ? "—" : e.role === "admin" ? "管理员" : "员工") +
-    "</td><td>" + (e.isNpc ? "NPC 档案" : e.enabled ? "启用" : "停用") +
+    "</td><td>" + (e.isNpc ? personnelIdentityNames[e.identityKind] : e.enabled ? "启用" : "停用") +
     '</td><td><details><summary>编辑</summary><form class="employee-edit-form" data-employee-id="' +
     e.id + '"><input name="displayName" required maxlength="80" value="' +
-    esc(e.displayName) + '" placeholder="姓名 / NPC名称"><input name="qqNumber" maxlength="30" value="' +
+    esc(e.displayName) + '" placeholder="姓名 / 收容物名称"><input name="qqNumber" maxlength="30" value="' +
     esc(e.qqNumber || "") + '" placeholder="QQ 号"><input name="department" maxlength="80" value="' +
     esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><label><input name="enabled" type="checkbox" ' +
     (e.enabled ? "checked" : "") +
@@ -390,43 +388,28 @@ async function renderAdmin() {
     '" data-delete-employee-username="' + esc(e.username) + '">删除员工</button></td></tr>',
   ).join("");
 
-  const postRows = content.map((item) => {
-    const label = item.itemType === "comment"
-      ? "公告留言"
-      : item.itemType === "thread" ? "论坛主题" : "论坛回复";
-    const context = item.itemType === "reply"
-      ? "所在主题：" + (item.parentTitle || item.title)
-      : item.itemType === "comment" ? "所属公告：" + item.title : "独立论坛主题";
-    return '<article class="admin-post"><div class="admin-post-head"><div><b>' +
-      esc(label) + "</b><small>" + esc(item.anonymousName || "匿名员工") +
-      " " + AVEDTime.markup(item.createdAt) + " " +
-      (item.status === "hidden" ? "已隐藏" : "展示中") +
-      '</small></div><button class="small-action danger" data-delete-type="' +
-      esc(item.itemType) + '" data-delete-id="' + item.id +
-      '" data-delete-label="' + esc(label + "：" + (item.title || "")) +
-      '">删除</button></div><small class="admin-post-context">' +
-      esc(context) + "</small><p>" + esc(item.body || "") + "</p></article>";
-  }).join("") || '<p class="muted">暂无发帖记录。</p>';
-
   $("#panel").innerHTML =
     '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 通讯记录</p></div><span class="admin-count">员工 ' +
     employees.length +
-    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / NPC名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
+    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
     ' 位员工 登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
-    '</tbody></table></div></section><section class="admin-section"><div class="section-heading"><div><h3>发帖记录与帖子管理</h3><p>身份追溯与通讯归档</p></div></div><div class="admin-post-list">' +
-    '<button type="button" class="small-action" id="openSpeechRecords">检索通讯记录</button></div></section>';
-  $('#openSpeechRecords').onclick=()=>renderTab('speech');
+    '</tbody></table></div></section>';
 
-  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'直属 / 待分配';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['直属 / 待分配','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
+  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
+  const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
+  const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
+  filters.innerHTML=departments.map((name,index)=>`<button type="button" class="small-action" data-roster-filter="${name}" aria-pressed="${index===0}">${name}</button>`).join('')+'<p id="roster-filter-count" role="status"></p>';rosterTable.before(filters);
+  filters.onclick=event=>{const button=event.target.closest('[data-roster-filter]');if(!button)return;const selected=button.dataset.rosterFilter;let count=0;for(const row of rosterTable.querySelectorAll('tbody tr')){row.hidden=selected!=='全部部门'&&row.dataset.rosterDepartment!==selected;if(!row.hidden)count++;}for(const item of filters.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item===button));$('#roster-filter-count').textContent=selected+' · '+count+' 人';};
+
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
     password: v.get("password"),
     displayName: v.get("displayName"),
     qqNumber: v.get("qqNumber"),
-    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",isNpc:v.has("isNpc"),isLeadership:v.has("isLeadership"),
+    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
     initialBalance: Number(v.get("initialBalance") || 0),
   }));
 
@@ -437,7 +420,7 @@ async function renderAdmin() {
       const payload = {
         displayName: v.get("displayName"),
         qqNumber: v.get("qqNumber"),
-        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",isNpc:v.has("isNpc"),isLeadership:v.has("isLeadership"),
+        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
         enabled: v.get("enabled") === "on",
       };
       if (v.get("password")) payload.password = v.get("password");
@@ -537,6 +520,8 @@ async function renderTab(tab) {
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();
+    else if(tab === 'dossiers')await renderContentAdmin('dossiers');
+    else if(tab === 'broadcast')await renderBroadcastAdmin();
     else if (tab === "files") await renderDossiers();
     else if (tab === "notice") await renderAnnouncements();
     else if (tab === "admin") await renderAdmin();

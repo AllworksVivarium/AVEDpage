@@ -1,0 +1,112 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
+import {createServer} from 'node:net';
+import {DatabaseSync} from 'node:sqlite';
+import {installPersonnel,personnelAssignment} from '../server-personnel.mjs';
+import {auditRange} from '../server-audit.mjs';
+
+test('legacy positions migrate without changing credentials or admin permissions',()=>{
+ const db=new DatabaseSync(':memory:');
+ db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,department TEXT,position_title TEXT,is_npc INTEGER,is_leadership INTEGER,role TEXT);
+ INSERT INTO employees VALUES(1,'公司直属领导','人工智能',1,1,'employee'),(2,'医疗部','部长',1,0,'employee'),(3,'直属 / 待分配','成员',0,0,'admin');`);
+ installPersonnel(db);installPersonnel(db);
+ assert.deepEqual(db.prepare('SELECT identity_kind FROM employees ORDER BY id').all().map(x=>x.identity_kind),['planning_member','planning_member','player_employee']);
+ assert.equal(db.prepare('SELECT department FROM employees WHERE id=1').get().department,'公司直属');
+ assert.equal(db.prepare('SELECT role FROM employees WHERE id=3').get().role,'admin');
+ assert.throws(()=>personnelAssignment({identityKind:'player_employee',positionTitle:'部长'}),/不能担任领导/);
+ assert.throws(()=>auditRange(new URLSearchParams('from=2028-01-01')),/2026/);
+ assert.throws(()=>auditRange(new URLSearchParams('from=2026-02-30')),/2026/);
+ assert.throws(()=>auditRange(new URLSearchParams('from=2027-01-01&to=2026-01-01')),/晚于/);
+ db.close();
+});
+
+test('persistent identities, editable player containment, and lazy categorized audit',async t=>{
+ const folder=mkdtempSync(join(tmpdir(),'aved-admin-functions-'));
+ let db;
+ const password=randomBytes(20).toString('hex');
+ const port=await new Promise(resolve=>{const socket=createServer();socket.listen(0,'127.0.0.1',()=>{const p=socket.address().port;socket.close(()=>resolve(p));});});
+ const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:folder,PORT:String(port),HOST:'127.0.0.1',COOKIE_SECURE:'false',SESSION_SECRET:randomBytes(32).toString('hex'),BOOTSTRAP_ADMIN_USERNAME:'audit-admin',BOOTSTRAP_ADMIN_PASSWORD:password},stdio:['ignore','pipe','pipe']});
+ let errors='';child.stdout.resume();child.stderr.on('data',x=>errors+=x);
+ t.after(async()=>{db?.close();if(child.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}rmSync(folder,{recursive:true,force:true});});
+ const base='http://127.0.0.1:'+port;
+ let ready=false;for(let i=0;i<100;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,50));}assert.ok(ready,errors);
+ async function login(username){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:username,password})});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];}
+ const admin=await login('audit-admin');
+ async function req(cookie,path,method='GET',body){const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});return {status:r.status,data:await r.json()};}
+ const a=(...args)=>req(admin,...args);
+ async function create(identityKind,username,more={}){const r=await a('/api/admin/employees','POST',{identityKind,username,password,displayName:username,department:'公司直属',...more});assert.equal(r.status,201,JSON.stringify(r.data));return r.data.id;}
+ const employeeId=await create('player_employee','ordinary',{department:'医疗部'});
+ const playerId=await create('player_containment','player-object',{archiveBio:'原始收容简介'});
+ const ministerId=await create('planning_member','minister',{department:'医疗部',positionTitle:'部长'});
+ const leaderId=await create('planning_member','director',{positionTitle:'人工智能'});
+ const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介'});
+ assert.equal((await a('/api/admin/employees','POST',{identityKind:'player_employee',username:'fake-leader',password,displayName:'普通玩家',positionTitle:'部长'})).status,400);
+ const items=(await a('/api/admin/employees')).data.items;
+ assert.equal(items.find(x=>x.id===ministerId).department,'医疗部');
+ assert.equal(items.find(x=>x.id===leaderId).department,'公司直属');
+ assert.equal(items.find(x=>x.id===leaderId).role,'employee');
+ assert.equal(items.find(x=>x.id===companyId).enabled,0);
+ assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
+ const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
+ const cookie=await login('player-object'),player=(...args)=>req(cookie,...args);
+ const state=(await player('/api/player/state')).data;
+ assert.equal(state.employee.identityKind,'player_containment');
+ assert.equal((await player('/api/profile','PUT',{anonymousName:'收容代号',bio:'玩家更新简介',identityKind:'planning_member',isLeadership:true})).status,200);
+ const directory=(await player('/api/player/directory')).data.items;
+ assert.equal(directory.find(x=>x.id===playerId).bio,'玩家更新简介');
+ assert.equal(directory.find(x=>x.id===playerId).identityKind,'player_containment');
+ assert.equal(directory.find(x=>x.id===ministerId).isLeadership,1);
+ assert.equal(directory.find(x=>x.id===leaderId).positionTitle,'人工智能');
+ assert.equal((await player('/api/admin/employees/'+companyId,'PUT',{displayName:'篡改'})).status,403);
+ assert.equal((await player('/api/admin/activity?category=image')).status,403);
+ assert.equal((await a('/api/admin/employees/'+employeeId,'PUT',{displayName:'员工',department:'科研部',identityKind:'player_employee',positionTitle:'成员',enabled:true})).status,200);
+ const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
+ assert.equal((await player('/api/player/forum','POST',{title:'图文',body:'图片记录',imageData:img})).status,201);
+ assert.equal((await player('/api/player/life','POST',{title:'作品',body:'画作',kind:'art',tags:[],imageData:img})).status,201);
+ assert.equal((await player('/api/posts','POST',{announcementId:state.announcements[0].id,body:'发言记录'})).status,201);
+ db=new DatabaseSync(join(folder,'wanyehui.db'));
+ db.prepare("INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,123,'反作弊核查')").run(playerId);
+ db.exec("UPDATE activity_logs SET created_at='2026-11-06 10:00:00'");
+ assert.deepEqual((await a('/api/admin/activity')).data.items,[]);
+ const images=(await a('/api/admin/activity?category=image')).data.items;
+ assert.equal(images.length,2);assert.ok(images.every(x=>x.category==='image'&&!x.details.includes('base64')&&x.imageUrl));
+ assert.equal((await fetch(base+images[0].imageUrl,{headers:{cookie:admin}})).status,200);
+ const speech=(await a('/api/admin/activity?category=speech')).data.items;
+ assert.ok(speech.some(x=>x.target==='posts'));assert.ok(speech.every(x=>x.target!=='balance_ledger'));
+ assert.equal((await a('/api/admin/activity?category=ledger')).status,400);
+ assert.equal(db.prepare('SELECT SUM(delta) AS balance FROM balance_ledger WHERE employee_id=?').get(playerId).balance,123);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM activity_logs WHERE target='balance_ledger'").get().n,0);
+ assert.equal((await a('/api/admin/activity?category=ledger&from=2028-01-01')).status,400);
+ assert.equal((await a('/api/admin/speech-records?from=2025-01-01')).status,400);
+ assert.equal((await a('/api/admin/speech-records?from=2027-01-02&to=2026-01-01')).status,400);
+ assert.equal((await a('/api/admin/activity?category=invalid')).status,400);
+ assert.equal((await a('/api/admin/activity?category=image&from=2027-01-01&to=2027-12-31')).data.items.length,0);
+ const insert=db.prepare("INSERT INTO activity_logs(employee_id,username,action,target,category,details,created_at) VALUES(?,'player-object','insert','posts','speech','{}','2026-11-06 12:00:00')");
+ for(let i=0;i<61;i++)insert.run(playerId);
+ const first=(await a('/api/admin/activity?category=speech')).data;assert.equal(first.items.length,50);assert.ok(first.next);
+ const second=(await a('/api/admin/activity?category=speech&before='+first.next)).data;
+ assert.ok(second.items.length>0&&second.items.every(x=>x.id<first.next));assert.equal(new Set([...first.items,...second.items].map(x=>x.id)).size,first.items.length+second.items.length);
+ // Beijing midnight boundaries: the selected day includes 16:00 UTC of the prior day.
+ db.prepare("INSERT INTO activity_logs(employee_id,username,action,target,category,details,created_at) VALUES(?,'boundary','insert','posts','speech','{}','2026-11-05T16:00:00.000Z')").run(playerId);
+ const boundary=(await a('/api/admin/activity?category=speech&from=2026-11-06&to=2026-11-06&keyword=boundary')).data;
+ assert.equal(boundary.items.length,1);
+ assert.equal(db.prepare('SELECT identity_kind FROM employees WHERE id=?').get(playerId).identity_kind,'player_containment');
+ assert.equal(db.prepare('SELECT bio FROM profiles WHERE employee_id=?').get(companyId).bio,'公司提供的收容简介');
+ const economy=(await a('/api/admin/economy')).data;economy.scratch[0].returnPercent=82.5;
+ const saved=await a('/api/admin/economy','PUT',economy);assert.equal(saved.status,200);
+ for(const pool of Object.values(saved.data.scratch[0].variants)){const ev=pool.reduce((sum,x)=>sum+x.multiplier*x.weight,0)/pool.reduce((sum,x)=>sum+x.weight,0);assert.ok(Math.abs(ev-.825)<.0001);}
+ assert.ok(saved.data.scratch.every(x=>x.name==='刮刮乐'));
+ assert.equal((await a('/api/admin/economy','PUT',{...saved.data,sky:{...saved.data.sky,lossFraction:0}})).status,400);
+ const flight=(await player('/api/player/games/sky/current')).data;
+ assert.equal((await player('/api/player/games/sky/start','POST',{round:flight.round,bet:100})).status,200);
+ const oldRules=JSON.parse(db.prepare('SELECT rules_json FROM sky_flights WHERE id=?').get(flight.round).rules_json);oldRules.lossFraction=0;
+ db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=100,rules_json=? WHERE id=?').run(Date.now()-10000,JSON.stringify(oldRules),flight.round);
+ const crashed=await player('/api/player/games/sky/jump','POST',{round:flight.round});assert.equal(crashed.status,200);assert.equal(crashed.data.self.status,'crashed');assert.equal(crashed.data.self.prize,0);assert.equal(crashed.data.lossFraction,1);
+ assert.equal(db.prepare('SELECT SUM(delta) AS n FROM balance_ledger WHERE employee_id=?').get(playerId).n,23);
+
+});

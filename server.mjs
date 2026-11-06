@@ -1,3 +1,6 @@
+import {announcementPublicationTime} from './server-announcement-time.mjs';
+import {installGameHighlights} from './server-game-highlights.mjs';
+import {installPersonnel,personnelAssignment} from './server-personnel.mjs';
 import {installPersonal} from './server-personal.mjs';
 import {installPlayerDesign} from './server-player-design.mjs';
 import {installDerby} from './server-derby.mjs';
@@ -129,8 +132,11 @@ CREATE TABLE IF NOT EXISTS music_tracks (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `);
+if(!db.prepare('PRAGMA table_info(announcements)').all().some(c=>c.name==='published_at'))db.exec("ALTER TABLE announcements ADD COLUMN published_at TEXT NOT NULL DEFAULT ''");
+db.exec("UPDATE announcements SET published_at=created_at WHERE published_at=''");
 const employeeColumns = new Set(db.prepare('PRAGMA table_info(employees)').all().map(column => column.name));
 for(const [name,type] of [['position_title',"TEXT NOT NULL DEFAULT ''"],['is_npc','INTEGER NOT NULL DEFAULT 0'],['is_leadership','INTEGER NOT NULL DEFAULT 0']])if(!employeeColumns.has(name))db.exec('ALTER TABLE employees ADD COLUMN '+name+' '+type);
+installPersonnel(db);
 if (!employeeColumns.has('qq_number')) db.exec('ALTER TABLE employees ADD COLUMN qq_number TEXT');
 if (!employeeColumns.has('created_at')) db.exec("ALTER TABLE employees ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
 for(const action of ['INSERT','UPDATE','DELETE'])db.exec('DROP TRIGGER IF EXISTS audit_employees_'+action);
@@ -161,15 +167,19 @@ if (employeeCount === 0 && process.env.BOOTSTRAP_ADMIN_USERNAME && process.env.B
   db.prepare('INSERT INTO employees (username,password_hash,display_name,department,role) VALUES (?,?,?,?,?)')
     .run(process.env.BOOTSTRAP_ADMIN_USERNAME, hashPassword(process.env.BOOTSTRAP_ADMIN_PASSWORD), process.env.BOOTSTRAP_ADMIN_NAME || '系统管理员', '管理部', 'admin');
 }
-if (db.prepare('SELECT COUNT(*) AS n FROM dossiers').get().n === 0) {
+db.exec('CREATE TABLE IF NOT EXISTS content_initializations(name TEXT PRIMARY KEY)');
+if (!db.prepare("SELECT 1 FROM content_initializations WHERE name='dossiers'").get() && db.prepare('SELECT COUNT(*) AS n FROM dossiers').get().n === 0) {
   const add = db.prepare('INSERT INTO dossiers (code,title,department,status,summary) VALUES (?,?,?,?,?)');
   add.run('WY-001', '咖啡机', '设施维护部', '观察中', '需要混脸熟，不然会很难喝。');
   add.run('WY-002', '一个电话', '档案管理部', '待补充', '卷宗待核。');
 }
-if (db.prepare('SELECT COUNT(*) AS n FROM announcements').get().n === 0) {
+db.prepare("INSERT OR IGNORE INTO content_initializations VALUES('dossiers')").run();
+if (!db.prepare("SELECT 1 FROM content_initializations WHERE name='announcements'").get() && db.prepare('SELECT COUNT(*) AS n FROM announcements').get().n === 0) {
   db.prepare('INSERT INTO announcements (title,body,pinned) VALUES (?,?,1)')
     .run('员工终端已启用', '公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。');
 }
+db.prepare("INSERT OR IGNORE INTO content_initializations VALUES('announcements')").run();
+
 db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now());
 db.prepare("INSERT OR IGNORE INTO profiles(employee_id,anonymous_name) SELECT id,'匿名员工-'||id FROM employees").run();
 
@@ -200,7 +210,7 @@ const sessionEmployee = req => {
   const tokens=sessionTokens(req.headers.cookie),valid=[];
   for(const [position,token] of tokens.entries()) {
     const tokenHash=sessionDigest(token);
-    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
+    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.identity_kind AS identityKind,e.position_title AS positionTitle,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
     if(!session||session.expires_at<Date.now()||!session.enabled){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash);continue;}
     valid.push({session,position});
   }
@@ -245,13 +255,14 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
-let economy,personal;
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal});
+let economy,personal,highlights;
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
-const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy});
-personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today});
-const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger});
+highlights=installGameHighlights({db,send,requireEmployee});
+const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights});
+personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
+const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
@@ -301,6 +312,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(media.handle(req,res,url))return;
     if(await originalMusic.handle(req,res,url))return;
+    if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
@@ -497,8 +509,18 @@ const server = createServer(async (req, res) => {
       if(!['环境音','白噪音','音乐'].includes(kind||'音乐'))return send(res,400,{error:'请选择环境音、白噪音或音乐。'});
       const row=db.prepare('INSERT INTO music_tracks(title,url,kind,created_by) VALUES(?,?,?,?)').run(title.trim(),trackUrl.trim(),String(kind||'音乐'),admin.id);return send(res,201,{id:Number(row.lastInsertRowid)});
     }
+    if (/^\/api\/admin\/music\/\d+$/.test(url.pathname) && req.method === 'PUT') {
+      if(!requireAdmin(req,res))return;
+      const id=Number(url.pathname.split('/').at(-1)),old=db.prepare('SELECT url FROM music_tracks WHERE id=? AND enabled=1').get(id);
+      if(!old)return send(res,404,{error:'曲目不存在或已删除。'});
+      const {title,url:trackUrl,kind}=await readBody(req);
+      if(!validText(title,100)||!validText(trackUrl,1000)||!['环境音','白噪音','音乐'].includes(kind))return send(res,400,{error:'请填写曲目名称、音频地址和分类。'});
+      const value=trackUrl.trim();
+      if(!(value===old.url&&/^\/api\/music\/original\/[-a-z]+\.wav$/.test(value))){try{if(new URL(value).protocol!=='https:')throw new Error();}catch{return send(res,400,{error:'音频地址必须使用 HTTPS。'});}}
+      db.prepare('UPDATE music_tracks SET title=?,url=?,kind=? WHERE id=? AND enabled=1').run(title.trim(),value,kind,id);return send(res,200,{ok:true});
+    }
     if (url.pathname.startsWith('/api/admin/music/') && req.method === 'DELETE') {
-      if(!requireAdmin(req,res))return;db.prepare('UPDATE music_tracks SET enabled=0 WHERE id=?').run(Number(url.pathname.split('/').at(-1)));return send(res,200,{ok:true});
+      if(!requireAdmin(req,res))return;if(!db.prepare('UPDATE music_tracks SET enabled=0 WHERE id=? AND enabled=1').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'曲目不存在或已删除。'});return send(res,200,{ok:true});
     }
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
@@ -506,9 +528,9 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,a.created_at AS createdAt,
+      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,
         (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount
-        FROM announcements a ORDER BY a.pinned DESC,a.id DESC`).all() });
+        FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all() });
     }
     if (url.pathname === '/api/posts' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
@@ -529,21 +551,25 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
-      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,
-        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance FROM employees e ORDER BY e.id`).all()});
+      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,
+        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e WHERE (?=0 OR e.identity_kind IN ('player_employee','player_containment','planning_member')) ORDER BY e.id`).all(url.searchParams.get('roster')==='personnel'?1:0)});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { username,password,displayName,qqNumber,department,role,initialBalance,isNpc=false,isLeadership=false,positionTitle='' } = await readBody(req);
+      const data=await readBody(req);
+      const {username,password,displayName,qqNumber,role,initialBalance}=data;
+      let assignment;try{assignment=personnelAssignment(data);}catch(e){return send(res,400,{error:e.message});}
+      const {identityKind,department,positionTitle,isNpc,isLeadership}=assignment;
+      if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
-      if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或 NPC 名称（最多 80 字）。'});
+      if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或收容物名称（最多 80 字）。'});
       if (!isNpc&&(!validText(username,40)||typeof password!=='string'||password.length<6)) return send(res,400,{error:'请填写唯一用户名、员工姓名，并设置至少 6 位密码。'});
       if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||initialBalance<0||initialBalance>100000000))return send(res,400,{error:'初始余额必须是 0 到 100,000,000 之间的整数。'});
       try {
         db.exec('BEGIN IMMEDIATE');
-        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled) VALUES (?,?,?,?,?,?,?,?,?,?)')
-          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),hashPassword(isNpc?randomBytes(32).toString('hex'):password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,isLeadership?'公司直属领导':directoryDepartment(department),!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1);
-        const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name) VALUES(?,?)').run(id,`匿名员工-${id}`);
+        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),hashPassword(isNpc?randomBytes(32).toString('hex'):password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind);
+        const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,`匿名员工-${id}`,data.archiveBio?.trim()||'');
         if(!isNpc&&initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         db.exec('COMMIT');return send(res,201,{id});
       } catch { if(db.isTransaction)db.exec('ROLLBACK');return send(res,409,{error:'账号或 QQ 号已存在，请检查后重试。'}); }
@@ -551,15 +577,22 @@ const server = createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/admin/employees/') && !url.pathname.endsWith('/balance') && req.method === 'PUT') {
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
-      const {displayName,qqNumber,department,enabled,password,...extra}=await readBody(req);const previous=db.prepare('SELECT is_npc AS isNpc,is_leadership AS isLeadership,position_title AS positionTitle FROM employees WHERE id=?').get(employeeId);if(!previous)return send(res,404,{error:'员工档案不存在。'});const isNpc=extra.isNpc??!!previous.isNpc,isLeadership=extra.isLeadership??!!previous.isLeadership,positionTitle=extra.positionTitle??previous.positionTitle;if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
+      const data=await readBody(req),{displayName,qqNumber,enabled,password}=data;
+      const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,department,position_title AS positionTitle FROM employees WHERE id=?').get(employeeId);
+      if(!previous)return send(res,404,{error:'员工档案不存在。'});
+      previous.isNpc=!!previous.isNpc;
+      let assignment;try{assignment=personnelAssignment(data,previous);}catch(e){return send(res,400,{error:e.message});}
+      const {identityKind,department,positionTitle,isNpc,isLeadership}=assignment;
+      if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80||typeof enabled!=='boolean')return send(res,400,{error:'员工姓名、部门或启用状态无效。'});
       const qq=qqNumber==null||qqNumber===''?null:(validText(qqNumber,30)?qqNumber.trim():undefined);
       if(qq===undefined)return send(res,400,{error:'QQ 号最多 30 个字符。'});
       if(previous.isNpc&&!isNpc&&enabled&&(!password||password.length<6))return send(res,400,{error:'启用员工账号前请设置登录密码。'});
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=? WHERE id=?').run(displayName.trim(),qq,isLeadership?'公司直属领导':directoryDepartment(department),isNpc?0:enabled?1:0,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:enabled?1:0,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
+        if(data.archiveBio!==undefined)db.prepare('UPDATE profiles SET bio=? WHERE employee_id=?').run(data.archiveBio.trim(),employeeId);
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(hashPassword(password),employeeId);
         return send(res,200,{ok:true});
       }catch{return send(res,409,{error:'QQ 号已被其他员工使用，请检查后重试。'});}
@@ -595,20 +628,29 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/admin/dossiers/') && req.method === 'DELETE') {
       if (!requireAdmin(req,res)) return;
-      db.prepare('DELETE FROM dossiers WHERE id=?').run(Number(url.pathname.split('/').at(-1)));
+      if(!db.prepare('DELETE FROM dossiers WHERE id=?').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'卷宗不存在。'});
       return send(res,200,{ok:true});
     }
     if (url.pathname === '/api/admin/announcements' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { title,body,pinned,issuer='万业携生',drafter='',issuedOn='' } = await readBody(req);
+      const { title,body,pinned,publishedAt,issuer='万业携生',drafter='',issuedOn='' } = await readBody(req);
       if(!validText(issuer,80)||typeof drafter!=='string'||drafter.length>80||typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
       if (!validText(title,150)||!validText(body,5000)) return send(res,400,{error:'公告标题最多 150 字，正文最多 5000 字。'});
-      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,issuer,drafter,issued_on) VALUES (?,?,?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,issuer.trim(),drafter.trim(),issuedOn);
+      let publication;try{publication=announcementPublicationTime(publishedAt)||new Date().toISOString();}catch(error){return send(res,400,{error:error.message});}
+      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,issuer,drafter,issued_on,published_at) VALUES (?,?,?,?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,issuer.trim(),drafter.trim(),issuedOn,publication);
       return send(res,201,{id:Number(result.lastInsertRowid)});
+    }
+    if (/^\/api\/admin\/announcements\/\d+$/.test(url.pathname) && req.method === 'PUT') {
+      if(!requireAdmin(req,res))return;const {title,body,pinned,publishedAt,issuer,drafter,issuedOn}=await readBody(req);
+      if((issuer!==undefined&&!validText(issuer,80))||(drafter!==undefined&&(typeof drafter!=='string'||drafter.length>80))||(issuedOn!==undefined&&(typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
+      if(!validText(title,150)||!validText(body,5000)||typeof pinned!=='boolean')return send(res,400,{error:'请填写公告标题、正文及置顶状态。'});
+      let publication;try{publication=announcementPublicationTime(publishedAt);}catch(error){return send(res,400,{error:error.message});}
+      if(!db.prepare("UPDATE announcements SET title=?,body=?,pinned=?,published_at=COALESCE(?,NULLIF(published_at,''),created_at),issuer=COALESCE(?,issuer),drafter=COALESCE(?,drafter),issued_on=COALESCE(?,issued_on) WHERE id=?").run(title.trim(),body.trim(),pinned?1:0,publication??null,issuer?.trim()??null,drafter?.trim()??null,issuedOn??null,Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
+      return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/admin/announcements/') && req.method === 'DELETE') {
       if (!requireAdmin(req,res)) return;
-      db.prepare('DELETE FROM announcements WHERE id=?').run(Number(url.pathname.split('/').at(-1)));
+      if(!db.prepare('DELETE FROM announcements WHERE id=?').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/admin/posts/') && req.method === 'DELETE') {

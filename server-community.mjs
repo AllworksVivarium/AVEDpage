@@ -1,3 +1,5 @@
+import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
+import {installAudit,auditRange} from './server-audit.mjs';
 import {mediaReference} from './server-media.mjs';
 // Persistent community records and moderation. Raw timestamps remain server-side.
 export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log}) {
@@ -30,6 +32,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     insert.run('公共区域广播与设备巡检通告','公共广播线路已完成例行巡检。发现异常回声、重复呼号或无人值守设备自行启动时，请立即联系设施值班人员。',new Date(Date.now()-86400000).toISOString());
     db.prepare("INSERT INTO community_migrations VALUES('bulletins-v2')").run();
   }
+  const audit=installAudit(db);
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片须为不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
   const tx=fn=>{db.exec('BEGIN IMMEDIATE');try{const r=fn();db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -39,9 +42,9 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
   function speechRecords(url) {
     const sources=[['thread','forum_threads','title'],['reply','forum_replies',"''"],['comment','posts',"''"],['dossier','dossier_comments',"''"],['chat','chat_messages',"''"],['life','life_records','title']];
     const sql=sources.map(([type,table,title])=>`SELECT '${type}' AS sourceType,s.id AS sourceId,s.employee_id AS employeeId,s.body,${title==='title'?'s.title':title} AS title,s.created_at AS createdAt,s.deleted_at AS deletedAt,s.deleted_by AS deletedBy,${type==='life'?"''":'s.edited_at'} AS editedAt,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,p.anonymous_name AS anonymousName FROM ${table} s LEFT JOIN employees e ON e.id=s.employee_id LEFT JOIN profiles p ON p.employee_id=s.employee_id`).join(' UNION ALL ');
-    const from=url.searchParams.get('from')||'',to=url.searchParams.get('to')||'',keyword=(url.searchParams.get('keyword')||'').slice(0,120),source=url.searchParams.get('sourceType')||'',employee=url.searchParams.get('employeeId')||'',before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;
+    const {from,to}=auditRange(url.searchParams),keyword=(url.searchParams.get('keyword')||'').slice(0,120),source=url.searchParams.get('sourceType')||'',employee=url.searchParams.get('employeeId')||'',before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;
     if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to)))throw new Error('检索区间无效。');
-    const rows=db.prepare(`SELECT * FROM (${sql}) WHERE (?='' OR sourceType=?) AND (?='' OR employeeId=?) AND (?='' OR date(createdAt,'+8 hours')>=?) AND (?='' OR date(createdAt,'+8 hours')<=?) AND (?='' OR body LIKE ? OR title LIKE ? OR username LIKE ? OR displayName LIKE ? OR qqNumber LIKE ? OR anonymousName LIKE ?) AND sourceId<? ORDER BY createdAt DESC,sourceType,sourceId DESC LIMIT 200 OFFSET ?`).all(source,source,employee,employee,from,from,to,to,keyword,...Array(6).fill('%'+keyword+'%'),before,Math.min(1000000,Math.max(0,Math.floor(Number(url.searchParams.get('offset'))||0))));
+    const rows=db.prepare(`SELECT * FROM (${sql}) WHERE (?='' OR sourceType=?) AND (?='' OR employeeId=?) AND (?='' OR date(createdAt,'+8 hours')>=?) AND (?='' OR date(createdAt,'+8 hours')<=?) AND (?='' OR body LIKE ? OR title LIKE ? OR username LIKE ? OR displayName LIKE ? OR qqNumber LIKE ? OR anonymousName LIKE ?) AND sourceId<? ORDER BY createdAt DESC,sourceType,sourceId DESC LIMIT 50 OFFSET ?`).all(source,source,employee,employee,from,from,to,to,keyword,...Array(6).fill('%'+keyword+'%'),before,Math.min(1000000,Math.max(0,Math.floor(Number(url.searchParams.get('offset'))||0))));
     return rows.map(r=>({...r,aliases:aliases(r.employeeId),revisions:revisions(r.sourceType,r.sourceId)}));
   }
   function safeRule(data) {
@@ -60,10 +63,11 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     const adminDelete=path.match(/^\/api\/admin\/(?:forum\/(threads|replies)|(?:speech\/)?(posts|dossier_comments|chat_messages|life_records))\/(\d+)$/);
     const dossierEdit=path.match(/^\/api\/admin\/dossiers\/(\d+)$/);
     const review=path.match(/^\/api\/admin\/moderation\/life\/(\d+)$/);
-    const handles=path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||path==='/api/player/life'||path==='/api/admin/life'||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
+    const handles=/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||path==='/api/player/life'||path==='/api/admin/life'||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
     if(!handles)return false;
     const user=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!user)return true;
     try {
+      if(/^\/api\/admin\/image-archive\/\d+$/.test(path)){if(method!=='GET'){send(res,405,{error:'指令无效。'});return true;}audit.image(Number(path.split('/').at(-1)),res);return true;}
       if(path==='/api/terminology'&&method==='GET'){send(res,200,{items:db.prepare('SELECT id,pattern,replacement,is_regex AS isRegex FROM terminology_rules WHERE enabled=1 ORDER BY id').all()});return true;}
       if(path.startsWith('/api/admin/terminology')) {
         const rid=Number(path.split('/')[4]);
@@ -72,11 +76,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         else if(method==='DELETE'){db.prepare('DELETE FROM terminology_rules WHERE id=?').run(rid);log(user.id,'terminology.delete',String(rid));send(res,200,{ok:true});}else send(res,405,{error:'指令无效。'});return true;
       }
       if(path==='/api/admin/speech-records'&&method==='GET'){send(res,200,{items:speechRecords(url)});return true;}
-      if(path==='/api/admin/activity'&&method==='GET') {
-        const from=url.searchParams.get('from')||'',to=url.searchParams.get('to')||'',q='%'+(url.searchParams.get('keyword')||'').slice(0,120)+'%';
-        if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to)))throw new Error('检索区间无效。');
-        send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages') AND id<? AND (?='' OR date(created_at,'+8 hours')>=?) AND (?='' OR date(created_at,'+8 hours')<=?) AND (username LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?) ORDER BY id DESC LIMIT 100").all(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,from,from,to,to,q,q,q,q)});return true;
-      }
+      if(path==='/api/admin/activity'&&method==='GET'){send(res,200,audit.query(url));return true;}
       if(path==='/api/posts') {
         if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department,e.position_title AS positionTitle FROM posts s JOIN employees e ON e.id=s.employee_id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY julianday(s.created_at) ASC,s.id ASC").all(Number(url.searchParams.get('announcementId')))});return true;}
         if(method==='POST'){const d=await readBody(req);if(!db.prepare('SELECT id FROM announcements WHERE id=?').get(Number(d.announcementId))||!valid(d.body,2000))throw new Error('请选择有效通告并填写留言。');const r=db.prepare('INSERT INTO posts(announcement_id,employee_id,anonymous_name,body) VALUES(?,?,?,?)').run(Number(d.announcementId),user.id,user.displayName,d.body.trim());send(res,201,{id:Number(r.lastInsertRowid)});return true;}
@@ -116,11 +116,11 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
       if(path==='/api/admin/moderation'&&method==='GET') {
         const items=db.prepare(`SELECT 'thread' AS kind,f.id,f.title,f.body,f.image_data AS imageData,f.employee_id AS employeeId,e.username,e.display_name AS displayName,f.created_at AS createdAt FROM forum_threads f JOIN employees e ON e.id=f.employee_id WHERE f.moderation='pending' AND f.deleted_at=''
           UNION ALL SELECT 'reply',r.id,t.title,r.body,r.image_data,r.employee_id,e.username,e.display_name,r.created_at FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id JOIN employees e ON e.id=r.employee_id WHERE r.moderation='pending' AND r.deleted_at='' AND t.deleted_at=''
-          UNION ALL SELECT 'life',l.id,l.title,l.body,l.image_data,l.employee_id,e.username,e.display_name,l.created_at FROM life_records l JOIN employees e ON e.id=l.employee_id WHERE l.moderation='pending' AND l.deleted_at='' ORDER BY createdAt`).all().map(row=>({...row,imageData:mediaReference(row.kind,row.id,row.imageData)}));send(res,200,{items});return true;
+          UNION ALL SELECT 'life',l.id,l.title,l.body,l.image_data,l.employee_id,e.username,e.display_name,l.created_at FROM life_records l JOIN employees e ON e.id=l.employee_id WHERE l.moderation='pending' AND l.deleted_at='' ORDER BY createdAt`).all().map(row=>({...row,archiveId:db.prepare('SELECT id FROM image_upload_archive WHERE source_type=? AND source_id=? ORDER BY id DESC LIMIT 1').get(row.kind,row.id)?.id,sourceBoard:row.kind==='life'?'生活记录':'匿名聊天论坛',imageData:mediaReference(row.kind,row.id,row.imageData)}));send(res,200,{items});return true;
       }
       if(review&&method==='POST') {
         const d=await readBody(req);if(!['approve','reject'].includes(d.action))throw new Error('审核指令无效。');
-        if(!db.prepare("UPDATE life_records SET moderation=? WHERE id=? AND moderation='pending' AND deleted_at=''").run(d.action==='approve'?'approved':'rejected',review[1]).changes)throw new Error('材料已核验或已移除。');log(user.id,'moderation','life/'+review[1],{decision:d.action});send(res,200,{ok:true});return true;
+        tx(()=>{checkImageVersion(db,'life',Number(review[1]),d.archiveId);if(!db.prepare("UPDATE life_records SET moderation=? WHERE id=? AND moderation='pending' AND deleted_at=''").run(d.action==='approve'?'approved':'rejected',review[1]).changes)throw new Error('材料已核验或已移除。');recordImageReview(db,'life',Number(review[1]),user,d.action);});log(user.id,'moderation','life/'+review[1],{decision:d.action});send(res,200,{ok:true});return true;
       }
       send(res,405,{error:'指令无效。'});return true;
     }catch(e){send(res,400,{error:e.message});return true;}

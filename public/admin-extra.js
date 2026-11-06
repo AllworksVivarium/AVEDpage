@@ -1,6 +1,6 @@
 const activityActionName=action=>({GET:'查阅',POST:'提交',PUT:'修订',DELETE:'删除',insert:'发布 / 入账',update:'修订',delete:'删除',login:'接入终端',logout:'退出终端',view:'查阅',admin_password_reset:'重置凭证','stock.buy':'证券买入','stock.sell':'证券卖出','cards.start':'开启牌局','cards.play':'出牌','cards.pass':'让牌','cards.bid':'叫牌'})[action]||'登记异动';
 const activityTargetName=target=>{
-  const labels={employees:'员工名册',profiles:'个人档案',balance_ledger:'账户流水',checkins:'签到记录',game_tickets:'娱乐室票据',forum_threads:'匿名主题',forum_replies:'匿名回复',posts:'通告留言',dossiers:'收容卷宗',announcements:'公司通告',dossier_comments:'卷宗评议',chat_messages:'无线电通讯',stock_holdings:'证券持仓',news:'公司新闻通告',departments:'部门与员工名录',containment:'收容物卷宗',forum:'匿名论坛',casino:'员工娱乐室',profile:'个人档案',server_console:'监察控制台',activity:'监察记录',moderation:'图文核验',music:'广播曲目'};
+  const labels={employees:'员工名册',profiles:'个人档案',balance_ledger:'账户流水',checkins:'签到记录',game_tickets:'娱乐室票据',forum_threads:'匿名主题',forum_replies:'匿名回复',posts:'通告留言',dossiers:'收容卷宗',announcements:'公司通告',dossier_comments:'卷宗评议',chat_messages:'无线电通讯',stock_holdings:'证券持仓',news:'公司新闻通告',departments:'部门与员工名录',containment:'收容物卷宗',forum:'匿名论坛',casino:'员工娱乐室',profile:'个人档案',server_console:'监察控制台',activity:'监察记录',moderation:'图文核验',music:'广播曲目',life_records:'生活记录'};
   if(target?.startsWith('/api/admin/'))return labels[target.split('/')[3]]||'监察记录';
   return labels[target]||target||'员工终端';
 };

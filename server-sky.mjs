@@ -1,7 +1,7 @@
 import {proofRandom,weighted} from './server-economy.mjs';
 import {mediaReference} from './server-media.mjs';
 
-export function installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy}){
+export function installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights}){
  db.exec(`CREATE TABLE IF NOT EXISTS sky_flights(id INTEGER PRIMARY KEY,depart_at INTEGER NOT NULL,ended_at INTEGER NOT NULL DEFAULT 0,safety_line INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,rules_json TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sky_passengers(flight_id INTEGER NOT NULL REFERENCES sky_flights(id),employee_id INTEGER NOT NULL REFERENCES employees(id),cost INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'aboard',depth INTEGER NOT NULL DEFAULT 0,prize INTEGER NOT NULL DEFAULT 0,settled_at INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(flight_id,employee_id));`);
  const tx=fn=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -9,11 +9,11 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='shared-sky'").get())tx(()=>{for(const row of db.prepare("SELECT id,employee_id,state_json FROM player_rounds WHERE game='sky'").all()){const s=JSON.parse(row.state_json);if(!s.settled){recordLedger(row.employee_id,s.cost,'旧架次撤回');s.settled=true;s.prize=s.cost;s.migrated=true;db.prepare('UPDATE player_rounds SET state_json=? WHERE id=?').run(JSON.stringify(s),row.id);}}db.prepare("INSERT INTO economy_migrations VALUES('shared-sky')").run();});
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='sky-settlement-v2'").get())tx(()=>{for(const p of db.prepare("SELECT s.*,f.seed,f.seed_hash FROM sky_passengers s JOIN sky_flights f ON f.id=s.flight_id WHERE s.status='aboard'").all()){recordLedger(p.employee_id,p.cost,'架次维护退回');db.prepare("UPDATE sky_passengers SET status='cancelled',prize=cost,settled_at=? WHERE flight_id=? AND employee_id=?").run(Date.now(),p.flight_id,p.employee_id);db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(p.employee_id,'sky',p.cost,p.cost,p.seed,p.seed_hash,JSON.stringify({flight:p.flight_id,cancelled:true}));}db.prepare("INSERT INTO economy_migrations VALUES('sky-settlement-v2')").run();});
  const streams=new Set();
- const rules=f=>JSON.parse(f.rules_json);
+ const rules=f=>({...JSON.parse(f.rules_json),lossFraction:1});
  const depth=(f,now=Date.now())=>Math.min(2000,Math.max(100,Math.floor(100+Math.max(0,now-f.depart_at)*rules(f).speed/1000)));
  function finish(f,p,atDepth,now,expired=false){
   if(p.status!=='aboard')return;
-  const safe=!expired&&atDepth<=f.safety_line,prize=safe?Math.floor(p.cost*atDepth/200):Math.floor(p.cost*(1-rules(f).lossFraction));
+  const safe=!expired&&atDepth<=f.safety_line,prize=safe?Math.floor(p.cost*atDepth/200):0;
   const changed=db.prepare("UPDATE sky_passengers SET status=?,depth=?,prize=?,settled_at=? WHERE flight_id=? AND employee_id=? AND status='aboard'").run(safe?'landed':'crashed',atDepth,prize,now,f.id,p.employee_id).changes;
   if(!changed)return;if(prize)recordLedger(p.employee_id,prize,safe?'空投开伞返还':'空投损失结余');
   db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(p.employee_id,'sky',p.cost,prize,f.seed,f.seed_hash,JSON.stringify({flight:f.id,depth:atDepth,safetyLine:f.safety_line,safe,expired}));
@@ -29,7 +29,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   const passengers=db.prepare(`SELECT s.employee_id AS id,p.anonymous_name AS alias,p.avatar_url AS avatar,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s JOIN profiles p ON p.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...p,avatar:mediaReference('avatar',p.id,p.avatar)}));
   const prior=db.prepare('SELECT * FROM sky_flights WHERE id<? AND ended_at>0 AND ended_at<=? ORDER BY id DESC LIMIT 1').get(f.id,now);
   let previous=null;if(prior){const mine=db.prepare('SELECT status,cost,depth,prize FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(prior.id,id);previous={round:prior.id,safetyLine:prior.safety_line,seed:prior.seed,seedHash:prior.seed_hash,self:mine||null};}
-  return {round:f.id,phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:depth(f,f.ended_at?f.ended_at-3200:now),speed:rules(f).speed,boardingSeconds:rules(f).boardingSeconds,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
+  return {round:f.id,gameHighlight:highlights.roundEvent(id,'sky',f.id),phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:depth(f,f.ended_at?f.ended_at-3200:now),speed:rules(f).speed,boardingSeconds:rules(f).boardingSeconds,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
  }
  function write(stream,f){if(stream.res.destroyed||stream.res.writableLength>262144){stream.res.destroy();streams.delete(stream);return;}stream.res.write('data: '+JSON.stringify(snapshot(stream.id,f))+'\n\n');}
  function broadcast(){const f=current();for(const s of streams)write(s,f);}
