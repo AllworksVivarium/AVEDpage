@@ -1,3 +1,4 @@
+import {installGameHighlights} from './server-game-highlights.mjs';
 import {installPersonnel,personnelAssignment} from './server-personnel.mjs';
 import {installPersonal} from './server-personal.mjs';
 import {installDerby} from './server-derby.mjs';
@@ -250,13 +251,14 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
-let economy,personal;
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal});
+let economy,personal,highlights;
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
-const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy});
-personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today});
-const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger});
+highlights=installGameHighlights({db,send,requireEmployee});
+const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights});
+personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
+const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
@@ -304,6 +306,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
     if(media.handle(req,res,url))return;
     if(await originalMusic.handle(req,res,url))return;
+    if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
@@ -543,7 +546,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
       return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,
-        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e ORDER BY e.id`).all()});
+        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e WHERE (?=0 OR e.identity_kind IN ('player_employee','player_containment','planning_member')) ORDER BY e.id`).all(url.searchParams.get('roster')==='personnel'?1:0)});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;

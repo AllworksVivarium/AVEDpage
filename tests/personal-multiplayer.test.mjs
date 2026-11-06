@@ -64,5 +64,18 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  assert.equal((await p('/api/player/history')).data.items.length,1);
  const music=(await p('/api/music')).data.items.filter(x=>x.url.startsWith('/api/music/original/'));assert.equal(music.length,3);
  const wav=await fetch(base+music[0].url,{headers:{cookie:one,range:'bytes=0-43'}});assert.equal(wav.status,206);assert.equal(Buffer.from(await wav.arrayBuffer()).subarray(0,4).toString(),'RIFF');
+ // An isolated deterministic jackpot proves the player endpoint, records and public feed share settlement data.
+ const config=JSON.parse(db.prepare('SELECT config_json FROM economy_config WHERE id=1').get().config_json);
+ for(const key of Object.keys(config.scratch[0].variants))config.scratch[0].variants[key]=[{multiplier:10,weight:1}];
+ db.prepare('UPDATE economy_config SET config_json=? WHERE id=1').run(JSON.stringify(config));
+ const rules=(await p('/api/player/economy')).data;
+ const jackpot=(await p('/api/player/games/scratch','POST',{tier:'t1',type:'three_match',cost:rules.tiers[0].cost,revision:rules.revision})).data;
+ assert.equal(jackpot.prize,10000);assert.equal(jackpot.gameHighlight.broadcast,1);assert.equal(jackpot.gameHighlight.employeeId,first);
+ assert.ok((await p('/api/profile')).data.gameRecords.byGame.some(x=>x.game==='scratch'&&x.prize===10000));
+ const feed=(await request(two,'/api/player/game-highlights')).data;
+ assert.ok(feed.items.some(x=>x.ticketId===jackpot.ticketId&&x.prize===10000));
+ assert.equal((await request(two,'/api/player/game-highlights','POST',{prize:99999999})).status,405);
+ const record=(await p('/api/profile')).data.gameRecords.highest;
+ await stop();start();await ready();assert.deepEqual((await p('/api/profile')).data.gameRecords.highest,record);
  db.close();
 });

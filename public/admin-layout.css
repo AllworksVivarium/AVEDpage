@@ -23,3 +23,30 @@ html,body,.shell,.dashboard,.portal-main,#panel{min-width:0;max-width:100%}
 .moderation-actions{display:flex;gap:12px;margin-top:14px}
 .admin-mode .moderation-actions button{flex:1;min-height:48px;font-size:16px;padding:12px 18px}
 .admin-mode .notice-box small{display:block;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+
+/* Admin contrast and consistent controls; player styling is independent. */
+html[data-time-display="absolute"]{--admin-red:#5E0205}
+html[data-time-display="absolute"] .login-card{background:#111417;color:#f5f5f5;border-color:#697078}
+html[data-time-display="absolute"] .login-card label,html[data-time-display="absolute"] .login-card .eyebrow{color:#d3d7db}
+html[data-time-display="absolute"] .login-card input:not([type=checkbox]){background:#080a0c;color:#f5f5f5;border-color:#697078}
+html[data-time-display="absolute"] .login-card input::placeholder{color:#aeb4ba}
+.login-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-mode .danger,.admin-mode .logout,html[data-time-display="absolute"] .login-card .primary{background:var(--admin-red);border:1px solid var(--admin-red);color:#fff}
+.admin-mode .danger:hover,.admin-mode .logout:hover,html[data-time-display="absolute"] .login-card .primary:hover{background:var(--admin-red);color:#fff;filter:brightness(1.25)}
+.admin-mode button,html[data-time-display="absolute"] .login-card button{min-height:44px;font-size:14px}
+.admin-mode .small-action{padding:10px 14px}
+.admin-button-panel{min-width:0}.admin-open-dialog{margin-block:6px}
+.admin-dialog{background:#111417;color:#f0f1f2;border:1px solid #697078;padding:20px;width:min(680px,calc(100vw - 28px));max-width:calc(100vw - 28px);max-height:85dvh;box-sizing:border-box;overflow:auto}
+.admin-dialog::backdrop{background:#000b}
+.admin-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.admin-dialog h3{margin:0;font-size:20px}.admin-dialog-body{min-width:0}
+.admin-dialog .employee-edit-form{padding:0}.admin-dialog .community-form{max-width:100%}
+html[data-time-display="absolute"] .signal.checking i{background:#aeb4ba;box-shadow:none}
+html[data-time-display="absolute"] .signal.online i{background:#52d67f;box-shadow:0 0 10px #52d67f88}
+html[data-time-display="absolute"] .signal.offline i{background:#ff5f5f;box-shadow:0 0 10px #ff5f5f88}
+@media(max-width:480px){.admin-dialog{padding:16px}.login-top .signal{font-size:10px}}
+
+html[data-time-display="absolute"] .login-card input[type=checkbox]{width:16px;height:16px;accent-color:#5E0205}
+html[data-time-display="absolute"] .login-card label:has(input[type=checkbox])>span{display:flex;align-items:center;gap:8px}
+.admin-open-dialog{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.admin-post>.admin-button-panel{display:inline-block;margin-right:10px}

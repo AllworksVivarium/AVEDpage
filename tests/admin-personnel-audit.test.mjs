@@ -52,6 +52,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(items.find(x=>x.id===leaderId).role,'employee');
  assert.equal(items.find(x=>x.id===companyId).enabled,0);
  assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
+ const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
  const cookie=await login('player-object'),player=(...args)=>req(cookie,...args);
  const state=(await player('/api/player/state')).data;
  assert.equal(state.employee.identityKind,'player_containment');
@@ -96,4 +97,16 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(boundary.items.length,1);
  assert.equal(db.prepare('SELECT identity_kind FROM employees WHERE id=?').get(playerId).identity_kind,'player_containment');
  assert.equal(db.prepare('SELECT bio FROM profiles WHERE employee_id=?').get(companyId).bio,'公司提供的收容简介');
+ const economy=(await a('/api/admin/economy')).data;economy.scratch[0].returnPercent=82.5;
+ const saved=await a('/api/admin/economy','PUT',economy);assert.equal(saved.status,200);
+ for(const pool of Object.values(saved.data.scratch[0].variants)){const ev=pool.reduce((sum,x)=>sum+x.multiplier*x.weight,0)/pool.reduce((sum,x)=>sum+x.weight,0);assert.ok(Math.abs(ev-.825)<.0001);}
+ assert.ok(saved.data.scratch.every(x=>x.name==='刮刮乐'));
+ assert.equal((await a('/api/admin/economy','PUT',{...saved.data,sky:{...saved.data.sky,lossFraction:0}})).status,400);
+ const flight=(await player('/api/player/games/sky/current')).data;
+ assert.equal((await player('/api/player/games/sky/start','POST',{round:flight.round,bet:100})).status,200);
+ const oldRules=JSON.parse(db.prepare('SELECT rules_json FROM sky_flights WHERE id=?').get(flight.round).rules_json);oldRules.lossFraction=0;
+ db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=100,rules_json=? WHERE id=?').run(Date.now()-10000,JSON.stringify(oldRules),flight.round);
+ const crashed=await player('/api/player/games/sky/jump','POST',{round:flight.round});assert.equal(crashed.status,200);assert.equal(crashed.data.self.status,'crashed');assert.equal(crashed.data.self.prize,0);assert.equal(crashed.data.lossFraction,1);
+ assert.equal(db.prepare('SELECT SUM(delta) AS n FROM balance_ledger WHERE employee_id=?').get(playerId).n,23);
+
 });

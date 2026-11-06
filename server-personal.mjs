@@ -1,6 +1,6 @@
 import {achievementCatalog} from './achievement-catalog.mjs';
 
-export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today}) {
+export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights}) {
  const metrics=['zero_count','relief_count','peak','debt','donated','checkin_count','hourly_count','prize_max','loss_max'];
  db.exec(`CREATE TABLE IF NOT EXISTS achievement_definitions(code TEXT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL,metric TEXT NOT NULL,threshold INTEGER NOT NULL,enabled INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS personal_metrics(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,balance INTEGER NOT NULL DEFAULT 0,peak INTEGER NOT NULL DEFAULT 0,debt INTEGER NOT NULL DEFAULT 0,zero_count INTEGER NOT NULL DEFAULT 0,relief_count INTEGER NOT NULL DEFAULT 0,donated INTEGER NOT NULL DEFAULT 0,checkin_count INTEGER NOT NULL DEFAULT 0,hourly_count INTEGER NOT NULL DEFAULT 0,prize_max INTEGER NOT NULL DEFAULT 0,loss_max INTEGER NOT NULL DEFAULT 0);
@@ -40,7 +40,7 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
   const path=url.pathname;if(!['/api/profile','/api/player/history','/api/player/rewards','/api/player/rewards/hourly','/api/admin/achievements'].includes(path)||path==='/api/profile'&&req.method!=='GET')return false;
   const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
   try {
-   if(path==='/api/profile'&&req.method==='GET'){send(res,200,{profile:publicProfile(employee.id),achievements:earned(employee.id),balance:balanceFor(employee.id)});return true;}
+   if(path==='/api/profile'&&req.method==='GET'){send(res,200,{profile:publicProfile(employee.id),achievements:earned(employee.id),gameRecords:highlights.records(employee.id),balance:balanceFor(employee.id)});return true;}
    if(path==='/api/player/history'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare('SELECT id,game,cost,prize,created_at AS createdAt FROM game_tickets WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21').all(employee.id,before);send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});return true;}
    if(path==='/api/player/rewards'&&req.method==='GET'){send(res,200,rewards(employee.id));return true;}
    if(path==='/api/player/rewards/hourly'&&req.method==='POST') {

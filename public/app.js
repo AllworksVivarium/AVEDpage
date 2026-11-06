@@ -3,27 +3,24 @@ const $ = (selector) => document.querySelector(selector);
 const welcome = $("#welcome"),
   loginCard = $("#loginCard"),
   dashboard = $("#dashboard");
-const networkSignal = document.querySelector(".signal");
-let currentUser = null,
-  musicItems = [],
-  musicIndex = -1;
-
-// 更新 welcome 区域左上角网络灯状态：online(绿) / offline(红)
+const networkSignals = document.querySelectorAll('.signal');
+let currentUser = null,musicItems = [],musicIndex = -1;
+let networkProbe = null;
 function setNetworkSignalStatus(status) {
-  if (!networkSignal) return;
-  networkSignal.classList.remove("online", "offline", "checking");
-  networkSignal.classList.add(status);
+ for(const signal of networkSignals){signal.classList.remove('online','offline','checking');signal.classList.add(status);signal.setAttribute('role','status');signal.setAttribute('aria-label',status==='online'?'服务器连接正常':status==='offline'?'服务器忙碌或无法连接':'正在检查服务器');signal.title=signal.getAttribute('aria-label');}
 }
-
-// 使用同源请求探测服务可达性：能收到任意 HTTP 响应即视为在线
-async function probeServerStatus() {
-  try {
-    await fetch("/api/me", { cache: "no-store" });
-    setNetworkSignalStatus("online");
-  } catch {
-    setNetworkSignalStatus("offline");
-  }
+function probeServerStatus() {
+ if(networkProbe)return networkProbe;
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),3000);
+ networkProbe=(async()=>{try{
+  const response=await fetch('/api/health',{cache:'no-store',signal:controller.signal});
+  if(!response.ok)throw new Error('unavailable');
+  const data=await response.json();setNetworkSignalStatus(data.ok===true?'online':'offline');
+ }catch{setNetworkSignalStatus('offline');}finally{clearTimeout(timeout);networkProbe=null;}})();
+ return networkProbe;
 }
+window.addEventListener('offline',()=>setNetworkSignalStatus('offline'));
+window.addEventListener('online',probeServerStatus);
 
 // 切换欢迎页 / 登录页 / 主面板显示状态
 function show(section) {
@@ -103,32 +100,20 @@ async function loadPortal({verified=null,interactive=false}={}) {
     currentUser = data.employee;
     const isAdmin = currentUser.role === "admin";
     if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
-    $("#greeting").textContent = "当前用户：" + currentUser.displayName + " [管理员]";
-    $("#employeeMeta").textContent = isAdmin
-      ? "管理员　/　员工资料与内容管理"
-      : (currentUser.department || "员工") +
-        "　/　余额 " +
-        Number(data.balance).toLocaleString() +
-        " 点";
     dashboard.classList.toggle("admin-mode", isAdmin);
     document.querySelector(".brand small").textContent = isAdmin
-      ? "管理终端 / ADMIN CONSOLE"
+      ? "A.V.E.D. / ADMIN"
       : "员工内部终端 / INTERNAL";
-    document.querySelector(
-      ".portal-main .welcome-banner .eyebrow",
-    ).textContent = isAdmin
-      ? "SYSTEM ADMINISTRATION ACCESS GRANTED"
-      : "EMPLOYEE PORTAL ACCESS GRANTED";
     document
       .querySelectorAll(".tabs .tab")
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","broadcast","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","economy"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(location.hash==='#dossiers'?'content':'admin');
+    if (isAdmin) await renderTab(location.hash==='#dossiers'?'dossiers':'admin');
     else await Promise.all([renderTab("files"), loadMusic()]);
   } catch(error) {
     if(generation!==portalGeneration)return;
@@ -358,7 +343,7 @@ const personnelIdentityNames={player_employee:'玩家 · 部门员工',player_co
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
-  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>职务 / 身份显示文本<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>职务 / 身份显示文本<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
   const department=form.querySelector('[name=department]');department.before(fields);
   const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
   kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';let wasMinister=false;
@@ -378,14 +363,15 @@ function enhancePersonnelForms(employees){
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
 }
+function rosterDepartment(value){const text=String(value||'');return /收容/.test(text)?'收容部':/武器|武装|武裝|作战/.test(text)?'武装部':/研究|科研/.test(text)?'科研部':/后勤|後勤/.test(text)?'后勤部':/医疗|醫療|医療/.test(text)?'医疗部':'公司直属';}
 async function renderAdmin() {
   if (currentUser?.role !== "admin")
     throw new Error("只有管理员可以访问此页面。");
 
-  const {items:employees}=await api('/api/admin/employees');
+  const {items:employees}=await api('/api/admin/employees?roster=personnel');
 
   const employeeRows = employees.map((e) =>
-    "<tr><td>" + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
+    '<tr data-roster-department="'+esc(rosterDepartment(e.department))+'"><td>' + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
     "</td><td>" + esc(e.department || "未填写") +
     "</td><td>" + Number(e.balance).toLocaleString() +
@@ -413,6 +399,11 @@ async function renderAdmin() {
 
   document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
+  const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
+  const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
+  filters.innerHTML=departments.map((name,index)=>`<button type="button" class="small-action" data-roster-filter="${name}" aria-pressed="${index===0}">${name}</button>`).join('')+'<p id="roster-filter-count" role="status"></p>';rosterTable.before(filters);
+  filters.onclick=event=>{const button=event.target.closest('[data-roster-filter]');if(!button)return;const selected=button.dataset.rosterFilter;let count=0;for(const row of rosterTable.querySelectorAll('tbody tr')){row.hidden=selected!=='全部部门'&&row.dataset.rosterDepartment!==selected;if(!row.hidden)count++;}for(const item of filters.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item===button));$('#roster-filter-count').textContent=selected+' · '+count+' 人';};
+
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
     password: v.get("password"),
@@ -529,6 +520,7 @@ async function renderTab(tab) {
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();
+    else if(tab === 'dossiers')await renderContentAdmin('dossiers');
     else if(tab === 'broadcast')await renderBroadcastAdmin();
     else if (tab === "files") await renderDossiers();
     else if (tab === "notice") await renderAnnouncements();

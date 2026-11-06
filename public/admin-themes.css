@@ -1,0 +1,59 @@
+/* Three independent admin palettes. Player art and preferences are untouched. */
+html[data-admin-theme]{--admin-bg:#0f1110;--admin-panel:#171b19;--admin-input:#101411;--admin-ink:#dfd8c8;--admin-muted:#b4b2a6;--admin-line:#515950;--admin-red:#5E0205;--brand-red:#5E0205;--brand-red-hover:#5E0205;--brand-red-ink:#5E0205;color-scheme:dark}
+html[data-admin-theme=beige]{--admin-bg:#efe9dc;--admin-panel:#f8f3e9;--admin-input:#fffcf5;--admin-ink:#302e29;--admin-muted:#676256;--admin-line:#aaa393;color-scheme:light}
+html[data-admin-theme=sage]{--admin-bg:#c6d0c2;--admin-panel:#dce3d7;--admin-input:#e8ede3;--admin-ink:#29352e;--admin-muted:#526052;--admin-line:#8b9c89;color-scheme:light}
+html[data-admin-theme] body,html[data-admin-theme] .dashboard.admin-mode{--ink:var(--admin-ink);--muted:var(--admin-muted);--paper:var(--admin-bg);--panel:var(--admin-panel);--line:var(--admin-line);--inner-card-bg:var(--admin-panel);--inner-border-soft:var(--admin-line);background:var(--admin-bg);color:var(--admin-ink)}
+html[data-admin-theme] :is(.welcome,.login-card,.admin-dialog){background:var(--admin-panel);color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] .dashboard.admin-mode :is(.admin-form,.admin-post,.employee-edit-form,.table-wrap,.notice-box,.personnel-position-fields){background:var(--admin-panel);color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] .dashboard.admin-mode :is(h1,h2,h3,h4,h5,b,strong,summary,label,th,td,small,p),html[data-admin-theme] .login-card :is(h2,label,.eyebrow,.back,.mini-mark){color:var(--admin-ink)}
+html[data-admin-theme] .dashboard.admin-mode :is(.muted,.admin-count,.brand small,.app-footer,.audit-identity),html[data-admin-theme] .login-card :is(.muted,.fine){color:var(--admin-muted)}
+html[data-admin-theme] .dashboard.admin-mode :is(input:not([type=checkbox]),textarea,select),html[data-admin-theme] .login-card input:not([type=checkbox]){background:var(--admin-input);color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] input::placeholder,html[data-admin-theme] textarea::placeholder{color:var(--admin-muted)}
+html[data-admin-theme] .dashboard.admin-mode :is(.small-action,.tab,.brand-mark){background:transparent;color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] .dashboard.admin-mode .small-action:hover,html[data-admin-theme] .dashboard.admin-mode .tab.active{background:var(--admin-input);color:var(--admin-ink);border-color:var(--admin-ink)}
+html[data-admin-theme] .dashboard.admin-mode :is(.danger,.logout),html[data-admin-theme] .login-card .primary{background:var(--admin-red);border-color:var(--admin-red);color:#fff}
+html[data-admin-theme] .dashboard.admin-mode :is(.danger,.logout):hover,html[data-admin-theme] .login-card .primary:hover{background:var(--admin-red);color:#fff;filter:brightness(1.2)}
+html[data-admin-theme] .dashboard.admin-mode :is(.app-header,.sidebar .tabs,.admin-section,.app-footer,.table-wrap th,.table-wrap td){border-color:var(--admin-line)}
+html[data-admin-theme] .app-header{position:static;gap:12px;padding-block:14px;margin-bottom:8px;align-items:center}
+.admin-header-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.admin-theme-toggle{border:1px solid var(--admin-line);background:var(--admin-panel);color:var(--admin-ink);padding:9px 12px;white-space:nowrap}
+html[data-admin-theme] .dashboard.admin-mode .brand b{font-size:16px;line-height:1.35;letter-spacing:.02em}
+html[data-admin-theme] .dashboard.admin-mode .brand small{display:block;font-size:10px;line-height:1.5}
+html[data-admin-theme] .dashboard.admin-mode #panel{padding-top:16px}
+html[data-admin-theme] .dashboard.admin-mode #panel>.section-heading h3,html[data-admin-theme] .dashboard.admin-mode #panel>h3{font-size:22px;line-height:1.4}
+html[data-admin-theme] .dashboard.admin-mode .brand-mark{width:30px;height:30px;font-size:17px;flex-shrink:0}
+@media(max-width:600px){
+ html[data-admin-theme] .app-header{gap:8px;padding-block:10px}
+ html[data-admin-theme] .dashboard.admin-mode .brand{gap:8px;min-width:0}
+ html[data-admin-theme] .dashboard.admin-mode .brand b{font-size:13px}
+ html[data-admin-theme] .dashboard.admin-mode .brand small{font-size:9px}
+ html[data-admin-theme] .dashboard.admin-mode .brand-mark{display:none}
+ html[data-admin-theme] .admin-header-actions button{font-size:12px;padding:8px;min-height:42px}
+ .admin-header-actions{gap:6px}
+ html[data-admin-theme] .dashboard.admin-mode .sidebar .tab{font-size:12px;padding-inline:8px}
+ html[data-admin-theme] .dashboard.admin-mode #panel>.section-heading h3,html[data-admin-theme] .dashboard.admin-mode #panel>h3{font-size:20px}
+}
+
+html[data-admin-theme] .dashboard.admin-mode :is(input,textarea)::placeholder{color:var(--admin-muted);opacity:1}
+
+/* The public entry remains a restrained black terminal in every dashboard theme. */
+html[data-admin-theme] body:has(#dashboard.hidden){background:#070b0d}
+html[data-admin-theme] :is(#welcome,#loginCard){--admin-panel:#101719;--admin-input:#080e10;--admin-ink:#e7e0d0;--admin-muted:#b4b9b4;--admin-line:#53615e;background:#0c1214;color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] #welcome :is(h1,.eyebrow),html[data-admin-theme] #loginCard h2{color:#e7e0d0;text-shadow:0 0 14px #d9e4dc30,0 0 2px #ece6d340}
+html[data-admin-theme] #welcome .hero,html[data-admin-theme] #loginCard .mini-mark{animation:admin-entry-float 6s ease-in-out infinite}
+html[data-admin-theme] #loginCard{box-shadow:0 24px 70px #0008}
+@keyframes admin-entry-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+html[data-admin-theme] .dashboard.admin-mode .sidebar .tabs{display:flex;flex-wrap:wrap;overflow:visible;gap:0;white-space:normal}
+html[data-admin-theme] .dashboard.admin-mode .sidebar .tab{flex:1 1 110px;min-width:0;min-height:48px;white-space:normal;line-height:1.4;padding:12px 8px;font-size:13px;text-align:center;border:1px solid var(--admin-line);margin:-1px 0 0 -1px;overflow-wrap:anywhere}
+html[data-admin-theme] .dashboard.admin-mode :is(.economy-save,.pool-editor){background:var(--admin-panel);color:var(--admin-ink);border-color:var(--admin-line)}
+html[data-admin-theme] .dashboard.admin-mode .economy-save{position:static;padding:12px}
+html[data-admin-theme] .dashboard.admin-mode :is(.pool-expectation,#sky-mean){color:var(--admin-ink)}
+.scratch-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+.scratch-setting{border:1px solid var(--admin-line);background:var(--admin-panel);padding:16px;min-width:0}
+.scratch-setting h5{margin:0 0 12px!important}.scratch-setting label{display:grid;gap:6px;margin-top:10px}
+.scratch-setting input{min-width:0;width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--admin-line)}
+.roster-departments [aria-pressed=true]{border-color:var(--admin-ink)!important;background:var(--admin-input)!important}
+.roster-departments p{flex-basis:100%;margin:0}
+@media(max-width:600px){html[data-admin-theme] .dashboard.admin-mode .sidebar .tab{flex-basis:30%;font-size:13px}.economy-save>*{max-width:100%}}
+@media(prefers-reduced-motion:reduce){html[data-admin-theme] #welcome .hero,html[data-admin-theme] #loginCard .mini-mark{animation:none}}
+body.effects-off :is(#welcome .hero,#loginCard .mini-mark){animation:none!important}

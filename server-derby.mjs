@@ -2,7 +2,7 @@ import {proofRandom} from './server-economy.mjs';
 import {createHmac} from 'node:crypto';
 
 export const runners=[{id:0,name:'铁蹄',odds:2.2,weight:.44},{id:1,name:'夜行',odds:3.5,weight:.28},{id:2,name:'白噪',odds:5,weight:.17},{id:3,name:'红移',odds:8.5,weight:.11}];
-export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger}) {
+export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights}) {
  db.exec(`CREATE TABLE IF NOT EXISTS derby_races(id INTEGER PRIMARY KEY,start_at INTEGER NOT NULL,finish_at INTEGER NOT NULL,next_at INTEGER NOT NULL,winner INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,settled INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS derby_bets(race_id INTEGER REFERENCES derby_races(id),employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,runner INTEGER NOT NULL,cost INTEGER NOT NULL,prize INTEGER NOT NULL DEFAULT 0,settled INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(race_id,employee_id));`);
  const tx=fn=>{db.exec('BEGIN IMMEDIATE');try{const out=fn();db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -31,7 +31,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
   const progress=runners.map(x=>{const noise=createHmac('sha256',race.seed).update('pace:'+x.id).digest().readUInt32BE(0)/4294967296;return Math.max(0,Math.min(100,t*100+(Math.sin(t*Math.PI*3+noise*6)-Math.sin(noise*6))*Math.sin(t*Math.PI)*8-(x.id===race.winner?0:3+noise*8)*t*t));});
   const self=db.prepare('SELECT runner,cost,prize,settled FROM derby_bets WHERE race_id=? AND employee_id=?').get(race.id,id)||null;
   const history=db.prepare('SELECT id,winner,seed,seed_hash AS seedHash FROM derby_races WHERE settled=1 ORDER BY id DESC LIMIT 6').all();
-  return {round:race.id,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,seedHash:race.seed_hash,...(race.settled?{seed:race.seed,winner:race.winner}:{}),runners:runners.map(({weight,...x})=>({...x,progress:progress[x.id]})),self,balance:balanceFor(id),entrants:db.prepare('SELECT COUNT(*) AS n FROM derby_bets WHERE race_id=?').get(race.id).n,history};
+  return {round:race.id,gameHighlight:highlights.roundEvent(id,'derby',race.id),phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,seedHash:race.seed_hash,...(race.settled?{seed:race.seed,winner:race.winner}:{}),runners:runners.map(({weight,...x})=>({...x,progress:progress[x.id]})),self,balance:balanceFor(id),entrants:db.prepare('SELECT COUNT(*) AS n FROM derby_bets WHERE race_id=?').get(race.id).n,history};
  }
  function write(s,race){if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}s.res.write('data: '+JSON.stringify(snapshot(s.id,race))+'\n\n');}
  const timer=setInterval(()=>{try{if(!streams.size&&!db.prepare('SELECT 1 FROM derby_bets WHERE settled=0 LIMIT 1').get())return;const race=current();for(const s of streams)write(s,race);}catch(e){console.error('Shared derby:',e.message);}},750);timer.unref();
