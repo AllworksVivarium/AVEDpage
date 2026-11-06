@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <script src="terminal-preferences.js?v=hub-1"></script>
+  <script src="terminal-preferences.js?v=window-1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
@@ -351,6 +351,9 @@
 <link rel="stylesheet" href="/terminal-welcome.css?v=welcome-1">
 <link rel="stylesheet" href="/terminal-unified.css?v=crt-1">
 <link rel="stylesheet" href="/personal-terminal.css?v=hub-1">
+<link rel="stylesheet" href="/radix-palette.css?v=window-1">
+<link rel="stylesheet" href="/window-terminal.css?v=window-1">
+<script src="/window-style.js?v=window-1"></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -569,7 +572,7 @@
       <div class="p-6 space-y-4">
         <div class="flex items-start justify-between gap-2">
           <div>
-            <div id="ticket-modal-sublabel" class="text-xs font-mono-tech text-[#9e1b1b] font-bold">出票 · 配给所 · 三同矩阵</div>
+            <div id="ticket-modal-sublabel" class="text-xs font-mono-tech text-[#9e1b1b] font-bold">出票 配给所 三同矩阵</div>
             <h3 id="ticket-modal-title" class="text-2xl font-bold font-serif-sc mt-0.5">收容印章三同矩阵</h3>
             <p id="ticket-modal-tagline" class="text-xs text-[#57534a] mt-0.5">三枚同印，核准即拨付</p>
           </div>
@@ -870,7 +873,7 @@
             <!-- 左侧 6 列：收容物档案板列表区（有数据态与空状态高度一致 min-h-[460px] 避免跳动） -->
             <div class="lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner min-h-[460px] flex flex-col justify-between">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
-                <span>ARCHIVE PINBOARD // 点击收容物名称查阅卷宗</span>
+                <span>ARCHIVE PINBOARD</span>
 
               </div>
 
@@ -956,7 +959,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
               <button id="forum-refresh-skeleton-btn" type="button" class="px-3 py-2 border border-[var(--inner-border)] text-xs font-mono-tech font-bold hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] cursor-pointer">
-                🔄 刷新信道
+                刷新帖子
               </button>
               <input id="global-anon-alias" type="hidden">
             </div>
@@ -985,7 +988,7 @@
                 <div class="flex items-center gap-3">
                   <input id="new-topic-image-input" type="file" accept="image/*" class="hidden">
                   <button id="new-topic-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
-                    🖼️ 上传本地附图 (选填·需审核)
+                    上传图片（需审核）
                   </button>
                   <span id="new-topic-image-hint" class="text-[11px] text-[var(--inner-crimson)] font-bold">未选择附图</span>
                 </div>
@@ -1074,7 +1077,7 @@
         <!-- ====================================================================
              独立分页 6：员工娱乐室（全部去猫咪化，改为纯正 SCP 收容工业复古风：
              1. 直升机索降跳伞 [60fps丝滑连续下坠 + 20秒休整 + 沉默干员Bot + 真实玩家发言头像上直升机]
-             2. 五轮五线·收容抑制矩阵 [工业收容符号]
+             2. 五轮五线 收容抑制矩阵 [工业收容符号]
              3. 封印配给刮刮乐
              4. 异常竞速赛马
              5. 牌桌（电脑对手）
@@ -1088,7 +1091,7 @@
                 🚁 直升机高空空投
               </button>
               <button type="button" data-game="slots" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                🎰 五轮五线·抑制矩阵
+                🎰 五轮五线 抑制矩阵
               </button>
               <button type="button" data-game="scratch" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 🎫 封印配给刮刮乐
@@ -1175,7 +1178,7 @@
                       20.0s
                     </div>
                     <div id="skydive-center-subinfo" class="text-xs font-mono-tech text-neutral-400">
-                      每秒深 13% · 越晚开伞赔率越高 · 超过安全线深度直接坠毁归零
+                      每秒深 13% 越晚开伞赔率越高 超过安全线深度直接坠毁归零
                     </div>
                   </div>
 
@@ -1210,7 +1213,7 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                     <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">连续下坠</strong>
-                      <span class="opacity-85">初始高度 100 米 · 下降速度 35 米 / 秒</span>
+                      <span class="opacity-85">初始高度 100 米 下降速度 35 米 / 秒</span>
                     </div>
                     <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">津贴赔付</strong>
@@ -1241,7 +1244,7 @@
 
                 <div class="retro-corner-box p-4 space-y-3 font-mono-tech text-xs">
                   <div class="flex items-center justify-between text-[11px] text-[#9e1b1b] font-bold">
-                    <span id="skydive-flight-no-label">— 第 45267 架次 · 20s 后关舱门</span>
+                    <span id="skydive-flight-no-label">— 第 45267 架次 20s 后关舱门</span>
                     <span>A.V.E.D. AIR</span>
                   </div>
                   <h4 class="text-lg font-bold font-serif-sc">登机押注配置</h4>
@@ -1262,7 +1265,7 @@
                   </div>
 
                   <button id="skydive-board-btn" type="button" class="magnetic-cta w-full py-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-xs tracking-wider cursor-pointer">
-                    确认登机 · 1,000
+                    确认登机 1,000
                   </button>
 
                   <p class="text-[11px] opacity-75 leading-relaxed">
@@ -1274,7 +1277,7 @@
                 <div class="retro-corner-box p-4 space-y-2.5 font-mono-tech text-xs">
                   <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-1.5">
                     <span class="font-bold text-[#9e1b1b]">— 机舱跳伞名单</span>
-                    <span id="skydive-passenger-stats" class="text-[11px] opacity-75">机上 10 · 落地 0 · 坠毁 0</span>
+                    <span id="skydive-passenger-stats" class="text-[11px] opacity-75">机上 10 落地 0 坠毁 0</span>
                   </div>
                   <div id="skydive-passengers-list" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
                 </div>
@@ -1298,7 +1301,7 @@
           </div>
 
           <!-- ================================================================
-               娱乐面板 2：五轮五线 · 收容抑制矩阵（已全部替换为硬朗 SCP 收容符号：收容之眼、辐射核心、抑制锁、机密卷宗、血清药剂、镇定配给）
+               娱乐面板 2：五轮五线 收容抑制矩阵（已全部替换为硬朗 SCP 收容符号：收容之眼、辐射核心、抑制锁、机密卷宗、血清药剂、镇定配给）
                ================================================================ -->
           <div id="game-panel-slots" class="hidden space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -1328,14 +1331,14 @@
                   </div>
 
                   <div class="px-4 py-2.5 bg-black/75 border border-white/15 flex items-center justify-between text-xs font-mono-tech">
-                    <span id="slot5x3-bet-summary">押 500 · 每线 100</span>
+                    <span id="slot5x3-bet-summary">押 500 每线 100</span>
                     <span id="slot5x3-win-summary" class="font-bold text-white">赢得 —</span>
                   </div>
                 </div>
 
                 <!-- 赔付簿与三处隐藏收容协议 -->
                 <div class="retro-corner-box game-rule-card p-5 space-y-4">
-                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 倍数 × 每线押注 · 从最左一轮连起</div>
+                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 倍数 × 每线押注 从最左一轮连起</div>
                   <h4 class="text-lg font-bold font-serif-sc">收容矩阵赔付簿</h4>
 
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -1399,17 +1402,17 @@
 
                   <button id="slot5x3-spin-btn" type="button" class="magnetic-cta w-full py-3.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-sm tracking-wider cursor-pointer shadow">
                     ↻ 启动矩阵旋转
-                    <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 · 五线</span>
+                    <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 五线</span>
                   </button>
                 </div>
 
                 <div class="retro-corner-box p-4 space-y-3">
-                  <div class="text-[11px] text-[#9e1b1b] font-bold">— 序列桶 · 开局前封印</div>
+                  <div class="text-[11px] text-[#9e1b1b] font-bold">— 序列桶 开局前封印</div>
                   <h4 class="text-base font-bold font-serif-sc">哈希封印</h4>
                   <div class="p-3 inner-card-alt flex items-center gap-3">
                     <div class="w-7 h-7 bg-[#9e1b1b] text-white flex items-center justify-center font-bold shrink-0">封</div>
                     <div class="overflow-hidden">
-                      <div id="slot5x3-seal-status" class="font-bold">序列桶已封印 · 运行中</div>
+                      <div id="slot5x3-seal-status" class="font-bold">序列桶已封印 运行中</div>
                       <div class="text-[10px] opacity-70 truncate">封条 <code id="slot5x3-seal-hash">92e4dccdf503eedc...</code></div>
                     </div>
                   </div>
@@ -1420,7 +1423,7 @@
                 </div>
 
                 <div class="retro-corner-box p-4 space-y-2.5">
-                  <div id="slot5x3-history-header" class="text-[11px] text-[#9e1b1b] font-bold">— 本桶记录 · 共 0 转</div>
+                  <div id="slot5x3-history-header" class="text-[11px] text-[#9e1b1b] font-bold">— 本桶记录 共 0 转</div>
                   <h4 class="text-base font-bold font-serif-sc">运转日志</h4>
                   <div id="slot5x3-history-list" class="space-y-1.5 max-h-48 overflow-y-auto text-[11px]">
                     <div class="py-4 text-center opacity-60">新序列桶刚封上，尚未运转。</div>
@@ -1465,7 +1468,7 @@
               <div id="active-ticket-board-container" class="p-5 inner-card-alt border-2 border-[var(--inner-border)]"></div>
 
               <div id="active-ticket-result-banner" class="p-4 retro-corner-box text-center font-mono-tech text-sm font-bold">
-                点击上方任意银色封印格逐个刮开，或点击右上角「一键全部刮开」
+
               </div>
             </div>
           </div>
@@ -1490,7 +1493,7 @@
                 <div id="derby-tracks-container" class="space-y-3 bg-[#141414] text-white p-4 border-2 border-[var(--inner-border)] font-mono-tech"></div>
 
                 <div id="derby-seed-verify-bar" class="p-3 inner-card-alt text-xs font-mono-tech flex flex-wrap items-center justify-between gap-2">
-                  <span id="derby-status-text" class="font-bold text-[var(--inner-crimson)]">状态：本场结果已由加密种子提前锁定，请下注后开闸！</span>
+                  <span id="derby-status-text" class="font-bold text-[var(--inner-crimson)]">等待开赛</span>
                   <span id="derby-revealed-seed" class="opacity-75">明文种子将在冲线后揭晓以供核验</span>
                 </div>
 
@@ -1545,7 +1548,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--inner-border-soft)] pb-3">
               <div>
                 <div class="text-[10px] font-mono-tech opacity-60">CARD TABLE // COMPUTER OPPONENTS</div>
-                <h3 class="text-base font-bold font-serif-sc">🃏 员工休息室 · 牌桌（电脑对手）</h3>
+                <h3 class="text-base font-bold font-serif-sc">🃏 员工休息室 牌桌（电脑对手）</h3>
                 <p class="text-xs opacity-80">牌局获胜直接赢得 <strong>+¤ 20,000 账户余额</strong>！</p>
               </div>
               <button id="ddz-new-game-btn" type="button" class="inner-btn-primary px-4 py-2 font-mono-tech text-xs font-bold cursor-pointer self-start sm:self-auto">
@@ -1564,7 +1567,7 @@
                 <div class="text-center space-y-1.5 py-1">
                   <div class="text-[10px] text-neutral-400 tracking-widest">BASE CARDS // 底牌</div>
                   <div id="ddz-hole-cards" class="flex justify-center gap-2"></div>
-                  <div id="ddz-turn-indicator" class="text-xs font-bold text-white pt-1">请点击下方「抢地主」开始对局</div>
+                  <div id="ddz-turn-indicator" class="text-xs font-bold text-white pt-1">等待开始</div>
                 </div>
 
                 <div class="bg-black/60 p-3 border border-white/15 sm:text-right">
@@ -1582,7 +1585,7 @@
               <div class="space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span id="ddz-player-role-badge" class="px-2.5 py-1 bg-white text-black font-bold">身份：待抢地主</span>
-                  <span class="text-neutral-400 text-[11px]">点击扑克牌选中/取消，选好后点击「出牌」</span>
+                  <span class="text-neutral-400 text-[11px]"></span>
                 </div>
 
                 <div id="ddz-player-hand" class="flex flex-wrap justify-center gap-1.5 py-2 min-h-[76px]"></div>
@@ -1653,21 +1656,21 @@
        ========================================================================== -->
   <script src="/http-client.js?v=signal-5" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=reading-1" defer></script>
+  <script src="/notices-ui.js?v=window-1" defer></script>
   <script src="/market-chart.js?v=signal-5" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=hub-1" defer></script>
-  <script src="/sky-ui.js?v=hub-1" defer></script>
-  <script src="/economy-ui.js?v=signal-5" defer></script>
-  <script src="/welfare-ui.js?v=hub-1" defer></script>
-  <script src="/visual-style.js?v=hub-1" defer></script>
-  <script src="/personal-ui.js?v=hub-1" defer></script>
+  <script src="/player-community.js?v=window-1" defer></script>
+  <script src="/sky-ui.js?v=window-1" defer></script>
+  <script src="/economy-ui.js?v=window-1" defer></script>
+  <script src="/welfare-ui.js?v=window-1" defer></script>
+  <script src="/visual-style.js?v=window-1" defer></script>
+  <script src="/personal-ui.js?v=window-1" defer></script>
 <script src="/rewards-ui.js?v=hub-1" defer></script>
-<script src="/derby-ui.js?v=hub-1" defer></script>
-<script src="/player.js?v=hub-1" defer></script>
+<script src="/derby-ui.js?v=window-1" defer></script>
+<script src="/player.js?v=window-1" defer></script>
   <script src="/page-headings.js?v=hub-1" defer></script>
-  <script src="/print-signal.js?v=hub-1-reading-1" defer></script>
+  <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=crt-1" defer></script>
-  <script src="/landing-sphere.js?v=hub-1-patterns-1" defer></script>
+  <script src="/landing-sphere.js?v=window-1" defer></script>
 </body>
 </html>

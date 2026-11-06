@@ -45,8 +45,11 @@
       for (const mote of motes) {
         mote.y = (mote.y - elapsed * mote.speed / 120 + height) % height;
         const alpha = (gateway ? .055 : .035) + (gateway ? .14 : .085) * (.5 + .5 * Math.sin(now / 3400 + mote.phase));
-        context.fillStyle = night ? `rgba(250,228,184,${alpha * 1.7})` : `rgba(121,66,43,${alpha})`;
+        const radix=document.body.classList.contains('radix-terminal');
+        context.fillStyle = radix?(night?'#eeeeee':'#21201c'):(night?'#fae4b8':'#79422b');
+        context.globalAlpha=night?alpha*1.7:alpha;
         context.beginPath(); context.arc(mote.x, mote.y, mote.r, 0, Math.PI*2); context.fill();
+        context.globalAlpha=1;
       }
     }
     frame = requestAnimationFrame(draw);

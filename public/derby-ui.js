@@ -12,7 +12,7 @@ window.AVEDDerbyUI=function({api,byId,esc,getUser,onBalance,showToast}) {
   const leader=[...d.runners].sort((a,b)=>b.progress-a.progress)[0];byId('derby-commentary').textContent=d.phase==='BETTING'?'解说 / 跑道准备完毕，等待封盘。':d.phase==='RESULT'?'解说 / '+d.runners[d.winner].name+'率先抵达，终点记录已确认。':remaining>12?'解说 / 闸门开启，四条跑道同时出发。':remaining>5?'解说 / '+leader.name+'暂时领先，追赶仍在继续。':'解说 / 最后冲刺！留意终点线。';
   const form=byId('shared-race-form'),locked=d.phase!=='BETTING'||!!d.self;form.querySelectorAll('input,button').forEach(el=>el.disabled=locked);if(d.self)form.elements.runner.value=String(d.self.runner);
   byId('derby-ticket-state').textContent=d.self?'委托已封存':d.phase==='BETTING'?'选择本场跑道':'观赛中';byId('derby-self-result').textContent=d.self?(d.self.settled?'本场净变动 ¤ '+(d.self.prize-d.self.cost).toLocaleString():'已投入 ¤ '+d.self.cost.toLocaleString()):'本场尚无委托';
-  byId('derby-live-hash').textContent='SHA-256 / '+d.seedHash+(d.seed?' / SEED '+d.seed:'');byId('derby-recent').textContent='近期冠军 / '+d.history.map(x=>'#'+x.id+' '+d.runners[x.winner].name).join(' · ');
+  byId('derby-live-hash').textContent='SHA-256 / '+d.seedHash+(d.seed?' / SEED '+d.seed:'');byId('derby-recent').textContent='近期冠军 / '+d.history.map(x=>'#'+x.id+' '+d.runners[x.winner].name).join(' ');
  }
  async function poll(){if(busy)return;busy=true;last=performance.now();try{render(await api('/api/player/games/derby/current'));}catch{byId('derby-link-state').textContent='赛场信号重接中';}finally{busy=false;}}
  const visible=()=>getUser()&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!panel.classList.contains('hidden');

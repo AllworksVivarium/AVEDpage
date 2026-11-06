@@ -27,7 +27,7 @@
   }
   function active(){return ctx&&!document.body.classList.contains('effects-off')&&variant==='sphere'&&document.body.classList.contains('theme-landing')&&!document.hidden;}
   function paint(step,moving){
-    if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(255,255,255,.78)';
+    if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=document.body.classList.contains('radix-terminal')?'#eeeeee':'#ffffff';ctx.globalAlpha=.78;
     const a=Math.cos(angle),b=Math.sin(angle),damping=Math.pow(.9,step);
     for(let i=0;i<count;i++){
       if(moving){

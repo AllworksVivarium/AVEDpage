@@ -20,6 +20,7 @@
 
       if (!prefersReducedMotion && !isTouchDevice) {
         window.addEventListener('mousemove', (e) => {
+          if(document.body.classList.contains('radix-terminal')) return;
           const ctas = document.querySelectorAll('.magnetic-cta');
           ctas.forEach(btn => {
             if (btn.disabled || btn.offsetParent === null || btn.closest('#game-panel-scratch,#ticket-confirm-modal') || document.body.classList.contains('effects-off')) return;
@@ -667,7 +668,7 @@
 
         listEl.innerHTML = filtered.map(item => {
           const active = item.id === selectedScpId;
-          const fullTitle = `${item.id} · ${item.codeName}`;
+          const fullTitle = `${item.id} ${item.codeName}`;
           return `
             <div data-scp-id="${item.id}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 ${active ? 'border-[#9e1b1b] shadow-lg' : 'border-black/60 opacity-90 hover:opacity-100'} transition cursor-pointer select-none flex flex-col justify-between">
               <div>
@@ -1050,7 +1051,7 @@
         const landedCount = skydiveState.passengers.filter(p => p.status === 'LANDED').length;
         const crashedCount = skydiveState.passengers.filter(p => p.status === 'CRASHED').length;
         document.getElementById('skydive-passenger-stats').textContent =
-          `机上 ${totalOnBoard} · 落地 ${landedCount} · 坠毁 ${crashedCount}`;
+          `机上 ${totalOnBoard} 落地 ${landedCount} 坠毁 ${crashedCount}`;
 
         const pListEl = document.getElementById('skydive-passengers-list');
         if (pListEl) {
@@ -1123,7 +1124,7 @@
 
 
       // ======================================================================
-      // 分页 6-2：五轮五线 · 收容抑制矩阵（已全部替换为 SCP 工业收容符号，无猫咪）
+      // 分页 6-2：五轮五线 收容抑制矩阵（已全部替换为 SCP 工业收容符号，无猫咪）
       // ======================================================================
       const slot5x3Symbols = [
         { id: 'eye', icon: '👁️', name: '收容之眼', m3: 88, m4: 468, m5: 2600 },
@@ -1143,9 +1144,9 @@
       ];
 
       const slot5x3Mechanisms = [
-        { id: 'mech_1', title: '协议一 · 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×3 倍特别津贴', discovered: false },
-        { id: 'mech_2', title: '协议二 · 辐射共振回响', desc: '首尾两列同时出现高危核心，返还本转投入的 50%', discovered: false },
-        { id: 'mech_3', title: '协议三 · 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×2 倍科研奖金', discovered: false }
+        { id: 'mech_1', title: '协议一 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×3 倍特别津贴', discovered: false },
+        { id: 'mech_2', title: '协议二 辐射共振回响', desc: '首尾两列同时出现高危核心，返还本转投入的 50%', discovered: false },
+        { id: 'mech_3', title: '协议三 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×2 倍科研奖金', discovered: false }
       ];
 
       let slot5x3State = {
@@ -1184,8 +1185,8 @@
 
         const totalBet = parseInt(document.getElementById('slot5x3-bet-input')?.value || '500', 10);
         const lineBet = Math.max(1, Math.round(totalBet / 5));
-        document.getElementById('slot5x3-bet-summary').textContent = `押 ${totalBet.toLocaleString()} · 每线 ${lineBet.toLocaleString()}`;
-        document.getElementById('slot5x3-spin-subtext').textContent = `押 ${totalBet.toLocaleString()} · 五线`;
+        document.getElementById('slot5x3-bet-summary').textContent = `押 ${totalBet.toLocaleString()} 每线 ${lineBet.toLocaleString()}`;
+        document.getElementById('slot5x3-spin-subtext').textContent = `押 ${totalBet.toLocaleString()} 五线`;
 
         const payBody = document.getElementById('slot5x3-paytable-body');
         if (payBody) {
@@ -1213,7 +1214,7 @@
       }
 
       function renderSlot5x3History() {
-        document.getElementById('slot5x3-history-header').textContent = `— 本桶记录 · 共 ${slot5x3State.history.length} 转`;
+        document.getElementById('slot5x3-history-header').textContent = `— 本桶记录 共 ${slot5x3State.history.length} 转`;
         const listEl = document.getElementById('slot5x3-history-list');
         if (!listEl) return;
         if (slot5x3State.history.length === 0) {
@@ -1397,7 +1398,7 @@
                 <div class="p-4 pt-0">
                   <button type="button" data-pick-game="${g.type}"
                     class="pick-scratch-game-btn terminal-key w-full py-2.5 border border-[#141413] bg-[#141413] text-white hover:opacity-90 font-mono-tech font-bold text-xs transition cursor-pointer">
-                    申领此票 · ${fmtMoney(selectedTier.cost)}
+                    申领此票 ${fmtMoney(selectedTier.cost)}
                   </button>
                 </div>
               </div>
@@ -1421,7 +1422,7 @@
         playSfx('click');
 
         document.getElementById('ticket-modal-icon').textContent = g.icon;
-        document.getElementById('ticket-modal-sublabel').textContent = `出票 · ${selectedTier.name} · ${g.sub}`;
+        document.getElementById('ticket-modal-sublabel').textContent = `出票 ${selectedTier.name} ${g.sub}`;
         document.getElementById('ticket-modal-title').textContent = g.title;
         document.getElementById('ticket-modal-tagline').textContent = g.tagline;
         document.getElementById('ticket-modal-price').textContent = fmtMoney(selectedTier.cost);
@@ -1450,7 +1451,7 @@
         if (!activeIssuedTicket) return;
         const tk = activeIssuedTicket;
         document.getElementById('active-ticket-title-bar').textContent =
-          `${tk.gameType.icon} ${tk.gameType.title} [${tk.tier.name} · ${fmtMoney(tk.tier.cost)}]`;
+          `${tk.gameType.icon} ${tk.gameType.title} [${tk.tier.name} ${fmtMoney(tk.tier.cost)}]`;
         document.getElementById('active-ticket-seed-badge').textContent = `SEAL: #${tk.seed}`;
 
         const board = document.getElementById('active-ticket-board-container');
@@ -1508,10 +1509,10 @@
       // 分页 6-4：异常竞速赛马
       // ======================================================================
       const derbyRunners = [
-        { id: 0, name: '1号 · 法棍 (法斗)', icon: '🐕', odds: 2.2, desc: '稳健巡游，胜率高' },
-        { id: 1, name: '2号 · 几何折跃兽', icon: '🦌', odds: 3.5, desc: '偶发短距瞬移' },
-        { id: 2, name: '3号 · 深潜触须体', icon: '🦑', odds: 5.0, desc: '后程爆发极强' },
-        { id: 3, name: '4号 · 混沌电子羊', icon: '🐑', odds: 8.5, desc: '冷门高倍黑马' }
+        { id: 0, name: '1号 法棍 (法斗)', icon: '🐕', odds: 2.2, desc: '稳健巡游，胜率高' },
+        { id: 1, name: '2号 几何折跃兽', icon: '🦌', odds: 3.5, desc: '偶发短距瞬移' },
+        { id: 2, name: '3号 深潜触须体', icon: '🦑', odds: 5.0, desc: '后程爆发极强' },
+        { id: 3, name: '4号 混沌电子羊', icon: '🐑', odds: 8.5, desc: '冷门高倍黑马' }
       ];
 
       let derbyState = {
@@ -1851,8 +1852,8 @@
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
-        byId('header-quick-checkin-btn').textContent=checked?'今日已签到':'每日签到 · 5万—10万';byId('header-quick-checkin-btn').disabled=checked;
-        byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领低保 · +¤10,000';
+        byId('header-quick-checkin-btn').textContent=checked?'今日已签到':'每日签到 5万—10万';byId('header-quick-checkin-btn').disabled=checked;
+        byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领低保 +¤10,000';
         byId('claim-relief-btn').textContent='余额低于 10,000 可领低保';
         byId('admin-nav-tab').hidden=!currentUser.serverAdmin;
       }
@@ -1880,20 +1881,20 @@
       function randomizeScpDualNamePlaceholder(){byId('scp-search-input').placeholder=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)].codeName:'搜索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
       function readImageFileAsDataUrl(file,callback){if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1500000){showToast('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。','warn');return;}const reader=new FileReader();reader.onload=()=>callback(reader.result);reader.readAsDataURL(file);}
-      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 · ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
+      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
       const attachment=item=>item.imageData?`<img src="${esc(item.imageData)}" class="max-w-full max-h-96 object-contain mt-3" alt="随帖影像" loading="lazy">`:'';
       function returnForumList(){currentForumThreadId=null;renderForumView();byId('view-forum').scrollIntoView({block:'start'});}
       function renderForumView(){
         const th=forumThreads.find(t=>String(t.id)===String(currentForumThreadId));
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
         byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;
-        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'实名':'匿名'} · ${esc(t.anonymousName)} · ${AVEDTime.markup(t.createdAt)} · 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
+        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'实名':'匿名'} ${esc(t.anonymousName)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
           if(forumNext)byId('forum-threads-list-container').insertAdjacentHTML('beforeend','<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>');
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'实名':'匿名'} · ${esc(th.anonymousName)} · ${AVEDTime.markup(th.createdAt)} · 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
+        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'实名':'匿名'} ${esc(th.anonymousName)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
         api('/api/player/forum/'+th.id).then(d=>{if(String(currentForumThreadId)!==String(th.id))return;
-          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'实名':'匿名'}</small> · ${AVEDTime.markup(r.createdAt)} · ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
+          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'实名':'匿名'}</small> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
           byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
       async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
@@ -1925,13 +1926,13 @@
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){if(document.body.classList.contains('terminal-next')){personalUI.render();return;}const target=byId('view-profile');if(!target)return;
         const crt=document.body.classList.contains('crt-unified');
-        target.innerHTML=`<div class="personal-toolbar"><button data-terminal-layout="next">接入终端</button><button data-terminal-layout="previous" aria-pressed="true">旧版主页</button><button data-effects-toggle></button></div><div class="profile-display-switch" role="group" aria-label="个人主页显示方案"><button type="button" data-presentation="crt" aria-pressed="${crt}">显像管版</button><button type="button" data-presentation="classic" aria-pressed="${!crt}">原版</button></div>
+        target.innerHTML=`<div class="personal-toolbar"><button data-display-settings>显示设置</button><button data-effects-toggle></button></div>
           <section class="profile-dossier retro-corner-box p-5 space-y-4"><header><h2 class="text-xl font-bold">个人主页</h2></header>
           <div class="profile-identity-sheet"><div class="cloud-avatar">${playerProfile.avatarUrl?`<img src="${esc(playerProfile.avatarUrl)}" alt="个人头像">`:'<svg viewBox="0 0 100 120" role="img" aria-label="默认人形头像"><circle cx="50" cy="35" r="22" fill="currentColor"/><path d="M10 120V100C10 60 90 60 90 100V120Z" fill="currentColor"/></svg>'}</div>
-          <div class="profile-identity-copy"><span class="section-kicker">PERSONNEL / IDENTITY</span><h3>${esc(playerProfile.anonymousName)}</h3><p>${esc(currentUser.name)} · ${esc(currentUser.positionTitle||currentUser.department)}</p></div>
+          <div class="profile-identity-copy"><span class="section-kicker">PERSONNEL / IDENTITY</span><h3>${esc(playerProfile.anonymousName)}</h3><p>${esc(currentUser.name)} ${esc(currentUser.positionTitle||currentUser.department)}</p></div>
           <div class="profile-balance-strip"><span>可用余额</span><strong>${fmtMoney(currentUser.balance)}</strong></div></div>
           <details class="profile-edit-panel"><summary>编辑个人档案</summary><form id="cloud-profile-form" class="space-y-4"><label class="block">匿名名称<input class="cloud-input" name="anonymousName" maxlength="32" required value="${esc(playerProfile.anonymousName)}"></label><label class="block">上传头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="inner-btn-primary terminal-key px-4 py-2">保存档案</button></form></details>
-          <section class="profile-achievements"><h3 class="font-bold">成就记录</h3><div>${playerAchievements.map(a=>`<p><strong>${esc(a.title)}</strong> · ${esc(a.description)}</p>`).join('')||'<p>当前没有已解锁记录。</p>'}</div></section></section>`;welfareUI?.profile();window.AVEDSyncPreferences?.();
+          <section class="profile-achievements"><h3 class="font-bold">成就记录</h3><div>${playerAchievements.map(a=>`<p><strong>${esc(a.title)}</strong> ${esc(a.description)}</p>`).join('')||'<p>当前没有已解锁记录。</p>'}</div></section></section>`;welfareUI?.profile();window.AVEDSyncPreferences?.();
       }
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
       async function showProfile(){switchMainView('profile');renderProfile();if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
@@ -1999,7 +2000,7 @@
           else if(id==='derby-start-race-btn'){
             const d=await api('/api/player/games/derby',{method:'POST',body:{bet:Number(byId('derby-bet-amount').value),runner:derbyState.selectedHorseId}});
             derbyState.running=true;byId('derby-start-race-btn').classList.add('hidden');byId('derby-pre-hash').textContent=d.seedHash;let ticks=0;
-            const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 · 奖金 '+fmtMoney(d.prize);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
+            const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 奖金 '+fmtMoney(d.prize);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
           }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);showToast('您已登机');}
           else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
           else if(trade){
