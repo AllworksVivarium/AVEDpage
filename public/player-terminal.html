@@ -3,6 +3,7 @@
 <head>
   <script src="terminal-preferences.js?v=window-1"></script>
   <meta charset="UTF-8">
+  <link rel="stylesheet" href="/interaction-motion.css?v=motion-1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -171,16 +172,11 @@
       cursor: not-allowed;
     }
 
-    /* 磁吸主 CTA 按钮过渡策略：跟随 100ms，弹回 400ms */
-    .magnetic-cta {
+    /* CTA layout; shared interaction-motion.css controls button feedback. */
+    .magnetic-cta, .press-cta {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      will-change: transform;
-      transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1), background-color 200ms ease;
-    }
-    .magnetic-cta.is-magnet-active {
-      transition: transform 100ms linear;
     }
     .magnetic-cta:focus-visible,
     button:focus-visible,
@@ -377,7 +373,7 @@
         <button id="confirm-modal-cancel-btn" type="button" class="py-2.5 border border-white/30 hover:bg-white/10 text-neutral-200 font-bold cursor-pointer">
           [ 取消操作 ]
         </button>
-        <button id="confirm-modal-ok-btn" type="button" class="magnetic-cta py-2.5 bg-[#9e1b1b] hover:bg-red-700 text-white font-bold cursor-pointer">
+        <button id="confirm-modal-ok-btn" type="button" class="press-cta py-2.5 bg-[#9e1b1b] hover:bg-red-700 text-white font-bold cursor-pointer">
           [ 确认执行 ]
         </button>
       </div>
@@ -414,7 +410,7 @@
   </div>
 
   <!-- ==========================================================================
-       模块 1：外层欢迎页面（融合宣发大图1 + 零圆角 + 磁吸主登录按钮）
+       模块 1：外层欢迎页面（融合宣发大图1 + 零圆角 + 按压主登录按钮）
        ========================================================================== -->
   <main id="landing-view" class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
 
@@ -488,9 +484,9 @@
         </div>
       </div>
 
-      <!-- 磁吸主 CTA 登录触发按钮 -->
+      <!-- 按压主 CTA 登录触发按钮 -->
       <div class="flex flex-col items-center gap-2 p-4">
-        <button id="open-login-btn" type="button" class="magnetic-cta login-trigger-btn px-6 py-3.5 text-left group cursor-pointer">
+        <button id="open-login-btn" type="button" class="press-cta login-trigger-btn px-6 py-3.5 text-left group cursor-pointer">
           <div class="flex items-center gap-4">
             <div class="px-2.5 py-2 border border-white/60 bg-white/10 flex items-center justify-center text-white font-mono-tech font-bold text-xs tracking-wider group-hover:bg-white group-hover:text-black transition-colors">
               LOGIN
@@ -549,7 +545,7 @@
             </label>
 
           </div>
-          <button type="submit" class="magnetic-cta w-full py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] uppercase transition cursor-pointer font-mono-tech">
+          <button type="submit" class="press-cta w-full py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] uppercase transition cursor-pointer font-mono-tech">
             &gt; CONNECT TO A.V.E.D. &lt;
           </button>
           <p id="login-error" role="alert" class="text-xs text-red-300"></p>
@@ -648,7 +644,7 @@
             </button>
           </div>
 
-          <button id="header-quick-checkin-btn" type="button" class="magnetic-cta inner-btn-primary px-3 py-1.5 font-bold text-xs cursor-pointer whitespace-nowrap">
+          <button id="header-quick-checkin-btn" type="button" class="press-cta inner-btn-primary px-3 py-1.5 font-bold text-xs cursor-pointer whitespace-nowrap">
             📅 每日签到
           </button>
 
@@ -976,7 +972,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input id="new-topic-title" type="text" placeholder="输入帖子标题..." required
                   class="sm:col-span-2 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs">
-                <button type="submit" class="magnetic-cta inner-btn-primary py-2 px-4 font-bold text-xs cursor-pointer">
+                <button type="submit" class="press-cta inner-btn-primary py-2 px-4 font-bold text-xs cursor-pointer">
                   [ 发布新主题帖 ]
                 </button>
               </div>
@@ -1065,7 +1061,7 @@
                     </button>
                     <span id="reply-image-selected-hint" class="text-[11px] text-[var(--inner-crimson)] font-bold">未选择附图</span>
                   </div>
-                  <button type="submit" class="magnetic-cta inner-btn-primary px-6 py-2 font-bold text-xs cursor-pointer">
+                  <button type="submit" class="press-cta inner-btn-primary px-6 py-2 font-bold text-xs cursor-pointer">
                     [ 发送匿名回帖 ]
                   </button>
                 </div>
@@ -1199,7 +1195,7 @@
                     <div class="p-3 bg-black/80 border-t border-white/15 flex items-center justify-between px-6 font-mono-tech text-xs">
                       <span id="skydive-bottom-left-hint" class="text-neutral-400">尚未登机</span>
                       <button id="skydive-open-chute-btn" type="button" disabled
-                        class="magnetic-cta px-7 py-2 bg-white text-black font-bold text-xs tracking-wider disabled:opacity-30 cursor-pointer">
+                        class="press-cta px-7 py-2 bg-white text-black font-bold text-xs tracking-wider disabled:opacity-30 cursor-pointer">
                         [ 🪂 立即拉绳开伞 ]
                       </button>
                       <span class="text-[11px] text-neutral-400">着陆区</span>
@@ -1264,7 +1260,7 @@
                     <button type="button" id="sky-chip-double" class="px-2.5 py-1 border border-[var(--inner-border-soft)] cursor-pointer">×2</button>
                   </div>
 
-                  <button id="skydive-board-btn" type="button" class="magnetic-cta w-full py-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-xs tracking-wider cursor-pointer">
+                  <button id="skydive-board-btn" type="button" class="press-cta w-full py-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-xs tracking-wider cursor-pointer">
                     确认登机 1,000
                   </button>
 
@@ -1400,7 +1396,7 @@
                     <button type="button" data-slot-chip="50000" class="slot-chip-btn px-3 py-1 border border-[var(--inner-border-soft)] cursor-pointer">50,000</button>
                   </div>
 
-                  <button id="slot5x3-spin-btn" type="button" class="magnetic-cta w-full py-3.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-sm tracking-wider cursor-pointer shadow">
+                  <button id="slot5x3-spin-btn" type="button" class="press-cta w-full py-3.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-sm tracking-wider cursor-pointer">
                     ↻ 启动矩阵旋转
                     <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 五线</span>
                   </button>
@@ -1515,7 +1511,7 @@
                       </select>
                     </div>
                     <div class="flex gap-2">
-                      <button id="derby-start-race-btn" type="button" class="magnetic-cta inner-btn-primary px-6 py-2 font-bold cursor-pointer">
+                      <button id="derby-start-race-btn" type="button" class="press-cta inner-btn-primary px-6 py-2 font-bold cursor-pointer">
                         [ 🏁 确认下注并开闸 ]
                       </button>
                       <button id="derby-next-round-btn" type="button" class="px-4 py-2 border border-[var(--inner-border)] font-bold cursor-pointer hidden">
@@ -1667,7 +1663,8 @@
   <script src="/personal-ui.js?v=window-1" defer></script>
 <script src="/rewards-ui.js?v=hub-1" defer></script>
 <script src="/derby-ui.js?v=window-1" defer></script>
-<script src="/player.js?v=window-1" defer></script>
+<script src="/interaction-motion.js?v=motion-1" defer></script>
+<script src="/player.js?v=motion-1" defer></script>
   <script src="/page-headings.js?v=hub-1" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=crt-1" defer></script>

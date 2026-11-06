@@ -12,42 +12,8 @@
       async function apiLogout(){await api('/api/logout',{method:'POST'});}
 
       // ======================================================================
-      // 0. 磁吸交互引擎 (Magnetic CTA Pattern)
-      // 热区 1.5 倍按钮大小，偏移上限 12px，跟随 100ms 弹回 400ms，尊重 prefers-reduced-motion 与触屏
-      // ======================================================================
-      const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-      if (!prefersReducedMotion && !isTouchDevice) {
-        window.addEventListener('mousemove', (e) => {
-          if(document.body.classList.contains('radix-terminal')) return;
-          const ctas = document.querySelectorAll('.magnetic-cta');
-          ctas.forEach(btn => {
-            if (btn.disabled || btn.offsetParent === null || btn.closest('#game-panel-scratch,#ticket-confirm-modal') || document.body.classList.contains('effects-off')) return;
-            const rect = btn.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dx = e.clientX - cx;
-            const dy = e.clientY - cy;
-
-            // 1.5 倍热区判定
-            const hotW = (rect.width * 1.5) / 2;
-            const hotH = (rect.height * 1.5) / 2;
-
-            if (Math.abs(dx) <= hotW && Math.abs(dy) <= hotH) {
-              btn.classList.add('is-magnet-active');
-              const maxOffset = 12;
-              const tx = Math.max(-maxOffset, Math.min(maxOffset, (dx / hotW) * maxOffset));
-              const ty = Math.max(-maxOffset, Math.min(maxOffset, (dy / hotH) * maxOffset));
-              btn.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px)`;
-            } else if (btn.classList.contains('is-magnet-active')) {
-              btn.classList.remove('is-magnet-active');
-              btn.style.transform = 'translate(0px, 0px)';
-            }
-          });
-        });
-      }
-
+      // Button motion is shared by both terminals in interaction-motion.js.
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       // ======================================================================
       // 1. 独立三路音频引擎（总开关 Master / 背景环境音 BGM / 特效音 SFX）
       // ======================================================================
