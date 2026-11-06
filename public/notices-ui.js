@@ -25,7 +25,7 @@
     article(item) {
       return `<header class="notice-article-heading"><div class="notice-meta"><span>${item.category}</span>${time(item.createdAt)}</div>
         <h2 class="notice-title-secondary">${item.title}</h2>${item.drafter?`<p class="notice-drafter">起草：${escape(item.drafter)}</p>`:''}</header>
-        <div class="notice-body terminal-prose">${String(item.fullContent).trim().split(/\r?\n+/).filter(text => text.trim()).map(text => `<p>${text}</p>`).join('')}</div><footer class="notice-signature"><p>${escape(item.issuer||'万业携生')}</p><p>${issueDate(item)}</p></footer>`;
+        <div class="notice-body terminal-prose">${String(item.fullContent).trim().split(/\r?\n+/).filter(text => text.trim()).map(text => `<p>${text}</p>`).join('')}</div><footer class="notice-signature"><p>${escape(item.issuer||'万业携生')}</p><p data-keep-original>${issueDate(item)}</p></footer>`;
     },
     comments(items) {
       return items.map(item => `<article class="notice-comment inner-card-alt">
