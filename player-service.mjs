@@ -258,7 +258,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const result=db.prepare(`UPDATE ${table} SET status=?,moderation=? WHERE id=? AND moderation='pending'`).run(data.action==='approve'?'published':'hidden',data.action==='approve'?'approved':'rejected',moderation[2]);
         if(!result.changes)throw new Error('内容已处理或已删除。');log(id,'moderation',table+'/'+moderation[2],{decision:data.action});send(res,200,{ok:true});return true;
       }
-      if(path==='/api/admin/activity'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;send(res,200,{items:db.prepare('SELECT * FROM activity_logs WHERE id<? ORDER BY id DESC LIMIT 100').all(before)});return true;}
+      if(path==='/api/admin/activity'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages') AND id<? ORDER BY id DESC LIMIT 100").all(before)});return true;}
       const dossier=path.match(/^\/api\/player\/dossiers\/(\d+)\/comments$/);
       if(dossier){if(!db.prepare('SELECT id FROM dossiers WHERE id=?').get(dossier[1]))throw new Error('档案不存在。');
         if(req.method==='POST'){if(!valid(data.body,2000))throw new Error('评议最多 2000 字。');db.prepare('INSERT INTO dossier_comments(dossier_id,employee_id,body) VALUES(?,?,?)').run(dossier[1],id,data.body.trim());}

@@ -75,7 +75,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
       if(path==='/api/admin/activity'&&method==='GET') {
         const from=url.searchParams.get('from')||'',to=url.searchParams.get('to')||'',q='%'+(url.searchParams.get('keyword')||'').slice(0,120)+'%';
         if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to)))throw new Error('检索区间无效。');
-        send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE id<? AND (?='' OR date(created_at,'+8 hours')>=?) AND (?='' OR date(created_at,'+8 hours')<=?) AND (username LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?) ORDER BY id DESC LIMIT 100").all(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,from,from,to,to,q,q,q,q)});return true;
+        send(res,200,{items:db.prepare("SELECT * FROM activity_logs WHERE action='insert' AND target IN ('balance_ledger','forum_threads','forum_replies','posts','dossier_comments','chat_messages') AND id<? AND (?='' OR date(created_at,'+8 hours')>=?) AND (?='' OR date(created_at,'+8 hours')<=?) AND (username LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?) ORDER BY id DESC LIMIT 100").all(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,from,from,to,to,q,q,q,q)});return true;
       }
       if(path==='/api/posts') {
         if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department,e.position_title AS positionTitle FROM posts s JOIN employees e ON e.id=s.employee_id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY julianday(s.created_at) ASC,s.id ASC").all(Number(url.searchParams.get('announcementId')))});return true;}
