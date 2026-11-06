@@ -513,7 +513,8 @@ async function deleteEmployee(id, displayName, username) {
 async function renderTab(tab) {
   setActive(tab);
   try {
-    if(tab === 'speech')await renderSpeechRecords();
+    if(tab === 'robots')await renderCompanyRobots();
+    else if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
     else if(tab === 'economy')await renderEconomy();
     else if(tab === 'achievements')await renderAchievements();
