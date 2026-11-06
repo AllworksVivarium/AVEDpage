@@ -38,7 +38,7 @@ const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
             const n = 11 + Math.floor(random() * 78);
             if (!luckyNums.includes(n)) luckyNums.push(n);
           }
-          luckyNums.forEach(n => cells.push({ role: 'LUCKY', label: `基准 #${n}`, sub: '核准频段', isWinPart: false }));
+          luckyNums.forEach(n => cells.push({ role: 'LUCKY', label: `领赏号 #${n}`, sub: '公司核准', isWinPart: false }));
           cells.push({ role: 'MULT', label: '×1 倍', sub: '核准印', isWinPart: false });
 
           const playerCells = [];
@@ -65,8 +65,8 @@ const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
             const prizeForStep = winThisStep ? remainingPayout : cost * step;
             if (winThisStep) remainingPayout = 0;
 
-            cells.push({ role: 'STEP_LEFT', step, label: `第${step}阶·冲击值 ${enemyPt}`, sub: '异常读数', isWinPart: false });
-            cells.push({ role: 'STEP_RIGHT', step, label: `我方抑制值 ${myPt}`, sub: `${winThisStep ? '✓ 压制成功' : '未压制'} (${fmtMoney(prizeForStep)})`, isWinPart: winThisStep });
+            cells.push({ role: 'STEP_LEFT', step, label: `第${step}站·签号 ${enemyPt}`, sub: '站点留签', isWinPart: false });
+            cells.push({ role: 'STEP_RIGHT', step, label: `员工签号 ${myPt}`, sub: `${winThisStep ? '✓ 已通过' : '待下次巡签'} (${fmtMoney(prizeForStep)})`, isWinPart: winThisStep });
           }
         }
 

@@ -16,3 +16,31 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
 #left-sidebar .sidebar-control-row{position:sticky;top:0;z-index:3;background:var(--inner-bg)}
 #view-casino .game-tab-btn[aria-pressed=false]{background:transparent!important;color:var(--inner-text-main)!important;opacity:.8}
 #view-casino .game-tab-btn[aria-pressed=true]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;opacity:1}
+
+@layer aved-personal {
+ #view-casino .ranking-preferences{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 0;font-size:12px}
+ #view-casino .ranking-preferences label{display:flex;align-items:center;gap:10px}
+ #view-casino .ranking-preferences select{padding:6px 10px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg);color:var(--inner-text-main);border-radius:0}
+ #view-casino .ranking-preferences small{font-size:11px!important;color:var(--inner-text-muted)}
+ #view-casino .rank-donate{padding:6px 10px;min-height:34px;border:1px solid var(--inner-border);background:var(--brand-red-soft);color:var(--inner-text-main);border-radius:0;font-size:12px!important;flex:none}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm){position:fixed;inset:0;margin:auto;width:calc(100% - 28px);max-width:420px;max-height:85dvh;padding:16px;border:1px solid var(--inner-border)!important;border-radius:0!important;background:var(--inner-bg)!important;color:var(--inner-text-main)!important;font-size:14px;overflow:auto;box-shadow:0 10px 50px #0005}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm)::backdrop{background:#0007}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm) *{border-radius:0!important;box-sizing:border-box}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm) [hidden]{display:none!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm) header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--inner-border-soft);font-size:16px!important}
+ #view-casino .welfare-transfer-dialog h3{font-size:16px!important;margin:0!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm) p{margin:14px 0;font-size:13px!important;line-height:1.7!important}
+ #view-casino .welfare-transfer-dialog label{display:grid;gap:8px;font-size:13px!important}
+ #view-casino .welfare-transfer-dialog input{width:100%;padding:10px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg);color:var(--inner-text-main);font-size:16px!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm) button{min-height:38px;padding:8px 12px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg);color:var(--inner-text-main);font-size:13px!important;cursor:pointer}
+ #view-casino :is([data-transfer-confirm],[data-confirm]){background:var(--brand-red)!important;color:var(--study-on-red)!important}
+ #view-casino .welfare-confirm>div,#view-casino .transfer-actions{display:flex;justify-content:flex-end;gap:10px}
+ #view-forum .forum-identity-choice{display:flex;align-items:center;gap:8px;font-size:12px!important;cursor:pointer}
+ #view-forum .forum-identity-choice select[hidden]{display:none!important}
+ #view-forum .forum-identity-choice input[type=checkbox]{appearance:none;width:29px;height:16px;min-width:29px;margin:0;border:1px solid var(--inner-border);border-radius:0;background:var(--inner-card-bg);position:relative;cursor:pointer}
+ #view-forum .forum-identity-choice input[type=checkbox]::after{content:'';position:absolute;left:2px;top:2px;width:10px;height:10px;background:var(--inner-text-muted);transition:transform .12s}
+ #view-forum .forum-identity-choice input[type=checkbox]:checked{background:var(--brand-red-soft)}
+ #view-forum .forum-identity-choice input[type=checkbox]:checked::after{transform:translateX(12px);background:var(--inner-crimson)}
+ #view-forum .forum-real-badge{display:inline-block;border:1px solid var(--inner-border);color:var(--inner-crimson);padding:1px 5px;margin-right:4px;font-size:10px!important;line-height:1.4!important}
+ @media(max-width:380px){#view-casino .balance-rankings li{gap:7px}#view-casino .rank-donate{padding:6px;min-width:38px}}
+}

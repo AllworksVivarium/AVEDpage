@@ -1,15 +1,17 @@
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {mediaReference} from './server-media.mjs';
 import {weighted,scratchPrizeMultipliers} from './server-economy.mjs';
+import {spinSlot} from './server-slot.mjs';
+import {runners as derbyRules,derbyReturn} from './server-derby.mjs';
 import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
-import { scratchTiers, scratchGameTypes, slot5x3Symbols, slot5x3Lines, departmentsData, stocksData } from './server-content.mjs';
+import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './server-content.mjs';
 import { generateSealedTicket } from './server-ticket.mjs';
 
-export const DERBY_ODDS=[2.2,3.5,5,8.5];
-export const DERBY_WIN_PROBABILITIES=[0.44,0.28,0.17,0.11];
+export const DERBY_ODDS=derbyRules.map(r=>r.odds);
+export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
 
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
   const chatStreams=new Map();
@@ -93,6 +95,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   function rng(seed) {let counter=0;return ()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296;}
   const random=()=>{const seed=randomBytes(32).toString('hex');return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:rng(seed)};};
   const derbyWinnerFromRandom=r=>{let cumulative=0;for(let i=0;i<DERBY_WIN_PROBABILITIES.length;i++){cumulative+=DERBY_WIN_PROBABILITIES[i];if(r<cumulative)return i;}return DERBY_WIN_PROBABILITIES.length-1;};
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS scratch_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='scratch' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
+  function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
   function settle(id,game,cost,prize,result,proof) {
     return transaction(()=>{
       if(balanceFor(id)<cost)throw new Error('余额不足。');
@@ -253,7 +257,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
-        if(!alias)throw new Error('请先保存匿名名称。');const identityMode=data.identityMode??publicProfile(id).forumIdentity;if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
+        if(!alias)throw new Error('请先保存匿名名称。');const identityMode=data.identityMode??'anonymous';if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
         let row;
         if(thread){if(!db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published'").get(thread[1]))throw new Error('帖子不存在。');row=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body,image_data,status,moderation) VALUES(?,?,?,?,?,?,?)').run(thread[1],id,alias,data.body.trim(),img,status,moderation);}
         else row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body,image_data,status,moderation) VALUES(?,?,?,?,?,?,?)').run(id,alias,data.title.trim(),data.body.trim(),img,status,moderation);
@@ -275,27 +279,23 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(dossier){if(!db.prepare('SELECT id FROM dossiers WHERE id=?').get(dossier[1]))throw new Error('档案不存在。');
         if(req.method==='POST'){if(!valid(data.body,2000))throw new Error('评议最多 2000 字。');db.prepare('INSERT INTO dossier_comments(dossier_id,employee_id,body) VALUES(?,?,?)').run(dossier[1],id,data.body.trim());}
         send(res,200,{items:db.prepare(`SELECT c.id,c.body,e.display_name AS displayName,e.department,c.created_at AS createdAt FROM dossier_comments c JOIN employees e ON e.id=c.employee_id WHERE dossier_id=? AND c.deleted_at='' ORDER BY c.id`).all(dossier[1])});return true;}
-      if(path==='/api/player/balance/zero'&&req.method==='POST'){transaction(()=>{const b=balanceFor(id);if(b<0)throw new Error('负债不能通过主动归零撤销。');if(b)recordLedger(id,-b,'主动归零');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
+      if(path==='/api/player/balance/zero'&&req.method==='POST'){transaction(()=>{const b=balanceFor(id);if(b)recordLedger(id,-b,'主动归零');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/relief'&&req.method==='POST'){transaction(()=>{if(balanceFor(id)>=10000)throw new Error('余额低于 10,000 才能领取。');recordLedger(id,10000,'应急低保');award(id);});send(res,200,{balance:balanceFor(id)});return true;}
       if(path==='/api/player/games/scratch'&&req.method==='POST') {
+        if(data.requestKey!==undefined&&!(typeof data.requestKey==='string'&&/^[a-zA-Z0-9-]{16,80}$/.test(data.requestKey)))throw new Error('无效票据请求。');
+        if(data.requestKey){const previous=settledScratch(id,data.requestKey);if(previous){if(previous.result.tier.id!==data.tier||previous.result.gameType.type!==data.type||previous.cost!==data.cost)throw new Error('票据请求不匹配。');send(res,200,previous);return true;}}
+
         const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
-        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {
-        const cost=bet(data.bet),proof=random(),pool=slot5x3Symbols.flatMap((s,i)=>Array(i+1).fill(s));
-        const board=Array.from({length:3},()=>Array.from({length:5},()=>pool[Math.floor(proof.random()*pool.length)]));
-        const winningCells=[],notes=[],mechanisms=[];let prize=0;
-        for(const line of slot5x3Lines){const first=board[line.rows[0]][0];let n=1;while(n<5&&board[line.rows[n]][n].id===first.id)n++;
-          if(n>=3){prize+=first['m'+n]*Math.max(1,Math.round(cost/5));notes.push(line.name+' '+n+'连');for(let c=0;c<n;c++)winningCells.push(`${line.rows[c]}_${c}`);}}
-        if(board.flat().filter(s=>s.id==='eye').length>=3){prize+=cost*3;mechanisms.push(0);}
-        if(board.some(row=>row[0].id==='rad')&&board.some(row=>row[4].id==='rad')){prize+=Math.floor(cost*.5);mechanisms.push(1);}
-        if(new Set(board[1].map(s=>s.id)).size===5){prize+=cost*2;mechanisms.push(2);}
-        send(res,200,settle(id,'slot',cost,prize,{board,winningCells,notes,mechanisms},proof));return true;
+        const cost=bet(data.bet),proof=random(),{prize,result}=spinSlot(cost,proof.random);
+        send(res,200,settle(id,'slot',cost,prize,result,proof));return true;
       }
       if(path==='/api/player/games/derby'&&req.method==='POST') {
         const cost=bet(data.bet);if(!Number.isInteger(data.runner)||data.runner<0||data.runner>3)throw new Error('请选择跑道。');
-        const proof=random(),winner=derbyWinnerFromRandom(proof.random),prize=winner===data.runner?Math.round(cost*DERBY_ODDS[winner]):0;
+        const proof=random(),winner=derbyWinnerFromRandom(proof.random()),prize=derbyReturn(cost,data.runner,winner,proof.random);
         send(res,200,settle(id,'derby',cost,prize,{winner},proof));return true;
       }
       if(path==='/api/player/games/cards'&&req.method==='POST') {

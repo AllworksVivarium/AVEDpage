@@ -13,14 +13,14 @@ test('notice excerpt keeps Unicode characters whole and adds ellipsis only when 
   assert.equal(context.AVEDNotices.excerpt('甲😀乙',2),'甲😀…');
   assert.equal(context.AVEDNotices.excerpt('甲😀乙',3),'甲😀乙');
 });
-test('long prose preserves paragraph boundaries without making saved text executable',()=>{
+test('notice prose preserves each nonempty line without making saved text executable',()=>{
   const html=context.AVEDNotices.article({title:'标题',category:'通告',code:'A1',createdAt:'今天',fullContent:'甲行\n乙行\n\n&lt;script&gt;'});
-  assert.equal((html.match(/<p class="whitespace-pre-wrap">/g)||[]).length,2);
-  assert.ok(html.includes('甲行\n乙行'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));
+  assert.equal((html.match(/<p>/g)||[]).length,3);
+  assert.ok(html.includes('<p>甲行</p><p>乙行</p>'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));
 });
 test('real-name comments expose role separately and escape names and prose',()=>{
   const html=context.AVEDNotices.comments([{displayName:'<员工>',department:'医疗部',positionTitle:'值班医师',createdAt:'今天',body:'<img>\n\n第二段'}]);
-  assert.ok(html.includes('&lt;员工&gt;'));assert.ok(html.includes('医疗部 · 值班医师'));assert.ok(html.includes('&lt;img&gt;'));assert.ok(html.includes('relative-clock'));
+  assert.ok(html.includes('&lt;员工&gt;'));assert.ok(html.includes('医疗部 值班医师'));assert.ok(html.includes('&lt;img&gt;'));assert.ok(html.includes('relative-clock'));
   assert.equal((html.match(/<p class="whitespace-pre-wrap">/g)||[]).length,2);
 });
 test('reading size and leading tokens are paired and reduced motion keeps keys static',()=>{

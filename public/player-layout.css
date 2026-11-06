@@ -6,7 +6,7 @@
 #left-sidebar{position:sticky;top:5rem;align-self:flex-start;max-height:calc(100dvh - 5rem);overflow-y:auto;min-height:calc(100dvh - 5rem)}
 #sidebar-toggle-btn{transform:none!important;position:relative;flex-shrink:0}
 #inner-app-view img{max-width:100%}
-#inner-app-view button:disabled{opacity:.5;cursor:wait}
+#inner-app-view button:disabled{opacity:.5;cursor:default}
 #inner-app-view input,#inner-app-view textarea,#inner-app-view select{max-width:100%;min-width:0}
 #inner-app-view .whitespace-pre-wrap{overflow-wrap:anywhere}
 .cloud-input{display:block;width:100%;padding:.7rem;margin-top:.4rem;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:inherit}

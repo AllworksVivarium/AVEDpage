@@ -286,12 +286,12 @@
 @layer aved-type-system {
   #inner-app-view .terminal-brand-mark .terminal-brand-name {
     font:500 21px/1.2 'Noto Serif TC','Noto Serif SC',serif !important;
-    letter-spacing:0 !important;
+    letter-spacing:.12em !important;
   }
   #inner-app-view .terminal-brand-mark .terminal-brand-code {
     gap:0 !important;
-    font:500 17px/1.05 'AVED Plex Mono',monospace !important;
-    letter-spacing:0 !important;white-space:nowrap !important;
+    font:700 17px/1.05 Georgia,'Times New Roman',serif !important;
+    letter-spacing:.12em !important;white-space:nowrap !important;
   }
   #inner-app-view .terminal-brand-mark .terminal-brand-code small {
     font:italic 400 10px/1.1 'AVED Plex Mono',monospace !important;
@@ -355,4 +355,8 @@
 @layer aved-site {
  #left-sidebar .editor-tools-toggle {display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px 0;font-size:12px;color:var(--inner-text-muted);cursor:pointer}
  #left-sidebar .editor-tools-toggle input {width:14px;height:14px;accent-color:var(--brand-red)}
+}
+
+@layer aved-type-system {
+ #inner-app-view .terminal-brand-mark,#inner-app-view .terminal-brand-mark * {filter:none!important;text-shadow:none!important;animation:none!important}
 }

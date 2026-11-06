@@ -96,16 +96,16 @@
   }
   /* Existing second-palette preferences migrate to Blue Signal. */
   html[data-palette-preview="darkroom"] body {
-    --study-black:#eff4fa;--study-panel:#eff4fa;--study-panel-alt:#dce8f5;--study-sidebar:#dce8f5;
-    --study-hover:#c5d8ed;--study-ink:#020d2f;--study-muted:#456283;--study-line:#032c7d;--study-line-soft:#032c7d38;
-    --study-red:#0841c9;--study-red-hover:#032c7d;--study-red-ink:#0841c9;--study-red-soft:#0841c918;--study-accent:#0841c9;
-    --study-on-red:#f2f7ff;--study-screen-ink:#29b4d1;
+    --study-black:#e8edf1;--study-panel:#e8edf1;--study-panel-alt:#d4dee6;--study-sidebar:#d4dee6;
+    --study-hover:#bbcbd7;--study-ink:#263a50;--study-muted:#62798b;--study-line:#4e6f92;--study-line-soft:#4e6f9238;
+    --study-red:#5279a4;--study-red-hover:#4e6f92;--study-red-ink:#5279a4;--study-red-soft:#5279a418;--study-accent:#5279a4;
+    --study-on-red:#f0f3f5;--study-screen-ink:#29b4d1;
   }
   html[data-palette-preview="darkroom"] body.dark-mode {
-    --study-black:#020d2f;--study-panel:#061535;--study-panel-alt:#0b2043;--study-sidebar:#04112c;
-    --study-hover:#12315a;--study-ink:#b5cde9;--study-muted:#7f9fc2;--study-line:#1d97f1;--study-line-soft:#1d97f140;
-    --study-red:#1d97f1;--study-red-hover:#29b4d1;--study-red-ink:#1d97f1;--study-red-soft:#1d97f11e;--study-accent:#29b4d1;
-    --study-on-red:#020d2f;--study-screen-ink:#29b4d1;
+    --study-black:#090f23;--study-panel:#101a32;--study-panel-alt:#192540;--study-sidebar:#0c1429;
+    --study-hover:#1b2b56;--study-ink:#d4dbef;--study-muted:#98a6c8;--study-line:#50638b;--study-line-soft:#50638b80;
+    --study-red:#203db5;--study-red-hover:#2c4ac8;--study-red-ink:#91a8ea;--study-red-soft:#203db52e;--study-accent:#91a8ea;
+    --study-on-red:#e8ecf9;--study-screen-ink:#91a8ea;
   }
   html[data-palette-preview="mineral"] body {
     --study-black:#ede9e2; --study-panel:#ede9e2; --study-panel-alt:#cdc7be;

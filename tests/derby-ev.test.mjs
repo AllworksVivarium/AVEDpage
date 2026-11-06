@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DERBY_ODDS, DERBY_WIN_PROBABILITIES } from '../player-service.mjs';
+import {derbyReturn,runners} from '../server-derby.mjs';
 
 function xorshift32(seed=0x9e3779b9){
   let x=seed>>>0;
@@ -21,23 +22,25 @@ function winnerFromRandom(r){
   return DERBY_WIN_PROBABILITIES.length-1;
 }
 
-test('derby config has attractive odds but negative expected value on every lane',()=>{
+test('every new derby lane has approximately 102% expected return including partial returns',()=>{
   assert.equal(DERBY_ODDS.length,4);
   assert.equal(DERBY_WIN_PROBABILITIES.length,4);
   const probabilitySum=DERBY_WIN_PROBABILITIES.reduce((sum,p)=>sum+p,0);
   assert.ok(Math.abs(probabilitySum-1)<1e-9,'win probabilities must sum to 1');
 
-  const evs=DERBY_ODDS.map((odds,i)=>DERBY_WIN_PROBABILITIES[i]*odds);
+  const evs=DERBY_ODDS.map((odds,i)=>DERBY_WIN_PROBABILITIES[i]*odds+(1-DERBY_WIN_PROBABILITIES[i])*.95*.1);
   for(const ev of evs){
-    assert.ok(ev<1,`expected value must stay negative, got ${ev}`);
-    assert.ok(ev>0.80,`expected value should still look attractive, got ${ev}`);
+    assert.ok(ev>1.015&&ev<1.025,`expected return should be near 102%, got ${ev}`);
   }
 
-  const bestEv=Math.max(...evs);
-  assert.ok(bestEv<1,'best lane must still be negative expectation');
+  assert.equal(derbyReturn(1000,0,1,()=>0),0);
+  assert.equal(derbyReturn(1000,0,1,()=>.2),50);
+  assert.equal(derbyReturn(1000,0,1,()=>.5),100);
+  assert.equal(derbyReturn(1000,0,1,()=>.9),150);
+  assert.equal(derbyReturn(1000,0,1,()=>.9,{runners,partialReturns:false}),0);
 });
 
-test('derby monte-carlo returns remain negative over many rounds',()=>{
+test('derby simulation remains near the requested slight positive long-run return',()=>{
   const rounds=200000;
   const bet=100000;
   const rng=xorshift32(0x51456451);
@@ -46,12 +49,12 @@ test('derby monte-carlo returns remain negative over many rounds',()=>{
   for(let i=0;i<rounds;i++){
     const winner=winnerFromRandom(rng());
     for(let lane=0;lane<4;lane++){
-      payouts[lane]+=winner===lane?Math.round(bet*DERBY_ODDS[lane]):0;
+      payouts[lane]+=derbyReturn(bet,lane,winner,rng);
     }
   }
 
   const averageReturns=payouts.map(sum=>sum/(rounds*bet));
   for(const avg of averageReturns){
-    assert.ok(avg<1,`simulated return must stay below 1, got ${avg}`);
+    assert.ok(avg>1&&avg<1.04,`simulated return should be near 102%, got ${avg}`);
   }
 });

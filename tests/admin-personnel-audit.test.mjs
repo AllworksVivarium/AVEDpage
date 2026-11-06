@@ -97,7 +97,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(boundary.items.length,1);
  assert.equal(db.prepare('SELECT identity_kind FROM employees WHERE id=?').get(playerId).identity_kind,'player_containment');
  assert.equal(db.prepare('SELECT bio FROM profiles WHERE employee_id=?').get(companyId).bio,'公司提供的收容简介');
- const economy=(await a('/api/admin/economy')).data;economy.scratch[0].returnPercent=82.5;
+ const economy=(await a('/api/admin/economy')).data;economy.scratch.forEach(t=>t.returnPercent=82.5);
  const saved=await a('/api/admin/economy','PUT',economy);assert.equal(saved.status,200);
  for(const pool of Object.values(saved.data.scratch[0].variants)){const ev=pool.reduce((sum,x)=>sum+x.multiplier*x.weight,0)/pool.reduce((sum,x)=>sum+x.weight,0);assert.ok(Math.abs(ev-.825)<.0001);}
  assert.ok(saved.data.scratch.every(x=>x.name==='刮刮乐'));

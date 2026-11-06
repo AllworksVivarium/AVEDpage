@@ -10,6 +10,7 @@ export function installGameHighlights({db,send,requireEmployee}) {
   game TEXT NOT NULL,round_id INTEGER,alias TEXT NOT NULL,cost INTEGER NOT NULL,prize INTEGER NOT NULL,
   personal_best INTEGER NOT NULL,broadcast INTEGER NOT NULL,created_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS highlights_broadcast ON game_highlights(broadcast,ticket_id DESC);
+ CREATE INDEX IF NOT EXISTS highlights_recent ON game_highlights(created_at,ticket_id) WHERE broadcast=1;
  CREATE INDEX IF NOT EXISTS highlights_round ON game_highlights(employee_id,game,round_id);
  CREATE INDEX IF NOT EXISTS tickets_record ON game_tickets(employee_id,game,prize DESC,id);
  `);
@@ -22,13 +23,19 @@ export function installGameHighlights({db,send,requireEmployee}) {
    ) WHERE rank=1;
    INSERT INTO economy_migrations VALUES('game-highlights-v1');COMMIT;`);
  }
- const best="NEW.prize>COALESCE((SELECT MAX(prize) FROM game_personal_records WHERE employee_id=NEW.employee_id),0)";
- const rare=`NEW.prize>NEW.cost AND CASE NEW.game
-  WHEN 'scratch' THEN COALESCE(json_extract(NEW.result_json,'$.rarePrize'),0)=1
-  WHEN 'slot' THEN NEW.cost>0 AND NEW.prize>=NEW.cost*10
-  WHEN 'sky' THEN NEW.cost>0 AND NEW.prize>=NEW.cost*5
-  WHEN 'derby' THEN NEW.cost>0 AND NEW.prize>=NEW.cost*8
-  ELSE 0 END`;
+ if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='highlights-five-times-v2'").get()){
+  db.exec(`BEGIN IMMEDIATE;
+   INSERT INTO game_highlights(ticket_id,employee_id,game,round_id,alias,cost,prize,personal_best,broadcast,created_at)
+   SELECT t.id,t.employee_id,t.game,COALESCE(json_extract(t.result_json,'$.round'),json_extract(t.result_json,'$.flight')),COALESCE(NULLIF(p.anonymous_name,''),'未署名员工'),t.cost,t.prize,0,1,t.created_at
+   FROM game_tickets t LEFT JOIN profiles p ON p.employee_id=t.employee_id
+   WHERE t.game IN ('scratch','slot','sky','derby','cards') AND t.cost>0 AND t.prize>=t.cost*5 AND t.created_at>=datetime('now','-30 minutes')
+    AND COALESCE(json_extract(t.result_json,'$.cancelled'),0)=0 AND COALESCE(json_extract(t.result_json,'$.migrated'),0)=0
+   ON CONFLICT(ticket_id) DO UPDATE SET broadcast=1;
+   INSERT INTO economy_migrations VALUES('highlights-five-times-v2');COMMIT;`);
+ }
+ const best="NEW.prize>COALESCE((SELECT MAX(prize) FROM game_personal_records WHERE employee_id=NEW.employee_id AND game=NEW.game),0)";
+ const rare='NEW.cost>0 AND NEW.prize>=NEW.cost*5';
+ db.exec('DROP TRIGGER IF EXISTS game_highlights_settled');
  db.exec(`CREATE TRIGGER IF NOT EXISTS game_highlights_settled AFTER INSERT ON game_tickets
   WHEN NEW.game IN ('scratch','slot','sky','derby','cards') AND NEW.prize>0
    AND COALESCE(json_extract(NEW.result_json,'$.cancelled'),0)=0 AND COALESCE(json_extract(NEW.result_json,'$.migrated'),0)=0
@@ -51,7 +58,8 @@ export function installGameHighlights({db,send,requireEmployee}) {
   if(req.method!=='GET'){send(res,405,{error:'只支持调阅已结算的大奖。'});return true;}
   const game=url.searchParams.get('game');
   if(game&&!['scratch','slot','sky','derby','cards'].includes(game)){send(res,400,{error:'无效玩法。'});return true;}
-  const rows=game?db.prepare(`SELECT ${columns} FROM game_highlights WHERE broadcast=1 AND game=? ORDER BY ticket_id DESC LIMIT 12`).all(game):db.prepare(`SELECT ${columns} FROM game_highlights WHERE broadcast=1 ORDER BY ticket_id DESC LIMIT 12`).all();
-  send(res,200,{items:rows.map(({employeeId,personalBest,...row})=>row)});return true;
+  const after=Number(url.searchParams.get('after')||0);if(!Number.isSafeInteger(after)||after<0){send(res,400,{error:'无效记录游标。'});return true;}
+  const rows=db.prepare(`SELECT ${columns} FROM game_highlights WHERE broadcast=1 AND cost>0 AND prize>=cost*5 AND created_at>=datetime('now','-30 minutes') AND ticket_id>? ${game?'AND game=?':''} ORDER BY ticket_id ASC`).all(...(game?[after,game]:[after]));
+  send(res,200,{serverTime:Date.now(),items:rows.map(({employeeId,personalBest,...row})=>row)});return true;
  }};
 }

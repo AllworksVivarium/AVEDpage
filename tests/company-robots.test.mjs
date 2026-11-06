@@ -1,0 +1,21 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {installCompanyRobots} from '../server-company-robots.mjs';import {installWelfare} from '../server-welfare.mjs';
+test('admin-managed robots persist, rank with employees and accept conserved idempotent donations',async t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());db.exec(`PRAGMA foreign_keys=ON;CREATE TABLE employees(id INTEGER PRIMARY KEY,username TEXT UNIQUE,password_hash TEXT,display_name TEXT,department TEXT,role TEXT,enabled INTEGER DEFAULT 1,is_npc INTEGER DEFAULT 0);CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT);CREATE TABLE balance_ledger(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),delta INTEGER,reason TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);CREATE TABLE checkins(employee_id INTEGER,reward INTEGER);INSERT INTO employees VALUES(1,'admin','x','管理员','','admin',1,0),(2,'human','x','员工','','employee',1,0),(3,'leader','x','领导','','employee',0,1);INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(2,10000,'初始');`);
+ const balanceFor=id=>db.prepare('SELECT COALESCE(SUM(delta),0) b FROM balance_ledger WHERE employee_id=?').get(id).b,recordLedger=(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,delta,reason);
+ const deps={db,balanceFor,recordLedger,send:(r,status,data)=>Object.assign(r,{status,data}),readBody:async r=>r.body,requireAdmin:(r,s)=>r.admin?{id:1}:(Object.assign(s,{status:403}),null),requireEmployee:r=>({id:r.uid||2})};
+ let robots=installCompanyRobots(deps);const welfare=installWelfare(deps);const call=async(service,path,method='GET',body,admin=true)=>{const res={};await service.handle({method,body,admin,uid:2},res,new URL(path,'http://local'));return res;};
+ assert.equal((await call(robots,'/api/admin/company-robots','GET',null,false)).status,403);
+ const created=await call(robots,'/api/admin/company-robots','POST',{codename:'机器人-朱雀',balance:-5000});assert.equal(created.status,200);const id=created.data.id;
+ assert.deepEqual(db.prepare('SELECT enabled,is_npc,role FROM employees WHERE id=?').get(id),Object.assign(Object.create(null),{enabled:0,is_npc:1,role:'employee'}));
+ const rowsBefore=db.prepare('SELECT COUNT(*) n FROM employees').get().n;
+ assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'机器人-朱雀',balance:0})).status,409);assert.equal(db.prepare('SELECT COUNT(*) n FROM employees').get().n,rowsBefore);
+ assert.equal((await call(robots,'/api/admin/company-robots/2','PUT',{codename:'篡改真人',balance:0,revision:1,expectedBalance:10000})).status,400);
+ let overview=(await call(welfare,'/api/player/welfare')).data;assert.equal(overview.lowest[0].id,id);assert.equal(overview.lowest[0].name,'机器人-朱雀');assert.ok(!overview.highest.some(x=>x.id===3));
+ const gift={recipientId:id,amount:700,requestId:'robot-donation-0001'},before=balanceFor(2)+balanceFor(id);
+ assert.equal((await call(welfare,'/api/player/donate/employee','POST',gift)).status,200);assert.equal((await call(welfare,'/api/player/donate/employee','POST',gift)).status,200);assert.equal(balanceFor(id),-4300);assert.equal(balanceFor(2)+balanceFor(id),before);
+ assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:'旧余额',balance:0,revision:1,expectedBalance:-5000})).status,409);
+ assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:'机器人-青龙',balance:30000,revision:1,expectedBalance:-4300})).status,200);
+ robots=installCompanyRobots(deps);const item=(await call(robots,'/api/admin/company-robots')).data.items[0];assert.equal(item.codename,'机器人-青龙');assert.equal(item.balance,30000);assert.equal(item.revision,2);
+ overview=(await call(welfare,'/api/player/welfare')).data;assert.equal(overview.highest[0].name,'机器人-青龙');
+ for(const balance of [1.5,NaN,1e12])assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'无效',balance})).status,400);
+});

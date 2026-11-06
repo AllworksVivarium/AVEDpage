@@ -18,7 +18,7 @@ test('records and announcements follow committed settlements, exclude refunds, a
  assert.equal(service.records(1).highest.ticketId,old);assert.equal(db.prepare('SELECT COUNT(*) n FROM game_highlights').get().n,0,'historical backfill must not rebroadcast or celebrate');
  const win=insert(1,'scratch',1000,30000,{rarePrize:true});assert.equal(service.event(1,win).personalBest,1);assert.equal(service.event(2,win),null);
  const tied=insert(1,'scratch',1000,30000,{rarePrize:true});assert.equal(service.event(1,tied).personalBest,0,'equal awards do not set new records');
- const small=insert(1,'slot',100,2000);assert.equal(service.event(1,small).broadcast,1);assert.equal(service.event(1,small).personalBest,0);
+ const small=insert(1,'slot',100,2000);assert.equal(service.event(1,small).broadcast,1);assert.equal(service.event(1,small).personalBest,1);
  const sky=insert(1,'sky',10000,60000,{flight:7});assert.equal(service.roundEvent(1,'sky',7).ticketId,sky);assert.equal(service.roundEvent(2,'sky',7),null);
  insert(1,'derby',1000,8500,{round:8});insert(1,'cards',0,20000,{round:9});
  insert(1,'sky',999999,999999,{cancelled:true});insert(1,'unknown',0,999999);
@@ -26,7 +26,17 @@ test('records and announcements follow committed settlements, exclude refunds, a
  db.exec('BEGIN');insert(1,'slot',1000,900000);db.exec('ROLLBACK');assert.equal(service.records(1).highest.prize,60000);
  const partial=insert(2,'scratch',1000,500);assert.equal(service.event(2,partial).personalBest,1);assert.equal(service.event(2,partial).broadcast,0,'partial returns never become public jackpots');
  await service.handle({method:'GET',user:{id:2}},null,new URL('http://local/api/player/game-highlights'));
+ assert.ok(reply.data.items.every(x=>x.cost>0&&x.prize>=x.cost*5));
  assert.equal(reply.status,200);assert.ok(reply.data.items.some(x=>x.ticketId===win));assert.ok(reply.data.items.every(x=>!('employeeId' in x)&&!('personalBest' in x)&&x.prize>x.cost));
+ db.prepare("UPDATE game_highlights SET created_at=datetime('now','-31 minutes') WHERE ticket_id=?").run(win);
+ await service.handle({method:'GET',user:{id:2}},null,new URL('http://local/api/player/game-highlights'));
+ assert.ok(!reply.data.items.some(x=>x.ticketId===win));
+ const recent=insert(2,'scratch',1000,5000);db.prepare("UPDATE game_highlights SET created_at=datetime('now','-20 minutes') WHERE ticket_id=?").run(recent);
+ for(let i=0;i<15;i++)insert(2,'scratch',1000,5000);
+ await service.handle({method:'GET',user:{id:1}},null,new URL('http://local/api/player/game-highlights?after='+recent));
+ assert.equal(reply.data.items.length,15);assert.ok(reply.data.items.every(x=>x.ticketId>recent));
+ await service.handle({method:'GET',user:{id:1}},null,new URL('http://local/api/player/game-highlights'));
+ assert.ok(reply.data.items.some(x=>x.ticketId===recent));
  await service.handle({method:'POST',user:{id:2}},null,new URL('http://local/api/player/game-highlights'));assert.equal(reply.status,405);
  service=installGameHighlights(dependencies);assert.equal(service.records(1).highest.prize,60000);
  db.prepare('DELETE FROM employees WHERE id=1').run();assert.equal(service.records(1).highest,null);assert.equal(service.event(1,win),null);

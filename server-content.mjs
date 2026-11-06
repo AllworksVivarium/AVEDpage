@@ -10,9 +10,9 @@ export const scratchTiers = [
 export const scratchGameTypes = [
         {
           type: 'three_match',
-          sub: '三同矩阵',
-          title: '收容印章三同赏',
-          tagline: '三枚同印，核准即拨付',
+          sub: '集章领赏',
+          title: '三印报喜',
+          tagline: '集齐三枚同印，领取当班津贴',
           icon: '🔺',
           cellsCount: 12,
           baseTopPrize: 325000,
@@ -20,16 +20,16 @@ export const scratchGameTypes = [
           cardBg: 'bg-[#e8e2d2]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、刮开 12 枚加密收容印章格',
+            '一、刮开票面上的 12 枚公司印章',
             '二、同一收容印章凑满三枚即成一组',
             '三、组内三格津贴相加，多组可叠加'
           ]
         },
         {
           type: 'lucky_num',
-          sub: '信标对号',
-          title: '加密信标核对号',
-          tagline: '对上频段，整笔经费入账',
+          sub: '凭号领赏',
+          title: '幸运号签',
+          tagline: '对上领赏号码，就有一份小惊喜',
           icon: '📡',
           cellsCount: 13,
           baseTopPrize: 650000,
@@ -37,16 +37,16 @@ export const scratchGameTypes = [
           cardBg: 'bg-[#dfe3e6]',
           accentColor: 'text-[#141413]',
           rules: [
-            '一、刮开上方 3 个基准频段号与倍率印',
-            '二、下方 9 个实测频段每对上一个即得该格经费',
-            '三、对中的经费相加，再乘基准倍率印'
+            '一、刮开上方 3 个领赏号与核准印',
+            '二、刮开下方 9 个票号，对上领赏号即得对应奖金',
+            '三、对应奖金相加，再乘核准印所示倍数'
           ]
         },
         {
           type: 'step_climb',
-          sub: '五阶压制',
-          title: '力场五阶压制表',
-          tagline: '五阶比读数，压制几阶拿几阶',
+          sub: '五站巡签',
+          title: '步步添彩',
+          tagline: '走过五个站点，签下一份好彩头',
           icon: '⚡',
           cellsCount: 10,
           baseTopPrize: 325000,
@@ -54,9 +54,9 @@ export const scratchGameTypes = [
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、五阶各比一次抑制力场读数（共10格）',
-            '二、右侧我方抑制值高过左侧异常冲击值，赢下该阶',
-            '三、压制几阶，即领几阶对应收容奖金'
+            '一、五个站点各有两枚签号，共 10 格',
+            '二、右侧员工签号大于左侧站点签号，即通过该站',
+            '三、通过站点的奖金相加，就是本张获得金额'
           ]
         }
       ];

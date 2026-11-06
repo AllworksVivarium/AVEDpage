@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <script src="terminal-preferences.js?v=effects-device-1"></script>
+  <script>window.AVEDTypographyReady=new Promise(resolve=>{window.AVEDResolveTypography=resolve;});</script>
+  <link rel="stylesheet" href="/personal-hud.css?v=hud-console-1">
+  <script src="terminal-preferences.js?v=effects-device-2"></script>
+  <link rel="stylesheet" href="/currency-symbol.css?v=coin-1">
+  <link rel="stylesheet" href="/scratch-feedback.css?v=smaller-preview-12">
   <meta charset="UTF-8">
   <link rel="stylesheet" href="/player-art-restoration.css?v=prose-render-2">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=final-art-audit-1">
   <link rel="stylesheet" href="/notice-document.css?v=notice-optional-2">
-  <link rel="stylesheet" href="/section-mastheads.css?v=sticky-pages-2">
+  <link rel="stylesheet" href="/section-mastheads.css?v=stable-sidebar-4">
   <link rel="stylesheet" href="/player-type-study.css?v=design-save-2">
   <link rel="stylesheet" href="/player-text-editor.css?v=delete-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
-  <link rel="stylesheet" href="/site-refinements.css?v=editor-toggle-1">
-  <link rel="stylesheet" href="/palette-preview.css?v=notice-blue-1">
+  <link rel="stylesheet" href="/site-refinements.css?v=cobalt-wordmark-2">
+  <link rel="stylesheet" href="/palette-preview.css?v=cobalt-quiet-2">
   <link rel="stylesheet" href="/market-chart-fixes.css?v=tooltip-position-2">
   <link rel="stylesheet" href="/sidebar-art.css?v=planet-align-2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -555,8 +559,8 @@
   <div id="ticket-confirm-modal" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div id="ticket-modal-card" class="w-full max-w-md bg-[#e8e2d2] text-[#141413] border-2 border-[#141413] shadow-2xl overflow-hidden">
       <div id="ticket-modal-header-band" class="h-14 bg-[#141413] text-[#f5f2eb] border-b border-[#141413] flex items-center justify-between px-5 font-mono-tech text-xs">
-        <span>A.V.E.D. SEALED RATION TICKET</span>
-        <span id="ticket-modal-icon" class="px-2 py-0.5 bg-[#9e1b1b] text-white font-bold">SEAL</span>
+        <span>A.V.E.D. COMPANY TICKET</span>
+        <button id="ticket-modal-close" type="button" aria-label="关闭选票确认" class="scratch-modal-close">×</button>
       </div>
 
       <div class="p-6 space-y-4">
@@ -582,14 +586,14 @@
             <div id="ticket-modal-top-prize" class="text-base font-bold text-[#9e1b1b] mt-0.5">¤ 650,000</div>
           </div>
           <div>
-            <div class="text-[#57534a]">账户余额变动</div>
+            <div class="text-[#57534a]">扣款时点</div>
             <div id="ticket-modal-balance-preview" class="text-sm font-bold mt-0.5">85,000 → 84,000</div>
           </div>
         </div>
 
         <div class="text-[11px] text-[#57534a] space-y-1 font-mono-tech">
-          <div class="font-bold">▶ 票背加密细则</div>
-          <p>本张配给票在出票瞬间已由 SHA-256 封印锁定，刮开涂层仅作揭晓。</p>
+          <div class="font-bold">▶ 刮奖说明</div>
+          <p>首次刮开时扣款并确定结果。未刮开可免费跳过；开始刮开后，奖金将直接记入余额。</p>
         </div>
 
         <div class="grid grid-cols-3 gap-3 pt-2 font-mono-tech text-xs">
@@ -597,7 +601,7 @@
             取消
           </button>
           <button id="ticket-modal-confirm-btn" type="button" class="terminal-key col-span-2 py-3 bg-[#141413] text-[#f5f2eb] hover:opacity-90 font-bold cursor-pointer">
-            确认出票
+            取一张
           </button>
         </div>
       </div>
@@ -670,7 +674,7 @@
             </button>
           </div>
 
-          <button id="theme-toggle-btn" type="button" class="px-2.5 py-1.5 retro-corner-box hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] transition cursor-pointer">
+          <button id="theme-toggle-btn" type="button" class="px-2.5 py-1.5 hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] transition cursor-pointer">
             🌙 夜间模式
           </button>
 
@@ -686,11 +690,11 @@
 
       <aside id="left-sidebar" class="w-52 shrink-0 border-r-2 border-[var(--inner-border)] flex flex-col justify-between select-none z-20">
         <div class="p-2 space-y-1.5 font-mono-tech text-xs">
-          <div class="sidebar-control-row"><button id="sidebar-toggle-btn" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-controls="left-sidebar" aria-expanded="true"
+          <div class="sidebar-control-row"><button id="sidebar-toggle-btn" type="button" title="收起边栏" aria-label="收起边栏" aria-controls="left-sidebar" aria-expanded="true"
             class="w-9 h-9 border border-[var(--inner-border)] bg-[var(--inner-accent)] text-[var(--inner-accent-text)] flex items-center justify-center font-mono-tech text-sm cursor-pointer hover:opacity-85 transition shrink-0">
-            ◀ 收起
+            <span class="sidebar-symbol sidebar-toggle-symbol" aria-hidden="true"></span><span class="sidebar-label">收起边栏</span>
           </button></div>
-          <div class="px-3 py-2 text-[10px] opacity-60 tracking-widest border-b border-[var(--inner-border-soft)]">
+          <div class="sidebar-directory-heading px-3 py-2 text-[10px] opacity-60 tracking-widest border-b border-[var(--inner-border-soft)]">
             <span class="sidebar-label">TERMINAL DIRECTORY</span>
           </div>
 
@@ -1302,7 +1306,7 @@
 
                   <div class="slot-machine-readout px-4 py-2.5 bg-black/75 border border-white/15 flex items-center justify-between text-xs font-mono-tech">
                     <span id="slot5x3-bet-summary">押 500 每线 100</span>
-                    <span id="slot5x3-win-summary" class="font-bold text-white">赢得 —</span>
+                    <span id="slot5x3-win-summary" class="font-bold text-white">本局获得 —</span>
                   </div>
                 </div>
 
@@ -1324,7 +1328,7 @@
                         </thead>
                         <tbody id="slot5x3-paytable-body" class="divide-y divide-[var(--inner-border-soft)]"></tbody>
                       </table>
-                      <p class="text-[11px] opacity-70 mt-2">总押注平分到 5 条线：押 500 = 每线 100。</p>
+                      <p class="text-[11px] opacity-70 mt-2">总投入平分到 5 条线：投入 500 = 每线 100。奖金包含返还本金；最终金额以服务器结算为准。未触发连线或协议时，95% 概率返还本局投入的 5%—75%，其余返还 0。最大损失为本局投入。</p>
                     </div>
 
                     <div class="md:col-span-5 space-y-4">
@@ -1409,9 +1413,9 @@
           <div id="game-panel-scratch" class="retro-corner-box p-4 sm:p-6 hidden space-y-5">
             <div class="space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono-tech">
-                <span>出票即定局，刮开涂层仅作揭晓。每张配给票均压着一枚 SHA-256 封印。</span>
+                <span>⁣</span>
                 <span class="px-2 py-0.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold">
-                  A.V.E.D. SEALED LOTTERY
+                  ⁣
                 </span>
               </div>
               <div id="scratch-tiers-bar" class="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono-tech"></div>
@@ -1419,19 +1423,12 @@
 
             <div id="scratch-lobby-view" class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2"></div>
 
+            <button id="scratch-back-lobby-btn" type="button" class="scratch-exit-link hidden">← 返回选票大厅</button>
             <div id="scratch-play-table-view" class="hidden space-y-4 pt-2">
-              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--inner-border-soft)] pb-3 font-mono-tech text-xs">
-                <div class="flex items-center gap-3">
-                  <button id="scratch-back-lobby-btn" type="button" class="px-3 py-1.5 border border-[var(--inner-border)] hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer">
-                    ← 返回选票大厅
-                  </button>
-                  <span id="active-ticket-title-bar" class="font-bold text-sm font-serif-sc"></span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span id="active-ticket-seed-badge" class="text-[11px] opacity-70">SEED SEAL: #----</span>
-                  <button id="scratch-reveal-all-cells-btn" type="button" class="inner-btn-primary px-4 py-1.5 font-bold cursor-pointer">
-                    ⚡ 一键全部刮开并兑奖
-                  </button>
+              <div class="scratch-ticket-heading">
+                <h3 id="active-ticket-title-bar" class="font-serif-sc"></h3>
+                <div class="scratch-ticket-actions">
+                  <button id="scratch-reveal-all-cells-btn" type="button" class="inner-btn-primary">一键全部刮开</button>
                 </div>
               </div>
 
@@ -1440,6 +1437,10 @@
               <div id="active-ticket-result-banner" class="p-4 retro-corner-box text-center font-mono-tech text-sm font-bold">
 
               </div>
+              <section id="scratch-play-rules" class="scratch-play-rules" aria-label="玩法介绍">
+                <h4>玩法介绍</h4>
+                <div id="scratch-play-rules-body"></div>
+              </section>
             </div>
           </div>
 
@@ -1630,24 +1631,29 @@
   <script src="/market-chart.js?v=tooltip-position-2" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/player-community.js?v=shared-ticker-2" defer></script>
-  <script src="/sky-ui.js?v=window-1" defer></script>
+  <script src="/game-results.js?v=total-return-1" defer></script>
+  <script src="/jackpot-ticker.js?v=live-only-5" defer></script>
+<script src="/scratch-symbols.js?v=2" defer></script>
+<script src="/scratch-feedback.js?v=live-only-7" defer></script>
+  <script src="/currency-symbol.js?v=coin-1" defer></script>
+  <script src="/sky-ui.js?v=total-return-1" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
-  <script src="/welfare-ui.js?v=window-1" defer></script>
-  <script src="/visual-style.js?v=notice-blue-2" defer></script>
-  <script src="/personal-ui.js?v=restore-masthead-1-unified-home-2" defer></script>
+  <script src="/welfare-ui.js?v=all-staff-window-1" defer></script>
+  <script src="/visual-style.js?v=sidebar-controls-3" defer></script>
+  <script src="/personal-hud.js?v=hud-console-1" defer></script>
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
-<script src="/derby-ui.js?v=window-1" defer></script>
+<script src="/derby-ui.js?v=total-return-1" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
 <script src="/archive-board.js?v=board-4-1" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
-<script src="/player.js?v=notice-optional-2" defer></script>
+<script src="/player.js?v=covered-ticket-11" defer></script>
   <script src="/page-headings.js?v=detail-round-1" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=brand-mark-3-crt-1" defer></script>
   <script src="/landing-sphere.js?v=window-1" defer></script>
   <script src="/player-design-client.js?v=design-save-2" defer></script>
   <script src="/player-type-catalog.js?v=final-art-audit-1" defer></script>
-  <script src="/player-type-study.js?v=prose-render-2" defer></script>
+  <script src="/player-type-study.js?v=stable-layout-local-1" defer onerror="window.AVEDResolveTypography?.()"></script>
   <script src="/player-text-editor.js?v=delete-1-design-save-2" defer></script>
 </body>
 </html>

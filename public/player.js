@@ -75,7 +75,16 @@
           if (!audioCtx) return;
           const now = audioCtx.currentTime;
 
-          if (type === 'checkin' || type === 'win') {
+          if(type.startsWith('scratch-')){
+            const tunes={'scratch-hit':[659,784],'scratch-zero':[330,247,165],'scratch-win':[523,784,1047],'scratch-win-all':[392,523,659,1047],
+              'scratch-big':[523,659,784,1047,784,659,784,1047],
+              'scratch-jackpot':[523,659,784,1047,784,1047,1319,1047,1319,1568],
+              'scratch-jackpot-major':[659,784,988,1319,988,1319,1568,1319,1568,1976,1568,1976],
+              'scratch-jackpot-supreme':[523,784,1047,1319,1568,2093,1568,1319,1568,2093,1568,2093,2637,2093],
+              'scratch-record':[523,523,784,1047,784,1047,1319,1568,1319,1568,2093,1568]};
+            const long=['scratch-big','scratch-jackpot','scratch-jackpot-major','scratch-jackpot-supreme','scratch-record'].includes(type),notes=tunes[type]||tunes['scratch-hit'],pitch=[.891,1,1.122][Math.floor(Math.random()*3)],step=long?.16:type==='scratch-hit'?.045:.09,duration=long?.38:.17;
+            notes.forEach((freq,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),at=now+i*step;osc.type='square';osc.frequency.setValueAtTime(freq*pitch,at);gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(long?.03:type==='scratch-hit'?.025:.04,at+.008);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+duration+.02);});
+          } else if (type === 'checkin' || type === 'win') {
             [523.25, 659.25, 783.99].forEach((freq, i) => {
               const osc = audioCtx.createOscillator();
               const gain = audioCtx.createGain();
@@ -104,7 +113,7 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(190 + Math.random() * 120, now);
+            osc.frequency.setValueAtTime([196,220,262,294,330][Math.floor(Math.random()*5)], now);
             gain.gain.setValueAtTime(0.045, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
             osc.connect(gain);
@@ -247,7 +256,7 @@
       let isDarkMode = document.documentElement.dataset.savedTheme==='night';
       document.body.classList.toggle('dark-mode',isDarkMode);
       let sidebarNarrow = window.innerWidth < 768;
-      let isSidebarCollapsed = sidebarNarrow;
+      let isSidebarCollapsed = true;
       let selectedScpFilter = 'ALL';
       let scpSearchKeyword = '';
       let scpSimulatedEmpty = false;
@@ -296,7 +305,7 @@
         toggle.setAttribute('aria-expanded',String(!isSidebarCollapsed));
         toggle.setAttribute('aria-label',isSidebarCollapsed?'展开边栏':'收起边栏');
         toggle.title=isSidebarCollapsed?'展开边栏':'收起边栏';
-        const drawerOpen = !isSidebarCollapsed && window.innerWidth < 768;
+        const drawerOpen = !isSidebarCollapsed;
         document.getElementById('sidebar-backdrop').hidden = !drawerOpen;
         document.getElementById('inner-app-view').classList.toggle('sidebar-drawer-open', drawerOpen);
         const content = document.querySelector('.terminal-content-pane');
@@ -312,7 +321,7 @@
       sidebarBackdrop.setAttribute('aria-label','收起侧边栏');document.getElementById('left-sidebar').after(sidebarBackdrop);
       sidebarBackdrop.addEventListener('click',()=>{if(!isSidebarCollapsed)toggleSidebar();});
       syncSidebarState();
-      document.addEventListener('keydown',event=>{if(event.key==='Escape'&&window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!isSidebarCollapsed)toggleSidebar();});
       document.querySelectorAll('#left-sidebar [data-nav]').forEach(button=>button.setAttribute('aria-label',button.textContent.trim()));
       const updateHeaderHeight=()=>{const h=document.querySelector('#inner-app-view>header').getBoundingClientRect().height;if(h)document.documentElement.style.setProperty('--terminal-header-height',h+'px');};
       if(window.ResizeObserver)new ResizeObserver(updateHeaderHeight).observe(document.querySelector('#inner-app-view>header'));
@@ -420,7 +429,7 @@
           await nextPaint();
           await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-(performance.now()-connectStarted))));
           idleSession.start(true);
-          completeEnterIntranet(employee);
+          await completeEnterIntranet(employee);
           signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
           await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:420));
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
@@ -485,7 +494,7 @@
 
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          switchMainView(btn.getAttribute('data-nav'));
+          switchMainView(btn.getAttribute('data-nav'));if(!isSidebarCollapsed)toggleSidebar();
         });
       });
 
@@ -1172,7 +1181,7 @@
         grid.innerHTML = html;
 
         const totalBet = parseInt(document.getElementById('slot5x3-bet-input')?.value || '500', 10);
-        const lineBet = Math.max(1, Math.round(totalBet / 5));
+        const lineBet = totalBet / 5;
         document.getElementById('slot5x3-bet-summary').textContent = `押 ${totalBet.toLocaleString()} 每线 ${lineBet.toLocaleString()}`;
         document.getElementById('slot5x3-spin-subtext').textContent = `押 ${totalBet.toLocaleString()} 五线`;
 
@@ -1211,8 +1220,8 @@
         }
         listEl.innerHTML = slot5x3State.history.map((h, i) => `
           <div class="p-2 inner-card-alt flex justify-between items-center">
-            <span>#${i + 1} 转 | 押 ${h.bet.toLocaleString()}</span>
-            <strong class="${h.win > 0 ? 'text-[#9e1b1b]' : 'opacity-60'}">${h.win > 0 ? `+${h.win.toLocaleString()}` : '未中'}</strong>
+            <span>#${i + 1} 转 | 投入 ${h.bet.toLocaleString()}</span>
+            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win})}</strong>
           </div>
         `).join('');
       }
@@ -1262,9 +1271,9 @@
       const scratchGameTypes = [
         {
           type: 'three_match',
-          sub: '三同矩阵',
-          title: '收容印章三同赏',
-          tagline: '三枚同印，核准即拨付',
+          sub: '集章领赏',
+          title: '三印报喜',
+          tagline: '集齐三枚同印，领取当班津贴',
           icon: '🔺',
           cellsCount: 12,
           baseTopPrize: 325000,
@@ -1272,16 +1281,16 @@
           cardBg: 'bg-[#e8e2d2]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、刮开 12 枚加密收容印章格',
+            '一、刮开票面上的 12 枚公司印章',
             '二、同一收容印章凑满三枚即成一组',
             '三、组内三格津贴相加，多组可叠加'
           ]
         },
         {
           type: 'lucky_num',
-          sub: '信标对号',
-          title: '加密信标核对号',
-          tagline: '对上频段，整笔经费入账',
+          sub: '凭号领赏',
+          title: '幸运号签',
+          tagline: '对上领赏号码，就有一份小惊喜',
           icon: '📡',
           cellsCount: 13,
           baseTopPrize: 650000,
@@ -1289,16 +1298,16 @@
           cardBg: 'bg-[#dfe3e6]',
           accentColor: 'text-[#141413]',
           rules: [
-            '一、刮开上方 3 个基准频段号与倍率印',
-            '二、下方 9 个实测频段每对上一个即得该格经费',
-            '三、对中的经费相加，再乘基准倍率印'
+            '一、刮开上方 3 个领赏号与核准印',
+            '二、刮开下方 9 个票号，对上领赏号即得对应奖金',
+            '三、对应奖金相加，再乘核准印所示倍数'
           ]
         },
         {
           type: 'step_climb',
-          sub: '五阶压制',
-          title: '力场五阶压制表',
-          tagline: '五阶比读数，压制几阶拿几阶',
+          sub: '五站巡签',
+          title: '步步添彩',
+          tagline: '走过五个站点，签下一份好彩头',
           icon: '⚡',
           cellsCount: 10,
           baseTopPrize: 325000,
@@ -1306,9 +1315,9 @@
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、五阶各比一次抑制力场读数（共10格）',
-            '二、右侧我方抑制值高过左侧异常冲击值，赢下该阶',
-            '三、压制几阶，即领几阶对应收容奖金'
+            '一、五个站点各有两枚签号，共 10 格',
+            '二、右侧员工签号大于左侧站点签号，即通过该站',
+            '三、通过站点的奖金相加，就是本张获得金额'
           ]
         }
       ];
@@ -1319,6 +1328,15 @@
 
 
 
+      const scratchTierNames={t1:'随手',t2:'当班',t3:'加签',t4:'特别',t5:'珍藏',t6:'典藏'};
+      const scratchTierName=t=>scratchTierNames[t.id]||t.name;
+      const scratchTierAmount=t=>String(t.cost);
+      function scratchPreview(g){
+        const foil=(revealed=false)=>`<span class="scratch-mini-foil ${revealed?'mini-revealed':''}">${revealed?AVEDScratchSymbols.render(g.type):''}</span>`;
+        if(g.type==='three_match')return `<div class="scratch-mini-match">${Array.from({length:12},()=>foil()).join('')}</div>`;
+        if(g.type==='lucky_num')return `<div class="scratch-mini-reference">${Array.from({length:4},()=>foil()).join('')}</div><div class="scratch-mini-numbers">${Array.from({length:9},()=>foil()).join('')}</div>`;
+        return `<div class="scratch-mini-steps">${Array.from({length:5},(_,i)=>`<div style="--step-indent:${(4-i)*5}px">${foil()}${foil()}<i></i></div>`).join('')}</div>`;
+      }
       function renderScratchTiersAndLobby() {
         const tiersBar = document.getElementById('scratch-tiers-bar');
         const lobbyView = document.getElementById('scratch-lobby-view');
@@ -1327,10 +1345,10 @@
           tiersBar.innerHTML = scratchTiers.map(t => {
             const active = t.id === selectedTier.id;
             return `
-              <button type="button" data-tier-id="${t.id}" aria-pressed="${active}"
+              <button type="button" data-tier-id="${t.id}" aria-label="${scratchTierName(t)}档，${t.cost}积分" aria-pressed="${active}"
                 class="scratch-tier-btn p-2.5 border transition text-center cursor-pointer ${active ? 'bg-[var(--inner-accent)] text-[var(--inner-accent-text)] border-black font-bold shadow' : 'bg-[#141414] text-neutral-300 border-white/20 hover:border-white'}">
-                <div class="text-[11px] opacity-80">${t.name}</div>
-                <div class="text-sm font-bold mt-0.5">${fmtMoney(t.cost)}</div>
+                <div class="text-[11px] opacity-80">${scratchTierName(t)}</div>
+                <div class="text-sm font-bold mt-0.5">${scratchTierAmount(t)}</div>
               </button>
             `;
           }).join('');
@@ -1346,37 +1364,31 @@
         }
 
         if (lobbyView) {
-          lobbyView.innerHTML = scratchGameTypes.map(g => {
-            const topPrize = selectedTier.topPrizes?.[g.type] ?? selectedTier.cost*100;
+          lobbyView.innerHTML = ['lucky_num','three_match','step_climb'].map(type=>scratchGameTypes.find(g=>g.type===type)).map(g => {
+            const topPrize = selectedTier.topPrizes?.[g.type];
             return `
               <div class="scratch-ticket-card ${g.cardBg} text-[#141413] border-2 border-[#141413] shadow-md flex flex-col justify-between overflow-hidden" data-ticket-kind="${g.type}">
                 <div>
                   <div class="scratch-ticket-band h-12 ${g.bgBand} border-b border-[#141413] flex items-center justify-between px-4 font-mono-tech text-xs">
                     <span>A.V.E.D. RATION</span>
-                    <span class="text-base">${g.icon}</span>
+                    <span class="text-base">${AVEDScratchSymbols.render(g.type)}</span>
                   </div>
                   <div class="p-5 space-y-3">
                     <div>
-                      <div class="text-xs font-mono-tech font-bold ${g.accentColor}">${g.sub}</div>
+                      <div class="scratch-kind-label text-xs font-mono-tech font-bold">${g.sub}</div>
                       <h4 class="text-xl font-bold font-serif-sc">${g.title}</h4>
                       <p class="text-xs text-[#57534a]">${g.tagline}</p>
                     </div>
 
-                    <div class="scratch-ticket-preview p-3 bg-white/60 border border-[#141413]/20 grid grid-cols-4 gap-1.5" aria-hidden="true">
-                      ${Array.from({ length: 8 }).map((_, i) => `
-                        <div class="scratch-preview-cell h-5 ${i === 0 ? 'is-revealed bg-white border border-black flex items-center justify-center text-[10px]' : 'bg-[#9ca3af]'}">
-                          ${i === 0 ? g.icon : ''}
-                        </div>
-                      `).join('')}
-                    </div>
+                    <div class="scratch-ticket-preview" data-preview-kind="${g.type}" aria-hidden="true"><div class="scratch-mini-ticket">${scratchPreview(g)}</div></div>
 
                     <div class="scratch-ticket-summary flex items-center justify-between text-xs font-mono-tech pt-2 border-t border-[#141413]/20">
                       <div>
                         <div class="text-[#57534a]">最高津贴</div>
-                        <div class="text-sm font-bold ${g.accentColor}">${fmtMoney(topPrize)}</div>
+                        <div class="scratch-top-prize text-sm font-bold">${Number.isFinite(topPrize)?fmtMoney(topPrize):'待调阅'}</div>
                       </div>
                       <div class="text-right">
-                        <div class="text-[#57534a]">封印格</div>
+                        <div class="text-[#57534a]">刮奖格</div>
                         <div class="text-sm font-bold">${g.cellsCount} 格</div>
                       </div>
                     </div>
@@ -1402,6 +1414,7 @@
         }
       }
 
+      function scratchRulesMarkup(game){return game.rules.map(rule=>`<p>${esc(rule)}</p>`).join('');}
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
         const g = scratchGameTypes.find(x => x.type === gType);
@@ -1409,19 +1422,17 @@
         pendingTicketType = g;
         playSfx('click');
 
-        document.getElementById('ticket-modal-icon').textContent = g.icon;
-        document.getElementById('ticket-modal-sublabel').textContent = `出票 ${selectedTier.name} ${g.sub}`;
+
+        document.getElementById('ticket-modal-sublabel').textContent = `选票 · ${scratchTierName(selectedTier)}档 · ${g.sub}`;
         document.getElementById('ticket-modal-title').textContent = g.title;
         document.getElementById('ticket-modal-tagline').textContent = g.tagline;
         document.getElementById('ticket-modal-price').textContent = fmtMoney(selectedTier.cost);
         document.getElementById('ticket-modal-price').dataset.cost=selectedTier.cost;document.getElementById('ticket-modal-price').dataset.revision=economyRevision;
-        document.getElementById('ticket-modal-top-prize').textContent = fmtMoney(selectedTier.topPrizes?.[g.type] ?? selectedTier.cost*100);
+        document.getElementById('ticket-modal-top-prize').textContent = Number.isFinite(selectedTier.topPrizes?.[g.type])?fmtMoney(selectedTier.topPrizes[g.type]):'待调阅';
         document.getElementById('ticket-modal-balance-preview').textContent =
-          `${currentUser.balance.toLocaleString()} → ${(currentUser.balance - selectedTier.cost).toLocaleString()}`;
+          '刮开扣除票面金额，\n未刮开可以免费跳过。';
 
-        document.getElementById('ticket-modal-rules').innerHTML = g.rules.map(r =>
-          `<div class="font-medium text-[#141413]">● ${r}</div>`
-        ).join('');
+        document.getElementById('ticket-modal-rules').innerHTML=scratchRulesMarkup(g);
 
         const modal = document.getElementById('ticket-confirm-modal');
         modal.classList.remove('hidden');
@@ -1435,61 +1446,71 @@
       });
 
 
-      function renderActiveScratchTicketBoard() {
+      document.getElementById('ticket-modal-close').addEventListener('click',()=>document.getElementById('ticket-modal-cancel-btn').click());
+      const scratchFeedback=AVEDScratchFeedback({playSfx,isActive:()=>!byId('view-casino').classList.contains('hidden')&&!byId('scratch-play-table-view').classList.contains('hidden')});
+      function renderActiveScratchTicketBoard(revealedIndices=[],feedbackOptions={}) {
         if (!activeIssuedTicket) return;
         const tk = activeIssuedTicket;
         document.getElementById('active-ticket-title-bar').textContent =
-          `${tk.gameType.icon} ${tk.gameType.title} [${tk.tier.name} ${fmtMoney(tk.tier.cost)}]`;
-        document.getElementById('active-ticket-seed-badge').textContent = `SEAL: #${tk.seed}`;
+          tk.gameType.title;
 
+
+        const ruleGame=scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType;
+        document.getElementById('scratch-play-rules-body').innerHTML=scratchRulesMarkup(ruleGame);
         const board = document.getElementById('active-ticket-board-container');
-        const colsClass = tk.gameType.type === 'step_climb' ? 'grid-cols-2' : 'grid-cols-3 sm:grid-cols-4';
+        const colsClass = tk.gameType.type === 'step_climb' ? 'scratch-step-grid' : tk.gameType.type==='lucky_num'?'scratch-reference-grid':'scratch-match-grid';
 
         board.innerHTML = `
           <div class="grid ${colsClass} gap-3">
             ${tk.cells.map(c => {
+              const groupBreak=tk.gameType.type==='lucky_num'&&c.idx===4?'</div><div class="grid scratch-prize-grid">':'';
               if (!c.revealed) {
                 return `
-                  <button type="button" data-scratch-cell="${c.idx}"
+                  ${groupBreak}<button type="button" data-scratch-cell="${c.idx}"
                     class="scratch-cell-foil h-20 flex flex-col items-center justify-center p-2 text-center">
-                    <span class="text-xs font-mono-tech font-bold text-[#141413]">SEALED #${c.idx + 1}</span>
-                    <span class="text-[10px] text-[#141413]/70 mt-0.5">点击刮开涂层</span>
+                    <span class="text-xs font-mono-tech font-bold text-[#141413]">待揭晓 ${c.idx + 1}</span>
+                    <span class="text-[10px] text-[#141413]/70 mt-0.5">点击刮开</span>
                   </button>
                 `;
               }
               return `
-                <div class="scratch-revealed-cell h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
-                  <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${c.label}</div>
-                  <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.sub}</div>
+                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
+                  <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div>
+                  <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.role==='LUCKY'?'领赏号':c.sub}</div>
                 </div>
               `;
             }).join('')}
           </div>
         `;
 
+        scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         board.querySelectorAll('[data-scratch-cell]').forEach(btn => {
-          btn.addEventListener('click', () => {
+          btn.addEventListener('click', async () => {
             const idx = parseInt(btn.getAttribute('data-scratch-cell'), 10);
-            tk.cells[idx].revealed = true;
+            if(!await activateScratchTicket())return;
+            const tk=activeIssuedTicket;if(tk.cells[idx].revealed)return;tk.cells[idx].revealed = true;
             playSfx('scratch');
-            renderActiveScratchTicketBoard();
-            checkAndSettleScratchTicket();
+            renderActiveScratchTicketBoard([idx],{profit:tk.prize>tk.cost,winning:tk.cells[idx].isWinPart&&!tk.cells.every(c=>c.revealed)});
+            checkAndSettleScratchTicket('manual');
           });
         });
       }
 
 
 
-      document.getElementById('scratch-reveal-all-cells-btn').addEventListener('click', () => {
+      document.getElementById('scratch-reveal-all-cells-btn').addEventListener('click', async () => {
         if (!activeIssuedTicket) return;
+        if(activeIssuedTicket.settled)return;
+        if(!await activateScratchTicket())return;
+        const revealed=activeIssuedTicket.cells.filter(c=>!c.revealed).map(c=>c.idx);
         activeIssuedTicket.cells.forEach(c => { c.revealed = true; });
         playSfx('scratch');
-        renderActiveScratchTicketBoard();
-        checkAndSettleScratchTicket();
+        renderActiveScratchTicketBoard(revealed);
+        checkAndSettleScratchTicket('all');
       });
 
       document.getElementById('scratch-back-lobby-btn').addEventListener('click', () => {
-        document.getElementById('scratch-play-table-view').classList.add('hidden');
+        document.getElementById('scratch-play-table-view').classList.add('hidden');byId('scratch-back-lobby-btn').classList.add('hidden');
         document.getElementById('scratch-lobby-view').classList.remove('hidden');
       });
 
@@ -1807,17 +1828,17 @@
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
-      let playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
+      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
       const byId=id=>document.getElementById(id);
       function showToast(message,type='info') {
-        const el=document.createElement('div');el.className='px-4 py-3 border border-white bg-black text-white text-sm';
+        const el=document.createElement('div');el.className='aved-toast';el.dataset.type=type;el.setAttribute('role','status');
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
       }
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
-      function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}economyUI?.configure(c);}
+      function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
-        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerHistory=data.history;profileFreshAt=Date.now();
+        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
@@ -1845,12 +1866,14 @@
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
-      function completeEnterIntranet(emp){
+      async function completeEnterIntranet(emp){
+        await window.AVEDTypographyReady;
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
         communityUI.refresh();welfareUI.refresh().catch(e=>showToast(e.message));renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('welcome');
+        window.AVEDPrepareTypography?.(innerAppView);
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         refreshChat('sky');refreshChat('derby');startChatStreams();
       }
@@ -1882,13 +1905,13 @@
         const th=forumThreads.find(t=>String(t.id)===String(currentForumThreadId));
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
         byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;
-        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'实名':'匿名'} ${esc(t.anonymousName)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
+        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'} ${esc(t.anonymousName)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
           if(forumNext)byId('forum-threads-list-container').insertAdjacentHTML('beforeend','<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>');
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'实名':'匿名'} ${esc(th.anonymousName)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
+        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'} ${esc(th.anonymousName)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
         api('/api/player/forum/'+th.id).then(d=>{if(String(currentForumThreadId)!==String(th.id))return;
-          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'实名':'匿名'}</small> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
+          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'}</small> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
           byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
       async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
@@ -1905,7 +1928,7 @@
         for(const id of ['ddz-play-btn','ddz-pass-btn','ddz-hint-btn'])byId(id).classList.toggle('hidden',data.phase!=='playing');
         byId('ddz-player-role-badge').textContent=data.phase==='bidding'?'等待抢地主':'地主';
         byId('ddz-ai-left-role').textContent='电脑对手 A';byId('ddz-ai-right-role').textContent='电脑对手 B';
-        byId('ddz-turn-indicator').textContent=data.phase==='ended'?(data.winner===0?'本局获胜，奖金已入账。':'本局结束，电脑对手获胜。'):data.phase==='bidding'?'点击抢地主开始':'轮到你出牌：单张、对子、三张、炸弹';
+        byId('ddz-turn-indicator').textContent=data.phase==='ended'?AVEDGameResults.text(data):data.phase==='bidding'?'点击抢地主开始':'轮到你出牌：单张、对子、三张、炸弹';
         if(data.lastPlay)renderTableCards(data.lastPlay.cards,'上一手出牌');else byId('ddz-last-played-cards').replaceChildren();renderDoudizhuUI();
       }
       function renderSky(state){skyRound=state.round;skyUI.render(state);}
@@ -1920,7 +1943,7 @@
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){personalUI.render();}
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
-      async function showProfile(){switchMainView('profile');renderProfile();if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
+      async function showProfile(){switchMainView('profile');renderProfile();if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;playerGameRecords=d.gameRecords||null;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
       async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
       document.addEventListener('submit',event=>{
@@ -1930,8 +1953,8 @@
         action(form.querySelector('[type=submit]')||form.querySelector('button'),async()=>{
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form';
-            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||playerProfile.forumIdentity||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
-            form.reset();form.querySelector('[name=identityMode]').value=playerProfile.forumIdentity||'anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='未选择附图';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
+            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
+            form.reset();form.querySelector('[name=identityMode]').value='anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='未选择附图';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
           }else if(id==='scp-realname-comment-form'){
@@ -1964,28 +1987,30 @@
         const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','slot5x3-verify-tube-btn','derby-start-race-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
         const trade=button.hasAttribute('data-long-idx')||button.hasAttribute('data-short-idx');
         if(!handled.includes(id)&&!trade)return;stop(event);
-        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','确认后当前余额将清零。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
+        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','无论余额为正数还是负数，重置后都会回到零。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
           if(id==='forum-load-more')return loadMoreForum();
           if(id==='forum-refresh-skeleton-btn')return refreshForum();
           if(id==='ticket-modal-confirm-btn'||id==='scratch-next-ticket'){
             const type=id==='scratch-next-ticket'?activeIssuedTicket?.gameType:pendingTicketType;if(!type)throw new Error('请先选择票种。');
-            const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:selectedTier.id,type:type.type,cost:id==='scratch-next-ticket'?selectedTier.cost:Number(byId('ticket-modal-price').dataset.cost),revision:id==='scratch-next-ticket'?economyRevision:Number(byId('ticket-modal-price').dataset.revision)}});
-            activeIssuedTicket=d.result;currentUser.balance=d.balance;syncUserHeaderUI();
+            if(scratchActivating)return;
+            const tier={...selectedTier};const cost=id==='scratch-next-ticket'?tier.cost:Number(byId('ticket-modal-price').dataset.cost),revision=id==='scratch-next-ticket'?economyRevision:Number(byId('ticket-modal-price').dataset.revision);
+            activeIssuedTicket={draft:true,requestKey:crypto.randomUUID(),tier:{...tier,cost},gameType:type,cost,revision,cells:Array.from({length:type.cellsCount},(_,idx)=>({idx,revealed:false,label:idx===3?'核准印':'领赏号',sub:'待核准'}))};
+            byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');
             byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');
-            byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');
-            byId('active-ticket-result-banner').textContent='刮开涂层查看结果。';renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=true;
+            byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
+            byId('active-ticket-result-banner').textContent='尚未扣款 · 首次刮开时扣除票价，可免费跳过。';renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='跳过此张';if(id==='ticket-modal-confirm-btn')byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
           }else if(id==='slot5x3-spin-btn'){
             const d=await api('/api/player/games/slot',{method:'POST',body:{bet:Number(byId('slot5x3-bet-input').value)}});
             slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize});
             d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);slot5x3State.tubePlainSeed=d.seed;slot5x3State.tubeHash=d.seedHash;
-            byId('slot5x3-seal-hash').textContent=d.seedHash;byId('slot5x3-win-summary').textContent='本转奖金 '+fmtMoney(d.prize);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
+            byId('slot5x3-seal-hash').textContent=d.seedHash;byId('slot5x3-win-summary').textContent=AVEDGameResults.text(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
           }else if(id==='slot5x3-verify-tube-btn'){byId('slot5x3-revealed-tube-seed').textContent=slot5x3State.tubePlainSeed?'种子 '+slot5x3State.tubePlainSeed:'请先完成一转。';}
           else if(id==='derby-start-race-btn'){
             const d=await api('/api/player/games/derby',{method:'POST',body:{bet:Number(byId('derby-bet-amount').value),runner:derbyState.selectedHorseId}});
             derbyState.running=true;byId('derby-start-race-btn').classList.add('hidden');byId('derby-pre-hash').textContent=d.seedHash;let ticks=0;
-            const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 奖金 '+fmtMoney(d.prize);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
+            const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 · '+AVEDGameResults.text(d);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
           }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);showToast('您已登机');}
           else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
           else if(trade){
@@ -2032,19 +2057,30 @@
           }
         });
       },true);
-      function checkAndSettleScratchTicket(){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
-        activeIssuedTicket.settled=true;byId('active-ticket-result-banner').textContent='本张奖金 '+fmtMoney(activeIssuedTicket.totalPayout)+'，已入账。';byId('scratch-next-ticket').disabled=false;}
+      let scratchActivating=false;
+      async function activateScratchTicket(){
+        if(scratchActivating||!activeIssuedTicket)return false;if(!activeIssuedTicket.draft)return true;
+        const draft=activeIssuedTicket;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
+        try{const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:draft.tier.id,type:draft.gameType.type,cost:draft.cost,revision:draft.revision,requestKey:draft.requestKey}});
+          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='已扣除票价 · 刮开查看结果。';byId('scratch-next-ticket').textContent='刮下一张';return true;
+        }catch(e){showToast(e.message);byId('scratch-next-ticket').disabled=false;return false;}finally{scratchActivating=false;}
+      }
+      function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
+        const ticket=activeIssuedTicket;ticket.settled=true;
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').textContent=AVEDGameResults.text(ticket);scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
+        finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');
-      const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-back-lobby-btn').after(nextTicket);
+      const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-reveal-all-cells-btn').after(nextTicket);
       byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');
 
       const skyUI=AVEDSkyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
+      window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
-      const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,welfare:()=>welfareUI,showToast});
+      const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});
       window.AVEDRefreshPersonal=()=>{if(currentUser&&!byId('view-profile').classList.contains('hidden'))renderProfile();};
       AVEDRewardsUI({api,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
@@ -2066,7 +2102,7 @@
           signalPhase('正在恢复员工终端',12,'正在确认个人身份令牌……');await nextPaint();
           signalPhase('正在恢复员工终端',45,'正在连接公司内网……');await nextPaint();
           signalPhase('正在恢复员工终端',85,'正在加载公司档案……');
-          const employee=await loadPlayerData();completeEnterIntranet(employee);idleSession.start();
+          const employee=await loadPlayerData();await completeEnterIntranet(employee);idleSession.start();
           signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
           await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:260));
         }catch{currentUser=null;}finally{signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');}

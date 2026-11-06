@@ -19,9 +19,10 @@
   try{localStorage.removeItem('aved_layout_v2');}catch{}
  }
  window.AVEDEffectsEnabled=()=>!document.body.classList.contains('effects-off');
+ window.AVEDSetEffects=enabled=>{const off=!enabled;document.body.classList.toggle('effects-off',off);save('aved_effects_v1',off?'off':'on');window.AVEDSyncPreferences?.();document.dispatchEvent(new Event('aved-effects-change'));};
  window.AVEDSyncPreferences=()=>{document.querySelectorAll('[data-effects-toggle]').forEach(b=>{const on=window.AVEDEffectsEnabled();b.textContent=on?'特效：开启':'特效：关闭';b.setAttribute('aria-pressed',String(on));b.title=on?'关闭本机的动态、微光和文字撕裂':'恢复本机的动态、微光和文字撕裂';});const nav=document.querySelector('[data-nav="welcome"]'),label=nav?.querySelector('.sidebar-label');if(label){label.textContent='员工首页';nav.setAttribute('aria-label',label.textContent);}};
  document.addEventListener('DOMContentLoaded',()=>{apply();window.AVEDSyncPreferences();});
  document.addEventListener('click',e=>{
-  if(e.target.closest('[data-effects-toggle]')){const off=!document.body.classList.contains('effects-off');document.body.classList.toggle('effects-off',off);save('aved_effects_v1',off?'off':'on');window.AVEDSyncPreferences();document.dispatchEvent(new Event('aved-effects-change'));}
+  if(e.target.closest('[data-effects-toggle]'))window.AVEDSetEffects(!window.AVEDEffectsEnabled());
  });
 })();

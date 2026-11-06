@@ -1,0 +1,39 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+test('scratch feedback distinguishes profit, removes particles, and respects reduced motion',()=>{
+ const sounds=[],timers=[],layers=[];const reduced={matches:false,addEventListener(){}};
+ const element=()=>({dataset:{},children:[],style:{},classList:{add(){},remove(){}},setAttribute(){},addEventListener(){},append(el){this.children.push(el);},remove(){this.removed=true;}});
+ const document={hidden:false,addEventListener(){},createElement:element,body:{append(el){if(el.className.includes('scratch-electronic-confetti'))layers.push(el);}}};
+ const ctx={window:{},document,matchMedia:()=>reduced,innerWidth:1200,innerHeight:800,clearTimeout(){},setTimeout:(f,ms)=>{if(ms===1950||ms===5400)timers.push(f);}};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
+ const fx=ctx.window.AVEDScratchFeedback({playSfx:s=>sounds.push(s)}),banner=element();
+ fx.settle(banner,{cost:1000,prize:650},'all');assert.equal(banner.dataset.scratchFeedback,'return');assert.equal(sounds.length,0);assert.equal(layers.length,0);
+ fx.settle(banner,{cost:1000,prize:1250},'all');assert.equal(sounds.at(-1),'scratch-win-all');assert.equal(layers.length,1);fx.settle(banner,{cost:1000,prize:20000},'all');assert.equal(layers.length,3);assert.ok(!layers[0].removed);timers[0]();assert.equal(layers[0].removed,true);assert.ok(!layers[1].removed);timers[1]();assert.ok(!layers[2].removed);assert.ok(layers[2].className.includes('scratch-rain'));timers[2]();assert.equal(layers[2].removed,true);
+ reduced.matches=true;fx.settle(banner,{cost:1000,prize:1600},'manual');assert.equal(banner.dataset.scratchFeedback,'profit');assert.equal(sounds.at(-1),'scratch-win');assert.equal(layers.length,3);
+ fx.settle(banner,{cost:1000,prize:0});assert.equal(sounds.at(-1),'scratch-zero');
+ document.hidden=true;fx.settle(banner,{cost:1000,prize:30000});assert.equal(sounds.length,4);
+});
+
+test('red paper is palette-independent and higher awards produce more particles',()=>{
+ const layers=[];const element=()=>({dataset:{},children:[],style:{},classList:{add(){},remove(){}},setAttribute(){},addEventListener(){},append(el){this.children.push(el);},remove(){}});
+ const ctx={window:{},document:{hidden:false,addEventListener(){},createElement:element,body:{append(el){if(el.className.includes('scratch-electronic-confetti'))layers.push(el);}}},matchMedia:()=>({matches:false,addEventListener(){}}),innerWidth:1200,innerHeight:800,clearTimeout(){},setTimeout(){}};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
+ const fx=ctx.window.AVEDScratchFeedback();let previous=0;
+ for(const multiplier of [1.25,5,10,20,50,100]){const start=layers.length;fx.settle(element(),{cost:1000,prize:1000*multiplier});const current=layers.slice(start),count=current.reduce((n,l)=>n+l.children.length,0);assert.ok(count>previous);previous=count;for(const layer of current)assert.ok(layer.children.some(p=>p.style.cssText.includes('#d84b4b')));}
+});
+
+test('one shared toast replaces previous awards and uses tier-specific expiry',()=>{
+ const nodes=[],timers=[],cancelled=[];const element=()=>({dataset:{},children:[],style:{},classList:{add(){},remove(){}},setAttribute(){},addEventListener(){},append(el){this.children.push(el);},remove(){}});
+ const document={hidden:false,addEventListener(){},createElement:element,body:{append(el){nodes.push(el);}}};
+ const ctx={window:{AVEDEffectsEnabled:()=>false},document,matchMedia:()=>({matches:false,addEventListener(){}}),innerWidth:1200,innerHeight:800,clearTimeout:id=>cancelled.push(id),setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;}};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
+ const fx=ctx.window.AVEDScratchFeedback(),other=ctx.window.AVEDScratchFeedback(),banner=element();banner.textContent='本局获得';
+ fx.settle(banner,{cost:1000,prize:1250});assert.equal(timers.at(-1).ms,1500);
+ other.settle(banner,{cost:1000,prize:5000});assert.equal(timers.at(-1).ms,2500);assert.ok(cancelled.includes(1));
+ fx.settle(banner,{cost:1000,prize:20000});assert.equal(timers.at(-1).ms,4000);
+ fx.settle(banner,{cost:1000,prize:30000,gameHighlight:{personalBest:1}});assert.equal(timers.at(-1).ms,5000);
+ assert.equal(nodes.length,1);assert.equal(banner.textContent,'本局获得');assert.match(ctx.window.AVEDScratchToast.label.textContent,/新纪录/);assert.match(ctx.window.AVEDScratchToast.amount.textContent,/30,000/);
+ timers.at(-1).fn();assert.equal(ctx.window.AVEDScratchToast.el.hidden,true);
+});

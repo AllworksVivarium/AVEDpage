@@ -1,6 +1,6 @@
 (function(){
-  const design=window.AVEDPlayerDesign;if(!design)return;
-  const C=window.AVEDTypeCatalog;if(!C)return;
+  const design=window.AVEDPlayerDesign;if(!design){window.AVEDResolveTypography?.();return;}
+  const C=window.AVEDTypeCatalog;if(!C){window.AVEDResolveTypography?.();return;}
   const stateKey='aved_type_design_v2',roles=new Map(C.roles.map(r=>[r.id,r]));
   const ranges={zh:'U+2E80-9FFF,U+F900-FAFF,U+FF00-FFEF,U+20000-2FA1F',en:'U+0000-024F,U+1E00-1EFF,U+2000-206F',he:'U+0590-05FF,U+FB1D-FB4F'};
   let library=[...C.fonts],settings=C.defaults(),db=null,selected='meta',picking=false,revision=0,storageMessage='',serverRevision='';
@@ -131,7 +131,10 @@
     try{db=await openDatabase();const local=await readFonts();for(const font of local){library=library.filter(f=>f.id!==font.id);library.push(font);}}catch{storageMessage='本地字体库不可用；内置字体仍可调整。';}
     settings=C.sanitize(saved,library);
     if(!saved){try{const old=localStorage.getItem('aved_note_font_v1');if(library.some(f=>f.id===old)){settings.meta.zh=old;settings.meta.desktop=settings.meta.mobile=16;}}catch{}}
+    const jobs=new Set();for(const s of Object.values(settings))for(const lang of ['zh','en','he'])jobs.add(s[lang]+':'+lang);
+    const results=await Promise.allSettled([...jobs].map(job=>{const [id,lang]=job.split(':');return loadFont(id,lang);}));
     delete document.documentElement.dataset.noteFont;initUI();renderEditor();renderLibrary();classifyPage();
+    window.AVEDPrepareTypography=node=>classify(node,node.parentElement?.dataset.typeRole||'body');
     let scheduled=false;
     const observer=new MutationObserver(records=>{
       for(const r of records){
@@ -141,23 +144,25 @@
         else for(const node of r.addedNodes)pending.add(node instanceof Element?node:parent);
       }
       if(!pending.size||scheduled)return;scheduled=true;
-      setTimeout(()=>{scheduled=false;observer.disconnect();
+      queueMicrotask(()=>{scheduled=false;observer.disconnect();
         for(const el of pending)if(el.isConnected&&![...pending].some(other=>other!==el&&other.contains(el)))classify(el,el.parentElement?.dataset.typeRole||'body');
         pending.clear();if(panel.open)updateCoverage();if(document.documentElement.dataset.typeHighlight)highlight();
         observer.observe(document.body,{childList:true,subtree:true,characterData:true});
-      },100);
+      });
     });
     observer.observe(document.body,{childList:true,subtree:true,characterData:true});
-    const jobs=new Set();for(const s of Object.values(settings))for(const lang of ['zh','en','he'])jobs.add(s[lang]+':'+lang);
-    const results=await Promise.allSettled([...jobs].map(job=>{const [id,lang]=job.split(':');return loadFont(id,lang);}));
+
     tell(storageMessage||(results.some(r=>r.status==='rejected')?'部分字体暂未加载，当前使用后备字体。':'设计台已就绪；调整后请点击保存设计。'));
     document.addEventListener('aved-player-design',async e=>{
       if(design.local||!e.detail.settings||e.detail.revision===serverRevision)return;
       if(panel.open||picking){tell('服务器设计已更新；请刷新后重新调整，避免覆盖他人的修改。');return;}
       for(const font of e.detail.fonts||[])if(!library.some(f=>f.id===font.id))library.push(font);
-      settings=C.sanitize(e.detail.settings,library);serverRevision=e.detail.revision;applyRules();classifyPage();
-      await Promise.allSettled(Object.values(settings).flatMap(s=>['zh','en','he'].map(lang=>loadFont(s[lang],lang))));
+      const nextSettings=C.sanitize(e.detail.settings,library);
+      await Promise.allSettled(Object.values(nextSettings).flatMap(s=>['zh','en','he'].map(lang=>loadFont(s[lang],lang))));
+      settings=nextSettings;serverRevision=e.detail.revision;applyRules();classifyPage();
     });
   }
-  init();
+  const initialization=init().catch(error=>{applyRules();classifyPage();console.warn('字体初始化使用后备配置。',error);});
+  initialization.finally(()=>window.AVEDResolveTypography?.());
+  window.AVEDTypographyReady=initialization;
 })();

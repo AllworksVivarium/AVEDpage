@@ -30,4 +30,4 @@ export function cardsAction(s,action,ids=[]) {
   }else if(action==='pass')turn(0,[]);else throw new Error('操作无效。');
   for(const who of [1,2]){if(s.phase!=='playing')break;const candidate=choices(s.hands[who]).find(c=>beats(pattern(c),s.last?.by===who?null:s.last));turn(who,candidate||[]);}
 }
-export function publicCards(s,round){return {round,phase:s.phase,playerHand:[...s.hands[0]].sort((a,b)=>b.val-a.val),aiLeftCount:s.hands[1].length,aiRightCount:s.hands[2].length,holeCards:s.phase==='bidding'?[{},{},{}]:s.hole,lastPlay:s.last?{...s.last,by:['player','left','right'][s.last.by]}:null,winner:s.winner,seedHash:s.seedHash,...(s.phase==='ended'?{seed:s.seed}:{})};}
+export function publicCards(s,round){return {round,cost:0,prize:s.phase==='ended'&&s.winner===0?20000:0,phase:s.phase,playerHand:[...s.hands[0]].sort((a,b)=>b.val-a.val),aiLeftCount:s.hands[1].length,aiRightCount:s.hands[2].length,holeCards:s.phase==='bidding'?[{},{},{}]:s.hole,lastPlay:s.last?{...s.last,by:['player','left','right'][s.last.by]}:null,winner:s.winner,seedHash:s.seedHash,...(s.phase==='ended'?{seed:s.seed}:{})};}

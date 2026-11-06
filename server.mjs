@@ -1,3 +1,4 @@
+import {installCompanyRobots} from './server-company-robots.mjs';
 import {announcementPublicationTime} from './server-announcement-time.mjs';
 import {installGameHighlights} from './server-game-highlights.mjs';
 import {installPersonnel,personnelAssignment} from './server-personnel.mjs';
@@ -244,7 +245,7 @@ const secureRoll = (seedHex, range) => {
 };
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs };
+  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'real',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs };
 };
 const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
 const adminMutation = (req, res) => {
@@ -258,6 +259,7 @@ const adminMutation = (req, res) => {
 let economy,personal,highlights;
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
+const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 highlights=installGameHighlights({db,send,requireEmployee});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights});
@@ -315,6 +317,7 @@ const server = createServer(async (req, res) => {
     if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
+    if(await companyRobots.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
     if(await sky.handle(req,res,url))return;

@@ -1,0 +1,17 @@
+.aved-currency-mark {
+  display:inline-block!important;position:relative!important;
+  width:.92em!important;height:.92em!important;min-width:.92em!important;
+  vertical-align:-.1em!important;line-height:1!important;
+  flex-shrink:0;color:inherit;
+}
+.aved-currency-mark::before {
+  content:"";position:absolute;inset:0;background:currentColor;
+  -webkit-mask:url('/assets/currency-coin.svg?v=1') center/contain no-repeat;
+  mask:url('/assets/currency-coin.svg?v=1') center/contain no-repeat;
+}
+.aved-currency-mark>.aved-currency-source {
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;
+  white-space:nowrap!important;border:0!important;
+}

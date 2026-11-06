@@ -1,0 +1,199 @@
+@layer aved-section-ui {
+ .scratch-cell-arriving {animation:scratch-cell-open .32s both!important;animation-delay:var(--reveal-delay,0ms)!important;transform-origin:center}
+ .scratch-result-arriving {animation:scratch-result-open .45s both!important}
+ .scratch-electronic-confetti {position:fixed!important;inset:0!important;z-index:200!important;overflow:hidden!important;pointer-events:none!important;contain:strict}
+ .scratch-electronic-particle {display:block!important;position:absolute!important;top:35%!important;background:var(--particle-color)!important;box-shadow:0 0 3px var(--particle-color);border-radius:0!important;animation:scratch-electronic-fall var(--duration) linear var(--delay) both!important}
+ @keyframes scratch-cell-open {from{opacity:.3;transform:scaleX(.94) translateY(3px);clip-path:inset(0 0 85% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
+ @keyframes scratch-result-open {from{opacity:.45;transform:translateY(6px)}to{opacity:1;transform:none}}
+ @keyframes scratch-electronic-fall {
+  0%{opacity:0;transform:translate(0,0) rotate(0deg)}
+  12%{opacity:1}
+  35%{transform:translate(calc(var(--dx)*.55),var(--lift)) rotate(calc(var(--spin)*.35))}
+  65%{opacity:1;transform:translate(calc(var(--dx)*.83),10vh) rotate(calc(var(--spin)*.65))}
+  100%{opacity:0;transform:translate(var(--dx),var(--drop)) rotate(var(--spin))}
+ }
+ body.effects-off :is(.scratch-cell-arriving,.scratch-result-arriving){animation:none!important}
+ body.effects-off .scratch-electronic-confetti {display:none!important}
+ @media(prefers-reduced-motion:reduce){.scratch-cell-arriving,.scratch-result-arriving{animation:none!important}.scratch-electronic-confetti{display:none!important}}
+}
+
+@layer aved-section-ui {
+ .aved-jackpot-strip{min-height:36px;border-block:1px solid var(--inner-border,#8886);display:flex;align-items:center;gap:12px;padding:6px 12px;font-size:12px;overflow:hidden;background:var(--inner-card-bg);margin-bottom:12px}
+ .aved-jackpot-strip strong{white-space:nowrap;color:var(--brand-red)}
+ .aved-jackpot-message{overflow-wrap:anywhere;animation:aved-jackpot-slide .4s both}
+ @keyframes aved-jackpot-slide{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+ body.effects-off .aved-jackpot-message{animation:none}
+ @media(prefers-reduced-motion:reduce){.aved-jackpot-message{animation:none}}
+}
+@layer aved-section-ui {
+ .aved-jackpot-strip{box-sizing:border-box!important;height:46px!important;min-height:46px!important;max-height:46px!important;gap:12px!important;margin:12px 0 18px!important;padding:0 12px!important;border:1px solid var(--inner-text-main,#d9ceb8)!important;color:var(--inner-text-main,#d9ceb8)!important;background:repeating-linear-gradient(0deg,transparent 0 2px,#80808012 2px 3px),var(--inner-card-bg)!important;box-shadow:inset 0 0 14px #80808010;isolation:isolate}
+ .aved-jackpot-strip strong{flex:0 0 auto;color:inherit!important;font-size:12px!important;letter-spacing:.1em;border-right:1px solid currentColor;padding-right:12px}
+ .aved-jackpot-viewport{flex:1;min-width:0;overflow:hidden;height:24px;line-height:24px}
+ .aved-jackpot-message{display:block!important;height:24px!important;line-height:24px!important;margin:0!important;padding:0!important;width:100%;min-width:0;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;animation:aved-jackpot-slide .6s ease-out both;text-shadow:0 0 4px #80808035}
+ .scratch-modal-close{width:32px;height:32px;padding:0;line-height:1;font-size:24px;background:transparent!important;color:inherit!important;border:1px solid currentColor!important;cursor:pointer}
+ #game-panel-scratch .scratch-top-prize,#game-panel-scratch .scratch-kind-label{color:var(--inner-text-main,#d9ceb8)!important;opacity:1!important}
+ #scratch-back-lobby-btn{display:block;width:max-content;margin:4px 0 16px!important;padding:4px 0!important;background:none!important;border:0!important;color:var(--inner-text-main)!important;font-size:12px;text-decoration:underline;text-underline-offset:5px}
+ #scratch-back-lobby-btn.hidden{display:none!important}
+ .scratch-ticket-heading{display:flex!important;flex-direction:column;align-items:center;gap:16px;padding:4px 0 18px;border-bottom:1px solid var(--inner-border)}
+ #active-ticket-title-bar{width:100%;text-align:center!important;font-size:22px!important;line-height:1.4;margin:0!important;color:var(--inner-text-main)!important}
+ .scratch-ticket-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+ .scratch-ticket-actions button{box-sizing:border-box;min-height:40px;padding:8px 18px!important;font-size:13px!important;line-height:20px}
+ .scratch-cell-arriving{animation:scratch-cell-open .65s linear both!important;animation-delay:0ms!important}
+ @keyframes scratch-cell-open{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+ #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn){box-shadow:none!important;outline-offset:2px!important;transform:none!important;margin-block:0!important;align-self:center!important;line-height:22px!important}
+ #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn)::before,#inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn)::after{display:none!important;content:none!important}
+ body.effects-off .scratch-cell-arriving{animation:none!important}
+ @media(prefers-reduced-motion:reduce){.scratch-cell-arriving{animation:none!important}}
+ @media(max-width:480px){.aved-jackpot-strip{gap:8px!important;padding-inline:8px!important}.aved-jackpot-strip strong{padding-right:8px;letter-spacing:0}.scratch-ticket-actions button{padding-inline:12px!important}}
+}
+@layer aved-section-ui {
+ .scratch-rain-ribbon{display:block!important;position:absolute!important;top:-36px!important;background:var(--particle-color)!important;pointer-events:none!important;border-radius:0!important;box-shadow:0 0 3px #80808040;animation:scratch-ribbon-fall var(--duration) linear var(--delay) both!important}
+ @keyframes scratch-ribbon-fall{0%{opacity:0;transform:translate(0,0) rotate(0)}5%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(var(--drift),calc(100dvh + 72px)) rotate(var(--spin))}}
+}
+
+@layer aved-section-ui {
+ #active-ticket-result-banner{box-sizing:border-box!important;height:48px!important;min-height:48px!important;max-height:48px!important;padding:12px!important;margin-block:0!important;border:1px solid var(--inner-border-soft)!important;font-size:13px!important;line-height:22px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;animation:none!important}
+ #active-ticket-result-banner::before,#active-ticket-result-banner::after{display:none!important;content:none!important}
+ .scratch-award-toast{position:fixed!important;z-index:220!important;top:calc(var(--terminal-header-height,58px) + 14px)!important;left:calc(50% + 32px)!important;transform:translateX(-50%)!important;width:min(520px,calc(100% - 100px))!important;box-sizing:border-box!important;padding:16px 22px!important;pointer-events:none!important;user-select:none;isolation:isolate;text-align:center!important;border:1px solid var(--inner-border,#aaa)!important;background:color-mix(in srgb,var(--inner-card-bg,#151515) 90%,transparent)!important;color:var(--inner-text-main,#eee)!important;box-shadow:0 8px 24px #0003;backdrop-filter:blur(5px);font-family:Georgia,'Noto Serif SC',serif!important}
+ .scratch-award-toast[hidden]{display:none!important}
+ .scratch-award-toast::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,#8080800c 2px 3px);z-index:-1}
+ .scratch-award-label{font-size:13px!important;line-height:20px!important;height:20px;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;letter-spacing:.08em}
+ .scratch-award-amount{font-size:24px!important;line-height:32px!important;height:32px;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+ .scratch-award-enter{animation:scratch-award-appear .24s ease-out both!important}
+ @keyframes scratch-award-appear{from{opacity:.25;translate:0 -6px}to{opacity:1;translate:0 0}}
+ body.effects-off .scratch-award-toast{animation:none!important}
+ @media(prefers-reduced-motion:reduce){.scratch-award-toast{animation:none!important}}
+ @media(max-width:767px){.scratch-award-toast{left:calc(50% + 28px)!important;width:calc(100% - 80px)!important;padding:12px!important}.scratch-award-amount{font-size:20px!important}}
+}
+@layer aved-section-ui {
+ #inner-app-view #scratch-tiers-bar{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important}
+ #inner-app-view #scratch-tiers-bar .scratch-tier-btn{padding:5px 2px!important;min-height:44px!important;min-width:0!important;box-shadow:none!important}
+ #scratch-tiers-bar .scratch-tier-btn>div{font-size:12px!important;line-height:17px!important;margin:0!important;white-space:nowrap!important}
+ #game-panel-scratch .scratch-printed-mark{display:inline-block!important;width:25px;height:25px;vertical-align:middle;color:var(--mark-ink)!important;flex:none}
+ #scratch-lobby-view .scratch-ticket-band{height:34px!important;min-height:34px!important;padding-inline:12px!important;background-image:repeating-linear-gradient(45deg,transparent 0 5px,#80808016 5px 6px)!important}
+ #scratch-lobby-view .scratch-ticket-card>div>.p-5{padding:12px!important}
+ #scratch-lobby-view .scratch-ticket-preview{padding:6px!important;gap:4px!important}
+ #scratch-lobby-view .scratch-preview-cell{height:15px!important;min-height:15px!important}
+ #scratch-lobby-view .scratch-preview-cell .scratch-printed-mark{height:13px!important;width:13px!important}
+ #game-panel-scratch #scratch-back-lobby-btn{margin:5px 0 9px!important}
+ #game-panel-scratch .scratch-ticket-heading{position:relative;gap:8px!important;padding:8px 8px 10px!important;background:repeating-linear-gradient(120deg,transparent 0 7px,#8080800c 7px 8px);border-block:1px solid var(--inner-border-soft);isolation:isolate}
+ #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{content:'';position:absolute;width:36px;height:36px;top:9px;border:3px double var(--inner-border);border-radius:50%;opacity:.65;z-index:-1}
+ #game-panel-scratch .scratch-ticket-heading::before{left:12px}#game-panel-scratch .scratch-ticket-heading::after{right:12px}
+ #scratch-ticket-ornament{position:absolute;top:14px;left:19px;line-height:1}
+ #scratch-ticket-ornament .scratch-printed-mark{width:22px!important;height:22px!important}
+ #game-panel-scratch #active-ticket-title-bar{font-size:20px!important;line-height:26px!important}
+ #game-panel-scratch .scratch-ticket-actions{gap:8px!important}
+ #game-panel-scratch .scratch-ticket-actions button{min-height:36px!important;padding:6px 12px!important;font-size:12px!important;line-height:22px!important}
+ #inner-app-view #active-ticket-board-container{padding:10px!important;margin-top:10px!important}
+ #inner-app-view #active-ticket-board-container>.grid{display:grid!important;gap:6px!important}
+ #inner-app-view #active-ticket-board-container>.scratch-reference-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ #inner-app-view #active-ticket-board-container>.scratch-prize-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;margin-top:8px!important}
+ #inner-app-view #active-ticket-board-container>.scratch-match-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ #inner-app-view #active-ticket-board-container>.scratch-step-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #inner-app-view #game-panel-scratch :is(.scratch-cell-foil,.scratch-revealed-cell){box-sizing:border-box!important;height:58px!important;min-height:58px!important;max-height:58px!important;padding:4px!important;gap:0!important;overflow:hidden!important;min-width:0!important}
+ #game-panel-scratch .scratch-revealed-cell>div{font-size:12px!important;line-height:19px!important;margin:0!important;white-space:nowrap!important}
+ #game-panel-scratch .scratch-cell-foil>span{font-size:11px!important;line-height:18px!important;margin:0!important}
+ #game-panel-scratch #active-ticket-result-banner{height:36px!important;min-height:36px!important;max-height:36px!important;padding:6px!important;margin-top:8px!important;font-size:12px!important}
+ @media(max-width:767px){
+  #inner-app-view #game-panel-scratch{padding:10px!important}
+  #scratch-play-table-view{padding-top:0!important}
+  #inner-app-view #active-ticket-board-container{padding:7px!important}
+  #inner-app-view #active-ticket-board-container>.grid{gap:4px!important}
+  #inner-app-view #game-panel-scratch :is(.scratch-cell-foil,.scratch-revealed-cell){height:49px!important;min-height:49px!important;max-height:49px!important;padding:2px!important}
+  #game-panel-scratch .scratch-revealed-cell>div{font-size:11px!important;line-height:17px!important;letter-spacing:0!important}
+  #game-panel-scratch .scratch-cell-foil>span{font-size:10px!important;line-height:16px!important}
+  #game-panel-scratch .scratch-printed-mark{width:21px!important;height:21px!important}
+  #game-panel-scratch .scratch-ticket-heading{gap:6px!important;padding-block:6px 8px!important}
+  #game-panel-scratch #active-ticket-title-bar{font-size:18px!important;line-height:24px!important}
+ }
+}
+@layer aved-section-ui {#scratch-back-lobby-btn{scroll-margin-top:72px}}
+@layer aved-section-ui {
+ @media(max-width:480px){
+  #inner-app-view #scratch-tiers-bar{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #inner-app-view #scratch-tiers-bar .scratch-tier-btn{display:flex!important;align-items:center;justify-content:center;gap:5px!important;padding:4px!important;min-height:36px!important}
+  #scratch-tiers-bar .scratch-tier-btn>div{font-size:11px!important;font-variant-numeric:tabular-nums}
+ }
+}
+@layer aved-section-ui {
+ #ticket-modal-balance-preview{white-space:pre-line!important;line-height:1.65!important}
+ #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:none!important;content:none!important}
+}
+@layer aved-section-ui {
+ #inner-app-view #view-casino .company-play-ticker,#inner-app-view #view-casino .aved-jackpot-strip{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;align-self:stretch!important}
+ #inner-app-view .company-ticker-track .ticker-copy{gap:8px!important;padding-inline:14px!important;justify-content:flex-start!important}
+ #inner-app-view .ticker-copy svg{width:18px!important;height:18px!important}
+ #inner-app-view #view-casino .aved-jackpot-strip{font-size:13px!important;font-family:var(--terminal-copy,serif)!important}
+ #inner-app-view #view-casino .aved-jackpot-strip strong,#inner-app-view #view-casino .aved-jackpot-message{font-size:13px!important;font-family:inherit!important;letter-spacing:0!important}
+ #inner-app-view #view-casino .aved-jackpot-strip strong{color:var(--brand-red-ink)!important;font-weight:500!important}
+ #inner-app-view #view-casino .aved-jackpot-message{color:var(--inner-text-main)!important}
+ #inner-app-view #scratch-lobby-view .scratch-ticket-preview{display:flex!important;flex-direction:column;align-items:center;justify-content:center;height:126px!important;min-height:126px!important;padding:12px 18px!important;gap:8px!important;border:1px dashed var(--inner-border)!important;background:repeating-linear-gradient(45deg,transparent 0 8px,#8080800b 8px 9px),var(--inner-card-alt)!important}
+ .scratch-mini-foil{display:flex;align-items:center;justify-content:center;min-width:0;height:24px;border:1px solid var(--inner-border-soft);background:linear-gradient(125deg,#80808020,#e0ddce65 44%,#80808050 58%,#e0ddce35);box-shadow:inset 0 1px #ffffff18}
+ .scratch-mini-foil.mini-revealed{background:var(--inner-card-bg)}
+ #scratch-lobby-view .scratch-ticket-preview .scratch-printed-mark{width:19px!important;height:19px!important}
+ .scratch-mini-match{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:82%;max-width:230px}
+ .scratch-mini-reference{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:76%;max-width:220px}
+ .scratch-mini-reference .scratch-mini-foil{height:19px;border-radius:50%}
+ .scratch-mini-reference .scratch-mini-foil:last-child{border-radius:1px}
+ .scratch-mini-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:76%;max-width:220px}
+ .scratch-mini-numbers .scratch-mini-foil{height:18px}
+ .scratch-mini-steps{display:flex;flex-direction:column;gap:4px;width:85%;max-width:240px}
+ .scratch-mini-steps>div{display:grid;grid-template-columns:24px minmax(0,1fr) 7px;align-items:center;gap:6px;margin-left:var(--step-indent);margin-right:calc(20px - var(--step-indent))}
+ .scratch-mini-steps .scratch-mini-foil{height:16px}
+ .scratch-mini-steps i{display:block;width:6px;height:6px;border-radius:50%;background:var(--inner-border)}
+ .scratch-mini-steps .scratch-printed-mark{max-height:13px!important}
+ @media(max-width:767px){#inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:112px!important;min-height:112px!important;padding:10px 14px!important}}
+}
+@layer aved-section-ui {
+ .scratch-mini-reference .scratch-mini-foil{border-radius:50%!important}
+ .scratch-mini-reference .scratch-mini-foil:last-child{border-radius:1px!important}
+}
+@layer aved-section-ui {
+ #inner-app-view #daily-allocation{gap:0!important}
+ #inner-app-view #daily-allocation>article{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:2px 12px!important;padding:10px 0!important;min-height:0!important}
+ #inner-app-view #daily-allocation>article>.reward-no{display:none!important}
+ #inner-app-view #daily-allocation>article>div:nth-child(2){display:contents!important}
+ #inner-app-view #daily-allocation h3{grid-column:1!important;grid-row:1!important;font-size:15px!important;line-height:21px!important;margin:0!important}
+ #inner-app-view #daily-allocation p{grid-column:1!important;grid-row:2!important;font-size:12px!important;line-height:18px!important;margin:0!important}
+ #inner-app-view #daily-allocation>article>:is(time,#relief-available){grid-column:1!important;grid-row:3!important;font-size:11px!important;line-height:17px!important;margin:0!important}
+ #inner-app-view #daily-allocation>article>:is(#daily-claim-slot,#relief-claim-slot,#hourly-claim){grid-column:2!important;grid-row:1/4!important;align-self:center!important}
+ #inner-app-view #daily-allocation button{min-height:36px!important;min-width:70px!important;padding:5px 9px!important;font-size:12px!important;line-height:22px!important}
+ #inner-app-view #view-casino .terminal-game-tabs{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:5px!important;width:100%!important;overflow:visible!important;padding:0!important}
+ #inner-app-view #view-casino .terminal-game-tabs .game-tab-btn{min-height:34px!important;height:34px!important;padding:5px 4px!important;font-size:12px!important;line-height:22px!important;white-space:nowrap!important;width:100%!important;margin:0!important}
+ #inner-app-view #view-casino .terminal-game-header>.retro-corner-box{padding:7px!important}
+ #inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:146px!important;min-height:146px!important;padding:12px!important}
+ #scratch-lobby-view .scratch-mini-match,#scratch-lobby-view .scratch-mini-reference,#scratch-lobby-view .scratch-mini-numbers,#scratch-lobby-view .scratch-mini-steps{width:92%!important;max-width:360px!important}
+ #scratch-lobby-view .scratch-mini-match .scratch-mini-foil{height:31px!important}
+ #scratch-lobby-view .scratch-mini-reference .scratch-mini-foil{height:25px!important}
+ #scratch-lobby-view .scratch-mini-numbers .scratch-mini-foil{height:25px!important}
+ #scratch-lobby-view .scratch-mini-steps .scratch-mini-foil{height:21px!important}
+ #game-panel-scratch .scratch-ticket-heading{padding:14px 10px 12px!important;border:1px solid var(--inner-border)!important;border-bottom:3px double var(--inner-border)!important;background:repeating-radial-gradient(ellipse at 50% 0,transparent 0 7px,var(--inner-border-soft) 8px 9px,transparent 10px 16px),linear-gradient(90deg,var(--inner-card-alt),var(--inner-card-bg),var(--inner-card-alt))!important;background-size:32px 20px,100% 100%!important}
+ #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:block!important;content:''!important;position:absolute;top:13px;width:clamp(12px,8%,58px);height:12px;border:0!important;border-block:3px double var(--inner-border)!important;border-radius:0!important;opacity:.65}
+ #game-panel-scratch .scratch-ticket-heading::before{left:12px}#game-panel-scratch .scratch-ticket-heading::after{right:12px}
+ #scratch-play-rules{padding:13px 14px!important;margin-top:14px!important;border-top:1px solid var(--inner-border)!important;background:var(--inner-card-alt)}
+ #scratch-play-rules h4{font-size:14px!important;line-height:22px!important;margin:0 0 6px!important;color:var(--inner-text-main)!important}
+ #scratch-play-rules p,#ticket-modal-rules p{font-size:12px!important;line-height:1.7!important;margin:3px 0!important;color:var(--inner-text-main)!important}
+ @media(max-width:767px){
+  #inner-app-view #view-casino .terminal-game-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important}
+  #inner-app-view #view-casino .terminal-game-tabs .game-tab-btn{font-size:11px!important;min-height:32px!important;height:32px!important;padding:4px 2px!important}
+  #inner-app-view #game-panel-home{padding:12px!important}
+  #inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:138px!important;min-height:138px!important}
+ }
+}
+@layer aved-section-ui {
+ #inner-app-view #scratch-lobby-view .scratch-ticket-preview{width:100%!important;max-width:560px!important;height:auto!important;min-height:0!important;box-sizing:border-box!important;padding:12px!important;margin-inline:auto!important}
+ #scratch-lobby-view .scratch-mini-ticket{display:flex;flex-direction:column;justify-content:center;gap:6px;width:88%;max-width:480px;aspect-ratio:1.618/1;min-height:0}
+ #scratch-lobby-view .scratch-mini-match,#scratch-lobby-view .scratch-mini-reference,#scratch-lobby-view .scratch-mini-numbers,#scratch-lobby-view .scratch-mini-steps{width:100%!important;max-width:none!important;min-height:0!important}
+ #scratch-lobby-view .scratch-mini-match{height:100%;grid-template-rows:repeat(3,minmax(0,1fr))}
+ #scratch-lobby-view .scratch-mini-reference{height:23%;flex:0 0 23%;gap:6px}
+ #scratch-lobby-view .scratch-mini-numbers{flex:1;grid-template-rows:repeat(3,minmax(0,1fr))}
+ #scratch-lobby-view .scratch-mini-steps{height:100%;justify-content:space-between}
+ #scratch-lobby-view .scratch-mini-steps>div{height:17%;grid-template-columns:24% minmax(0,1fr) 7px}
+ #scratch-lobby-view .scratch-ticket-preview .scratch-mini-foil{height:100%!important;min-height:0!important}
+ #game-panel-scratch .scratch-ticket-heading{background:none!important;background-image:none!important;border:0!important;border-bottom:1px solid var(--inner-border-soft)!important}
+ #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:none!important;content:none!important}
+}
+@layer aved-section-ui {
+ #inner-app-view #scratch-lobby-view .scratch-ticket-preview{width:88%!important;max-width:320px!important;padding:10px!important;margin:12px auto!important}
+ #scratch-lobby-view .scratch-mini-ticket{width:94%!important;max-width:none!important}
+}
