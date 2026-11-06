@@ -53,6 +53,9 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(items.find(x=>x.id===companyId).enabled,0);
  assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
  const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
+ const robot=await a('/api/admin/company-robots','POST',{codename:'榜单机器人',balance:19277});assert.equal(robot.status,200);
+ for(const path of ['/api/admin/employees','/api/admin/employees?roster=personnel'])assert.ok(!(await a(path)).data.items.some(x=>x.id===robot.data.id),'robots must never appear in human employee management');
+ assert.ok((await a('/api/admin/company-robots')).data.items.some(x=>x.id===robot.data.id));
  const cookie=await login('player-object'),player=(...args)=>req(cookie,...args);
  const state=(await player('/api/player/state')).data;
  assert.equal(state.employee.identityKind,'player_containment');
