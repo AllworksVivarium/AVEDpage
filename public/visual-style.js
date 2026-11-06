@@ -12,20 +12,26 @@ window.AVEDVisualStyle=function({byId}){
  const megaphone=document.querySelector('.notice-masthead>img');if(megaphone){const el=symbol('news');el.classList.add('notice-broadcast-symbol');el.removeAttribute('aria-hidden');el.setAttribute('role','img');el.setAttribute('aria-label','广播喇叭');megaphone.replaceWith(el);}
  document.body.insertAdjacentHTML('beforeend','<svg class="sidebar-type-definitions" aria-hidden="true" width="0" height="0"><defs><filter id="aved-sidebar-type" x="-4%" y="-12%" width="108%" height="124%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".012 .23" numOctaves="1" seed="21" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 1 0 0  0 0 0 1 0" result="bands"/><feDisplacementMap in="SourceGraphic" in2="bands" scale="1.8" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg>');
  const palettes={
-  original:{name:'原配色',colors:['#151310','#98282c','#cabda5','#eee7d7']},
-  ember:{name:'暖炭红',colors:['#38352E','#B84242','#E2A151','#F0E8B7']},
-  oxblood:{name:'黑金绛红',colors:['#000000','#BDB298','#5E0205','#E2D5BF']}
+  oxblood:{name:'黑金绛红',day:['#EDE9E2','#D3CFC7','#5E0205','#42464A'],night:['#000000','#E2D5BF','#5E0205','#BDB298']},
+  darkroom:{name:'暗房显影',day:['#F1EEE8','#D3CFC7','#98282C','#42464A'],night:['#151619','#F1EEE8','#98282C','#686D70']},
+  mineral:{name:'矿物收藏',day:['#EDE9E2','#CDC7BE','#98282C','#777D7C'],night:['#151310','#EDE9E2','#98282C','#A17E69']}
  };
  const preview=document.createElement('section');preview.className='palette-preview sidebar-expanded';
- preview.innerHTML='<label for="terminal-palette-preview"><span>配色预览 <small lang="en">PALETTE STUDY</small></span><select id="terminal-palette-preview"><option value="original">原配色 · Original</option><option value="ember">01 暖炭红 · Ember</option><option value="oxblood">02 黑金绛红 · Oxblood</option></select></label><div class="palette-swatches" aria-label="当前方案色板"></div>';
+ preview.innerHTML='<label for="terminal-palette-preview"><span>配色预览 <small lang="en">PALETTE STUDY</small></span><select id="terminal-palette-preview"><option value="oxblood">01 黑金绛红 · Oxblood</option><option value="darkroom">02 暗房显影 · Darkroom</option><option value="mineral">03 矿物收藏 · Mineral</option></select></label><p class="palette-mode-note" aria-live="polite"></p><div class="palette-swatches" aria-label="当前方案色板"></div>';
  sidebar.insertBefore(preview,section);
  const paletteSelect=preview.querySelector('select'),swatches=preview.querySelector('.palette-swatches');
  function applyPalette(value){
-  const selected=Object.hasOwn(palettes,value)?value:'ember',palette=palettes[selected];
+  const selected=Object.hasOwn(palettes,value)?value:'mineral',palette=palettes[selected];
   document.documentElement.dataset.palettePreview=selected;paletteSelect.value=selected;
-  swatches.innerHTML=palette.colors.map(color=>'<span title="'+color+'"><i style="--swatch:'+color+'" aria-hidden="true"></i><small>'+color.slice(1)+'</small></span>').join('');
-  swatches.setAttribute('aria-label',palette.name+'：'+palette.colors.join('、'));
+  const night=document.documentElement.dataset.savedTheme==='night';
+  document.body.classList.toggle('dark-mode',night);
+  preview.querySelector('.palette-mode-note').textContent='日间 / 夜间 · DAY / NIGHT';
+  const themeButton=byId('theme-toggle-btn');if(themeButton){themeButton.disabled=false;themeButton.textContent=night?'☀️ 日间模式':'🌙 夜间模式';themeButton.title='';}
+  const colors=night?palette.night:palette.day;
+  swatches.innerHTML=colors.map(color=>'<span title="'+color+'"><i style="--swatch:'+color+'" aria-hidden="true"></i><small>'+color.slice(1)+'</small></span>').join('');
+  swatches.setAttribute('aria-label',palette.name+(night?'夜间':'日间')+'：'+colors.join('、'));
  }
+ byId('theme-toggle-btn')?.addEventListener('click',()=>queueMicrotask(()=>applyPalette(paletteSelect.value)));
  applyPalette(document.documentElement.dataset.palettePreview);
  paletteSelect.addEventListener('change',()=>{applyPalette(paletteSelect.value);try{localStorage.setItem('aved_palette_preview_v1',paletteSelect.value);}catch{}});
  section.querySelector('[data-window-style]').value=document.documentElement.dataset.windowStyle||'radix';
