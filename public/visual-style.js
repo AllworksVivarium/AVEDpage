@@ -8,7 +8,7 @@ window.AVEDVisualStyle=function({byId}){
 
  // Preserve the original bitmap grain; luminance masks remove its black canvas.
  const symbols={
-  welcome:['personnel-moon.png','145% auto'],news:['broadcast.jpg','130% auto'],
+  welcome:['personnel-moon-icon-v1.png','145% auto'],news:['broadcast.jpg','130% auto'],
   departments:['directory-disk.png','165% auto'],containment:['containment-folder.png','155% auto'],
   life:['life-newspaper.png','120% auto'],forum:['forum-computer.jpeg','155% auto'],casino:['recreation-cards.jpeg','145% auto']
  };
