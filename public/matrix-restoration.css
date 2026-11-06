@@ -1,0 +1,101 @@
+/* Restore the original five-reel cabinet, framed cells and winning ring.
+   Colours follow the selected player palette; device effects remain optional. */
+@layer aved-restored-art {
+  #game-panel-slots {
+    --matrix-line:var(--inner-border);
+    --matrix-soft:var(--inner-border-soft);
+    --matrix-ink:var(--inner-text-main);
+    --matrix-paper:var(--inner-card-bg);
+    --matrix-alt:var(--inner-card-alt);
+    --matrix-red:var(--brand-red,var(--inner-crimson));
+    --matrix-screen:var(--screen,#121316);
+    --matrix-screen-ink:var(--study-screen-ink,#f5f2eb);
+  }
+  #game-panel-slots :is(.slot-machine,.retro-corner-box) {
+    border:1px solid var(--matrix-line) !important;
+    background:var(--matrix-paper) !important;box-shadow:3px 3px 0 #0002 !important;
+    min-width:0;
+  }
+  #game-panel-slots .retro-corner-box::before, #game-panel-slots .retro-corner-box::after {
+    display:block !important;border-color:var(--matrix-line) !important;
+  }
+  #game-panel-slots .retro-corner-box::before {border-width:2px 0 0 2px !important}
+  #game-panel-slots .retro-corner-box::after {border-width:0 2px 2px 0 !important}
+  #game-panel-slots .slot-machine {
+    border-width:2px !important;background:var(--matrix-screen) !important;
+    color:var(--matrix-screen-ink) !important;box-shadow:0 8px 18px #0003 !important;
+  }
+  #game-panel-slots :is(.slot-machine-heading,.slot-machine-readout) {
+    color:var(--matrix-screen-ink) !important;gap:8px;flex-wrap:wrap;
+    border-color:color-mix(in srgb,var(--matrix-screen-ink) 30%,transparent) !important;
+  }
+  #game-panel-slots :is(.slot-machine-heading,.slot-machine-readout) * {color:inherit !important}
+  #game-panel-slots .slot-machine-heading {border-bottom-width:1px !important}
+  #game-panel-slots .slot-machine-readout {
+    border:1px solid color-mix(in srgb,var(--matrix-screen-ink) 30%,transparent) !important;
+    background:color-mix(in srgb,var(--matrix-screen) 85%,var(--matrix-screen-ink)) !important;
+  }
+  #game-panel-slots .slot-reel-frame {
+    min-width:0;border:2px solid color-mix(in srgb,var(--matrix-screen-ink) 40%,transparent) !important;
+    background:color-mix(in srgb,var(--matrix-screen) 92%,var(--matrix-screen-ink)) !important;
+  }
+  #slot5x3-grid {
+    min-width:0;grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    grid-auto-rows:minmax(80px,auto);background:transparent !important;
+    border:0 !important;gap:6px !important;
+  }
+  #slot5x3-grid .slot-cell {
+    height:auto !important;min-height:80px;min-width:0;padding:6px 3px;
+    background:var(--matrix-alt) !important;color:var(--matrix-ink) !important;
+    border:2px solid var(--matrix-line) !important;
+    box-shadow:inset 0 2px 5px #0002 !important;
+  }
+  #slot5x3-grid .slot-cell * {color:inherit !important;max-width:100%}
+  #slot5x3-grid .slot-symbol {flex-shrink:0}
+  #slot5x3-grid .slot-symbol-name {text-align:center;overflow-wrap:anywhere;opacity:1 !important}
+  #slot5x3-grid .slot-cell.is-winning {
+    background:var(--brand-red-soft,var(--matrix-paper)) !important;
+    color:var(--brand-red-ink,var(--matrix-red)) !important;
+    border-color:var(--brand-red-ink,var(--matrix-red)) !important;
+    outline:1px solid var(--matrix-screen-ink) !important;outline-offset:1px !important;
+  }
+  body:not(.effects-off) #slot5x3-grid .slot-cell.is-winning {
+    box-shadow:0 0 8px color-mix(in srgb,var(--matrix-red) 35%,transparent) !important;
+  }
+  body.effects-off #slot5x3-grid .slot-cell.is-winning {transform:none !important}
+  #game-panel-slots .slot-line-rail {flex-shrink:0;align-self:stretch;height:auto;min-height:260px}
+  #game-panel-slots .slot-line-rail span {
+    background:var(--matrix-screen-ink) !important;color:var(--matrix-screen) !important;
+    border:1px solid var(--matrix-screen-ink) !important;
+  }
+  #game-panel-slots .inner-card-alt, #slot5x3-mechanisms-list>div {
+    background:var(--matrix-alt) !important;border:1px solid var(--matrix-soft) !important;
+  }
+  #slot5x3-mechanisms-list>div {border-style:dashed !important}
+  #game-panel-slots .slot-paytable-wrap {min-width:0;max-width:100%;overflow-x:auto}
+  #game-panel-slots .slot-paytable-wrap table {min-width:280px}
+  #game-panel-slots .slot-paytable-wrap :is(th,td) {border-bottom:1px solid var(--matrix-soft) !important}
+  #game-panel-slots .slot-line-paths {
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  }
+  #game-panel-slots .slot-line-paths>div {min-width:0;padding:6px 2px !important}
+  #slot5x3-spin-btn {
+    background:var(--matrix-red) !important;color:var(--study-on-red,#fff) !important;
+    border:1px solid var(--matrix-red) !important;min-height:48px;
+  }
+  #slot5x3-spin-btn * {color:inherit !important}
+  #game-panel-slots [data-slot-chip] {min-height:44px}
+  #game-panel-slots #slot5x3-bet-input {min-width:0;width:100%}
+  @media(max-width:767px) {
+    #game-panel-slots .slot-machine {padding:10px !important}
+    #game-panel-slots .slot-reel-frame {padding:6px !important}
+    #game-panel-slots .slot-line-rail {display:none !important}
+    #slot5x3-grid {gap:3px !important}
+    #slot5x3-grid .slot-cell {padding:6px 1px;border-width:1px !important}
+    #game-panel-slots .slot-machine-readout {padding:8px !important}
+    #game-panel-slots .game-rule-card {padding:12px !important}
+  }
+  @media(prefers-reduced-motion:reduce) {
+    #slot5x3-grid .slot-cell.is-winning {transform:none !important}
+  }
+}

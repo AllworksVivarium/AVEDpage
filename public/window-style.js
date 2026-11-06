@@ -1,27 +1,10 @@
 (function () {
-  const key='aved_window_style_v1';
-  const read=()=>{try{return localStorage.getItem(key)||'radix';}catch{return 'radix';}};
-  document.documentElement.dataset.windowStyle=read();
-  function apply(value) {
-    const selected=value==='previous'?'previous':'radix';
-    document.documentElement.dataset.windowStyle=selected;
-    document.body.classList.toggle('radix-terminal',selected==='radix');
-    document.querySelectorAll('[data-window-style]').forEach(select=>select.value=selected);
-    document.dispatchEvent(new Event('aved-window-style-change'));
-  }
+  // One restored player interface. Keep the class used by the approved chrome
+  // and neutral CRT particles; the former global flattening rules are gone.
+  document.documentElement.dataset.windowStyle='unified';
+  try{localStorage.removeItem('aved_window_style_v1');}catch{}
   document.addEventListener('DOMContentLoaded',()=>{
-    apply(read());
-    const sidebar=document.querySelector('#sidebar');
-    if(sidebar){
-      const settings=document.createElement('details');settings.className='visual-style-choice';
-      settings.innerHTML='<summary>显示设置</summary><div class="display-options"><label>界面风格<select data-window-style><option value="radix">窗口版</option><option value="previous">旧版</option></select></label></div>';
-      sidebar.append(settings);apply(read());
-    }
-  });
-  document.addEventListener('change',event=>{
-    if(!event.target.matches('[data-window-style]'))return;
-    const value=event.target.value;try{localStorage.setItem(key,value);}catch{}
-    apply(value);
+    document.body.classList.add('radix-terminal');
   });
   document.addEventListener('click',event=>{
     if(!event.target.closest('[data-display-settings]'))return;

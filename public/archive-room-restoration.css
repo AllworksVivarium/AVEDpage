@@ -1,0 +1,116 @@
+/* Restore the archive frames and recreation manuals present before eceb200.
+   Scoped to player views; the market, sidebar and management UI are untouched.
+   Device effects remain the first important layer and can disable all motion. */
+@layer aved-restored-art {
+  #inner-app-view .hub-signal figcaption {color:var(--study-screen-ink,#eee)!important}
+  :is(#view-containment,#view-departments,#game-panel-skydive,#game-panel-derby,#game-panel-doudizhu) :is(.retro-corner-box,.game-rule-card) {
+    position:relative;border:1px solid var(--inner-border-soft)!important;
+    background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;
+    box-shadow:3px 3px 0 #0002!important;
+  }
+  :is(#view-containment,#view-departments,#game-panel-skydive,#game-panel-derby,#game-panel-doudizhu) :is(.retro-corner-box,.game-rule-card)::before {
+    content:'';display:block!important;position:absolute;left:-1px;top:-1px;width:9px;height:9px;
+    border-top:2px solid var(--inner-border)!important;border-left:2px solid var(--inner-border)!important;pointer-events:none;
+  }
+  :is(#view-containment,#view-departments,#game-panel-skydive,#game-panel-derby,#game-panel-doudizhu) :is(.retro-corner-box,.game-rule-card)::after {
+    content:'';display:block!important;position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;
+    border-bottom:2px solid var(--inner-border)!important;border-right:2px solid var(--inner-border)!important;pointer-events:none;
+  }
+  /* Archive pinboard: separate the board, paper cards, evidence strips and tags. */
+  #view-containment .archive-pinboard {
+    border:2px solid var(--inner-border)!important;background:var(--inner-card-alt)!important;
+    background-image:radial-gradient(color-mix(in srgb,var(--inner-text-muted) 20%,transparent) .7px,transparent .7px)!important;
+    background-size:5px 5px!important;box-shadow:inset 0 0 18px #0002!important;
+  }
+  #view-containment .scp-item-card {
+    border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;
+    box-shadow:3px 4px 0 #0002!important;opacity:1!important;
+  }
+  #view-containment .scp-item-card[aria-current=true] {border:2px solid var(--brand-red-ink,var(--inner-crimson))!important;box-shadow:inset 3px 0 var(--brand-red-ink,var(--inner-crimson)),3px 4px 0 #0002!important}
+  #view-containment .scp-item-card:hover {background:var(--inner-card-alt)!important}
+  #view-containment .scp-glitchable-title {border:0!important;background:transparent!important;box-shadow:none!important;padding-inline:0!important}
+  #view-containment .clue-pin {background:var(--brand-red-ink,var(--inner-crimson))!important;border:1px solid var(--inner-text-main)!important;box-shadow:0 2px 3px #0006!important}
+  #view-containment .archive-evidence-strip {background:var(--screen,#101214)!important;color:var(--study-screen-ink,#eee)!important;border:1px solid var(--inner-border)!important}
+  #view-containment .archive-evidence-strip * {color:inherit!important}
+  #view-containment .archive-pin-label {background:var(--inner-text-main)!important;color:var(--inner-bg)!important}
+  #view-containment .archive-clues {border-top:1px dashed var(--inner-border-soft)!important}
+  #view-containment .archive-clues span {background:var(--inner-card-alt)!important;border:1px solid var(--inner-border-soft)!important;padding:3px 6px!important}
+  #view-containment .scp-filter-btn {min-height:40px;padding:6px 12px!important;border:1px solid var(--inner-border)!important}
+  #view-containment .scp-filter-btn[aria-pressed=true] {background:var(--brand-red,var(--inner-crimson))!important;color:#fff!important}
+  :is(#view-containment,#view-departments) :is(button,[tabindex]):focus-visible {outline:2px solid var(--brand-red-ink,var(--inner-crimson))!important;outline-offset:3px!important}
+  #view-containment #scp-detail-container {border-top:3px solid var(--brand-red-ink,var(--inner-crimson))!important}
+  #view-containment #scp-detail-container [class*=border-b] {border-bottom:1px solid var(--inner-border-soft)!important}
+  #view-containment #scp-realname-comments-list>div {border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-alt)!important}
+  /* Department sheets keep their existing SVG register artwork and personnel data. */
+  #view-departments .department-sheet {
+    border:1px solid var(--inner-border)!important;border-top:3px solid var(--brand-red-ink,var(--inner-crimson))!important;
+    background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;box-shadow:3px 4px 0 #0002!important;
+    padding:18px!important;min-height:230px;
+  }
+  #view-departments .department-sheet:hover {background:var(--inner-card-alt)!important}
+  #view-departments .department-selected {border-color:var(--brand-red-ink,var(--inner-crimson))!important;box-shadow:inset 4px 0 var(--brand-red-ink,var(--inner-crimson)),3px 4px 0 #0002!important}
+  #view-departments .department-meta {border-bottom:1px solid var(--inner-border-soft)!important;padding-bottom:10px!important;align-items:start;flex-wrap:wrap}
+  #view-departments .department-meta>span {max-width:100%;overflow-wrap:anywhere}
+  #view-departments .department-sheet footer {border-top:1px solid var(--inner-border-soft)!important;padding-top:12px!important;align-items:end}
+  #view-departments .department-sheet footer b {border:1px solid var(--inner-border)!important;background:var(--inner-card-alt)!important;padding:5px 8px!important;white-space:nowrap}
+  #view-departments .department-plate {opacity:.12!important}
+  #view-departments .company-leadership article {border:1px solid var(--inner-border-soft)!important;border-left:3px solid var(--brand-red-ink,var(--inner-crimson))!important;background:var(--inner-card-bg)!important}
+  #view-departments #personnel-directory-grid [class*=border] {border-width:1px!important;border-style:solid!important;border-color:var(--inner-border-soft)!important}
+  #view-departments [data-emp-photo-slot] {background:var(--brand-red,var(--inner-crimson))!important}
+  /* Numbered rule dossiers: current rules, restored framing and two-column rhythm. */
+  :is(#game-panel-skydive,#game-panel-derby,#game-panel-doudizhu) .game-rule-card {margin-top:24px!important;padding:24px!important;border-top:3px solid var(--brand-red-ink,var(--inner-crimson))!important}
+  :is(#game-panel-skydive,#game-panel-derby) .game-rule-card>h3 {border-bottom:1px solid var(--inner-border)!important;padding-bottom:14px!important;margin-bottom:18px!important}
+  .flight-rule-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .flight-rule-grid>article {min-width:0;padding:16px!important;background:var(--inner-card-alt)!important;border:1px solid var(--inner-border-soft)!important}
+  .flight-rule-grid>article>b {display:block;color:var(--brand-red-ink,var(--inner-crimson))!important;border-bottom:1px dashed var(--inner-border-soft)!important;padding-bottom:10px!important;margin-bottom:10px!important}
+  .flight-rule-grid p {opacity:1!important;overflow-wrap:anywhere}
+  .flight-protocol>p {padding-top:12px!important;margin-top:16px!important;border-top:1px dashed var(--inner-border-soft)!important;opacity:1!important}
+  :is(#game-panel-skydive,#game-panel-derby) :is(.flight-sidebar>section,.flight-sidebar>form,.derby-radio,.derby-proof,#shared-race-form) {border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important}
+  :is(#game-panel-skydive,#game-panel-derby) .flight-chips button {border:1px solid var(--inner-border)!important;background:var(--inner-card-alt)!important;min-height:40px;padding:6px 4px!important;white-space:nowrap}
+  :is(#game-panel-skydive,#game-panel-derby) .flight-chips {flex-wrap:wrap}
+  #shared-runner-options label {border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-alt)!important}
+  #shared-runner-options label:has(input:checked) {border-color:var(--brand-red-ink,var(--inner-crimson))!important;box-shadow:inset 3px 0 var(--brand-red-ink,var(--inner-crimson))!important}
+  /* Restore the original dark instrument surfaces without borrowing day-paper colors. */
+  .flight-console,.derby-stage {border:1px solid var(--screen-line,#626466)!important;background:var(--screen,#101214)!important;color:var(--study-screen-ink,#eee)!important}
+  .flight-console p,.derby-stage :is(p,small),#ddz-table [class*="text-neutral-"] {color:#bfc0bc!important}
+  .flight-scene {background:linear-gradient(180deg,#101315,#171a1c 70%,#281619)!important}
+  .flight-scene::after {border:12px solid #0002!important;box-shadow:inset 0 0 85px #0008!important}
+  .flight-topline,.flight-action,.flight-proof {border-block:1px solid var(--screen-line,#626466)!important}
+  .flight-altimeter {border-right:1px solid #74847766!important;background:#08121177!important}
+  .flight-altimeter i {background:#d6e7be!important;box-shadow:0 0 6px #d6e7be!important}
+  .flight-clouds {background:repeating-linear-gradient(174deg,transparent 0 160px,#c6e4df09 190px,transparent 240px)!important}
+  .flight-readout>span {border:1px solid #899d8d77!important;background:#10161499!important}
+  .flight-ground {border-top:1px solid #c45b46!important;background:#101614cc!important}
+  .flight-drop span {background:#081211bb!important;color:#d4e2ba!important}
+  .race-lane {border-top:1px solid #3c3e40!important}
+  .race-rail {border-bottom:1px solid #65676a!important;background:repeating-linear-gradient(90deg,transparent 0 34px,#ffffff10 34px 35px)!important}
+  .race-rail::after {border-right:2px dashed var(--brand-red-ink,#ef7479)!important}
+  .race-lane.winner {background:#ffffff09!important}
+  #game-panel-doudizhu {border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important}
+  #ddz-table {border:2px solid var(--screen-line,#626466)!important;background:var(--screen,#101214)!important;color:var(--study-screen-ink,#eee)!important}
+  #ddz-table [class*="bg-black/"] {background:#0006!important;border:1px solid #ffffff30!important}
+  #ddz-table :is(.ddz-card-btn,#ddz-hole-cards>div,#ddz-last-played-cards>div) {border:1px solid #333!important;background:#f4f1ea!important;color:#141413!important;box-shadow:2px 2px 0 #0005!important}
+  #ddz-table :is(.ddz-card-btn,#ddz-hole-cards>div,#ddz-last-played-cards>div)[class*="text-[#9e1b1b]"] {color:#9e1b1b!important}
+  #ddz-table .ddz-card-btn[aria-pressed=true] {border:2px solid #9e1b1b!important;outline:1px solid #fff!important;transform:translateY(-8px)}
+  #ddz-table #ddz-hole-cards>div[class*=bg-neutral] {background:repeating-linear-gradient(45deg,#25272a 0 3px,#3e4145 3px 4px)!important;color:#eee!important;border:1px solid #aaa!important}
+  #ddz-table .ddz-card-btn {height:auto!important;min-height:76px!important;padding:3px!important}
+  #ddz-action-bar button {border:1px solid #aaa!important;min-height:44px}
+  #ddz-player-role-badge {background:#eee!important;color:#111!important}
+  body:not(.effects-off) .heli-rotor {animation:rotorFlicker .14s linear infinite!important}
+  body:not(.effects-off) .is-descending .flight-clouds {animation:flightClouds 7s linear infinite!important}
+  body:not(.effects-off) .flight-drop {animation:parachuteLanding 3.4s ease-out forwards!important}
+  body:not(.effects-off) .flight-crash {animation:parachuteCrash 1.5s ease-in forwards!important}
+  @media(max-width:767px) {
+    .flight-rule-grid {grid-template-columns:minmax(0,1fr);gap:12px}
+    :is(#game-panel-skydive,#game-panel-derby,#game-panel-doudizhu) .game-rule-card {padding:16px!important}
+    .flight-rule-grid>article {padding:12px!important}
+    #view-departments .department-meta {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+    .derby-stage {padding:14px!important}
+    .race-lane {grid-template-columns:80px minmax(0,1fr);gap:10px}
+    .derby-live-top {flex-wrap:wrap}
+    .flight-topline {flex-wrap:wrap;gap:8px}
+  }
+  @media(prefers-reduced-motion:reduce) {
+    body:not(.effects-off) :is(.heli-rotor,.is-descending .flight-clouds,.flight-drop,.flight-crash) {animation:none!important}
+  }
+}

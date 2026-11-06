@@ -16,7 +16,6 @@
 .cloud-sky-scale{height:180px;border-left:2px solid currentColor;position:relative;margin:1rem}
 #cloud-sky-marker{position:absolute;left:-8px;transition:top 1.5s linear}
 #skydive-chat-messages,#derby-chat-messages{max-height:260px;overflow-y:auto;overflow-wrap:anywhere}
-#admin-nav-tab[hidden]{display:none!important}
 @media(min-width:1600px){#inner-app-view>div>div:last-child{padding:2rem 3rem}}
 @media(max-width:767px){
   #inner-app-view>header>div{padding:.6rem;gap:.5rem}

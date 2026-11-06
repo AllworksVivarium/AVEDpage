@@ -11,14 +11,12 @@
   #game-panel-stocks :is(.market-up,.stock-buy-btn,.tick-up) {color:var(--market-up) !important}
   #game-panel-stocks :is(.market-down,.stock-sell-btn,.tick-down) {color:var(--market-down) !important}
 
+}
+@layer aved-restored-art {
   #game-panel-stocks .market-crosshair-tooltip {
-    background:var(--study-panel,#f5efdf) !important;
-    color:var(--study-ink,#201c18) !important;
-    border:1px solid var(--inner-border) !important;
-    opacity:1 !important;backdrop-filter:none !important;
-  }
-  body.dark-mode #game-panel-stocks .market-crosshair-tooltip {
-    background:var(--study-panel,#171511) !important;
-    color:var(--study-ink,#eee5d3) !important;
+    background:#fff !important;color:#171717 !important;
+    min-width:0 !important;max-width:min(220px,calc(100% - 8px)) !important;box-sizing:border-box;
+    border:1px solid #777 !important;opacity:1 !important;
+    backdrop-filter:none !important;
   }
 }

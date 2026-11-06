@@ -97,13 +97,18 @@ test('containment glitch masks part of a name and restores it quickly',()=>{
   const attributes={'data-orig-title':'WY-001 · 咖啡机','data-scp-name':'咖啡机'};
   const element={textContent:'WY-001 · 咖啡机',getAttribute:k=>attributes[k],setAttribute:(k,v)=>{attributes[k]=v;}};
   let restore,delay;
-  const context={prefersReducedMotion:false,Math,document:{querySelectorAll:()=>[element]},clearTimeout(){},setTimeout(fn,ms){restore=fn;delay=ms;return 1;}};
+  const context={prefersReducedMotion:false,Math,document:{body:{classList:{contains:()=>false}},querySelectorAll:()=>[element]},clearTimeout(){},setTimeout(fn,ms){restore=fn;delay=ms;return 1;}};
+  const module={exports:{}};vm.runInNewContext(readFileSync(join(root,'public/archive-board.js'),'utf8'),{module});
+  context.AVEDArchiveBoard={glitch:options=>module.exports.glitch({...options,random:()=>0,setTimer:context.setTimeout,clearTimer:context.clearTimeout})};
   vm.runInNewContext(source.slice(start,end)+'triggerScpTitleRedactionGlitch();',context);
   assert.match(element.textContent,/^WY-001 · /);
   assert.match(element.textContent,/■/);
   assert.notEqual(element.textContent,'WY-001 · ■■■');
   assert.ok(delay<=100);
   restore();assert.equal(element.textContent,'WY-001 · 咖啡机');
+  context.document.body.classList.contains=()=>true;
+  vm.runInNewContext('triggerScpTitleRedactionGlitch();',context);
+  assert.equal(element.textContent,'WY-001 · 咖啡机');
 });
 
 test('live API uses database login, server-priced trades and persistent quantities',async t=>{
@@ -124,6 +129,15 @@ test('live API uses database login, server-priced trades and persistent quantiti
   const employeeLogin=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:'档案员',password:'player123'})});
   assert.equal(employeeLogin.status,200);const playerCookie=employeeLogin.headers.get('set-cookie').split(';')[0];
   async function player(path,body){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{cookie:playerCookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json()};}
+  const notice=await api('/api/admin/announcements',{title:'署名核验',body:'公告正文。',issuer:'收容部',drafter:'值班员',issuedOn:'2026-11-07',pinned:true});
+  assert.equal(notice.status,201);
+  const noticeState=(await player('/api/player/state')).data.announcements.find(n=>n.id===notice.data.id);
+  assert.equal(noticeState.issuer,'收容部');assert.equal(noticeState.drafter,'值班员');assert.equal(noticeState.issuedOn,'2026-11-07');assert.equal(noticeState.postCount,0);
+  assert.equal((await player('/api/posts',{announcementId:notice.data.id,body:'核验留言'})).status,201);
+  const noticeComments=(await player('/api/posts?announcementId='+notice.data.id)).data.items;
+  const noticeCount=(await player('/api/player/state')).data.announcements.find(n=>n.id===notice.data.id).postCount;
+  assert.equal(noticeCount,noticeComments.length);assert.equal(noticeCount,1);
+  assert.equal((await api('/api/admin/announcements',{title:'日期核验',body:'正文',issuer:'收容部',issuedOn:'2026-02-30'})).status,400);
   const state=(await player('/api/player/state')).data;assert.ok(state.serverTime);assert.ok(state.market.candles.length);
   const code=state.stocks[0].code;
   const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,leverage:10,price:1,seed:'client-injected'});

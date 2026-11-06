@@ -31,6 +31,9 @@
     mask-image:var(--symbol-image);mask-mode:luminance;
     mask-repeat:no-repeat;mask-position:center;mask-size:var(--symbol-size,contain);
   }
+  #left-sidebar [data-nav="welcome"]>.sidebar-symbol::before {
+    mask-position:calc(50% - 3px) center;
+  }
   #inner-app-view .notice-broadcast-symbol {
     flex:0 0 56px !important;width:56px !important;height:56px !important;
     color:var(--inner-text-main) !important;

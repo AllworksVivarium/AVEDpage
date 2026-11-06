@@ -283,17 +283,19 @@
           sidebar.classList.remove('w-52');
           sidebar.classList.add('w-16');
           labels.forEach(l => l.classList.add('hidden'));
-          if (arrow) arrow.textContent = '▶'; document.getElementById('sidebar-toggle-btn').textContent='▶';
+          if (arrow) arrow.textContent = '▶';
         } else {
           sidebar.classList.remove('w-16');
           sidebar.classList.add('w-52');
           labels.forEach(l => l.classList.remove('hidden'));
-          if (arrow) arrow.textContent = '◀'; document.getElementById('sidebar-toggle-btn').textContent='◀ 收起';
+          if (arrow) arrow.textContent = '◀';
         }
         const toggle=document.getElementById('sidebar-toggle-btn');
+        if(!toggle.querySelector('.sidebar-toggle-symbol'))toggle.innerHTML='<span class="sidebar-symbol sidebar-toggle-symbol" aria-hidden="true"></span><span class="sidebar-label"></span>';
+        toggle.querySelector('.sidebar-label').textContent=isSidebarCollapsed?'展开边栏':'收起边栏';
         toggle.setAttribute('aria-expanded',String(!isSidebarCollapsed));
-        toggle.setAttribute('aria-label',isSidebarCollapsed?'展开侧边栏':'收起侧边栏');
-        toggle.title=isSidebarCollapsed?'展开侧边栏':'收起侧边栏';
+        toggle.setAttribute('aria-label',isSidebarCollapsed?'展开边栏':'收起边栏');
+        toggle.title=isSidebarCollapsed?'展开边栏':'收起边栏';
         const drawerOpen = !isSidebarCollapsed && window.innerWidth < 768;
         document.getElementById('sidebar-backdrop').hidden = !drawerOpen;
         document.getElementById('inner-app-view').classList.toggle('sidebar-drawer-open', drawerOpen);
@@ -383,8 +385,10 @@
         document.getElementById('signal-status-title').textContent=title;
         document.getElementById('signal-progress-bar').style.width=progress+'%';
         document.getElementById('signal-noise-code').textContent=progress===100?'CARRIER: LOCKED':'CARRIER: SYNCING';
-        const logs=document.getElementById('signal-log-lines');logs.replaceChildren();
-        const entry=document.createElement('div');entry.textContent='> '+line;logs.append(entry);
+        const logs=document.getElementById('signal-log-lines');if(progress<40)logs.replaceChildren();
+        const steps=['正在确认个人身份令牌……','正在连接公司内网……','正在加载公司档案……'];
+        const count=progress<40?1:progress<80?2:3;
+        steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');entry.style.animation='signalLogReveal .18s ease-out both';entry.style.animationDelay=(index*70)+'ms';logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
       }
       async function restoreSavedLogin() {
         if(!document.getElementById('remember-credentials-checkbox').checked||!window.PasswordCredential||!navigator.credentials)return;
@@ -410,10 +414,12 @@
           const authenticated=await apiLogin(identifier,password,remember);
           signalPhase('欢迎回到公司，'+authenticated.employee.displayName,45,'正在接通员工终端……');
           await nextPaint();
+          signalPhase('正在加载公司档案',85,'正在加载公司档案……');
           const employee=await loadPlayerData();
           signalPhase('欢迎回到公司，'+employee.name,85,'正在调阅公司档案……');
           await nextPaint();
           await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-(performance.now()-connectStarted))));
+          idleSession.start(true);
           completeEnterIntranet(employee);
           signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
           await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:420));
@@ -468,6 +474,7 @@
         });
 
         if (target === 'containment') {
+          scpBoardSelection=null;renderScpArchives();
           randomizeScpDualNamePlaceholder();
           triggerScpTitleRedactionGlitch();
         } else if (target === 'forum') {
@@ -499,7 +506,9 @@
       function renderDepartmentsAndPersonnel() {
         const deptGrid = document.getElementById('departments-grid');
         if (deptGrid) {
-          deptGrid.innerHTML = departmentsData.map((d,i) => `<button type="button" data-department-filter="${d.name}" class="department-sheet ${window.avedDepartmentFilter===d.name?'department-selected':''}"><div class="department-meta"><span>AVED / ${esc(d.code)}</span><span>DIVISION ${String(i+1).padStart(2,'0')}</span></div><h3>${d.name}</h3><div class="department-summary"><p>${d.desc}</p><svg class="department-plate" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M12 20H388M12 44H388M12 188H388"/><text x="16" y="38">AVED / DIVISION REGISTER</text><text class="plate-title" x="12" y="102">${esc(d.code.split('//')[1]||'DIVISION')}</text><circle cx="60" cy="153" r="28"/><path d="M18 153H102M60 111V195"/><text class="plate-number" x="220" y="210">${String(i+1).padStart(2,'0')}</text></svg></div><footer><span>${d.motto}</span><b>调阅人员 ↗</b></footer></button>`).join('');
+          const departmentOrder=['收容部','武装部','医疗部','科研部','后勤部'];
+          const orderedDepartments=[...departmentsData].sort((a,b)=>(departmentOrder.indexOf(a.name)<0?99:departmentOrder.indexOf(a.name))-(departmentOrder.indexOf(b.name)<0?99:departmentOrder.indexOf(b.name)));
+          deptGrid.innerHTML = orderedDepartments.map((d,i) => `<button type="button" data-department-filter="${d.name}" class="department-sheet ${window.avedDepartmentFilter===d.name?'department-selected':''}"><div class="department-meta"><span>AVED / ${esc(d.code)}</span><span>DIVISION ${String(i+1).padStart(2,'0')}</span></div><h3>${d.name}</h3><div class="department-summary"><p>${d.desc}</p><svg class="department-plate" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M12 20H388M12 44H388M12 188H388"/><text x="16" y="38">AVED / DIVISION REGISTER</text><text class="plate-title" x="12" y="102">${esc(d.code.split('//')[1]||'DIVISION')}</text><circle cx="60" cy="153" r="28"/><path d="M18 153H102M60 111V195"/><text class="plate-number" x="220" y="210">${String(i+1).padStart(2,'0')}</text></svg></div><footer><span>${d.motto}</span><b>调阅人员 ↗</b></footer></button>`).join('');
         }
 
         let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='直属 / 待分配';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='直属 / 待分配').length;extra.hidden=!unassigned;extra.textContent='直属与待分配档案 / '+unassigned+' 人';
@@ -578,25 +587,14 @@
 
 
 
-      // 每次打开收容物页面时，概率性将随机收容物名字的部分字变成黑色方块 █，并在 650ms 后恢复正常
+      // Board names and summaries share one 50 ms restoration deadline.
+      let scpBoardSelection=null;
       function triggerScpTitleRedactionGlitch() {
-        if(document.body.classList.contains('effects-off'))return;
-        if(prefersReducedMotion)return;
-        const titles=[...document.querySelectorAll('.scp-glitchable-title')];
-        if(!titles.length)return;
-        const el=titles[Math.floor(Math.random()*titles.length)];
-        const original=el.getAttribute('data-orig-title')||el.textContent;
-        const name=el.getAttribute('data-scp-name')||original;
-        const chars=Array.from(name);if(!chars.length)return;
-        const max=chars.length===1?1:Math.max(1,Math.floor(chars.length*.5));
-        const indices=Array.from({length:chars.length},(_,i)=>i).sort(()=>Math.random()-.5).slice(0,max);
-        const mutated=chars.map((ch,i)=>indices.includes(i)?'■':ch).join('');
-        const fragment=name===original?mutated:original.slice(0,original.lastIndexOf(name))+mutated;
-        clearTimeout(el._redactionTimer);el.setAttribute('aria-label',original);el.textContent=fragment;
-        el._redactionTimer=setTimeout(()=>{el.textContent=original;},80);
+        AVEDArchiveBoard.glitch({document,enabled:!document.body.classList.contains('effects-off')&&!prefersReducedMotion});
       }
 
       function renderScpArchives() {
+        document.querySelectorAll('.scp-filter-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===selectedScpFilter)));
         const listEl = document.getElementById('scp-list-container');
         const emptyBox = document.getElementById('scp-empty-state-box');
         const detailEl = document.getElementById('scp-detail-container');
@@ -612,7 +610,7 @@
         // 支持按双人组合如 "蒋正一 / 溟座" 的任意拆分词匹配
         const kwParts = kw.split(/[\s/]+/).filter(Boolean);
 
-        const filtered = scpSimulatedEmpty ? [] : scpItemsData.filter(item => {
+        const matching = scpSimulatedEmpty ? [] : scpItemsData.filter(item => {
           if(window.avedScpDepartment&&item.department!==window.avedScpDepartment)return false;
           const matchLevel = selectedScpFilter === 'ALL' || item.level === selectedScpFilter;
           if (!matchLevel) return false;
@@ -621,10 +619,15 @@
           return kwParts.some(part => haystack.includes(part));
         });
 
-        if (countFooter) countFooter.textContent = `FILES: ${filtered.length}`;
+        const boardKey=JSON.stringify([kw,selectedScpFilter,window.avedScpDepartment||'',matching.map(item=>item.id)]);
+        if(!scpBoardSelection||scpBoardSelection.key!==boardKey)scpBoardSelection={key:boardKey,ids:AVEDArchiveBoard.sample(matching,4).map(item=>item.id)};
+        const filtered=scpBoardSelection.ids.map(id=>matching.find(item=>item.id===id)).filter(Boolean);
+        if (countFooter) countFooter.textContent = `SHOWING: ${filtered.length} / FILES: ${matching.length}`;
 
+        document.getElementById('scp-realname-comment-form').hidden=!filtered.length;
         // 空状态切换逻辑（Empty State Pattern）
         if (filtered.length === 0) {
+          detailEl.replaceChildren();commentsListEl.replaceChildren();
           listEl.classList.add('hidden');
           emptyBox.classList.remove('hidden');
           emptyBox.classList.add('flex');
@@ -653,15 +656,15 @@
           const active = item.id === selectedScpId;
           const fullTitle = `${item.id} ${item.codeName}`;
           return `
-            <div data-scp-id="${item.id}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 ${active ? 'border-[#9e1b1b] shadow-lg' : 'border-black/60 opacity-90 hover:opacity-100'} transition cursor-pointer select-none flex flex-col justify-between">
+            <div data-scp-id="${item.id}" aria-current="${active}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 ${active ? 'border-[#9e1b1b] shadow-lg' : 'border-black/60 opacity-90 hover:opacity-100'} transition cursor-pointer select-none flex flex-col justify-between">
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-[10px] font-mono-tech font-bold px-1.5 py-0.5 bg-black text-white">${item.pinLabel}</span>
+                  <span class="archive-pin-label text-[10px] font-mono-tech font-bold px-1.5 py-0.5 bg-black text-white">${item.pinLabel}</span>
                   <div class="clue-pin" title="档案图钉"></div>
                   <span class="text-[10px] font-mono-tech font-bold text-[#9e1b1b]">${item.level}</span>
                 </div>
 
-                <div class="bg-[#141413] text-[#e8e3d5] p-2 mb-2 font-mono-tech text-[10px] flex items-center justify-between border border-black">
+                <div class="archive-evidence-strip bg-[#141413] text-[#e8e3d5] p-2 mb-2 font-mono-tech text-[10px] flex items-center justify-between border border-black">
                   <span class="truncate">📷 ${item.polaroidTag}</span>
                   <span class="text-red-400 font-bold ml-1 shrink-0">${item.id}</span>
                 </div>
@@ -671,10 +674,10 @@
                   data-orig-title="${fullTitle}" data-scp-name="${item.codeName}">
                   ${fullTitle}
                 </button>
-                <p class="text-xs text-[#4a463f] line-clamp-2 leading-relaxed mb-2">${item.summary}</p>
+                <p class="scp-glitchable-summary text-xs text-[#4a463f] line-clamp-1 leading-relaxed mb-2">${item.summary}</p>
               </div>
 
-              <div class="pt-2 border-t border-black/15 space-y-1.5">
+              <div class="archive-clues pt-2 border-t border-black/15 space-y-1.5">
 
                 <div class="flex flex-wrap gap-1">
                   ${item.clues.map(c => `<span class="text-[10px] font-mono-tech px-1.5 py-0.5 bg-[#e2dccb] text-[#141413] border border-black/20">#${c}</span>`).join('')}
@@ -1157,9 +1160,9 @@
             const sym = slot5x3State.board[r][c];
             const isWin = slot5x3State.winningCells.has(`${r}_${c}`);
             html += `
-              <div class="h-16 sm:h-18 bg-[#e8e3d5] border-2 ${isWin ? 'border-[#9e1b1b] ring-2 ring-white scale-[1.02]' : 'border-black'} text-[#141413] flex flex-col items-center justify-center shadow-inner transition">
-                <span class="text-xl sm:text-2xl">${sym.icon}</span>
-                <span class="text-[10px] font-mono-tech font-bold opacity-80 mt-0.5">${sym.name}</span>
+              <div class="slot-cell h-16 sm:h-18 bg-[#e8e3d5] border-2 ${isWin ? 'is-winning border-[#9e1b1b] ring-2 ring-white scale-[1.02]' : 'border-black'} text-[#141413] flex flex-col items-center justify-center shadow-inner transition">
+                <span class="slot-symbol text-xl sm:text-2xl" aria-hidden="true">${sym.icon}</span>
+                <span class="slot-symbol-name text-[10px] font-mono-tech font-bold opacity-80 mt-0.5">${sym.name}</span>
               </div>
             `;
           }
@@ -1322,7 +1325,7 @@
           tiersBar.innerHTML = scratchTiers.map(t => {
             const active = t.id === selectedTier.id;
             return `
-              <button type="button" data-tier-id="${t.id}"
+              <button type="button" data-tier-id="${t.id}" aria-pressed="${active}"
                 class="scratch-tier-btn p-2.5 border transition text-center cursor-pointer ${active ? 'bg-[var(--inner-accent)] text-[var(--inner-accent-text)] border-black font-bold shadow' : 'bg-[#141414] text-neutral-300 border-white/20 hover:border-white'}">
                 <div class="text-[11px] opacity-80">${t.name}</div>
                 <div class="text-sm font-bold mt-0.5">${fmtMoney(t.cost)}</div>
@@ -1344,9 +1347,9 @@
           lobbyView.innerHTML = scratchGameTypes.map(g => {
             const topPrize = selectedTier.topPrizes?.[g.type] ?? selectedTier.cost*100;
             return `
-              <div class="${g.cardBg} text-[#141413] border-2 border-[#141413] shadow-md flex flex-col justify-between overflow-hidden">
+              <div class="scratch-ticket-card ${g.cardBg} text-[#141413] border-2 border-[#141413] shadow-md flex flex-col justify-between overflow-hidden" data-ticket-kind="${g.type}">
                 <div>
-                  <div class="h-12 ${g.bgBand} border-b border-[#141413] flex items-center justify-between px-4 font-mono-tech text-xs">
+                  <div class="scratch-ticket-band h-12 ${g.bgBand} border-b border-[#141413] flex items-center justify-between px-4 font-mono-tech text-xs">
                     <span>A.V.E.D. RATION</span>
                     <span class="text-base">${g.icon}</span>
                   </div>
@@ -1357,15 +1360,15 @@
                       <p class="text-xs text-[#57534a]">${g.tagline}</p>
                     </div>
 
-                    <div class="p-3 bg-white/60 border border-[#141413]/20 grid grid-cols-4 gap-1.5">
+                    <div class="scratch-ticket-preview p-3 bg-white/60 border border-[#141413]/20 grid grid-cols-4 gap-1.5" aria-hidden="true">
                       ${Array.from({ length: 8 }).map((_, i) => `
-                        <div class="h-5 ${i === 0 ? 'bg-white border border-black flex items-center justify-center text-[10px]' : 'bg-[#9ca3af]'}">
+                        <div class="scratch-preview-cell h-5 ${i === 0 ? 'is-revealed bg-white border border-black flex items-center justify-center text-[10px]' : 'bg-[#9ca3af]'}">
                           ${i === 0 ? g.icon : ''}
                         </div>
                       `).join('')}
                     </div>
 
-                    <div class="flex items-center justify-between text-xs font-mono-tech pt-2 border-t border-[#141413]/20">
+                    <div class="scratch-ticket-summary flex items-center justify-between text-xs font-mono-tech pt-2 border-t border-[#141413]/20">
                       <div>
                         <div class="text-[#57534a]">最高津贴</div>
                         <div class="text-sm font-bold ${g.accentColor}">${fmtMoney(topPrize)}</div>
@@ -1453,7 +1456,7 @@
                 `;
               }
               return `
-                <div class="h-20 border-2 ${c.isWinPart ? 'border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
+                <div class="scratch-revealed-cell h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
                   <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${c.label}</div>
                   <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.sub}</div>
                 </div>
@@ -1726,7 +1729,7 @@
           const selected = ddzState.selectedIndices.has(idx);
           return `
             <button type="button" data-card-idx="${idx}"
-              class="ddz-card-btn w-11 h-16 bg-[#f4f1ea] border-2 ${selected ? 'border-[#9e1b1b] -translate-y-3 shadow-lg' : 'border-black'} ${c.isRed ? 'text-[#9e1b1b]' : 'text-black'} flex flex-col items-center justify-between p-1 font-bold text-xs transition cursor-pointer select-none">
+              aria-pressed="${selected}" class="ddz-card-btn w-11 h-16 bg-[#f4f1ea] border-2 ${selected ? 'border-[#9e1b1b] -translate-y-3 shadow-lg' : 'border-black'} ${c.isRed ? 'text-[#9e1b1b]' : 'text-black'} flex flex-col items-center justify-between p-1 font-bold text-xs transition cursor-pointer select-none">
               <span class="self-start text-[10px]">${c.suit}</span>
               <span class="text-xs">${c.label}</span>
               <span class="self-end text-[10px]">${c.suit}</span>
@@ -1818,7 +1821,7 @@
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
           positionTitle:data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
-        companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',createdAt:n.createdAt,issuer:'万业携生',summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
+        companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,issuer:n.issuer||'万业携生',drafter:n.drafter||'',issuedOn:n.issuedOn||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
@@ -1833,10 +1836,9 @@
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
         const checked=currentUser.lastCheckinDate===getTodayDateString();
-        byId('header-quick-checkin-btn').textContent=checked?'今日已签到':'每日签到 +¤10,000';byId('header-quick-checkin-btn').disabled=checked;
-        byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领低保 +¤10,000';
+        byId('header-quick-checkin-btn').textContent=checked?'已签到':'签到';byId('header-quick-checkin-btn').disabled=checked;
+        byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领取低保';
         byId('claim-relief-btn').textContent='余额低于 10,000 可领低保';
-        byId('admin-nav-tab').hidden=!currentUser.serverAdmin;
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
@@ -1857,7 +1859,16 @@
         byId('news-detail-article-box').innerHTML=AVEDNotices.article(n);
         byId('news-comment-identity-label').textContent='署名：'+currentUser.name;
         byId('news-detail-comments-list').textContent='正在调阅留言…';
-        api('/api/posts?announcementId='+n.id).then(d=>{if(currentNewsId!==n.id)return;byId('news-detail-comments-list').innerHTML=AVEDNotices.comments(d.items);byId('news-detail-comment-count').textContent='员工实名留言 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
+        byId('news-detail-comment-count').textContent='员工实名留言（读取中）';
+        refreshNoticeComments(n.id).catch(e=>{if(currentNewsId===n.id)byId('news-detail-comment-count').textContent='员工实名留言（读取失败）';showToast(e.message,'warn');});
+      }
+      let noticeCommentsRequest=0;
+      async function refreshNoticeComments(id){
+        const request=++noticeCommentsRequest,data=await api('/api/posts?announcementId='+id);
+        if(currentNewsId!==id||request!==noticeCommentsRequest)return;
+        const count=data.items.length,n=companyNews.find(item=>item.id===id);if(n)n.postCount=count;
+        byId('news-detail-comments-list').innerHTML=AVEDNotices.comments(data.items);
+        byId('news-detail-comment-count').textContent='员工实名留言 ('+count+')';
       }
       function randomizeScpDualNamePlaceholder(){byId('scp-search-input').placeholder=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)].codeName:'搜索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
@@ -2037,16 +2048,30 @@
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
       AVEDVisualStyle({byId});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
-      let rememberedSession=false;
-      api('/api/me').then(()=>{try{rememberedSession=!!localStorage.getItem('aved_username');}catch{}}).catch(()=>{});
-      byId('open-login-btn').addEventListener('click',event=>{
-        if(!rememberedSession)return;event.preventDefault();event.stopImmediatePropagation();rememberedSession=false;
-        signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');signalPhase('欢迎回到公司',12,'正在接通员工终端……');
-        const started=performance.now();(async()=>{try{await nextPaint();const employee=await loadPlayerData();signalPhase('欢迎回到公司，'+employee.name,85,'正在调阅公司档案……');await new Promise(r=>setTimeout(r,Math.max(0,1000-(performance.now()-started))));completeEnterIntranet(employee);signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');await new Promise(r=>setTimeout(r,420));}catch{loginModal.classList.remove('hidden');loginModal.classList.add('flex');}finally{signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');}})();
-      },true);
+      const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
+        currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+        document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
+        try{await apiLogout();}catch{}finally{location.reload();}
+      }});
+      for(const type of ['pointerdown','pointermove','keydown','wheel','touchstart'])document.addEventListener(type,()=>idleSession.activity(),{passive:true});
+      document.addEventListener('visibilitychange',()=>idleSession.check());
+      window.addEventListener('storage',event=>{if(event.key==='aved_last_activity_v1')idleSession.check();});
+      (async()=>{
+        try{
+          await api('/api/me');
+          if(idleSession.stale()){await apiLogout();return;}
+          signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
+          signalPhase('正在恢复员工终端',12,'正在确认个人身份令牌……');await nextPaint();
+          signalPhase('正在恢复员工终端',45,'正在连接公司内网……');await nextPaint();
+          signalPhase('正在恢复员工终端',85,'正在加载公司档案……');
+          const employee=await loadPlayerData();completeEnterIntranet(employee);idleSession.start();
+          signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
+          await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:260));
+        }catch{currentUser=null;}finally{signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');}
+      })();
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('game-panel-stocks').classList.contains('hidden'))refreshMarket().catch(()=>{});},5000);
 
-      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)renderForumView();},10000);
+      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)renderForumView();if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
 
 
     })();

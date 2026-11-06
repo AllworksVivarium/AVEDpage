@@ -50,6 +50,19 @@
   body.radix-terminal.dark-mode #left-sidebar {background:#0e0d0b !important}
 
   /* The supplied SVG keeps its original paths and a tightly fitted viewBox. */
+  /* The building is painted on body; an opaque window surface hides it. */
+  body.theme-landing #landing-view {background-color:transparent !important}
+  #landing-view .floating-kanji {animation:gatewayBrandDrift 8s ease-in-out infinite !important}
+  @keyframes gatewayBrandDrift {
+    0%,100% {transform:translateY(0);text-shadow:0 0 8px #ffffff40}
+    50% {transform:translateY(-2px);text-shadow:0 0 12px #ffffff55}
+  }
+  body:not(.theme-inner) :is(#text-edit-launcher,#type-study-launcher,#text-edit-panel,#type-study-panel) {display:none !important}
+  body:not([data-player-design-editor="true"]) :is(#text-edit-launcher,#type-study-launcher,#text-edit-panel,#type-study-panel) {display:none !important}
+  body.effects-off #landing-view .floating-kanji {animation:none !important;transform:none !important}
+  @media(prefers-reduced-motion:reduce) {
+    #landing-view .floating-kanji {animation:none !important;transform:none !important}
+  }
   #landing-view .landing-brand-row {min-width:0;gap:clamp(6px,2vw,28px) !important}
   #landing-view .landing-brand-row .floating-kanji {
     font-size:clamp(26px,4.2vw,64px) !important;
@@ -59,17 +72,17 @@
   #cover-logo-slot {
     width:clamp(100px,18vw,208px) !important;
     height:clamp(100px,18vw,208px) !important;
-    flex:0 0 auto;animation:none !important;filter:none !important;
+    flex:0 0 auto;
   }
   #cover-logo-slot .company-emblem {
     display:block;width:100%;height:100%;max-width:100%;object-fit:contain;opacity:.94;
   }
   #open-login-btn .login-trigger-badge {
-    flex:0 0 auto;background:rgba(255,255,255,.1) !important;color:#fff !important;
-    border:.5px solid rgba(255,255,255,.6) !important;
+    flex:0 0 auto;background:#98282c !important;color:#fff !important;
+    border:.5px solid #98282c !important;
   }
   #open-login-btn:is(:hover,:focus-visible) .login-trigger-badge {
-    background:var(--brand-red) !important;border-color:var(--brand-red) !important;
+    background:#b03b40 !important;border-color:#b03b40 !important;
   }
   #open-login-btn {max-width:100%;min-width:0}
   #open-login-btn>.login-trigger-content {min-width:0;gap:12px !important}
@@ -223,13 +236,123 @@
     #inner-app-view .finance-grid {grid-template-columns:minmax(0,1fr) !important}
     #inner-app-view .terminal-game-tabs {display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px !important}
     #inner-app-view .terminal-game-tabs .game-tab-btn {width:100%;padding:8px !important;font-size:12px !important;line-height:1.4 !important}
-    #inner-app-view .reward-allocation>article {display:grid !important;grid-template-columns:minmax(0,1fr) !important;width:100%;gap:12px !important;justify-items:start}
-    #inner-app-view .reward-allocation>article>* {grid-column:1 !important;grid-row:auto !important;justify-self:start}
-    #inner-app-view .reward-allocation button {max-width:100%;white-space:normal !important}
   }
   @media (max-width:479px) {
     #landing-view .landing-brand-row :is(.tech-line-left,.tech-line-right) {display:none}
     #open-login-btn {padding:12px !important}
     #open-login-btn .login-trigger-copy>div:last-child {font-size:12px !important;letter-spacing:0 !important}
   }
+}
+
+@layer aved-type-system {
+  @media(max-width:767px) {
+    #open-login-btn {padding:10px 12px !important}
+    #open-login-btn .login-trigger-content {gap:10px !important}
+    #open-login-btn .login-trigger-badge {padding:7px 9px !important;font-size:11px !important}
+    #open-login-btn .login-trigger-copy :is(div,span) {font-size:12px !important;line-height:1.4 !important}
+    #open-login-btn .login-trigger-copy>div:last-child {font-size:10px !important}
+  }
+}
+
+/* Player reward rows: content on the left, compact actions on the right. */
+@layer aved-site {
+  #inner-app-view .reward-allocation {container-type:inline-size}
+  #inner-app-view .reward-allocation>article {
+    display:grid!important;grid-template-columns:minmax(0,1fr) max-content!important;
+    gap:6px 14px!important;align-items:start!important;padding:18px 0!important;
+  }
+  #inner-app-view .reward-allocation>article>.reward-no {grid-column:1!important;grid-row:1!important}
+  #inner-app-view .reward-allocation>article>div:nth-child(2) {grid-column:1!important;grid-row:2!important;min-width:0}
+  #inner-app-view .reward-allocation>article>:is(time,#relief-available) {grid-column:1!important;grid-row:3!important}
+  #inner-app-view .reward-allocation>article>:is(#daily-claim-slot,#relief-claim-slot,#hourly-claim) {
+    grid-column:2!important;grid-row:1 / 4!important;align-self:center!important;justify-self:end!important;
+  }
+  #inner-app-view .reward-allocation h3 {margin:0 0 6px!important}
+  #inner-app-view .reward-allocation p {overflow-wrap:anywhere}
+  #inner-app-view .reward-allocation button {
+    width:auto!important;min-width:84px!important;min-height:44px!important;
+    padding:8px 12px!important;white-space:nowrap!important;margin:0!important;
+  }
+  @container (max-width:360px) {
+    #inner-app-view .reward-allocation>article>div:nth-child(2) {display:contents!important}
+    #inner-app-view .reward-allocation h3 {grid-column:1!important;grid-row:2!important}
+    #inner-app-view .reward-allocation p {grid-column:1 / -1!important;grid-row:3!important}
+    #inner-app-view .reward-allocation>article>:is(time,#relief-available) {grid-column:1 / -1!important;grid-row:4!important}
+    #inner-app-view .reward-allocation>article>:is(#daily-claim-slot,#relief-claim-slot,#hourly-claim) {grid-row:1 / 3!important}
+  }
+}
+
+/* Header wordmark is an independent brand treatment, outside the type catalog. */
+@layer aved-type-system {
+  #inner-app-view .terminal-brand-mark .terminal-brand-name {
+    font:500 21px/1.2 'Noto Serif TC','Noto Serif SC',serif !important;
+    letter-spacing:0 !important;
+  }
+  #inner-app-view .terminal-brand-mark .terminal-brand-code {
+    gap:0 !important;
+    font:500 17px/1.05 'AVED Plex Mono',monospace !important;
+    letter-spacing:0 !important;white-space:nowrap !important;
+  }
+  #inner-app-view .terminal-brand-mark .terminal-brand-code small {
+    font:italic 400 10px/1.1 'AVED Plex Mono',monospace !important;
+    letter-spacing:0 !important;white-space:nowrap !important;
+  }
+  @media(max-width:767px) {
+    #inner-app-view .terminal-brand-mark .terminal-brand-name {font-size:16px !important}
+    #inner-app-view .terminal-brand-mark .terminal-brand-code {font-size:13px !important}
+    #inner-app-view .terminal-brand-mark .terminal-brand-code small {font-size:8px !important}
+  }
+}
+
+/* Gateway-only monochrome: never inherits the employee terminal palette. */
+@layer aved-interactions {
+ #landing-view #open-login-btn {background:rgba(22,23,23,.4)!important;border-color:#a5aaa780!important;box-shadow:0 0 12px #b5bdb60b!important;backdrop-filter:blur(2px)!important;color:#bfc4c1!important}
+ #landing-view #open-login-btn:is(:hover,:focus-visible) {background:rgba(52,55,54,.48)!important;border-color:#c7ceca99!important;box-shadow:0 0 14px #b5bdb61c!important}
+ #landing-view #open-login-btn .login-trigger-copy :is(div,span) {color:#c0c5c2!important}
+ #landing-view .landing-brand-row,#landing-view .landing-motto {opacity:.76}
+ #landing-view #cover-logo-slot .company-emblem {opacity:.72!important;filter:brightness(.84) contrast(.94)!important}
+ #landing-view #open-login-btn::after {content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 1px 3px);opacity:.4}
+ body:not(.effects-off) #landing-view #open-login-btn .login-trigger-copy {animation:gatewaySignalSlip 11s steps(1,end) infinite}
+ #signal-Connecting-overlay {background-color:rgba(7,9,8,.84)!important}
+ #signal-Connecting-overlay .signal-mesh {background-color:rgba(18,21,20,.8)!important;color:#bcc3bf!important;border-color:#a6b0a980!important;box-shadow:0 0 22px #c0c8c00b!important}
+ #signal-Connecting-overlay #signal-status-title {color:#c4ccc7!important}
+ #signal-Connecting-overlay #signal-progress-bar {background:#aab5ae!important}
+ #signal-Connecting-overlay #signal-log-lines {height:auto!important;min-height:78px;overflow:visible!important;line-height:1.7!important}
+ #left-sidebar .palette-swatches,#left-sidebar .palette-swatches * {transform:none!important;scale:1!important;animation:none!important;transition:none!important;min-width:0}
+ #left-sidebar .palette-swatches>span {grid-template-rows:17px 12px;min-height:33px}
+ @media(max-width:767px) {
+  #landing-view #open-login-btn {padding:8px 10px!important}
+  #landing-view #open-login-btn .login-trigger-content {gap:8px!important}
+  #landing-view #open-login-btn .login-trigger-badge {font-size:10px!important;padding:6px 7px!important}
+  #landing-view #open-login-btn .login-trigger-copy :is(div,span) {font-size:10px!important;line-height:1.35!important}
+  #landing-view #open-login-btn .login-trigger-copy>div:last-child {font-size:8px!important}
+ }
+ body.effects-off #landing-view #open-login-btn .login-trigger-copy {animation:none!important}
+ @media(prefers-reduced-motion:reduce) {#landing-view #open-login-btn .login-trigger-copy,#signal-log-lines>div {animation:none!important}}
+}
+@keyframes gatewaySignalSlip {0%,96%,98%,100% {translate:0;text-shadow:none}96.5% {translate:.6px 0;text-shadow:-.5px 0 #b3c8c466}97% {translate:-.6px 0;text-shadow:.5px 0 #bba9a966}}
+@keyframes signalLogReveal {from {opacity:0;translate:0 2px}to {opacity:1;translate:0}}
+
+/* Gateway exceptions belong beside the type system, above legacy overrides. */
+@layer aved-type-system {
+ #signal-Connecting-overlay {background:rgba(7,9,8,.84)!important}
+ #signal-Connecting-overlay>.signal-mesh {background:rgba(18,21,20,.8)!important;color:#bcc3bf!important;border-color:#a6b0a980!important}
+ #signal-Connecting-overlay #signal-status-title {color:#c4ccc7!important}
+ #signal-Connecting-overlay #signal-progress-bar {background:#aab5ae!important}
+ @media(max-width:767px) {
+  #landing-view #open-login-btn {padding:8px 10px!important}
+  #landing-view #open-login-btn .login-trigger-content {gap:8px!important}
+  #landing-view #open-login-btn .login-trigger-badge {font-size:10px!important;padding:6px 7px!important}
+  #landing-view #open-login-btn .login-trigger-copy :is(div,span) {font-size:10px!important;line-height:1.35!important}
+  #landing-view #open-login-btn .login-trigger-copy>div:last-child {font-size:8px!important}
+ }
+}
+
+@layer aved-device-effects {
+ body.editor-tools-hidden :is(#text-edit-launcher,#type-study-launcher,#text-edit-panel,#type-study-panel) {display:none!important}
+ #left-sidebar.w-16 .editor-tools-toggle {display:none!important}
+}
+@layer aved-site {
+ #left-sidebar .editor-tools-toggle {display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px 0;font-size:12px;color:var(--inner-text-muted);cursor:pointer}
+ #left-sidebar .editor-tools-toggle input {width:14px;height:14px;accent-color:var(--brand-red)}
 }

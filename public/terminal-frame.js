@@ -7,7 +7,9 @@
   app.querySelector(':scope > div > div:last-child').classList.add('terminal-content-pane');
   const matrixRules=app.querySelector('#game-panel-slots .game-rule-card');if(matrixRules)document.getElementById('game-panel-slots').append(matrixRules);
   const brand=bar.children[0].firstElementChild.firstElementChild;
-  brand.innerHTML='<span class="terminal-brand-name">万业携生</span><span class="terminal-brand-code">AVED<small>ALLWORKS VIVARIUM</small></span>';
+  brand.classList.add('terminal-brand-mark');
+  brand.dataset.typeIgnore='';
+  brand.innerHTML='<span class="terminal-brand-name" lang="zh-Hant">萬業攜生</span><span class="terminal-brand-code" lang="en">A.V.E.D.<small>ALLWORKS VIVARIUM</small></span>';
   header.classList.add('minimal-terminal-header');
   bar.children[1].classList.add('header-hidden');bar.children[1].setAttribute('aria-hidden','true');
   document.getElementById('logout-btn').textContent='登出';

@@ -1,0 +1,170 @@
+/* The device switch must win over every art layer. Disabling effects preserves
+   the palette, readable text, card boundaries and all gameplay controls. */
+@layer aved-device-effects, aved-restored-art;
+
+@layer aved-device-effects {
+  body.effects-off *, body.effects-off *::before, body.effects-off *::after {
+    animation:none !important; transition:none !important;
+    filter:none !important; backdrop-filter:none !important;
+    text-shadow:none !important; box-shadow:none !important;
+  }
+  body.effects-off :is(.terminal-content-pane,.crt-scanlines)::before,
+  body.effects-off :is(.terminal-content-pane,.crt-scanlines)::after,
+  body.effects-off.crt-scanlines::after,
+  body.effects-off :is(#aved-signal-dust,#landing-sphere-canvas,#personal-sphere,.signal-frame,.landing-noise,.landing-scanlines,.flight-danmaku,.flight-clouds,.flight-drops) {
+    display:none !important;
+  }
+  @media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after {animation:none !important;transition:none !important;scroll-behavior:auto !important}
+  }
+}
+
+/* First restoration batch: original scratch-ticket structure and foil, with
+   the current day/night tokens. No global rollback of other player screens. */
+@layer aved-restored-art {
+  #game-panel-scratch, #ticket-confirm-modal {
+    --scratch-paper:var(--inner-card-bg);
+    --scratch-paper-alt:var(--inner-card-alt);
+    --scratch-ink:var(--inner-text-main);
+    --scratch-muted:var(--inner-text-muted);
+    --scratch-line:var(--inner-border);
+    --scratch-soft:var(--inner-border-soft);
+    --scratch-red:var(--brand-red,var(--inner-crimson));
+    --scratch-red-ink:var(--study-on-red,#fff);
+    --scratch-band:var(--study-ink,#42464a);
+    --scratch-band-ink:var(--study-black,#f1eee8);
+    --scratch-foil-light:color-mix(in srgb,var(--scratch-paper-alt) 75%,var(--scratch-ink));
+    --scratch-foil-dark:color-mix(in srgb,var(--scratch-paper-alt) 45%,var(--scratch-ink));
+    --scratch-foil-ink:#141413;
+  }
+  body.dark-mode :is(#game-panel-scratch,#ticket-confirm-modal) {
+    --scratch-foil-dark:color-mix(in srgb,var(--scratch-paper-alt) 85%,var(--scratch-ink));
+    --scratch-foil-ink:var(--scratch-ink);
+  }
+  #game-panel-scratch {
+    background:var(--scratch-paper) !important;
+    border:1px solid var(--scratch-soft) !important;
+    box-shadow:3px 3px 0 #0002 !important;
+  }
+  #game-panel-scratch::before, #game-panel-scratch::after {
+    display:block !important; border-color:var(--scratch-line) !important;
+  }
+  #game-panel-scratch::before {border-width:2px 0 0 2px !important}
+  #game-panel-scratch::after {border-width:0 2px 2px 0 !important}
+  #game-panel-scratch .scratch-tier-btn {
+    min-height:48px; border:1px solid var(--scratch-soft) !important;
+    background:var(--scratch-paper-alt) !important; color:var(--scratch-ink) !important;
+  }
+  #game-panel-scratch .scratch-tier-btn[aria-pressed="true"] {
+    background:var(--scratch-red) !important; color:var(--scratch-red-ink) !important;
+    border-color:var(--brand-red-ink,var(--scratch-red)) !important;
+    box-shadow:2px 2px 0 #0002 !important;
+  }
+  #game-panel-scratch .scratch-tier-btn * {color:inherit !important}
+  #scratch-lobby-view .scratch-ticket-card {
+    min-width:0; background:var(--scratch-paper-alt) !important;
+    color:var(--scratch-ink) !important; border:2px solid var(--scratch-line) !important;
+    box-shadow:0 4px 6px -1px #0002,0 2px 4px -2px #0002 !important;
+  }
+  #scratch-lobby-view [data-ticket-kind="lucky_num"] {background:var(--scratch-paper) !important}
+  #scratch-lobby-view [data-ticket-kind="step_climb"] {--scratch-band:var(--scratch-red);--scratch-band-ink:var(--scratch-red-ink)}
+  #scratch-lobby-view .scratch-ticket-band, #ticket-modal-header-band {
+    background:var(--scratch-band) !important; color:var(--scratch-band-ink) !important;
+    border-bottom:1px solid var(--scratch-line) !important;
+  }
+  #scratch-lobby-view .scratch-ticket-band *, #ticket-modal-header-band * {color:inherit !important}
+  #scratch-lobby-view .scratch-ticket-preview {
+    background:var(--scratch-paper) !important; border:1px solid var(--scratch-soft) !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  }
+  #scratch-lobby-view .scratch-preview-cell, #game-panel-scratch .scratch-cell-foil {
+    background:linear-gradient(135deg,var(--scratch-foil-light),var(--scratch-foil-dark) 50%,var(--scratch-foil-light)) !important;
+    border:1px solid var(--scratch-soft) !important;
+  }
+  #scratch-lobby-view .scratch-preview-cell.is-revealed {
+    background:var(--scratch-paper) !important; border:1px solid var(--scratch-line) !important;
+  }
+  #scratch-lobby-view .scratch-ticket-summary {border-top:1px solid var(--scratch-soft) !important}
+  #game-panel-scratch .pick-scratch-game-btn, #ticket-modal-confirm-btn,
+  #scratch-reveal-all-cells-btn, #scratch-next-ticket {
+    min-height:44px; background:var(--scratch-red) !important;
+    color:var(--scratch-red-ink) !important; border:1px solid var(--scratch-red) !important;
+  }
+  #game-panel-scratch .pick-scratch-game-btn *, #ticket-modal-confirm-btn *,
+  #scratch-reveal-all-cells-btn *, #scratch-next-ticket * {color:inherit !important}
+  #game-panel-scratch button:disabled {
+    background:var(--scratch-paper-alt) !important; color:var(--scratch-muted) !important;
+    border-color:var(--scratch-soft) !important; opacity:.65 !important;
+  }
+  #game-panel-scratch button:focus-visible, #ticket-confirm-modal button:focus-visible {
+    outline:2px solid var(--scratch-line) !important; outline-offset:3px !important;
+  }
+  #active-ticket-board-container {
+    padding:clamp(10px,3vw,20px) !important;
+    background:var(--scratch-paper-alt) !important; border:2px solid var(--scratch-line) !important;
+  }
+  #active-ticket-board-container>.grid {gap:clamp(6px,2vw,12px) !important}
+  #active-ticket-board-container>.grid-cols-2 {grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  #game-panel-scratch :is(.scratch-cell-foil,.scratch-revealed-cell) {min-width:0;height:auto !important;min-height:80px;overflow-wrap:anywhere}
+  #game-panel-scratch .scratch-cell-foil {color:var(--scratch-foil-ink) !important}
+  #game-panel-scratch .scratch-cell-foil * {color:inherit !important}
+  #game-panel-scratch .scratch-revealed-cell {
+    background:var(--scratch-paper) !important; color:var(--scratch-ink) !important;
+    border:2px solid var(--scratch-soft) !important;
+  }
+  #game-panel-scratch .scratch-revealed-cell.is-winning {
+    background:var(--brand-red-soft,var(--scratch-paper)) !important;
+    border-color:var(--brand-red-ink,var(--scratch-red)) !important;
+  }
+  #game-panel-scratch .scratch-revealed-cell.is-winning * {color:var(--brand-red-ink,var(--scratch-red)) !important}
+  #active-ticket-result-banner {border:1px solid var(--scratch-line) !important;background:var(--scratch-paper) !important}
+  #scratch-play-table-view>div:first-child {border-bottom:1px solid var(--scratch-soft) !important}
+  #scratch-play-table-view>div:first-child>div {flex-wrap:wrap !important;min-width:0}
+  #game-panel-scratch button {white-space:normal;overflow-wrap:normal}
+  #scratch-back-lobby-btn {min-height:44px;white-space:nowrap !important}
+  #ticket-confirm-modal {background:#000c !important;overflow-y:auto}
+  #ticket-modal-card {
+    max-height:calc(100dvh - 32px);overflow-y:auto !important;
+    background:var(--scratch-paper) !important; color:var(--scratch-ink) !important;
+    border:2px solid var(--scratch-line) !important;box-shadow:0 24px 48px #0005 !important;
+  }
+  #ticket-modal-card #ticket-modal-tagline {color:var(--scratch-muted) !important}
+  #ticket-modal-card #ticket-modal-rules {color:var(--scratch-ink) !important}
+  #ticket-modal-rules * {color:inherit !important}
+  #ticket-modal-card .scratch-ticket-rules {background:var(--scratch-paper-alt) !important}
+  #ticket-modal-card .scratch-confirm-summary {border-block:1px solid var(--scratch-soft) !important}
+  #ticket-modal-card [class~="border"], #ticket-modal-card [class~="border-t"] {border:1px solid var(--scratch-soft) !important}
+  #ticket-modal-card :is([class*="bg-white"],[class*="bg-[#f5f2eb]"]) {background:var(--scratch-paper-alt) !important}
+  #ticket-modal-icon {background:var(--scratch-red) !important;color:var(--scratch-red-ink) !important}
+  #ticket-modal-cancel-btn {min-height:44px;background:var(--scratch-paper-alt) !important;color:var(--scratch-ink) !important;border:1px solid var(--scratch-line) !important;white-space:nowrap}
+
+  /* Original restrained foil feedback, also available from a keyboard. */
+  body:not(.effects-off) #game-panel-scratch .scratch-cell-foil:is(:hover,:focus-visible) {filter:brightness(1.08) !important}
+  body:not(.effects-off) #game-panel-scratch button:not(:disabled):is(:hover,:focus-visible),
+  body:not(.effects-off) #ticket-confirm-modal button:not(:disabled):is(:hover,:focus-visible) {
+    box-shadow:0 0 6px color-mix(in srgb,var(--scratch-red) 18%,transparent) !important;
+  }
+
+  /* Supersede the old container filters, including in the previous UI style.
+     Typography classification now applies the original 1.9 px displacement
+     once per text surface, rather than filtering an entire card or image. */
+  body.signal-preview #inner-app-view :where(.notice-body,.notice-summary,.notice-comment-body,.notice-comment-identity,.life-record>p.whitespace-pre-wrap,#forum-detail-main-post>p.whitespace-pre-wrap) {
+    filter:none !important;text-shadow:none !important;
+  }
+  body.signal-preview:not(.effects-off) #inner-app-view [data-type-render="print"] {
+    filter:url('#aved-print-type') !important;
+    text-shadow:.28px 0 color-mix(in srgb,var(--inner-text-main) 10%,transparent) !important;
+  }
+  @media print {body.signal-preview:not(.effects-off) #inner-app-view [data-type-render="print"] {filter:none !important;text-shadow:none !important}}
+  #left-sidebar .effects-control {padding:10px 12px;display:grid;gap:6px}
+  #left-sidebar .effects-control button {min-height:44px;width:100%;white-space:nowrap}
+  #left-sidebar .effects-control p {margin:0;color:var(--inner-text-muted) !important}
+  @media (min-width:768px) and (max-width:1100px) {
+    #scratch-lobby-view {grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  }
+  @media (max-width:479px) {
+    #game-panel-scratch {padding:12px !important}
+    #scratch-tiers-bar {gap:6px}
+    #game-panel-scratch .scratch-tier-btn {padding:8px 4px !important}
+  }
+}

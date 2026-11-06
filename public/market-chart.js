@@ -85,13 +85,18 @@
         '<div>成交量 '+number(candle.volume)+'</div>';
 
       tooltip.hidden=false;
-      const tooltipOffset=14;
-      const tooltipW=tooltip.offsetWidth||180;
-      const tooltipH=tooltip.offsetHeight||96;
-      const tooltipX=localX+tooltipOffset+tooltipW>width-right?localX-tooltipW-tooltipOffset:localX+tooltipOffset;
-      const tooltipY=localY+tooltipOffset+tooltipH>volumeBottom?localY-tooltipH-tooltipOffset:localY+tooltipOffset;
-      tooltip.style.left=clamp(tooltipX,left,width-right-tooltipW)+'px';
-      tooltip.style.top=clamp(tooltipY,top,volumeBottom-tooltipH)+'px';
+      const placeTooltip=()=>{
+        if(tooltip.hidden)return;
+        const box=container.getBoundingClientRect(),px=localX/width*box.width,py=localY/height*box.height;
+        const tooltipW=tooltip.offsetWidth||180,tooltipH=tooltip.offsetHeight||96;
+        const tooltipX=px+14+tooltipW>box.width-4?px-tooltipW-14:px+14;
+        const tooltipY=py+14+tooltipH>box.height-4?py-tooltipH-14:py+14;
+        tooltip.style.left=clamp(tooltipX,4,Math.max(4,box.width-tooltipW-4))+'px';
+        tooltip.style.top=clamp(tooltipY,4,Math.max(4,box.height-tooltipH-4))+'px';
+      };
+      placeTooltip();
+      // Typography classification can change the size after the text is inserted.
+      root.requestAnimationFrame(placeTooltip);
     };
 
     const hideCross=()=>{

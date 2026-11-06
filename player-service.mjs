@@ -17,6 +17,9 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
   };
+  addColumn('announcements','issuer',"TEXT NOT NULL DEFAULT '万业携生'");
+  addColumn('announcements','drafter',"TEXT NOT NULL DEFAULT ''");
+  addColumn('announcements','issued_on',"TEXT NOT NULL DEFAULT ''");
   for(const table of ['forum_threads','forum_replies']) {
     addColumn(table,'identity_mode',"TEXT NOT NULL DEFAULT 'anonymous'");
     addColumn(table,'image_data',"TEXT NOT NULL DEFAULT ''");
@@ -229,7 +232,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           history:[],
           employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare('SELECT id,title,body,pinned,created_at AS createdAt FROM announcements ORDER BY pinned DESC,datetime(created_at) DESC,id DESC').all(),
+          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,a.created_at AS createdAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(a.created_at) DESC,a.id DESC`).all(),
           dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
           forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),stockOrders:pendingOrders(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }

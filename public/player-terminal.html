@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <script src="terminal-preferences.js?v=paired-palettes-5"></script>
+  <script src="terminal-preferences.js?v=effects-device-1"></script>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/interaction-motion.css?v=motion-3">
-  <link rel="stylesheet" href="/site-refinements.css?v=mobile-sidebar-4">
-  <link rel="stylesheet" href="/palette-preview.css?v=paired-palettes-5">
-  <link rel="stylesheet" href="/market-chart-fixes.css?v=market-colors-1">
-  <link rel="stylesheet" href="/sidebar-art.css?v=sidebar-art-1">
+  <link rel="stylesheet" href="/player-art-restoration.css?v=prose-render-2">
+  <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
+  <link rel="stylesheet" href="/archive-room-restoration.css?v=final-art-audit-1">
+  <link rel="stylesheet" href="/notice-document.css?v=notice-document-1">
+  <link rel="stylesheet" href="/section-mastheads.css?v=detail-round-1">
+  <link rel="stylesheet" href="/player-type-study.css?v=design-save-2">
+  <link rel="stylesheet" href="/player-text-editor.css?v=delete-1">
+  <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
+  <link rel="stylesheet" href="/site-refinements.css?v=editor-toggle-1">
+  <link rel="stylesheet" href="/palette-preview.css?v=notice-blue-1">
+  <link rel="stylesheet" href="/market-chart-fixes.css?v=tooltip-position-2">
+  <link rel="stylesheet" href="/sidebar-art.css?v=planet-align-2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -352,8 +359,8 @@
 <link rel="stylesheet" href="/terminal-unified.css?v=crt-1">
 <link rel="stylesheet" href="/personal-terminal.css?v=hub-1">
 <link rel="stylesheet" href="/radix-palette.css?v=window-1">
-<link rel="stylesheet" href="/window-terminal.css?v=window-1">
-<script src="/window-style.js?v=window-1"></script>
+<link rel="stylesheet" href="/window-terminal.css?v=remove-reset-1">
+<script src="/window-style.js?v=unified-2"></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -401,7 +408,7 @@
         <div class="w-full h-1.5 bg-neutral-900 border border-white/25 overflow-hidden p-0.5">
           <div id="signal-progress-bar" class="h-full bg-white transition-all duration-300" style="width: 20%"></div>
         </div>
-        <div id="signal-log-lines" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
+        <div aria-live="polite" id="signal-log-lines" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
           <div>&gt; ANALOG CARRIER LOCKED... OK</div>
           <div>&gt; VERIFYING EMPLOYEE CREDENTIALS...</div>
         </div>
@@ -445,7 +452,7 @@
           萬業
         </div>
 
-        <div id="cover-logo-slot" class="relative flex items-center justify-center shrink-0">
+        <div id="cover-logo-slot" class="logo-glow relative flex items-center justify-center shrink-0">
           <img class="company-emblem" src="/assets/company-emblem.svg?v=logo-1" alt="万业携生公司标志" width="342" height="303" decoding="async">
         </div>
 
@@ -501,13 +508,13 @@
        ========================================================================== -->
   <div id="login-modal" class="fixed inset-0 z-40 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="w-full max-w-md bg-[#111111] border border-white/40 shadow-[0_0_60px_rgba(255,255,255,0.12)] text-neutral-100 relative">
-      <div class="px-5 py-3.5 bg-black border-b border-white/20 flex justify-between items-center font-mono-tech">
-        <div class="flex items-center gap-2 text-xs tracking-widest">
+      <div class="personnel-login-heading px-5 py-3.5 bg-black border-b border-white/20 flex justify-between items-center font-mono-tech">
+        <div class="personnel-login-title flex items-center gap-2 text-xs tracking-widest">
           <span class="inline-block w-2 h-2 bg-white"></span>
           <span>&gt; A.V.E.D. PERSONNEL LOGIN &lt;</span>
         </div>
         <button id="close-login-btn" type="button" class="text-neutral-400 hover:text-white text-xs px-2 py-0.5 border border-transparent hover:border-white/30 cursor-pointer">
-          [X] 返回
+          返回
         </button>
       </div>
 
@@ -516,7 +523,7 @@
       <div id="panel-account-login" class="p-6 space-y-4">
         <form id="account-login-form" action="/api/login" method="post" autocomplete="on" class="space-y-4">
           <div>
-            <label for="login-username" class="block text-xs text-neutral-300 mb-1 font-mono-tech">PERSONNEL ID // 用户名 / 角色名</label>
+            <label for="login-username" class="block text-xs text-neutral-300 mb-1 font-mono-tech">PERSONNEL ID // 用户名</label>
             <input id="login-username" name="username" type="text" autocomplete="username" placeholder="请输入用户名或角色名" required
               class="w-full px-3.5 py-2.5 bg-black border border-white/30 text-sm text-white focus:outline-none focus:border-white font-mono-tech">
           </div>
@@ -565,11 +572,11 @@
           </div>
         </div>
 
-        <div class="p-3.5 bg-[#dad3c1] border border-[#141413]/30 space-y-2 text-xs">
+        <div class="scratch-ticket-rules p-3.5 bg-[#dad3c1] border border-[#141413]/30 space-y-2 text-xs">
           <div id="ticket-modal-rules" class="space-y-1.5"></div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 py-3 border-y border-[#141413]/25 text-xs font-mono-tech">
+        <div class="scratch-confirm-summary grid grid-cols-2 gap-4 py-3 border-y border-[#141413]/25 text-xs font-mono-tech">
           <div>
             <div class="text-[#57534a]">最高核准津贴</div>
             <div id="ticket-modal-top-prize" class="text-base font-bold text-[#9e1b1b] mt-0.5">¤ 650,000</div>
@@ -700,12 +707,12 @@
 
           <button type="button" data-nav="departments" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
             <span class="sidebar-art-icon icon-disk" aria-hidden="true"><img src="/assets/directory-disk.png" alt="" loading="lazy"></span>
-            <span class="sidebar-label truncate">部门与员工名录</span>
+            <span class="sidebar-label truncate">员工名录</span>
           </button>
 
           <button type="button" data-nav="containment" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
             <span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/containment-folder.png" alt="" loading="lazy"></span>
-            <span class="sidebar-label truncate">收容物一览</span>
+            <span class="sidebar-label truncate">收容一览</span>
           </button>
 
           <!-- 新增：员工执勤待办看板（三列等宽看板） -->
@@ -721,7 +728,6 @@
             <span class="sidebar-label truncate">员工娱乐室</span>
           </button>
 
-          <a href="/admin-terminal.html" class="nav-tab-btn flex items-center gap-3 p-3" id="admin-nav-tab" aria-label="管理终端" hidden><span class="w-5 text-center">⌘</span><span class="sidebar-label">管理终端 ↗</span></a>
         </div>
       </aside>
 
@@ -759,11 +765,11 @@
 
             <div class="retro-corner-box p-5 sm:p-6 space-y-4">
               <div class="notice-conduct">
-                <span>请谨言慎行。</span>
+                <span class="notice-discipline-label">通告纪律</span><div class="notice-discipline-window"><div class="notice-discipline-track"><span>公司通告为正式公务发布渠道。</span><span>留言须实名登录，发言须与本人身份一致。</span><span>请核实信息，谨言慎行。</span><span aria-hidden="true">公司通告为正式公务发布渠道。</span></div></div>
               </div>
 
               <div class="notice-comments-heading">
-                <h3 id="news-detail-comment-count" class="notice-title-tertiary">员工实名留言 (0)</h3>
+                <h3 id="news-detail-comment-count" class="notice-title-tertiary">留言 (0)</h3>
                 <span id="news-comment-identity-label"></span>
               </div>
 
@@ -787,26 +793,15 @@
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div class="text-[10px] font-mono-tech tracking-widest opacity-60">ORGANIZATIONAL STRUCTURE &amp; PERSONNEL DIRECTORY</div>
-              <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">五大直属部门编制与在册人员档案夹</h2>
+              <h2 class="text-lg sm:text-xl font-bold font-serif-sc mt-0.5">部门档案夹</h2>
             </div>
-            <span class="text-xs font-mono-tech px-3 py-1 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] self-start sm:self-auto">
-              5 DIVISIONS // ACTIVE
-            </span>
           </div>
 
           <div class="space-y-4">
-            <h3 class="text-sm font-bold font-mono-tech uppercase tracking-wider flex items-center gap-2 border-b border-[var(--inner-border)] pb-2">
-              <span class="w-2 h-4 bg-[var(--inner-crimson)] inline-block"></span>
-              <span>PART 01 // 五大直属部门编制</span>
-            </h3>
             <div id="departments-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
           </div>
 
           <div class="space-y-4">
-            <h3 class="text-sm font-bold font-mono-tech uppercase tracking-wider flex items-center gap-2 border-b border-[var(--inner-border)] pb-2">
-              <span class="w-2 h-4 bg-[var(--inner-accent)] inline-block"></span>
-              <span>PART 02 // 在册人员档案夹</span>
-            </h3>
             <div id="personnel-directory-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
           </div>
         </section>
@@ -846,9 +841,9 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <!-- 左侧 6 列：收容物档案板列表区（有数据态与空状态高度一致 min-h-[460px] 避免跳动） -->
-            <div class="lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner min-h-[460px] flex flex-col justify-between">
+            <div class="archive-pinboard lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner min-h-[460px] flex flex-col justify-between">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
-                <span>ARCHIVE PINBOARD</span>
+                <span>ARCHIVE PINBOARD // 点击收容物名称查阅卷宗</span>
 
               </div>
 
@@ -896,7 +891,7 @@
 
               <div class="retro-corner-box p-5 space-y-4">
                 <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-2 font-mono-tech text-xs">
-                  <span class="font-bold">📝 内部员工实名评议记录 (REAL-NAME COMMENTARY)</span>
+                  <span class="font-bold">评议记录</span>
                   <span id="scp-comment-identity-hint" class="text-[var(--inner-crimson)] font-bold">实名绑定中</span>
                 </div>
 
@@ -906,7 +901,7 @@
                   <input id="scp-realname-comment-input" type="text" placeholder="以您的真实员工身份发表收容观察评议..." required
                     class="flex-1 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs focus:outline-none">
                   <button type="submit" class="magnetic-cta inner-btn-primary px-5 py-2 font-bold text-xs whitespace-nowrap cursor-pointer">
-                    [ 实名签署发表 ]
+                    [ 发表 ]
                   </button>
                 </form>
               </div>
@@ -1063,22 +1058,22 @@
           <div class="retro-corner-box p-2.5 flex flex-wrap items-center justify-between gap-2 font-mono-tech">
             <div class="flex flex-wrap gap-1.5">
               <button type="button" data-game="skydive" class="game-tab-btn px-3.5 py-2 text-xs font-bold bg-[var(--inner-accent)] text-[var(--inner-accent-text)] cursor-pointer">
-                🚁 直升机高空空投
+                高空速降
               </button>
               <button type="button" data-game="slots" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                🎰 五轮五线 抑制矩阵
+                抑制矩阵
               </button>
               <button type="button" data-game="scratch" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                🎫 封印配给刮刮乐
+                刮刮乐
               </button>
               <button type="button" data-game="derby" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                🐎 异常竞速赛马
+                赛马竞速
               </button>
               <button type="button" data-game="doudizhu" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                🃏 牌桌（电脑对手）
+                假人牌桌
               </button>
               <button type="button" data-game="stocks" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                📈 KARMA INDEX
+                KARMA指数
               </button>
             </div>
 
@@ -1282,15 +1277,15 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
               <div class="lg:col-span-8 space-y-4">
-                <div class="bg-[#121316] text-[#f5f2eb] p-5 border-2 border-[var(--inner-border)] shadow-xl space-y-4">
-                  <div class="flex items-center justify-between text-xs font-mono-tech text-neutral-300 border-b border-white/20 pb-2">
+                <div class="slot-machine bg-[#121316] text-[#f5f2eb] p-5 border-2 border-[var(--inner-border)] shadow-xl space-y-4">
+                  <div class="slot-machine-heading flex items-center justify-between text-xs font-mono-tech text-neutral-300 border-b border-white/20 pb-2">
                     <span>FIVE-REEL MATRIX // 五轮五线</span>
 
                     <span>从最左一列连起</span>
                   </div>
 
-                  <div class="flex items-center gap-2 bg-[#1c1e22] p-3 border-2 border-white/25">
-                    <div class="flex flex-col justify-around h-56 px-1 text-[11px] font-mono-tech font-bold text-black">
+                  <div class="slot-reel-frame flex items-center gap-2 bg-[#1c1e22] p-3 border-2 border-white/25">
+                    <div class="slot-line-rail flex flex-col justify-around h-56 px-1 text-[11px] font-mono-tech font-bold text-black">
                       <div class="flex gap-1"><span class="w-5 h-5 bg-white flex items-center justify-center">2</span><span class="w-5 h-5 bg-white flex items-center justify-center">4</span></div>
                       <div class="flex justify-center"><span class="w-5 h-5 bg-white flex items-center justify-center">1</span></div>
                       <div class="flex gap-1"><span class="w-5 h-5 bg-white flex items-center justify-center">3</span><span class="w-5 h-5 bg-white flex items-center justify-center">5</span></div>
@@ -1298,14 +1293,14 @@
 
                     <div id="slot5x3-grid" class="flex-1 grid grid-cols-5 gap-2"></div>
 
-                    <div class="flex flex-col justify-around h-56 px-1 text-[11px] font-mono-tech font-bold text-black">
+                    <div class="slot-line-rail flex flex-col justify-around h-56 px-1 text-[11px] font-mono-tech font-bold text-black">
                       <div class="flex gap-1"><span class="w-5 h-5 bg-white flex items-center justify-center">4</span><span class="w-5 h-5 bg-white flex items-center justify-center">2</span></div>
                       <div class="flex justify-center"><span class="w-5 h-5 bg-white flex items-center justify-center">1</span></div>
                       <div class="flex gap-1"><span class="w-5 h-5 bg-white flex items-center justify-center">5</span><span class="w-5 h-5 bg-white flex items-center justify-center">3</span></div>
                     </div>
                   </div>
 
-                  <div class="px-4 py-2.5 bg-black/75 border border-white/15 flex items-center justify-between text-xs font-mono-tech">
+                  <div class="slot-machine-readout px-4 py-2.5 bg-black/75 border border-white/15 flex items-center justify-between text-xs font-mono-tech">
                     <span id="slot5x3-bet-summary">押 500 每线 100</span>
                     <span id="slot5x3-win-summary" class="font-bold text-white">赢得 —</span>
                   </div>
@@ -1317,7 +1312,7 @@
                   <h4 class="text-lg font-bold font-serif-sc">收容矩阵赔付簿</h4>
 
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                    <div class="md:col-span-7">
+                    <div class="slot-paytable-wrap md:col-span-7">
                       <table class="w-full text-xs font-mono-tech border-collapse">
                         <thead>
                           <tr class="border-b border-[var(--inner-border-soft)] opacity-70">
@@ -1335,7 +1330,7 @@
                     <div class="md:col-span-5 space-y-4">
                       <div>
                         <div class="text-xs font-bold mb-2">五条连线轨迹</div>
-                        <div class="grid grid-cols-5 gap-1.5 text-[10px] font-mono-tech text-center">
+                        <div class="slot-line-paths grid grid-cols-5 gap-1.5 text-[10px] font-mono-tech text-center">
                           <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">━━━</div><div class="mt-1">①中线</div></div>
                           <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">▀▀▀</div><div class="mt-1">②上线</div></div>
                           <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">▄▄▄</div><div class="mt-1">③下线</div></div>
@@ -1531,7 +1526,7 @@
               </button>
             </div>
 
-            <div class="bg-[#141414] text-neutral-100 p-4 sm:p-5 space-y-5 border-2 border-[var(--inner-border)] font-mono-tech">
+            <div id="ddz-table" class="bg-[#141414] text-neutral-100 p-4 sm:p-5 space-y-5 border-2 border-[var(--inner-border)] font-mono-tech">
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center text-xs">
                 <div class="bg-black/60 p-3 border border-white/15">
                   <div class="font-bold text-white">LEFT // 电脑对手 A</div>
@@ -1631,22 +1626,28 @@
        ========================================================================== -->
   <script src="/http-client.js?v=signal-5" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=window-1" defer></script>
-  <script src="/market-chart.js?v=signal-5" defer></script>
+  <script src="/notices-ui.js?v=notice-blue-1" defer></script>
+  <script src="/market-chart.js?v=tooltip-position-2" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/player-community.js?v=shared-ticker-2" defer></script>
   <script src="/sky-ui.js?v=window-1" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/welfare-ui.js?v=window-1" defer></script>
-  <script src="/visual-style.js?v=paired-palettes-5" defer></script>
-  <script src="/personal-ui.js?v=unified-home-2" defer></script>
+  <script src="/visual-style.js?v=notice-blue-2" defer></script>
+  <script src="/personal-ui.js?v=restore-masthead-1-unified-home-2" defer></script>
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
 <script src="/derby-ui.js?v=window-1" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
-<script src="/player.js?v=sidebar-rewards-3" defer></script>
-  <script src="/page-headings.js?v=hub-1" defer></script>
+<script src="/archive-board.js?v=board-4-1" defer></script>
+<script src="/player-session.js?v=idle-1" defer></script>
+<script src="/player.js?v=notice-blue-1" defer></script>
+  <script src="/page-headings.js?v=detail-round-1" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
-  <script src="/terminal-frame.js?v=crt-1" defer></script>
+  <script src="/terminal-frame.js?v=brand-mark-3-crt-1" defer></script>
   <script src="/landing-sphere.js?v=window-1" defer></script>
+  <script src="/player-design-client.js?v=design-save-2" defer></script>
+  <script src="/player-type-catalog.js?v=final-art-audit-1" defer></script>
+  <script src="/player-type-study.js?v=prose-render-2" defer></script>
+  <script src="/player-text-editor.js?v=delete-1-design-save-2" defer></script>
 </body>
 </html>

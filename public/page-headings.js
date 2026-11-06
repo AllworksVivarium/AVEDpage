@@ -8,55 +8,35 @@
     ['view-casino', 'PERSONNEL COMMON ROOM', 'חדר פנאי לעובדים'],
     ['view-profile', 'PERSONNEL PROFILE // INTERNAL', 'תיק אישי // פנימי']
   ];
-  const app = document.getElementById('inner-app-view');
-  if (!app) return;
+  const app=document.getElementById('inner-app-view');if(!app)return;
   app.querySelector('#view-casino [data-game]')?.parentElement.classList.add('terminal-game-tabs');
-  function update() {
-    for (const [id, english, hebrew] of pages) {
-      const page = document.getElementById(id);
-      if (!page) continue;
-      if (id === 'view-profile' && page.querySelector('.personal-hub')) continue;
+  const icons={'view-news':['broadcast.jpg','130% auto'],'view-departments':['directory-disk.png','165% auto'],'view-containment':['containment-folder.png','155% auto'],'view-life':['life-newspaper.png','120% auto'],'view-forum':['forum-computer.jpeg','auto 125%'],'view-casino':['recreation-cards.jpeg','auto 115%']};
+  const measure=new ResizeObserver(entries=>{for(const {target} of entries){const size=target.getBoundingClientRect().height;if(size)target.parentElement.style.setProperty('--section-masthead-height',size+'px');}});
+  function update(){
+    for(const [id,english,hebrew] of pages){
+      const page=document.getElementById(id);if(!page||page.querySelector(':scope>.player-section-masthead'))continue;
+      if(id==='view-profile'&&page.querySelector('.personal-hub'))continue;
       let heading;
-      if (id === 'view-casino') {
-        let masthead = page.querySelector(':scope > .terminal-page-heading');
-        if (!masthead) {
-          masthead = document.createElement('header');
-          masthead.className = 'terminal-page-heading';
-          const title = document.createElement('h2');
-          title.textContent = '员工愉乐室';
-          masthead.append(title);
-          page.prepend(masthead);
-        }
-        heading = masthead.querySelector('h2');
-      } else heading = page.querySelector('h1, h2');
-      if (!heading) continue;
-      const title=heading.textContent.replace(/^[《〈]\s*|\s*[》〉]$/g,'');
-      if(heading.textContent!==title)heading.textContent=title;
-      if (heading.classList.contains('terminal-page-title')) continue;
-      heading.classList.add('terminal-page-title');
-      if (id === 'view-news') heading.textContent = '万业携生内部通告';
-      const parent = heading.parentElement;
-      parent.classList.add('terminal-page-heading');
-      let kicker = parent.querySelector(':scope > .notice-kicker, :scope > .section-kicker, :scope > .font-mono-tech');
-      if (!kicker) {
-        kicker = document.createElement('div');
-        heading.before(kicker);
-      }
-      kicker.classList.add('terminal-page-kicker');
-      const en = document.createElement('span');
-      en.lang = 'en';
-      en.textContent = english;
-      const separator = document.createElement('span');
-      separator.className = 'terminal-page-separator';
-      separator.setAttribute('aria-hidden', 'true');
-      separator.textContent = '|';
-      const he = document.createElement('bdi');
-      he.lang = 'he';
-      he.dir = 'rtl';
-      he.textContent = hebrew;
-      kicker.replaceChildren(en, separator, he);
+      if(id==='view-casino'){
+        heading=page.querySelector(':scope>.terminal-page-heading h2');
+        if(!heading){heading=document.createElement('h2');heading.textContent='愉乐空间';page.prepend(heading);}
+      }else heading=page.querySelector('h1,h2');
+      if(!heading)continue;
+      heading.textContent=heading.textContent.replace(/^[《〈]\s*|\s*[》〉]$/g,'');
+      if(id==='view-news')heading.textContent='万业携生内部通告';
+      let old=heading;while(old.parentElement&&old.parentElement!==page)old=old.parentElement;
+      const tools=document.createElement('div');tools.className='player-section-tools';
+      if(old!==heading)for(const child of [...old.children])if(!child.contains(heading)&&child!==heading&&!child.matches('.notice-kicker,.section-kicker,.terminal-page-kicker')&&(child.textContent.trim()||child.querySelector('button,input,select,a[href]')))tools.append(child);
+      const head=document.createElement('header');head.className='player-section-masthead terminal-page-heading';
+      const icon=document.createElement('span');icon.className='player-section-icon';icon.setAttribute('aria-hidden','true');
+      const [image,size]=icons[id]||icons['view-departments'];icon.style.setProperty('--section-icon','url("/assets/'+image+'")');icon.style.setProperty('--section-icon-size',size);
+      const copy=document.createElement('div');copy.className='player-section-copy';
+      const kicker=document.createElement('div');kicker.className='terminal-page-kicker player-section-kicker';
+      const en=document.createElement('span');en.lang='en';en.textContent=english;
+      const he=document.createElement('bdi');he.lang='he';he.dir='rtl';he.textContent=hebrew;kicker.append(en,he);
+      heading.className='terminal-page-title player-section-title';copy.append(kicker,heading);head.append(icon,copy);
+      if(old!==heading){const legacy=document.createElement('div');legacy.hidden=true;legacy.dataset.typeIgnore='';for(const node of [...old.querySelectorAll('[id]')])if(old.contains(node))legacy.append(node);if(legacy.childNodes.length)page.append(legacy);old.remove();}page.prepend(head);if(tools.childNodes.length)head.after(tools);measure.observe(head);
     }
   }
-  update();
-  new MutationObserver(update).observe(app, {childList:true, subtree:true});
+  update();new MutationObserver(update).observe(app,{childList:true,subtree:true});
 })();

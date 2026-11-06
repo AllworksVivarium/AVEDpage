@@ -1,4 +1,5 @@
 import {installPersonal} from './server-personal.mjs';
+import {installPlayerDesign} from './server-player-design.mjs';
 import {installDerby} from './server-derby.mjs';
 import {installOriginalMusic} from './server-original-music.mjs';
 import {mediaReference,installMedia} from './server-media.mjs';
@@ -254,6 +255,7 @@ const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balan
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
+const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
@@ -271,6 +273,7 @@ const server = createServer(async (req, res) => {
     }
     if(url.pathname.startsWith('/api/')&&['POST','PUT','PATCH','DELETE'].includes(req.method)&&!adminMutation(req,res))return;
     if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400)playerService.log(actor.id,req.method,url.pathname);});}
+    if(await playerDesign.handle(req,res,url))return;
     if (url.pathname === '/api/login' && req.method === 'POST') {
       const now=Date.now();
       const {identifier,username,password,remember}=await readBody(req);
@@ -503,8 +506,8 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.created_at AS createdAt,
-        (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published') AS postCount
+      return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.issuer,a.drafter,a.issued_on AS issuedOn,a.created_at AS createdAt,
+        (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount
         FROM announcements a ORDER BY a.pinned DESC,a.id DESC`).all() });
     }
     if (url.pathname === '/api/posts' && req.method === 'GET') {
@@ -597,9 +600,10 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/admin/announcements' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { title,body,pinned } = await readBody(req);
+      const { title,body,pinned,issuer='万业携生',drafter='',issuedOn='' } = await readBody(req);
+      if(!validText(issuer,80)||typeof drafter!=='string'||drafter.length>80||typeof issuedOn!=='string'||(issuedOn&&(!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn)||!Number.isFinite(Date.parse(issuedOn))||new Date(issuedOn).toISOString().slice(0,10)!==issuedOn)))return send(res,400,{error:'请核对发布单位、起草人及签发日期。'});
       if (!validText(title,150)||!validText(body,5000)) return send(res,400,{error:'公告标题最多 150 字，正文最多 5000 字。'});
-      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by) VALUES (?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id);
+      const result=db.prepare('INSERT INTO announcements (title,body,pinned,created_by,issuer,drafter,issued_on) VALUES (?,?,?,?,?,?,?)').run(title.trim(),body.trim(),pinned?1:0,admin.id,issuer.trim(),drafter.trim(),issuedOn);
       return send(res,201,{id:Number(result.lastInsertRowid)});
     }
     if (url.pathname.startsWith('/api/admin/announcements/') && req.method === 'DELETE') {
@@ -620,7 +624,7 @@ const server = createServer(async (req, res) => {
       : url.pathname==='/admin'?'admin-terminal.html':url.pathname==='/player'?'player-terminal.html':url.pathname.slice(1);
     if (file.includes('..') || file.includes('\\')) return send(res,404,{error:'not found'});
     try {
-      const data = await readFile(resolve(publicDir,file));
+      const data = await playerDesign.render(file,await readFile(resolve(publicDir,file)));
       res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream','Cache-Control':extname(file)==='.html'?'no-store':'no-cache','X-Content-Type-Options':'nosniff'});
       res.end(data);
     } catch { res.writeHead(404); res.end('Not found'); }
