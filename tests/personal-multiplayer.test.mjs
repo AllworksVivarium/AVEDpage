@@ -82,7 +82,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
   config.scratch[0].variants[type]=[{multiplier:prize/1000,weight:1}];db.prepare('UPDATE economy_config SET config_json=? WHERE id=1').run(JSON.stringify(config));
   const before=(await p('/api/me')).data.balance;
   const response=await p('/api/player/games/scratch','POST',{tier:'t1',type,cost:1000,revision:rules.revision});assert.equal(response.status,200);
-  assert.equal(response.data.result.totalPayout,response.data.prize);assert.equal(response.data.balance,before-1000+response.data.prize);
+  assert.equal(response.data.result.totalPayout,response.data.prize);assert.equal(response.data.balance,before-1000+response.data.prize-(response.data.penalty||0));
  }
  const before=(await p('/api/me')).data.balance;
  const scratchRequest={tier:'t1',type:'three_match',cost:1000,revision:rules.revision,requestKey:'test-scratch-once-123456'};
@@ -104,5 +104,9 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  assert.equal((await p('/api/player/games/derby/current')).data.self.prize,0);
  const record=(await p('/api/profile')).data.gameRecords.highest;
  await stop();start();await ready();assert.deepEqual((await p('/api/profile')).data.gameRecords.highest,record);
+ // Bomb history includes the extra debit; the loss metric includes the paid stake.
+ db.prepare("INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,'scratch',100000,0,'bomb-test','hash',?)").run(first,JSON.stringify({penalty:400000}));
+ assert.equal((await p('/api/player/history')).data.items[0].penalty,400000);
+ assert.equal(db.prepare('SELECT loss_max FROM personal_metrics WHERE employee_id=?').get(first).loss_max,500000);
  db.close();
 });

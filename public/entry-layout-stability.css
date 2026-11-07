@@ -1,0 +1,37 @@
+/* Entry screens have their own first-paint metrics, independent of saved inner typography. */
+@layer aved-entry-stable {
+ html[data-entry-state="checking"] #landing-view{visibility:hidden!important;pointer-events:none!important}
+ html[data-entry-state="checking"] #signal-Connecting-overlay{display:flex!important}
+ #signal-Connecting-overlay #session-restore-retry{justify-self:start;box-sizing:border-box;min-height:22px!important;height:22px!important;padding:0 10px!important;border:1px solid currentColor;background:transparent;color:inherit;font-size:12px!important;line-height:20px!important;cursor:pointer}
+ :is(#landing-view,#login-modal){--entry-copy:'Courier New','Songti SC','SimSun',serif;font-family:var(--entry-copy)!important;font-size:14px!important;line-height:1.5!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+ #landing-view .floating-kanji{box-sizing:content-box;display:inline-block!important;width:2.24em!important;text-align:center!important;font-family:'Songti SC','SimSun',serif!important;font-size:clamp(26px,4.2vw,64px)!important;line-height:1.2!important;font-weight:900!important;letter-spacing:.08em!important}
+ #landing-view .landing-edge-line,#landing-view .landing-edge-line span{font-family:var(--entry-copy)!important;font-size:10px!important;line-height:15px!important}
+ #landing-view .landing-float>div{font-family:var(--entry-copy)!important;font-size:11px!important;line-height:17px!important}
+ #landing-view .landing-motto p{font-family:var(--entry-copy)!important;font-size:12px!important;line-height:18px!important}
+ #landing-view .landing-motto p:nth-child(2){font-size:11px!important}
+ #landing-view .landing-variant-switch button{box-sizing:border-box;font-family:var(--entry-copy)!important;font-size:12px!important;line-height:18px!important;height:36px!important;padding:8px 12px!important}
+ #landing-view #open-login-btn{box-sizing:border-box!important;display:inline-flex!important;align-items:center;justify-content:center;width:300px!important;height:62px!important;min-height:62px!important;max-height:62px!important;max-width:calc(100vw - 48px)!important;padding:8px 12px!important;transform:none!important;scale:1!important;transition-property:background-color,border-color,box-shadow!important}
+ #landing-view #open-login-btn .login-trigger-content{width:100%;display:flex!important;align-items:center;justify-content:center;gap:10px!important}
+ #landing-view #open-login-btn .login-trigger-content *{font-family:var(--entry-copy)!important;line-height:1.4!important;box-sizing:border-box}
+ #landing-view #open-login-btn .login-trigger-badge{font-size:12px!important;line-height:17px!important;padding:7px 9px!important;flex-shrink:0}
+ #landing-view #open-login-btn .login-trigger-copy{animation:none!important;min-width:0}
+ #landing-view #open-login-btn .login-trigger-copy>div:first-child{font-size:14px!important;line-height:20px!important;white-space:nowrap;flex-wrap:nowrap!important}
+ #landing-view #open-login-btn .login-trigger-copy>div:first-child span{font-size:inherit!important;line-height:inherit!important}
+ #landing-view #open-login-btn .login-trigger-copy>div:last-child{font-size:10px!important;line-height:14px!important;white-space:nowrap}
+ #login-modal,#login-modal *{font-family:var(--entry-copy)!important;font-synthesis:none!important}
+ #login-modal>div{box-sizing:border-box!important;width:min(448px,calc(100vw - 32px))!important;max-width:448px!important;max-height:calc(100svh - 32px);overflow:auto}
+ #login-modal .personnel-login-heading{min-height:58px;box-sizing:border-box}
+ #login-modal .personnel-login-title,#login-modal .personnel-login-title *{font-size:12px!important;line-height:17px!important;letter-spacing:0!important}
+ #login-modal #account-login-form label{font-size:14px!important;line-height:21px!important}
+ #login-modal #account-login-form label>span{font-size:14px!important;line-height:21px!important}
+ #login-modal :is(#login-username,#login-password){box-sizing:border-box!important;height:46px!important;min-height:46px!important;max-height:46px!important;font-size:16px!important;line-height:24px!important}
+ #login-modal button[type=submit]{height:46px!important;min-height:46px!important;max-height:46px!important;font-size:13px!important;line-height:20px!important;transform:none!important;scale:1!important;transition-property:background-color,border-color,box-shadow!important}
+ #login-modal #login-error{box-sizing:border-box;min-height:38px;font-size:12px!important;line-height:19px!important;margin-bottom:0;max-height:57px;overflow:auto}
+ @media(max-width:767px){
+  #landing-view #open-login-btn{width:208px!important;height:46px!important;min-height:46px!important;max-height:46px!important;padding:8px 10px!important}
+  #landing-view #open-login-btn .login-trigger-content{gap:8px!important}
+  #landing-view #open-login-btn .login-trigger-badge{font-size:10px!important;line-height:14px!important;padding:6px 7px!important}
+  #landing-view #open-login-btn .login-trigger-copy>div:first-child,#landing-view #open-login-btn .login-trigger-copy>div:first-child span{font-size:10px!important;line-height:14px!important}
+  #landing-view #open-login-btn .login-trigger-copy>div:last-child{font-size:8px!important;line-height:11px!important}
+ }
+}

@@ -1,0 +1,17 @@
+/* Both connecting and welcome phases use this same, stable frame. */
+@layer aved-personal {
+ #signal-Connecting-overlay{font-size:14px!important;line-height:21px!important}
+ #signal-Connecting-overlay,#signal-Connecting-overlay *{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif!important;font-synthesis:none!important;letter-spacing:0!important}
+ #signal-Connecting-overlay>.signal-mesh{box-sizing:border-box!important;display:grid!important;grid-template-rows:34px minmax(0,1fr) 28px!important;gap:12px!important;width:min(448px,calc(100vw - 32px))!important;max-width:448px!important;height:350px!important;min-height:0!important;max-height:calc(100dvh - 32px)!important;padding:20px!important;overflow:auto!important}
+ #signal-Connecting-overlay .signal-mesh>div:first-child{min-width:0!important;margin:0!important;padding:0 0 8px!important;gap:8px!important;flex-wrap:nowrap!important;font-size:10px!important;line-height:16px!important}
+ #signal-Connecting-overlay .signal-mesh>div:first-child span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #signal-Connecting-overlay .signal-mesh>div:nth-child(2){display:grid!important;grid-template-rows:18px 56px 6px 78px!important;align-content:center!important;gap:12px!important;padding:0!important;min-width:0!important}
+ #signal-Connecting-overlay .signal-mesh>div:nth-child(2)>*{margin:0!important;min-width:0!important}
+ #signal-Connecting-overlay #signal-status-title{display:flex!important;align-items:center!important;justify-content:center!important;height:56px!important;min-height:56px!important;max-height:56px!important;font-size:20px!important;line-height:28px!important;overflow:hidden!important;overflow-wrap:anywhere!important}
+ #signal-Connecting-overlay #signal-log-lines{box-sizing:border-box!important;display:grid!important;grid-template-rows:repeat(3,22px)!important;align-content:start!important;gap:2px!important;height:78px!important;min-height:78px!important;max-height:78px!important;padding:4px 0!important;overflow:hidden!important;font-size:12px!important;line-height:22px!important}
+ #signal-Connecting-overlay #signal-log-lines>div{margin:0!important;height:22px!important;font-size:12px!important;line-height:22px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #signal-Connecting-overlay .signal-mesh>div:last-child{min-width:0!important;align-items:center!important;margin:0!important;gap:8px!important;padding-top:8px!important;font-size:9px!important;line-height:16px!important}
+ #signal-Connecting-overlay .signal-mesh>div:last-child span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #signal-Connecting-overlay .signal-mesh>div:last-child span:last-child{flex-shrink:0;white-space:nowrap}
+ @media(max-width:360px){#signal-Connecting-overlay>.signal-mesh{padding:16px!important}#signal-Connecting-overlay #signal-status-title{font-size:18px!important}}
+}

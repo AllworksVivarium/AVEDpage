@@ -6,8 +6,8 @@
       }
       const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       async function apiLogin(identifier,password,remember) {
-        const result=await api('/api/login',{method:'POST',body:{identifier,password,remember}});
-        await AVEDHttp.confirmSession(result.employee?.username);return result;
+        const result=await api('/api/login',{method:'POST',body:{identifier,password,remember},timeoutMs:15000,retries:0});
+        return result;
       }
       async function apiLogout(){await api('/api/logout',{method:'POST'});}
 
@@ -81,6 +81,8 @@
             for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
             source.buffer=buffer;const filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();filter.type='lowpass';filter.frequency.setValueAtTime(wind?450:open?2400:crash?220:500,now);filter.frequency.exponentialRampToValueAtTime(wind?180:90,now+duration);
             gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(wind?.018:open?.11:crash?.13:.08,now+.02);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);source.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};source.start();source.stop(now+duration);
+          } else if(type.startsWith('scratch-bomb-')){
+            window.AVEDScratchBomb?.sound(audioCtx,Number(type.split('-').at(-1)));
           } else if(type.startsWith('scratch-')){
             const tunes={'scratch-hit':[659,784],'scratch-zero':[330,247,165],'scratch-win':[523,784,1047],'scratch-win-all':[392,523,659,1047],
               'scratch-big':[523,659,784,1047,784,659,784,1047],
@@ -431,9 +433,9 @@
           await nextPaint();
           signalPhase('正在加载公司档案',85,'正在加载公司档案……');
           const employee=await loadPlayerData();
+          if(employee.account!==authenticated.employee.username)throw new Error('登录身份未能确认，请重新接入。');
           signalPhase('欢迎回到公司，'+employee.name,85,'正在调阅公司档案……');
           await nextPaint();
-          await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-(performance.now()-connectStarted))));
           idleSession.start(true);
           await completeEnterIntranet(employee);
           signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
@@ -463,7 +465,13 @@
       // ======================================================================
       const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
 
+      function requestedPlayerView(){return AVEDStartup.route(location.hash,['profile',...mainViews]);}
+      window.addEventListener('hashchange',()=>{if(currentUser)switchMainView(requestedPlayerView());});
       function switchMainView(target) {
+        if(!currentUser)return;
+        if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
+        if(target!=='welcome')history.replaceState(null,'','#/'+target);
+        if(target!=='profile'&&target!=='welcome')loadDeferredPlayerData().catch(e=>showToast(e.message,'warn'));
         if(target==='welcome'&&currentUser){showProfile().catch(e=>showToast(e.message));return;}
         if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();refreshDirectory().catch(e=>showToast(e.message));}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
@@ -628,15 +636,14 @@
         const kwParts = kw.split(/[\s/]+/).filter(Boolean);
 
         const matching = scpSimulatedEmpty ? [] : scpItemsData.filter(item => {
-          if(window.avedScpDepartment&&item.department!==window.avedScpDepartment)return false;
           const matchLevel = selectedScpFilter === 'ALL' || item.level === selectedScpFilter;
           if (!matchLevel) return false;
           if (kwParts.length === 0) return true;
-          const haystack = `${item.id} ${item.codeName} ${item.department} ${item.handlers} ${item.summary} ${item.clues.join(' ')}`.toLowerCase();
+          const haystack = `${item.id} ${item.codeName} ${item.handlers} ${item.summary} ${item.clues.join(' ')}`.toLowerCase();
           return kwParts.some(part => haystack.includes(part));
         });
 
-        const boardKey=JSON.stringify([kw,selectedScpFilter,window.avedScpDepartment||'',matching.map(item=>item.id)]);
+        const boardKey=JSON.stringify([kw,selectedScpFilter,matching.map(item=>item.id)]);
         if(!scpBoardSelection||scpBoardSelection.key!==boardKey)scpBoardSelection={key:boardKey,ids:AVEDArchiveBoard.sample(matching,4).map(item=>item.id)};
         const filtered=scpBoardSelection.ids.map(id=>matching.find(item=>item.id===id)).filter(Boolean);
         if (countFooter) countFooter.textContent = `SHOWING: ${filtered.length} / FILES: ${matching.length}`;
@@ -897,8 +904,8 @@
         readImageFileAsDataUrl(file, (dataUrl) => {
           pendingNewTopicImageData = dataUrl;
           document.getElementById('new-topic-image-hint').textContent = dataUrl
-            ? `✓ 已装载图片：${file.name}（发布后送交管理员审核）`
-            : '未选择附图';
+            ? file.name
+            : '';
         });
       });
 
@@ -911,8 +918,8 @@
         readImageFileAsDataUrl(file, (dataUrl) => {
           pendingReplyImageData = dataUrl;
           document.getElementById('reply-image-selected-hint').textContent = dataUrl
-            ? `✓ 已选附图：${file.name}`
-            : '未选择附图';
+            ? file.name
+            : '';
         });
       });
 
@@ -1420,7 +1427,7 @@
         }
       }
 
-      function scratchRulesMarkup(game){return game.rules.map(rule=>`<p>${esc(rule)}</p>`).join('');}
+      function scratchRulesMarkup(game){return [...game.rules,'四、小概率刮出高危炸弹，请呼叫医疗部支援。'].map(rule=>`<p>${esc(rule)}</p>`).join('');}
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
         const g = scratchGameTypes.find(x => x.type === gType);
@@ -1458,7 +1465,7 @@
         if (!activeIssuedTicket) return;
         const tk = activeIssuedTicket;
         document.getElementById('active-ticket-title-bar').textContent =
-          tk.gameType.title;
+          tk.gameType.title+(tk.demo?' · 测试票':'');
 
 
         const ruleGame=scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType;
@@ -1480,9 +1487,9 @@
                 `;
               }
               return `
-                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
+                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell ${c.isBomb ? 'is-bomb' : ''} h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
                   <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div>
-                  <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.role==='LUCKY'?'领赏号':c.sub}</div>
+                  <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div>
                 </div>
               `;
             }).join('')}
@@ -1490,6 +1497,10 @@
         `;
 
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
+        if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
+          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').textContent=(tk.demo?'测试 · ':'')+AVEDGameResults.text(tk);
+          scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
+        }
         board.querySelectorAll('[data-scratch-cell]').forEach(btn => {
           btn.addEventListener('click', async () => {
             const idx = parseInt(btn.getAttribute('data-scratch-cell'), 10);
@@ -1727,102 +1738,7 @@
       ];
       const suits = ['♠', '♥', '♣', '♦'];
 
-      let ddzState = {
-        phase: 'bidding',
-        playerHand: [],
-        aiLeftCount: 17,
-        aiRightCount: 17,
-        holeCards: [],
-        lastPlay: null,
-        selectedIndices: new Set()
-      };
-
-
-
-      function renderDoudizhuUI() {
-        document.getElementById('ddz-ai-left-count').textContent = ddzState.aiLeftCount;
-        document.getElementById('ddz-ai-right-count').textContent = ddzState.aiRightCount;
-
-        const holeEl = document.getElementById('ddz-hole-cards');
-        holeEl.innerHTML = ddzState.holeCards.map(c => {
-          if (ddzState.phase === 'bidding') {
-            return `<div class="w-9 h-12 bg-neutral-900 border border-white/30 flex items-center justify-center text-xs">■</div>`;
-          }
-          return `<div class="w-10 h-12 bg-[#f4f1ea] ${c.isRed ? 'text-[#9e1b1b]' : 'text-black'} font-bold text-xs flex flex-col items-center justify-center border border-black">
-            <span>${c.suit}</span><span>${c.label}</span>
-          </div>`;
-        }).join('');
-
-        const handEl = document.getElementById('ddz-player-hand');
-        handEl.innerHTML = ddzState.playerHand.map((c, idx) => {
-          const selected = ddzState.selectedIndices.has(idx);
-          return `
-            <button type="button" data-card-idx="${idx}"
-              aria-pressed="${selected}" class="ddz-card-btn w-11 h-16 bg-[#f4f1ea] border-2 ${selected ? 'border-[#9e1b1b] -translate-y-3 shadow-lg' : 'border-black'} ${c.isRed ? 'text-[#9e1b1b]' : 'text-black'} flex flex-col items-center justify-between p-1 font-bold text-xs transition cursor-pointer select-none">
-              <span class="self-start text-[10px]">${c.suit}</span>
-              <span class="text-xs">${c.label}</span>
-              <span class="self-end text-[10px]">${c.suit}</span>
-            </button>
-          `;
-        }).join('');
-
-        handEl.querySelectorAll('.ddz-card-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            if (ddzState.phase !== 'playing') return;
-            const i = parseInt(btn.getAttribute('data-card-idx'), 10);
-            if (ddzState.selectedIndices.has(i)) ddzState.selectedIndices.delete(i);
-            else ddzState.selectedIndices.add(i);
-            playSfx('click');
-            renderDoudizhuUI();
-          });
-        });
-      }
-
-      function evaluateCards(cards) {
-        if (cards.length === 1) return { type: 'single', val: cards[0].val };
-        if (cards.length === 2) {
-          if (cards[0].val === 17 && cards[1].val === 16) return { type: 'bomb', val: 99 };
-          if (cards[0].val === cards[1].val) return { type: 'pair', val: cards[0].val };
-        }
-        if (cards.length === 3 && cards[0] && cards[0].val === cards[1].val && cards[1].val === cards[2].val) {
-          return { type: 'triple', val: cards[0].val };
-        }
-        if (cards.length === 4 && cards.every(c => c.val === cards[0].val)) {
-          return { type: 'bomb', val: cards[0].val };
-        }
-        return null;
-      }
-
-      function renderTableCards(cards, whoLabel) {
-        document.getElementById('ddz-table-status').textContent = whoLabel;
-        document.getElementById('ddz-last-played-cards').innerHTML = cards.map(c => `
-          <div class="w-11 h-15 bg-[#f4f1ea] ${c.isRed ? 'text-[#9e1b1b]' : 'text-black'} font-bold text-xs flex flex-col items-center justify-center p-1.5 border border-black">
-            <span>${c.suit}</span><span>${c.label}</span>
-          </div>
-        `).join('');
-      }
-
-
-
-      document.getElementById('ddz-hint-btn').addEventListener('click', () => {
-        if (ddzState.phase !== 'playing' || ddzState.playerHand.length === 0) return;
-        ddzState.selectedIndices.clear();
-        let targetIdx = ddzState.playerHand.length - 1;
-        if (ddzState.lastPlay && ddzState.lastPlay.by !== 'player' && ddzState.lastPlay.type === 'single') {
-          for (let i = ddzState.playerHand.length - 1; i >= 0; i--) {
-            if (ddzState.playerHand[i].val > ddzState.lastPlay.val) {
-              targetIdx = i;
-              break;
-            }
-          }
-        }
-        ddzState.selectedIndices.add(targetIdx);
-        renderDoudizhuUI();
-      });
-
-
-
-      initDoudizhu();
+      let cardTableUI=null;
 
       // ======================================================================
       // 分页 7：监察院特殊资料
@@ -1834,7 +1750,7 @@
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
-      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false,cardRound=null;
+      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false;
       const byId=id=>document.getElementById(id);
       function showToast(message,type='info') {
         const el=document.createElement('div');el.className='aved-toast';el.dataset.type=type;el.setAttribute('role','status');
@@ -1843,18 +1759,29 @@
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
-      async function loadPlayerData() {
-        const data=await api('/api/player/state');if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
+      async function loadPlayerData(deferred=false) {
+        const expectedUser=currentUser?.id;
+        const data=await api('/api/player/state'+(deferred?'':'?bootstrap=1'),{timeoutMs:15000,retries:0});if(deferred&&currentUser?.id!==expectedUser)return null;if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
-          identityKind:data.employee.identityKind,positionTitle:data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
+          identityKind:data.employee.identityKind,positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
-        scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
+        scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
         return currentUser;
+      }
+      let deferredPlayerRequest=null,deferredPlayerReady=false;
+      function loadDeferredPlayerData(){
+        if(deferredPlayerReady||!currentUser)return Promise.resolve();
+        if(deferredPlayerRequest)return deferredPlayerRequest;
+        deferredPlayerRequest=loadPlayerData(true).then(employee=>{
+          if(!employee)return;deferredPlayerReady=true;
+          renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();renderStocks();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();
+          if(!byId('view-profile').classList.contains('hidden'))renderProfile();
+        }).finally(()=>{deferredPlayerRequest=null;});return deferredPlayerRequest;
       }
       function syncUserHeaderUI() {
         if(!currentUser)return;
@@ -1864,6 +1791,7 @@
         if(lastProfileBalance!==null&&lastProfileBalance!==currentUser.balance)profileFreshAt=0;lastProfileBalance=currentUser.balance;
         byId('forum-current-balance').textContent='当前余额 '+fmtMoney(currentUser.balance);
         byId('top-balance-val').textContent=fmtMoney(currentUser.balance);
+        window.AVEDCasinoSwitcher?.sync();
         const checked=currentUser.lastCheckinDate===getTodayDateString();
         byId('header-quick-checkin-btn').textContent=checked?'已签到':'签到';byId('header-quick-checkin-btn').disabled=checked;
         byId('header-quick-relief-btn').classList.remove('hidden');byId('header-quick-relief-btn').disabled=currentUser.balance>=10000;byId('header-quick-relief-btn').textContent='领取低保';
@@ -1873,15 +1801,16 @@
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function completeEnterIntranet(emp){
-        await window.AVEDTypographyReady;
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        communityUI.refresh();welfareUI.refresh().catch(e=>showToast(e.message));renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();renderStocks();initSkydiveGame();switchMainView('welcome');
-        window.AVEDPrepareTypography?.(innerAppView);
+        renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();switchMainView(requestedPlayerView());
+        setTimeout(()=>{if(!currentUser)return;loadDeferredPlayerData().catch(e=>showToast(e.message,'warn'));communityUI.refresh();welfareUI.refresh().catch(()=>{});},1200);
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
-        refreshChat('sky');refreshChat('derby');startChatStreams();
+        // Chat streams open only while their game panel is visible.
+        startChatStreams();
+        document.documentElement.dataset.entryState='ready';
       }
       function renderCompanyNewsView(){
         const n=companyNews.find(n=>n.id===currentNewsId);
@@ -1901,7 +1830,7 @@
         byId('news-detail-comments-list').innerHTML=AVEDNotices.comments(data.items);
         byId('news-detail-comment-count').textContent='员工实名留言 ('+count+')';
       }
-      function randomizeScpDualNamePlaceholder(){byId('scp-search-input').placeholder=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)].codeName:'搜索收容物名称';}
+      function randomizeScpDualNamePlaceholder(){const item=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)]:null;byId('scp-search-input').placeholder=item?(item.searchName||item.codeName):'检索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
       function readImageFileAsDataUrl(file,callback){if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1500000){showToast('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。','warn');return;}const reader=new FileReader();reader.onload=()=>callback(reader.result);reader.readAsDataURL(file);}
       const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
@@ -1911,15 +1840,16 @@
         const th=forumThreads.find(t=>String(t.id)===String(currentForumThreadId));
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
         byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;
-        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${t.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'} ${esc(t.anonymousName)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg">${esc(t.title)}</h3><p class="line-clamp-2 whitespace-pre-wrap">${esc(t.body)}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
+        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${forumAuthor(t)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt whitespace-pre-wrap">${esc(Array.from(t.body||'').slice(0,240).join(''))}${Array.from(t.body||'').length>240?'…':''}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
           if(forumNext)byId('forum-threads-list-container').insertAdjacentHTML('beforeend','<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>');
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${th.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'} ${esc(th.anonymousName)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
+        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${forumAuthor(th)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
         api('/api/player/forum/'+th.id).then(d=>{if(String(currentForumThreadId)!==String(th.id))return;
-          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${esc(r.anonymousName)}</b> <small>${r.identityMode==='real'?'<span class="forum-real-badge">实名</span>':'匿名'}</small> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
+          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${forumAuthor(r)}</b> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
           byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
       }
+      function forumAuthor(item){return item.identityMode==='real'?esc(item.anonymousName)+' <i class="forum-real-badge">实名</i>':'匿名';}
       async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
       async function loadMoreForum(){if(!forumNext||forumLoading)return;forumLoading=true;const el=byId('forum-load-more');if(el){el.disabled=true;el.innerHTML='<span class="animate-pulse">正在载入更多帖子… ▰ ▰ ▰</span>';byId('forum-skeleton-container').classList.remove('hidden');}
         try{const d=await api('/api/player/forum?before='+forumNext);forumThreads.push(...d.items);forumNext=d.next;renderForumView();}finally{forumLoading=false;byId('forum-skeleton-container').classList.add('hidden');}}
@@ -1927,16 +1857,7 @@
       function createNewSlotTube(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>({bet:h.cost,win:h.prize}));byId('slot5x3-seal-status').textContent='封签已核验';byId('slot5x3-seal-hash').textContent='独立封签';byId('slot5x3-revealed-tube-seed').textContent='转轮停止后可核验封签。';renderSlot5x3History();}
       function initDerbyRound(){derbyState.running=false;derbyState.positions=[0,0,0,0];byId('derby-status-text').textContent='请选择跑道并开闸。';byId('derby-pre-hash').textContent='赛场封签已就绪';byId('derby-start-race-btn').classList.remove('hidden');byId('derby-next-round-btn').classList.add('hidden');renderDerbyTracksAndButtons();}
       function initSkydiveGame(){pollSky().catch(e=>showToast(e.message));}
-      function initDoudizhu(){if(!currentUser)return;api('/api/player/games/cards',{method:'POST',body:{action:'start'}}).then(renderServerCards).catch(e=>showToast(e.message));}
-      function renderServerCards(data){
-        cardRound=data.round;Object.assign(ddzState,data);ddzState.selectedIndices.clear();currentUser.balance=data.balance;syncUserHeaderUI();
-        byId('ddz-call-landlord-btn').classList.toggle('hidden',data.phase!=='bidding');
-        for(const id of ['ddz-play-btn','ddz-pass-btn','ddz-hint-btn'])byId(id).classList.toggle('hidden',data.phase!=='playing');
-        byId('ddz-player-role-badge').textContent=data.phase==='bidding'?'等待抢地主':'地主';
-        byId('ddz-ai-left-role').textContent='电脑对手 A';byId('ddz-ai-right-role').textContent='电脑对手 B';
-        byId('ddz-turn-indicator').textContent=data.phase==='ended'?AVEDGameResults.text(data):data.phase==='bidding'?'点击抢地主开始':'轮到你出牌：单张、对子、三张、炸弹';
-        if(data.lastPlay)renderTableCards(data.lastPlay.cards,'上一手出牌');else byId('ddz-last-played-cards').replaceChildren();renderDoudizhuUI();
-      }
+      function initDoudizhu(){cardTableUI?.ensure();}
       function renderSky(state){skyRound=state.round;skyUI.render(state);}
       async function pollSky(){return skyUI.poll();}
       async function refreshChat(room){renderChat(room,await api('/api/player/chat?room='+room));}
@@ -1945,7 +1866,10 @@
         box.innerHTML=d.items.map(m=>`<div class="py-1"><b>${esc(m.alias)}</b> <span class="text-xs opacity-60">${AVEDTime.markup(m.createdAt,'clock')}</span><p class="whitespace-pre-wrap">${esc(m.body)}</p></div>`).join('');box.dataset.lastId=next;if(nearBottom||!last)box.scrollTop=box.scrollHeight;
       }
       let chatConnections=[];
-      function startChatStreams(){for(const connection of chatConnections)connection.close();chatConnections=['sky','derby'].map(room=>{const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>renderChat(room,JSON.parse(e.data));return source;});}
+      let chatRoom='';
+      function startChatStreams(){const room=currentUser&&!document.hidden&&!byId('view-casino').classList.contains('hidden')?(!byId('game-panel-skydive').classList.contains('hidden')?'sky':!byId('game-panel-derby').classList.contains('hidden')?'derby':''):'';if(room===chatRoom)return;chatRoom=room;for(const connection of chatConnections)connection.close();chatConnections=[];if(!room)return;const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>{try{renderChat(room,JSON.parse(e.data));}catch{}};chatConnections=[source];}
+      document.addEventListener('visibilitychange',startChatStreams);
+      setInterval(startChatStreams,1000);
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){personalUI.render();}
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
@@ -1960,7 +1884,7 @@
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form';
             const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
-            form.reset();form.querySelector('[name=identityMode]').value='anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='未选择附图';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
+            form.reset();form.querySelector('[name=identityMode]').value='anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
           }else if(id==='scp-realname-comment-form'){
@@ -1984,12 +1908,7 @@
         if(button.dataset.nav==='welcome'){stop(event);showProfile().catch(e=>showToast(e.message));return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.nav){api('/api/player/view',{method:'POST',body:{page:button.dataset.nav}}).catch(()=>{});}
-        if(button.dataset.game==='doudizhu'&&!cardRound)initDoudizhu();
-        if(['ddz-call-landlord-btn','ddz-play-btn','ddz-pass-btn','ddz-new-game-btn'].includes(id)){
-          stop(event);action(button,async()=>{const a={'ddz-call-landlord-btn':'bid','ddz-play-btn':'play','ddz-pass-btn':'pass','ddz-new-game-btn':'start'}[id];
-            const cards=[...ddzState.selectedIndices].map(i=>ddzState.playerHand[i]?.id);
-            renderServerCards(await api('/api/player/games/cards',{method:'POST',body:{action:a,round:cardRound,cards}}));});return;
-        }
+        if(button.dataset.game==='doudizhu')initDoudizhu();
         const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','slot5x3-verify-tube-btn','derby-start-race-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
         const trade=button.hasAttribute('data-long-idx')||button.hasAttribute('data-short-idx');
         if(!handled.includes(id)&&!trade)return;stop(event);
@@ -2001,6 +1920,7 @@
           if(id==='ticket-modal-confirm-btn'||id==='scratch-next-ticket'){
             const type=id==='scratch-next-ticket'?activeIssuedTicket?.gameType:pendingTicketType;if(!type)throw new Error('请先选择票种。');
             if(scratchActivating)return;
+            scratchFeedback.clear();
             const tier={...selectedTier};const cost=id==='scratch-next-ticket'?tier.cost:Number(byId('ticket-modal-price').dataset.cost),revision=id==='scratch-next-ticket'?economyRevision:Number(byId('ticket-modal-price').dataset.revision);
             activeIssuedTicket={draft:true,requestKey:crypto.randomUUID(),tier:{...tier,cost},gameType:type,cost,revision,cells:Array.from({length:type.cellsCount},(_,idx)=>({idx,revealed:false,label:idx===3?'核准印':'领赏号',sub:'待核准'}))};
             byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');
@@ -2068,18 +1988,37 @@
         if(scratchActivating||!activeIssuedTicket)return false;if(!activeIssuedTicket.draft)return true;
         const draft=activeIssuedTicket;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
         try{const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:draft.tier.id,type:draft.gameType.type,cost:draft.cost,revision:draft.revision,requestKey:draft.requestKey}});
-          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='已扣除票价 · 刮开查看结果。';byId('scratch-next-ticket').textContent='刮下一张';return true;
+          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 · 刮开查看结果。';byId('scratch-next-ticket').textContent='刮下一张';return true;
         }catch(e){showToast(e.message);byId('scratch-next-ticket').disabled=false;return false;}finally{scratchActivating=false;}
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         const ticket=activeIssuedTicket;ticket.settled=true;
-        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').textContent=AVEDGameResults.text(ticket);scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').textContent=(ticket.demo?'测试 · ':'')+AVEDGameResults.text(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
         finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');
+      if(['localhost','127.0.0.1','[::1]'].includes(location.hostname)){
+        let demoIndex=0;
+        const previewBomb=()=>{
+          if(scratchActivating)return;
+          if(activeIssuedTicket&&!activeIssuedTicket.demo&&!activeIssuedTicket.draft&&!activeIssuedTicket.settled){showToast('请先刮完当前票券。');return;}
+          const modal=byId('ticket-confirm-modal'),fromModal=!modal.classList.contains('hidden'),gameType=fromModal?pendingTicketType:activeIssuedTicket?.gameType;
+          if(!gameType)return;
+          scratchFeedback.clear();activeIssuedTicket=window.AVEDScratchBombDemo.make({tier:selectedTier,gameType,totalLoss:[2,3,5][demoIndex++%3]});
+          modal.classList.add('hidden');modal.classList.remove('flex');
+          byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
+          byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='测试票 · 待刮开';
+          renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='取下一张';
+          byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
+        };
+        for(const target of [byId('scratch-reveal-all-cells-btn'),byId('ticket-modal-confirm-btn')]){const button=document.createElement('button');button.type='button';button.className='scratch-bomb-demo-btn';button.textContent='试刮炸弹';button.addEventListener('click',previewBomb);target.after(button);}
+
+
+      }
       const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-reveal-all-cells-btn').after(nextTicket);
       byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');
 
+      cardTableUI=AVEDCardTableUI({api,esc,getUser:()=>currentUser,playSfx});
       const skyUI=AVEDSkyUI({api,esc,byId,playSfx,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
@@ -2101,17 +2040,27 @@
       document.addEventListener('visibilitychange',()=>idleSession.check());
       window.addEventListener('storage',event=>{if(event.key==='aved_last_activity_v1')idleSession.check();});
       (async()=>{
-        try{
-          await api('/api/me');
-          if(idleSession.stale()){await apiLogout();return;}
-          signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-          signalPhase('正在恢复员工终端',12,'正在确认个人身份令牌……');await nextPaint();
-          signalPhase('正在恢复员工终端',45,'正在连接公司内网……');await nextPaint();
-          signalPhase('正在恢复员工终端',85,'正在加载公司档案……');
-          const employee=await loadPlayerData();await completeEnterIntranet(employee);idleSession.start();
-          signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
-          await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:260));
-        }catch{currentUser=null;}finally{signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');}
+        signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
+        signalPhase('正在恢复当前页面',12,'正在确认个人身份令牌……');
+        const entryState=await AVEDStartup.restoreSession({
+          load:async()=>{
+            if(idleSession.stale()){await apiLogout();throw Object.assign(new Error('员工会话已过期。'),{status:401,code:'SESSION_EXPIRED'});}
+            return loadPlayerData();
+          },
+          enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
+          signedOut:()=>{
+            currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+            document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
+          },
+          unavailable:()=>{
+            currentUser=null;signalPhase('暂时无法恢复页面',12,'');
+            const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
+            message.textContent='连接未完成，尚未确认登录状态。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
+            retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);
+          }
+        });
+        document.documentElement.dataset.entryState=entryState;signalOverlay.setAttribute('aria-busy','false');
+        if(entryState!=='checking'){signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');}
       })();
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('game-panel-stocks').classList.contains('hidden'))refreshMarket().catch(()=>{});},5000);
 

@@ -18,7 +18,7 @@
 - 部署：Dockerfile、compose.yaml、deploy/；管理员恢复工具：admin-account.mjs。
 - 数据：服务器 data/wanyehui.db（含运行时 WAL/SHM）。代码仓库不保存真实数据。Windows 预览使用独立 data-local/。
 
-Node.js 24 + 原生 HTTP + SQLite WAL；无需 npm 安装。两个域名均反代同一个 4173 应用，并保留 Host。aved.space 显示玩家端，authority.aved.space 显示管理员端，后端接口仍按登录权限检查。域名本身不赋予管理员权限。
+Node.js 24 + 原生 HTTP + SQLite WAL。首次运行先执行 `npm ci`；Sharp 用于头像缩略图，Docker 构建会自动安装锁定依赖。两个域名均反代同一个 4173 应用，并保留 Host。aved.space 显示玩家端，authority.aved.space 显示管理员端，后端接口仍按登录权限检查。域名本身不赋予管理员权限。
 
 ## 已有代码能力
 

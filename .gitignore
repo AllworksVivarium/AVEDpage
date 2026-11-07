@@ -13,4 +13,5 @@ data-local/
 # local-only release notes
 UPDATE-NOTES-*.md
 .local-text-history/
+node_modules/
 

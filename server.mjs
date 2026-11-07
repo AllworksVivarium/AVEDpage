@@ -7,6 +7,8 @@ import {installPlayerDesign} from './server-player-design.mjs';
 import {installDerby} from './server-derby.mjs';
 import {installOriginalMusic} from './server-original-music.mjs';
 import {mediaReference,installMedia} from './server-media.mjs';
+import {normalizeAvatar} from './server-avatar.mjs';
+import {installCardTables} from './server-card-table.mjs';
 import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
 import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
@@ -268,6 +270,7 @@ const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balan
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
+const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -312,7 +315,8 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
-    if(media.handle(req,res,url))return;
+    if(await media.handle(req,res,url))return;
+    if(await cardTables.handle(req,res,url))return;
     if(await originalMusic.handle(req,res,url))return;
     if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
@@ -340,7 +344,7 @@ const server = createServer(async (req, res) => {
       let avatar=avatarUrl===undefined?previousAvatar:'';
       if(typeof avatarUrl==='string'&&avatarUrl.trim()) {
         if(avatarUrl===mediaReference('avatar',employee.id,previousAvatar))avatar=previousAvatar;
-        else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) avatar=avatarUrl;
+        else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) {try{avatar=await normalizeAvatar(avatarUrl);}catch{return send(res,400,{error:'头像无法读取，请使用 1.5 MB 以内的有效图片。'});}}
         else { try { const parsed=new URL(avatarUrl); if(parsed.protocol!=='https:'||parsed.href.length>1000) throw new Error(); avatar=parsed.href; } catch { return send(res,400,{error:'头像请使用 PNG/JPG/WEBP 图片，或填写有效的 HTTPS 图片链接。'}); } }
       }
       db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)

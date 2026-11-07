@@ -1,0 +1,155 @@
+/* Pixel card-club art is drawn locally: no background textures or remote art. */
+@layer aved-type-system {
+ #game-panel-doudizhu.ddz-panel,#game-panel-doudizhu.ddz-panel :is(button,input,p,span,strong,b,small,h3,label){font-family:'AVED IPix','Courier New',monospace!important;letter-spacing:0!important}
+ #game-panel-doudizhu.ddz-panel :is(button,input){font-size:13px!important;line-height:1.2!important}
+ #game-panel-doudizhu.ddz-panel small{font-size:9px!important;line-height:1.5!important}
+ #game-panel-doudizhu.ddz-panel h3{font-size:24px!important;line-height:1.4!important}
+ #game-panel-doudizhu.ddz-panel .ddz-card-rank{font:bold 19px/1 'Courier New',monospace!important}
+ #game-panel-doudizhu.ddz-panel .ddz-card-corner{font:bold 14px/1 'Courier New',monospace!important}
+ #game-panel-doudizhu.ddz-panel .ddz-card-check{font:bold 13px/1 monospace!important}
+ #game-panel-doudizhu.ddz-panel .ddz-seat-name strong{font-size:12px!important;line-height:1.4!important}
+ #game-panel-doudizhu.ddz-panel .ddz-count{font:bold 20px/1.1 monospace!important}
+ #game-panel-doudizhu.ddz-panel .ddz-selection strong{font-size:15px!important;line-height:1.4!important}
+ #game-panel-doudizhu.ddz-panel .ddz-avatar b{font-size:27px!important}
+}
+#game-panel-doudizhu.ddz-panel{--ddz-ink:#eee3c2;--ddz-dark:#142b27;--ddz-table:#285e4b;--ddz-rim:#688b65;--ddz-yellow:#efc66e;--ddz-line:#0b2523;--ddz-red:#c84c43;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;max-width:1100px;margin:0 auto;color:var(--ddz-ink)}
+[data-palette-preview="darkroom"] #game-panel-doudizhu{--ddz-table:#244e65;--ddz-rim:#678c9a;--ddz-dark:#172d3d}
+[data-palette-preview="mineral"] #game-panel-doudizhu{--ddz-table:#685441;--ddz-rim:#a18b67;--ddz-dark:#332c29}
+#game-panel-doudizhu .ddz-shell{border:3px solid #172b28;box-shadow:4px 5px 0 #0003;background:var(--ddz-dark);padding:14px;isolation:isolate}
+#game-panel-doudizhu .ddz-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;padding:0!important;border:0!important}
+#game-panel-doudizhu .ddz-heading small{color:#9db6a3;letter-spacing:2px!important}
+#game-panel-doudizhu .ddz-heading h3{color:var(--ddz-ink)!important;margin:3px 0 0!important}
+#game-panel-doudizhu .ddz-heading h3 span{display:inline-block;font-size:11px!important;color:#b3c1ad;border-left:1px solid #9eb9a255;padding-left:10px;margin-left:6px}
+#game-panel-doudizhu button{border-radius:0!important;cursor:pointer;touch-action:manipulation}
+#game-panel-doudizhu :is(.ddz-menu,.ddz-actions,.ddz-dialog,.ddz-heading,.ddz-selection,.ddz-self) button{background:#36584c;color:#f7e7c6;border:2px solid #0c2924;padding:8px 13px;box-shadow:inset 1px 1px #cde2b84d,0 3px 0 #0a201b;min-height:37px;transition:filter .12s,transform .12s}
+#game-panel-doudizhu button:focus-visible{outline:2px solid #fff0a2!important;outline-offset:3px}
+#game-panel-doudizhu button:disabled{opacity:.4;cursor:default}
+#game-panel-doudizhu :is(.ddz-menu,.ddz-actions,.ddz-dialog) button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 1px 1px #ffffff30,0 1px 0 #0a201b}
+#game-panel-doudizhu .ddz-gold{background:var(--ddz-yellow)!important;color:#342c25!important;border-color:#372d27!important;box-shadow:inset 2px 2px #ffe7a6,0 3px 0 #372d27!important}
+#game-panel-doudizhu .ddz-small{min-height:28px!important;font-size:11px!important;padding:5px 8px!important}
+#game-panel-doudizhu .ddz-menu{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+#game-panel-doudizhu :is(.ddz-mode,.ddz-entry){display:flex;gap:5px}
+#game-panel-doudizhu .ddz-mode button{background:transparent;box-shadow:none;border-color:#76947c55;color:#bccbb5}
+#game-panel-doudizhu .ddz-mode button[aria-pressed=true]{background:#719178;color:#0e241d;border-color:#a1b593}
+#game-panel-doudizhu .ddz-mode button:disabled{opacity:1}
+#game-panel-doudizhu .ddz-roomline{display:flex;align-items:center;gap:12px;font:10px/1.5 monospace;min-height:30px;padding:4px 2px 8px;color:#bac9b0}
+#game-panel-doudizhu .ddz-roomline>span:nth-child(2){margin-left:auto;opacity:.7;font-size:10px!important}
+#game-panel-doudizhu .ddz-roomline button{padding:0;border:0;background:none;color:var(--ddz-yellow);font-size:10px!important}
+#game-panel-doudizhu .ddz-felt{height:530px;position:relative;overflow:hidden;border:5px solid var(--ddz-rim);outline:2px solid #0c2622;box-shadow:inset 0 0 0 2px #0e382e,inset 0 0 75px #0b292a88,0 5px 0 #0a201b;background:radial-gradient(ellipse at 55% 40%,#a0b26915,transparent 60%),repeating-conic-gradient(from 30deg at 45% 44%,#0000 0 13deg,#fff1 14deg 16deg,#0000 17deg 34deg),var(--ddz-table)}
+#game-panel-doudizhu .ddz-grain{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.15;background-image:repeating-linear-gradient(0deg,#000 0 1px,transparent 1px 4px),radial-gradient(#f6f0cb77 .5px,transparent .8px);background-size:auto,3px 3px;mix-blend-mode:soft-light}
+#game-panel-doudizhu .ddz-seat{position:absolute;display:grid;grid-template-columns:48px minmax(0,1fr) 30px;column-gap:8px;align-items:center;width:190px;padding:8px;background:#122b2580;border:1px solid #c4d7a33b;box-shadow:2px 3px #0a201b55;z-index:3}
+#game-panel-doudizhu .ddz-seat[hidden]{display:none}
+#game-panel-doudizhu .ddz-seat-left{top:105px;left:18px}
+#game-panel-doudizhu .ddz-seat-right{top:105px;right:18px}
+#game-panel-doudizhu .ddz-seat-top{top:15px;left:50%;transform:translateX(-50%)}
+#game-panel-doudizhu .ddz-seat.is-turn{border-color:var(--ddz-yellow);box-shadow:0 0 0 2px #f0c66a22,2px 3px #0a201b55}
+#game-panel-doudizhu .ddz-avatar{position:relative;display:grid;place-items:center;width:48px;height:48px;border:2px solid #071f1a;background:var(--avatar-tone,#79947e);color:#122e28;box-shadow:inset 2px 2px #fff4;flex:none;overflow:hidden}
+#game-panel-doudizhu .ddz-avatar::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 1px 3px);pointer-events:none}
+#game-panel-doudizhu .ddz-avatar img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+#game-panel-doudizhu .ddz-seat-name{min-width:0;display:flex;flex-direction:column;gap:4px}
+#game-panel-doudizhu .ddz-seat-name strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f3e4be}
+#game-panel-doudizhu .ddz-seat-name small{color:#bdcbb2}
+#game-panel-doudizhu .ddz-count{color:var(--ddz-yellow);text-align:right;white-space:nowrap}.ddz-count small{display:block}
+#game-panel-doudizhu .ddz-seat-last{grid-column:1/-1;font-size:10px!important;color:#d4d3b0;min-height:13px;margin-top:5px}
+#game-panel-doudizhu .ddz-empty{grid-column:1/-1;text-align:center;font:22px/1.3 monospace;color:#b5c6ad80;padding:8px}.ddz-empty small{display:block}
+#game-panel-doudizhu .ddz-table-center{position:absolute;inset:105px 110px 220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none}
+#game-panel-doudizhu .ddz-watermark{position:absolute;inset:0;display:flex;justify-content:center;flex-direction:column;align-items:center;color:#e5e0b91c;font:bold 44px/1 monospace;transform:rotate(-8deg);pointer-events:none}
+#game-panel-doudizhu .ddz-watermark small{font-size:8px!important;letter-spacing:3px!important;margin:6px}.ddz-watermark>span{font-size:28px!important}
+#game-panel-doudizhu .ddz-bottom{position:fixed;display:none}
+#game-panel-doudizhu .ddz-table-center .ddz-bottom{position:absolute;top:-90px;right:-88px;display:flex;gap:3px;transform:scale(.48);transform-origin:top right;width:max-content;max-width:400px}
+#game-panel-doudizhu .ddz-card{--card-w:54px;position:relative;display:inline-block;flex:none;width:var(--card-w);height:78px;background:#f1e5c8;color:#26372e;border:2px solid #26372e;box-shadow:inset 1px 1px #fff8e8,inset -2px -3px #c5bfa5,2px 3px 0 #102a24a6;padding:0;border-radius:3px!important;overflow:visible;vertical-align:top;text-align:left;user-select:none;touch-action:manipulation}
+#game-panel-doudizhu .ddz-card::after{content:'';position:absolute;inset:0;background:radial-gradient(#3d392a1a .6px,transparent .8px);background-size:3px 3px;pointer-events:none;opacity:.5}
+#game-panel-doudizhu .ddz-card.ddz-red{color:#b63b34}
+#game-panel-doudizhu .ddz-card-rank{position:absolute;left:4px;top:5px;z-index:2;display:flex;flex-direction:column;align-items:center;gap:3px}
+#game-panel-doudizhu .ddz-card-rank svg{width:11px;height:11px;shape-rendering:crispEdges}
+#game-panel-doudizhu .ddz-card-pip{position:absolute;right:8px;bottom:20px;width:23px;height:23px;filter:drop-shadow(1px 1px #fff8)}
+#game-panel-doudizhu .ddz-card svg{shape-rendering:crispEdges}
+#game-panel-doudizhu .ddz-card-corner{position:absolute;right:5px;bottom:4px;transform:rotate(180deg)}
+#game-panel-doudizhu .ddz-card-back{background:repeating-conic-gradient(#b94c46 0 25%,#813c38 0 50%) 0/6px 6px;border:3px solid #e6d9b4;outline:1px solid #15372d;display:grid;place-items:center;color:#e9cc9a}
+#game-panel-doudizhu .ddz-card-back i{font-size:26px;font-style:normal}
+#game-panel-doudizhu .ddz-trick{position:relative;display:flex;justify-content:center;max-width:100%;padding-right:28px}
+#game-panel-doudizhu .ddz-trick .ddz-card{margin-right:-28px;transform:rotate(-2deg);height:68px;--card-w:48px}
+#game-panel-doudizhu .ddz-trick .ddz-card:nth-child(even){transform:rotate(2deg)}
+#game-panel-doudizhu .ddz-table-label{position:relative;font-size:11px!important;text-align:center;color:#e3e2bf;text-shadow:1px 1px #183c2d;max-width:100%;line-height:1.6}
+#game-panel-doudizhu[data-card-phase=ended] .ddz-table-label{font-size:23px!important;color:var(--ddz-yellow);text-shadow:2px 3px #142c22}
+#game-panel-doudizhu .ddz-score{position:absolute;top:15px;left:18px;display:flex;gap:6px;flex-direction:column;font-size:10px;color:#b8caaf}
+#game-panel-doudizhu .ddz-score b{display:inline-block;min-width:26px;margin-left:8px;color:#eee4c3;font-size:13px!important}
+#game-panel-doudizhu .ddz-turn{position:absolute;bottom:202px;left:18px;right:18px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:11px!important;color:#c2d2b7}
+#game-panel-doudizhu .ddz-turn i{width:5px;height:5px;background:#99b4a2}.ddz-turn b{color:var(--ddz-yellow)}
+#game-panel-doudizhu .ddz-turn.is-mine{color:var(--ddz-yellow)}.ddz-turn.is-mine i{background:var(--ddz-yellow)}
+#game-panel-doudizhu .ddz-hand{position:absolute;bottom:56px;left:24px;right:24px;min-height:86px;display:flex;flex-direction:column;gap:19px;align-items:center;z-index:4}
+#game-panel-doudizhu .ddz-hand-row{display:grid;grid-template-columns:repeat(var(--count),minmax(0,1fr));width:min(100%,calc(var(--count)*43px));padding-right:25px;min-height:78px;isolation:isolate}
+#game-panel-doudizhu .ddz-hand-row .ddz-card{transition:transform .13s,box-shadow .13s;border-radius:3px!important}
+#game-panel-doudizhu .ddz-hand-row .ddz-card:hover{filter:brightness(1.06)}
+#game-panel-doudizhu .ddz-hand-row .ddz-card.is-selected{transform:translateY(-16px)!important;background:#fff2c8;border-color:#dba850;box-shadow:inset 0 0 0 1px #fff8db,0 0 0 2px #e8b959,3px 6px 0 #112c2799;z-index:2}
+#game-panel-doudizhu .ddz-card-check{display:none;position:absolute;left:2px;top:-13px;background:#f2c86c;color:#26372e;padding:1px 2px;font-style:normal}
+#game-panel-doudizhu .is-selected .ddz-card-check{display:block}
+#game-panel-doudizhu .ddz-self{position:absolute;left:18px;right:18px;bottom:9px;display:flex;align-items:center;justify-content:space-between;font-size:11px!important}
+#game-panel-doudizhu .ddz-self>[data-ddz-self]{display:flex;align-items:center;gap:7px}.ddz-self small{display:block;color:#adbea5}
+#game-panel-doudizhu .ddz-self .ddz-avatar{width:34px;height:34px}
+#game-panel-doudizhu .ddz-self button{font-size:10px!important;min-height:27px;padding:5px 8px;background:#15382c}
+#game-panel-doudizhu .ddz-idle-cards{display:flex;padding:20px 25px 0}
+#game-panel-doudizhu .ddz-idle-cards>span{transform:translateY(var(--lift)) rotate(var(--tilt));margin-left:-15px}
+#game-panel-doudizhu .ddz-selection{display:flex;align-items:center;gap:10px;min-height:64px;border-bottom:1px solid #728f7555;padding:13px 2px 10px;margin-top:4px}
+#game-panel-doudizhu .ddz-selection>div{flex:none;display:flex;flex-direction:column;gap:4px}.ddz-selection small{color:#a9bba1}
+#game-panel-doudizhu .ddz-selection>span{flex:1;min-width:0;overflow-wrap:anywhere;font-size:10px!important;line-height:1.5!important;color:#aabbab}
+#game-panel-doudizhu .ddz-selection button{margin-left:auto;min-height:28px;padding:4px 7px;font-size:10px!important;background:none;box-shadow:none;border-color:#77917b55}
+#game-panel-doudizhu .ddz-selection[data-valid=yes] strong{color:var(--ddz-yellow)}
+#game-panel-doudizhu .ddz-selection[data-valid=no] strong{color:#e99981}
+#game-panel-doudizhu .ddz-actions{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;padding:12px 0 7px}
+#game-panel-doudizhu .ddz-actions button{min-width:86px;min-height:40px}.ddz-idle-note{font-size:11px!important;color:#b8c6ac}
+#game-panel-doudizhu .ddz-message{margin:0!important;min-height:18px;font-size:11px!important;color:#efb38e;text-align:center;line-height:1.5!important}
+#game-panel-doudizhu .ddz-foot{display:flex;justify-content:space-between;color:#87a592;font-size:8px!important;padding-top:5px}.ddz-foot span{font-size:8px!important}
+#game-panel-doudizhu .ddz-dialog{position:fixed;inset:0;width:min(430px,calc(100vw - 36px));max-height:80dvh;padding:0;margin:auto;border:2px solid #769374;border-radius:0;background:#203f35;color:#f0e3c0;box-shadow:6px 6px 0 #0007;font-size:13px}
+#game-panel-doudizhu .ddz-dialog::backdrop{background:#061a18a6;backdrop-filter:blur(3px)}
+#game-panel-doudizhu .ddz-dialog header{display:flex;align-items:center;justify-content:space-between;background:#142b27;padding:6px 12px;border-bottom:1px solid #77917b}
+#game-panel-doudizhu .ddz-dialog header button{padding:1px 6px;min-height:25px;box-shadow:none}
+#game-panel-doudizhu .ddz-dialog [data-dialog-body]{padding:16px;overflow:auto;max-height:65dvh}
+#game-panel-doudizhu .ddz-dialog p{font-size:12px!important;line-height:1.8!important;margin:0 0 13px!important}
+#game-panel-doudizhu .ddz-dialog label{display:grid;gap:10px;margin-bottom:15px}
+#game-panel-doudizhu .ddz-dialog input{width:100%;padding:10px;border:1px solid #9ab391;background:#102d25;color:#eed6a5;border-radius:0;letter-spacing:5px!important;text-transform:uppercase}
+#game-panel-doudizhu .ddz-impact{animation:ddz-thump .35s ease-out}
+@keyframes ddz-thump{0%,100%{transform:translate(0)}20%{transform:translate(-3px,2px);filter:brightness(1.25)}50%{transform:translate(3px,-2px)}}
+body.effects-off #game-panel-doudizhu *{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){#game-panel-doudizhu *{animation:none!important;transition:none!important}}
+@media(max-width:650px){
+ #game-panel-doudizhu .ddz-shell{padding:9px;border-width:2px}
+ #game-panel-doudizhu .ddz-heading h3{font-size:20px!important}.ddz-heading h3 span{display:none!important}
+ #game-panel-doudizhu .ddz-menu{gap:8px}.ddz-menu>div{flex:1}
+ #game-panel-doudizhu .ddz-mode button{flex:1}.ddz-entry button{flex:1;white-space:nowrap}
+ #game-panel-doudizhu .ddz-menu button{padding:7px 8px;font-size:12px!important;min-height:35px}
+ #game-panel-doudizhu .ddz-roomline{gap:6px;font-size:9px!important;flex-wrap:wrap}.ddz-roomline>span:nth-child(2){font-size:9px!important}
+ #game-panel-doudizhu .ddz-felt{height:534px;border-width:3px}
+ #game-panel-doudizhu .ddz-seat{width:calc(50% - 13px);grid-template-columns:32px minmax(0,1fr) 28px;gap:5px;padding:5px}
+ #game-panel-doudizhu .ddz-seat-left{left:7px;top:95px}.ddz-seat-right{right:7px!important;top:95px!important}
+ #game-panel-doudizhu .ddz-seat-top{width:142px;top:10px}
+ #game-panel-doudizhu .ddz-seat .ddz-avatar{width:32px;height:32px}
+ #game-panel-doudizhu .ddz-seat-name strong{font-size:10px!important}.ddz-seat-name small{font-size:8px!important}.ddz-seat-last{font-size:8px!important}
+ #game-panel-doudizhu .ddz-count{font-size:16px!important}.ddz-count small{font-size:8px!important}
+ #game-panel-doudizhu .ddz-score{left:9px;top:10px;font-size:8px!important;gap:4px}.ddz-score b{margin-left:3px!important;font-size:10px!important}
+ #game-panel-doudizhu .ddz-table-center{inset:175px 9px 232px;gap:8px}
+ #game-panel-doudizhu .ddz-table-center .ddz-bottom{top:-160px;right:0;transform:scale(.32);max-width:160px;flex-wrap:wrap;justify-content:flex-end}
+ #game-panel-doudizhu .ddz-watermark{font-size:35px}
+ #game-panel-doudizhu .ddz-trick{padding-right:30px}.ddz-trick .ddz-card{margin-right:-30px!important;--card-w:42px!important;height:60px!important}
+ #game-panel-doudizhu .ddz-table-label{font-size:10px!important}
+ #game-panel-doudizhu .ddz-turn{bottom:235px;left:7px;right:7px;font-size:10px!important}
+ #game-panel-doudizhu .ddz-hand{left:9px;right:9px;bottom:53px;gap:19px}
+ #game-panel-doudizhu .ddz-hand-row{padding-right:28px;min-height:72px;width:min(100%,calc(var(--count)*29px))}
+ #game-panel-doudizhu .ddz-card{--card-w:46px;height:72px}
+ #game-panel-doudizhu .ddz-card-rank{font-size:15px!important;left:3px;top:4px}.ddz-card-rank svg{width:9px!important;height:9px!important}
+ #game-panel-doudizhu .ddz-card-corner{font-size:12px!important}.ddz-card-pip{width:20px!important;height:20px!important;right:6px!important}
+ #game-panel-doudizhu .ddz-self{left:9px;right:9px}.ddz-self .ddz-avatar{width:30px!important;height:30px!important}
+ #game-panel-doudizhu .ddz-selection{gap:7px;min-height:65px;flex-wrap:wrap}
+ #game-panel-doudizhu .ddz-selection strong{font-size:13px!important}
+ #game-panel-doudizhu .ddz-selection>span{font-size:9px!important}
+ #game-panel-doudizhu .ddz-actions{gap:7px}.ddz-actions button{flex:1;min-width:0!important;padding:8px 7px!important}
+}
+@layer aved-type-system {
+ @media(max-width:650px){
+  #game-panel-doudizhu.ddz-panel .ddz-card-rank{font-size:14px!important}
+  #game-panel-doudizhu.ddz-panel .ddz-count{font-size:16px!important}
+  #game-panel-doudizhu.ddz-panel .ddz-seat-name strong{font-size:10px!important}
+  #game-panel-doudizhu.ddz-panel .ddz-seat-name small{font-size:8px!important}
+  #game-panel-doudizhu.ddz-panel .ddz-selection strong{font-size:13px!important}
+ }
+}

@@ -4,23 +4,26 @@ import {slotRules} from './server-slot.mjs';
 
 export function proofRandom(){const seed=randomBytes(32).toString('hex');let counter=0;return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296};}
 export function weighted(items,random){const sum=items.reduce((s,x)=>s+x.weight,0);let n=random()*sum;for(const item of items){n-=item.weight;if(n<0)return item;}return items.at(-1);}
-export const expectedReturn=items=>items.reduce((s,x)=>s+x.weight*x.multiplier,0)/items.reduce((s,x)=>s+x.weight,0);
+export const expectedReturn=items=>items.reduce((s,x)=>s+x.weight*(x.multiplier-(x.penaltyMultiplier||0)),0)/items.reduce((s,x)=>s+x.weight,0);
 export const scratchPrizeMultipliers=Object.fromEntries(scratchTiers.map(t=>[t.id,[5,10,20,30,50,100]]));
 export const MAX_RETURN_PERCENT=150;
-// Fixed independent distribution: 58% above stake, 3% zero, RTP 130%.
-// Rules are fixed in source; every account uses the same independent distribution.
+// Independent draws: 60% profit, 0.1% bombs, effective RTP 120% after extra deductions.
+// Bomb multiplier is the EXTRA deduction; total loss also includes the paid stake.
 export function returnRatePool(percent,tierId='t1'){
  if(!Number.isFinite(percent)||percent<0||percent>MAX_RETURN_PERCENT)throw Error('返还率应为 0% 至 150%。');
  if(!scratchPrizeMultipliers[tierId])throw Error('票种编号无效。');
- const rows=[[.03,3],[.05,3],[.08,3],[.14,3],[.26,5],[.38,5],[.55,5],[.72,5],[.9,7],[1.05,15.3],[1.12,15],[1.2,.465],[1.68,10],[2.2,6.535],[2.8,5],[4,3],[5,1.8],[10,.6],[20,.2],[30,.08],[50,.015],[100,.005]];
- const pool=rows.map(([multiplier,p])=>({multiplier,weight:Math.round(p*1000000*Math.min(percent/130,1))}));
- if(percent>130)pool.at(-1).weight+=Math.round((percent-130)/100/100*1e8);
- const correction=Math.round((percent/100*1e8-pool.reduce((s,x)=>s+x.multiplier*x.weight,0))/.03);
+ const rows=[[.03,3],[.05,3],[.08,3],[.14,3],[.26,5],[.38,5],[.55,5],[.72,5],[.9,4.9],[1.05,15.76],[1.12,15],[1.2,7.54],[1.68,10],[2.2,5],[2.8,3],[4,1],[5,1.8],[10,.6],[20,.2],[30,.08],[50,.015],[100,.005]];
+ const scale=Math.min(percent/120,1);
+ const pool=rows.map(([multiplier,p])=>({multiplier,weight:Math.round(p*1000000*scale)}));
+ if(percent>120)pool.at(-1).weight+=Math.round((percent-120)/100/100*1e8);
+ pool.push(...[[1,.095],[2,.0045],[4,.0005]].map(([penaltyMultiplier,p])=>({multiplier:0,penaltyMultiplier,weight:Math.round(p*1000000*scale)})));
+ if(percent<.01){for(const x of pool)x.weight=0;pool[0].weight=Math.round(percent/100*1e8/.03);}
+ const correction=Math.round((percent/100*1e8-pool.reduce((s,x)=>s+(x.multiplier-(x.penaltyMultiplier||0))*x.weight,0))/.03);
  pool[0].weight+=correction;
  return [{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
 }
-export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:130,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(130,x.id)]))})),sky:{boardingSeconds:12,speed:25,breakEvenDepth:207,lossFraction:1,ranges:[{min:150,max:179,weight:50},{min:180,max:299,weight:950},{min:300,max:429,weight:6500},{min:430,max:629,weight:2200},{min:630,max:900,weight:300}]}};}
-function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>24)throw Error('奖池需包含 2 至 24 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
+export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id)]))})),sky:{boardingSeconds:12,speed:25,breakEvenDepth:207,lossFraction:1,ranges:[{min:150,max:179,weight:50},{min:180,max:299,weight:950},{min:300,max:429,weight:6500},{min:430,max:629,weight:2200},{min:630,max:900,weight:300}]}};}
+function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>32)throw Error('奖池需包含 2 至 32 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(![1,2,4].includes(x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
 export function validateEconomy(c){
  if(!c||!Array.isArray(c.scratch)||c.scratch.length!==scratchTiers.length)throw Error('票种配置不完整。');
  for(const tier of c.scratch){tier.name='刮刮乐';if(tier.returnPercent===undefined){for(const g of scratchGameTypes)checkPool(tier.variants?.[g.type]);tier.returnPercent=Object.values(tier.variants).reduce((sum,p)=>sum+expectedReturn(p),0)/Object.keys(tier.variants).length*100;}const p=returnRatePool(tier.returnPercent,tier.id);tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,p.map(x=>({...x}))]));}

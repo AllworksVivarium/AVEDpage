@@ -41,3 +41,18 @@ test('records and announcements follow committed settlements, exclude refunds, a
  service=installGameHighlights(dependencies);assert.equal(service.records(1).highest.prize,60000);
  db.prepare('DELETE FROM employees WHERE id=1').run();assert.equal(service.records(1).highest,null);assert.equal(service.event(1,win),null);
 });
+
+test('committed bomb tickets broadcast their actual medical charge without becoming prize records',async()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  db.exec("CREATE TABLE employees(id INTEGER PRIMARY KEY);CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT);CREATE TABLE economy_migrations(code TEXT PRIMARY KEY);CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,result_json TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);INSERT INTO employees VALUES(1);INSERT INTO profiles VALUES(1,'公司代号');");
+  let data;const service=installGameHighlights({db,requireEmployee:()=>({id:1}),send:(r,s,d)=>data=d});
+  for(const penalty of [1000,2000,4000])db.prepare("INSERT INTO game_tickets(employee_id,game,cost,prize,result_json) VALUES(1,'scratch',1000,0,?)").run(JSON.stringify({penalty}));
+  assert.equal(service.records(1).highest,null);
+  await service.handle({method:'GET'},null,new URL('http://test/api/player/game-highlights'));
+  assert.deepEqual(data.items.map(x=>x.penalty),[1000,2000,4000]);assert.ok(data.items.every(x=>x.alias==='公司代号'&&x.prize===0&&!('employeeId' in x)));
+  db.exec('BEGIN');db.prepare("INSERT INTO game_tickets(employee_id,game,cost,prize,result_json) VALUES(1,'scratch',1000,0,?)").run(JSON.stringify({penalty:4000}));db.exec('ROLLBACK');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM game_highlights').get().n,3);
+  installGameHighlights({db});assert.equal(db.prepare('SELECT COUNT(*) AS n FROM game_highlights').get().n,3);
+ }finally{db.close();}
+});

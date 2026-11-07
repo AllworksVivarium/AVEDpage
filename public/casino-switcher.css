@@ -1,0 +1,99 @@
+@layer aved-section-ui {
+ #inner-app-view #view-casino .casino-legacy-tabs{display:none!important}
+ #inner-app-view #view-casino.casino-compact-demo>.terminal-game-header{margin-top:0!important}
+ #inner-app-view .casino-compact-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) auto;align-items:center;gap:10px;min-height:58px;padding:8px 10px;border:1px solid var(--inner-border);border-top:3px solid var(--inner-accent);background:var(--inner-card-bg);color:var(--inner-text-main)}
+ #inner-app-view .casino-compact-balance{min-width:0;display:grid;gap:3px}
+ #inner-app-view .casino-compact-balance small{font-size:9px!important;line-height:1.2!important;opacity:.7}
+ #inner-app-view .casino-compact-balance strong{font-size:13px!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+ #inner-app-view .casino-compact-bar h2{margin:0!important;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:16px!important;line-height:1.3!important}
+ #inner-app-view .casino-switch-toggle{display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px;padding:6px 9px!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border:1px solid var(--inner-accent);font-size:12px!important}
+ #inner-app-view .casino-switch-toggle svg{width:15px;height:15px}
+ #casino-switch-window{position:fixed;inset:auto;width:min(360px,calc(100vw - 28px));max-height:70dvh;overflow:auto;box-sizing:border-box;margin:0;padding:0;background:var(--inner-text-main)!important;color:var(--inner-bg)!important;border:2px solid var(--inner-border);box-shadow:5px 5px 0 color-mix(in srgb,var(--inner-text-main) 35%,transparent);font-size:12px!important}
+ #casino-switch-window::backdrop{background:transparent}
+ #casino-switch-window>header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid currentColor;background:var(--inner-accent);color:var(--inner-accent-text)}
+ #casino-switch-window header small{display:block;font-size:8px!important;letter-spacing:.05em!important}
+ #casino-switch-window h3{margin:2px 0 0;font-size:14px!important;line-height:1.3!important}
+ #casino-switch-window header button{flex:0 0 28px;width:28px;height:28px;min-height:28px;padding:0!important;border:1px solid currentColor;color:inherit;background:transparent;font-size:20px!important}
+ #casino-switch-window>p{margin:10px 12px 0;font-size:10px!important;opacity:.75}
+ #casino-switch-window>div{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;padding:12px!important}
+ #casino-switch-window [data-game]{position:relative;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;min-width:0;min-height:76px;aspect-ratio:1.15;box-sizing:border-box;padding:8px 4px!important;border:1px solid currentColor!important;box-shadow:inset 1px 1px 0 #ffffff40,inset -2px -2px 0 #0004!important;background:transparent!important;color:inherit!important;opacity:1!important;font-size:12px!important;line-height:1.35!important;white-space:normal;transition:transform .1s ease,background .1s ease}
+ #casino-switch-window [data-game]::before{content:attr(data-shortcut);display:block;align-self:flex-start;font-size:9px;line-height:1;opacity:.6}
+ #casino-switch-window [data-game]::after{content:'';position:absolute;right:7px;top:8px;width:4px;height:4px;background:currentColor;opacity:.25}
+ #casino-switch-window [data-game][aria-pressed=true]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-color:var(--inner-accent-text)!important}
+ #casino-switch-window [data-game][aria-pressed=true]::after{opacity:1;box-shadow:0 0 5px currentColor}
+ #casino-switch-window [data-game]:active{transform:translateY(1px);box-shadow:inset 2px 2px 0 #0005!important}
+ #casino-switch-window :is(button):focus-visible{outline:2px solid currentColor;outline-offset:2px}
+ @media(prefers-reduced-motion:reduce){#casino-switch-window [data-game]{transition:none}}
+}
+
+/* Match the priority of the personal quick keys over legacy game-tab rules. */
+@layer aved-personal {
+ #inner-app-view #casino-switch-window>div{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:12px!important;border:0!important;background:transparent!important;box-shadow:none!important;box-sizing:border-box!important}
+ #inner-app-view #casino-switch-window [data-game]{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:84px!important;max-height:none!important;aspect-ratio:1!important;padding:8px 4px!important;gap:8px!important;white-space:normal!important;font-size:12px!important;line-height:1.3!important;border:1px solid currentColor!important;background:transparent!important;color:var(--inner-bg)!important;opacity:1!important}
+ #inner-app-view #casino-switch-window [data-game][aria-pressed=true]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
+ #inner-app-view #casino-switch-window [data-game]::before{display:block!important;position:static!important;font-size:9px!important;opacity:.65!important}
+}
+
+@layer aved-personal {
+ #inner-app-view #casino-switch-window{width:min(304px,calc(100vw - 28px))!important}
+ #inner-app-view #casino-switch-window [data-game]{min-height:64px!important;aspect-ratio:1.15!important;font-size:11px!important}
+ #inner-app-view #casino-switch-window [data-game]::before{content:attr(data-shortcut)!important;position:static!important;width:auto!important;height:auto!important;border:0!important;background:none!important;clip-path:none!important}
+ #inner-app-view .casino-compact-balance{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 8px}
+ #inner-app-view .casino-compact-balance>small{display:none}
+ #inner-app-view .casino-lobby-link{grid-column:1/-1;justify-self:start;display:inline-flex!important;width:auto!important;min-height:26px!important;height:26px!important;margin:0!important;padding:3px 6px!important;border:1px solid var(--inner-border)!important;background:transparent!important;color:var(--inner-text-main)!important;font-size:10px!important;line-height:1.2!important;white-space:nowrap!important;opacity:1!important}
+ #inner-app-view .casino-lobby-link[aria-pressed=true]{border-color:var(--inner-accent)!important}
+}
+
+@layer aved-personal {
+ #inner-app-view #casino-switch-window{width:var(--casino-window-width,304px)!important}
+ #inner-app-view #casino-switch-window [data-game]{gap:5px!important;font-family:'AVED IPix','AVED Plex Mono',monospace!important;font-size:16px!important;line-height:1.2!important;font-weight:400!important}
+ #inner-app-view #casino-switch-window [data-game] span{display:block!important;font-family:inherit!important;font-size:inherit!important;line-height:inherit!important;letter-spacing:0!important;font-weight:inherit!important}
+ #inner-app-view #casino-switch-window [data-game]::before{content:none!important;display:none!important}
+}
+
+@layer aved-personal {
+ #inner-app-view #casino-switch-window [data-game]{font-size:18px!important;text-align:center!important;align-items:center!important;justify-content:center!important;gap:5px!important;text-shadow:1px 1px color-mix(in srgb,currentColor 22%,transparent)!important}
+ #inner-app-view #casino-switch-window [data-game] span{width:100%;text-align:center!important;font-size:18px!important}
+ #inner-app-view .casino-compact-bar>[data-casino-title]{text-align:center!important;font-size:18px!important}
+ #inner-app-view .casino-quick-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+ #inner-app-view .casino-quick-actions .casino-lobby-link{display:inline-flex!important;align-items:center;justify-content:center;width:36px!important;height:38px!important;min-height:38px!important;padding:7px!important;grid-column:auto;border:1px solid var(--inner-border)!important}
+ #inner-app-view .casino-quick-actions .casino-lobby-link[hidden]{display:none!important}
+ #inner-app-view .casino-lobby-link svg{width:18px;height:18px}
+}
+
+/* IPix has a roughly 32-unit pixel grid: keep full cells instead of shrinking it. */
+@layer aved-personal {
+ #inner-app-view #casino-switch-window [data-game]{min-height:88px!important;gap:2px!important;font-size:32px!important;line-height:32px!important;font-synthesis:none!important;text-shadow:none!important;filter:none!important;font-stretch:normal!important}
+ #inner-app-view #casino-switch-window [data-game] span{font-size:32px!important;line-height:32px!important;text-shadow:none!important;filter:none!important;font-synthesis:none!important}
+ #inner-app-view #casino-switch-window [data-game=stocks] span:first-child{font-family:'AVED Plex Mono',monospace!important;font-size:15px!important;line-height:32px!important}
+}
+
+@layer aved-personal {
+ #inner-app-view #casino-switch-window [data-game]{min-height:64px!important;aspect-ratio:auto!important;padding:7px 4px!important;gap:3px!important;font-size:20px!important;line-height:22px!important}
+ #inner-app-view #casino-switch-window [data-game] span{font-size:20px!important;line-height:22px!important}
+ #inner-app-view #casino-switch-window [data-game=stocks] span:first-child{font-size:14px!important;line-height:22px!important}
+}
+
+@layer aved-personal {
+ #inner-app-view .casino-compact-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;position:relative}
+ #inner-app-view .casino-compact-bar>[data-casino-title]{font-family:var(--terminal-copy)!important;font-size:22px!important;font-weight:700!important;letter-spacing:.045em!important;text-align:center!important;justify-self:center;max-width:100%}
+ #inner-app-view .casino-compact-bar>[data-casino-title] *{font-size:inherit!important;line-height:inherit!important}
+ #inner-app-view .casino-compact-bar>.casino-quick-actions{justify-self:end}
+ #inner-app-view #view-casino>.casino-masthead-controls{grid-template-columns:72px minmax(0,1fr) 36px!important}
+ #inner-app-view #view-casino>.casino-masthead-controls:has(>.casino-lobby-link[hidden]){grid-template-columns:72px minmax(0,1fr)!important}
+ #inner-app-view #view-casino>.casino-masthead-controls>.casino-lobby-link{display:inline-flex!important;align-items:center;justify-content:center;width:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important;grid-column:3!important;margin:0!important;padding:7px!important;justify-self:end;align-self:center;color:var(--inner-text-main)!important;background:transparent!important;border:1px solid var(--inner-border)!important}
+ #inner-app-view #view-casino>.casino-masthead-controls>.casino-lobby-link[hidden]{display:none!important}
+ @media(max-width:767px){#inner-app-view #view-casino>.casino-masthead-controls{grid-template-columns:56px minmax(0,1fr) 34px!important}#inner-app-view #view-casino>.casino-masthead-controls:has(>.casino-lobby-link[hidden]){grid-template-columns:56px minmax(0,1fr)!important}}
+}
+
+/* Two slim information rows; event messages retain a readable body size. */
+@layer aved-personal {
+ #inner-app-view #view-casino :is(.company-play-ticker,.aved-jackpot-strip){box-sizing:border-box!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding-block:0!important}
+ #inner-app-view #view-casino .company-play-ticker{display:flex!important;align-items:center!important;margin-top:8px!important;font-size:11px!important;line-height:16px!important}
+ #inner-app-view #view-casino .company-ticker-track{flex:0 0 auto}
+ #inner-app-view #view-casino .aved-jackpot-strip{gap:8px!important;margin:8px 0 12px!important;padding-inline:10px!important}
+ #inner-app-view #view-casino .aved-jackpot-strip>strong{font-size:14px!important;line-height:22px!important;height:22px!important;padding-right:8px!important}
+ #inner-app-view #view-casino .aved-jackpot-viewport{height:22px!important;line-height:22px!important;padding-block:0!important}
+ #inner-app-view #view-casino .aved-jackpot-viewport :is(.aved-jackpot-row,.aved-jackpot-outgoing){height:22px!important;line-height:22px!important}
+ #inner-app-view #view-casino :is(.aved-jackpot-text,.aved-jackpot-outgoing),#inner-app-view #view-casino :is(.aved-jackpot-text,.aved-jackpot-outgoing) *{font-size:13px!important;line-height:22px!important}
+}

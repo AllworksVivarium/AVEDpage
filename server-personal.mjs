@@ -7,7 +7,8 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  CREATE TABLE IF NOT EXISTS hourly_claims(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,hour INTEGER NOT NULL,reward INTEGER NOT NULL,PRIMARY KEY(employee_id,hour));
  CREATE INDEX IF NOT EXISTS ledger_employee_id ON balance_ledger(employee_id,id);
  CREATE INDEX IF NOT EXISTS tickets_employee_id ON game_tickets(employee_id,id);
- DROP TRIGGER IF EXISTS award_balance;`);
+ DROP TRIGGER IF EXISTS award_balance;
+ DROP TRIGGER IF EXISTS personal_metrics_game;`);
  for(const d of achievementCatalog)db.prepare('INSERT OR IGNORE INTO achievement_definitions(code,title,description,metric,threshold) VALUES(?,?,?,?,?)').run(d.code,d.title,d.description,d.metric,d.threshold);
  // One-time historical backfill; subsequent awards use incremental counters.
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='personal-metrics-v1'").get()) {
@@ -17,7 +18,7 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
    SELECT e.id,COALESCE(SUM(r.delta),0),MAX(0,COALESCE(MAX(r.running_balance),0)),MAX(0,-COALESCE(MIN(r.running_balance),0)),
     COALESCE(SUM(r.running_balance=0 AND r.delta<>0),0),COALESCE(SUM(r.reason='应急低保' AND r.delta>0),0),
     COALESCE(SUM(CASE WHEN r.reason='爱心账户捐款' THEN -r.delta ELSE 0 END),0),COALESCE(SUM(r.reason='每日签到'),0),0,
-    COALESCE((SELECT MAX(prize) FROM game_tickets WHERE employee_id=e.id),0),MAX(0,COALESCE((SELECT MAX(cost-prize) FROM game_tickets WHERE employee_id=e.id),0))
+    COALESCE((SELECT MAX(prize) FROM game_tickets WHERE employee_id=e.id),0),MAX(0,COALESCE((SELECT MAX(cost+COALESCE(json_extract(result_json,'$.penalty'),0)-prize) FROM game_tickets WHERE employee_id=e.id),0))
    FROM employees e LEFT JOIN running r ON r.employee_id=e.id GROUP BY e.id;
    INSERT INTO economy_migrations VALUES('personal-metrics-v1');COMMIT;`);
  }
@@ -30,8 +31,8 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
   ${awardSQL('AND m.employee_id=NEW.employee_id')}
  END;
  CREATE TRIGGER IF NOT EXISTS personal_metrics_game AFTER INSERT ON game_tickets BEGIN
-  INSERT INTO personal_metrics(employee_id,prize_max,loss_max) VALUES(NEW.employee_id,NEW.prize,MAX(0,NEW.cost-NEW.prize))
-   ON CONFLICT(employee_id) DO UPDATE SET prize_max=MAX(prize_max,NEW.prize),loss_max=MAX(loss_max,NEW.cost-NEW.prize);
+  INSERT INTO personal_metrics(employee_id,prize_max,loss_max) VALUES(NEW.employee_id,NEW.prize,MAX(0,NEW.cost+COALESCE(json_extract(NEW.result_json,'$.penalty'),0)-NEW.prize))
+   ON CONFLICT(employee_id) DO UPDATE SET prize_max=MAX(prize_max,NEW.prize),loss_max=MAX(loss_max,NEW.cost+COALESCE(json_extract(NEW.result_json,'$.penalty'),0)-NEW.prize);
   ${awardSQL('AND m.employee_id=NEW.employee_id')}
  END;${awardSQL()}`);
  const earned=id=>db.prepare(`SELECT d.code,d.title,d.description,a.created_at AS createdAt FROM earned_achievements a JOIN achievement_definitions d ON d.code=a.code WHERE a.employee_id=? AND d.enabled=1 ORDER BY a.created_at DESC,d.rowid`).all(id);
@@ -41,7 +42,7 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
   const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
   try {
    if(path==='/api/profile'&&req.method==='GET'){send(res,200,{profile:publicProfile(employee.id),achievements:earned(employee.id),gameRecords:highlights.records(employee.id),balance:balanceFor(employee.id)});return true;}
-   if(path==='/api/player/history'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare('SELECT id,game,cost,prize,created_at AS createdAt FROM game_tickets WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21').all(employee.id,before);send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});return true;}
+   if(path==='/api/player/history'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare("SELECT id,game,cost,prize,COALESCE(json_extract(result_json,'$.penalty'),0) AS penalty,created_at AS createdAt FROM game_tickets WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21").all(employee.id,before);send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});return true;}
    if(path==='/api/player/rewards'&&req.method==='GET'){send(res,200,rewards(employee.id));return true;}
    if(path==='/api/player/rewards/hourly'&&req.method==='POST') {
     db.exec('BEGIN IMMEDIATE');try{const hour=Math.floor(Date.now()/3600000),claimed=db.prepare('INSERT OR IGNORE INTO hourly_claims VALUES(?,?,5000)').run(employee.id,hour).changes;if(claimed)recordLedger(employee.id,5000,'整点补给');db.exec('COMMIT');send(res,200,{...rewards(employee.id),reward:claimed?5000:0});}catch(e){db.exec('ROLLBACK');throw e;}return true;

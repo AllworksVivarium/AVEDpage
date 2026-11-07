@@ -8,7 +8,7 @@ import { installMarket } from './server-market.mjs';
 import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './server-content.mjs';
-import { generateSealedTicket } from './server-ticket.mjs';
+import { generateSealedTicket, applyScratchBomb, settleGameTicket } from './server-ticket.mjs';
 
 export const DERBY_ODDS=derbyRules.map(r=>r.odds);
 export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
@@ -96,15 +96,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const random=()=>{const seed=randomBytes(32).toString('hex');return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:rng(seed)};};
   const derbyWinnerFromRandom=r=>{let cumulative=0;for(let i=0;i<DERBY_WIN_PROBABILITIES.length;i++){cumulative+=DERBY_WIN_PROBABILITIES[i];if(r<cumulative)return i;}return DERBY_WIN_PROBABILITIES.length-1;};
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS scratch_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='scratch' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
-  function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
-  function settle(id,game,cost,prize,result,proof) {
-    return transaction(()=>{
-      if(balanceFor(id)<cost)throw new Error('余额不足。');
-      if(cost)recordLedger(id,-cost,game+'投入');if(prize)recordLedger(id,prize,game+'奖金');
-      const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,game,cost,prize,proof.seed,proof.seedHash,JSON.stringify(result));
-      award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash,gameHighlight:getHighlights().event(id,Number(row.lastInsertRowid))};
-    });
-  }
+  function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
+  const settle=(id,game,cost,prize,result,proof)=>settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof);
   const bet=n=>{if(!Number.isSafeInteger(n)||n<100||n>1000000)throw new Error('投入应为 100 至 1,000,000 的整数。');return n;};
   // Only replace the exact system-generated starter copy; preserve authored notices.
   db.prepare('UPDATE announcements SET body=? WHERE title=? AND body=?').run('公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。','员工终端已启用','这里发布的公告会保存在服务器数据库中。员工可以在公告下方匿名留言。');
@@ -236,18 +229,19 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     try {
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,2500000);
       if(path==='/api/player/state'&&req.method==='GET') {
-        transaction(()=>{processStockAutomations(id);});
+        const bootstrap=url.searchParams.get('bootstrap')==='1';
+        if(!bootstrap)transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:marketService.history(),
+        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:bootstrap?null:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
           history:[],
-          employees:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
-          departments:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
-          dossiers:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
-          forum:forum(Number.MAX_SAFE_INTEGER,id),stocks:market(id),stockOrders:pendingOrders(id),music:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
+          employees:bootstrap?[]:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
+          departments:bootstrap?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
+          announcements:bootstrap?[]:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
+          dossiers:bootstrap?[]:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
+          forum:bootstrap?{items:[],next:null}:forum(Number.MAX_SAFE_INTEGER,id),stocks:bootstrap?[]:market(id),stockOrders:bootstrap?[]:pendingOrders(id),music:bootstrap?[]:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
@@ -286,7 +280,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         if(data.requestKey){const previous=settledScratch(id,data.requestKey);if(previous){if(previous.result.tier.id!==data.tier||previous.result.gameType.type!==data.type||previous.cost!==data.cost)throw new Error('票据请求不匹配。');send(res,200,previous);return true;}}
 
         const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
-        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));if(outcome.penaltyMultiplier)applyScratchBomb(ticket,outcome.penaltyMultiplier,proof.random);if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {

@@ -1,3 +1,5 @@
+import sharp from 'sharp';
+import {randomBytes} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
@@ -52,11 +54,18 @@ test('thin login state, duplicate cookies, parallel sessions and HTTPS entry',as
  const newestAdmin=await login('auth-admin');
  assert.equal((await (await request(player+'; '+newestAdmin,'/api/me')).json()).employee.username,'auth-admin');
  assert.equal((await (await request(newestAdmin+'; '+player,'/api/me')).json()).employee.username,'auth-admin');
- const large='data:image/png;base64,'+Buffer.alloc(500000,1).toString('base64');
+ const bootResponse=await request(player,'/api/player/state?bootstrap=1'),boot=await bootResponse.json();assert.equal(bootResponse.status,200);assert.equal(boot.employee.username,'auth-player');assert.ok(boot.profile&&boot.gameRecords);
+ for(const key of ['employees','departments','announcements','dossiers','stocks','music'])assert.deepEqual(boot[key],[]);assert.deepEqual(boot.forum.items,[]);assert.equal(boot.market,null);
+ assert.equal((await request('','/api/player/state?bootstrap=1')).status,401);
+ const otherBoot=await (await request(first,'/api/player/state?bootstrap=1&employeeId='+boot.employee.id)).json();assert.equal(otherBoot.employee.username,'auth-admin','URL identity must never override session identity');
+ const invalid='data:image/png;base64,'+Buffer.alloc(500000,1).toString('base64');
+ assert.equal((await request(player,'/api/profile','PUT',{anonymousName:'网络值班员',bio:'',avatarUrl:invalid})).status,400);
+ const source=await sharp(randomBytes(512*512*3),{raw:{width:512,height:512,channels:3}}).png().toBuffer();
+ const large='data:image/png;base64,'+source.toString('base64');
  assert.equal((await request(player,'/api/profile','PUT',{anonymousName:'网络值班员',bio:'',avatarUrl:large})).status,200);
  const result=await request(player,'/api/player/state'),raw=await result.text(),state=JSON.parse(raw);assert.ok(raw.length<25000,'login must not download avatar bytes');assert.doesNotMatch(raw,/data:image/);assert.match(state.profile.avatarUrl,/^\/api\/media\/avatar\//);
  assert.equal((await fetch(base+state.profile.avatarUrl,{headers:{'x-forwarded-proto':'https'}})).status,401);
- const img=await request(player,state.profile.avatarUrl);assert.equal(img.status,200);assert.equal((await img.arrayBuffer()).byteLength,500000);
+ const img=await request(player,state.profile.avatarUrl);assert.equal(img.status,200);const avatar=Buffer.from(await img.arrayBuffer());assert.ok(avatar.length<source.length);assert.equal((await sharp(avatar).metadata()).width,256);
  assert.equal((await request(player,'/api/profile','PUT',{anonymousName:'新代号',bio:'',avatarUrl:state.profile.avatarUrl})).status,200);
  await request(player,'/api/logout','POST');assert.equal((await request(player,'/api/me')).status,401);assert.equal((await request(second,'/api/me')).status,200);
  const http=await fetch(base+'/admin-terminal.html',{redirect:'manual'});assert.equal(http.status,308);assert.equal(http.headers.get('location'),'https://authority.aved.space/admin-terminal.html');

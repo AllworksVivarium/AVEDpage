@@ -367,3 +367,13 @@
  }
  @container(max-width:259px){#view-profile.personal-hud .hud-top-grid{--hud-portrait-height:max(148px,calc((100cqi - 12px)/2.2 + 44px))}}
 }
+
+@layer aved-personal {
+ #view-profile.personal-hud .hud-checkins>button,#view-profile.personal-hud .hud-checkins>button:disabled{opacity:1!important;background:color-mix(in srgb,var(--inner-accent) 28%,var(--inner-card-bg))!important;color:var(--inner-text-main)!important;border-color:color-mix(in srgb,var(--inner-accent) 65%,var(--inner-border))!important}
+ #view-profile.personal-hud .hud-checkins>button:not(:disabled){background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
+ #view-profile.personal-hud .hud-checkins small{color:inherit!important;opacity:.85}
+ #view-profile.personal-hud .hud-balance-row>button{box-sizing:border-box;width:26px!important;max-width:26px!important;height:26px!important;min-height:26px!important;padding:0!important;justify-self:end;background:transparent!important;font-size:16px!important;border:1px solid var(--inner-border-soft)!important}
+ #view-profile.personal-hud #hud-account p{margin:4px 0 16px;line-height:1.7}
+}
+
+@layer aved-personal {#view-profile.personal-hud #hud-account [data-hud-zero]{display:block;margin:26px auto 4px!important;min-width:88px}}

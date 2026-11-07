@@ -1,0 +1,34 @@
+/* Static font resources only. Components own their font sizes and line heights. */
+@layer aved-type-system, aved-entry-colors;
+@font-face {font-family:'AVED IPix';src:url('/assets/fonts/study/ipix.woff') format('woff');font-display:swap;unicode-range:U+2E80-9FFF,U+F900-FAFF,U+FF00-FFEF,U+20000-2FA1F}
+:root {
+ --aved-copy:'AVED Plex Mono','Noto Serif SC','Source Han Serif SC',serif;
+ --aved-english:'AVED Plex Mono',monospace;
+ --aved-hebrew:'AVED Plex Hebrew',sans-serif;
+ --aved-note:var(--aved-copy);
+}
+@layer aved-entry-colors {
+  /* Entry screens keep their own neutral tokens under every saved inner theme. */
+  :is(#landing-view,#login-modal,#signal-Connecting-overlay),
+  :is(#landing-view,#login-modal,#signal-Connecting-overlay) * {
+    --n1:#080808 !important;--n2:#111 !important;--n3:#202020 !important;--n4:#333 !important;
+    --n6:#555 !important;--n7:#aaa !important;--n11:#bcbcbc !important;--n12:#f5f5f5 !important;
+    --screen:#080808 !important;--screen-panel:#111 !important;--screen-line:#777 !important;--screen-ink:#f5f5f5 !important;
+    --inner-bg:#080808 !important;--inner-card-bg:#111 !important;--inner-text-main:#f5f5f5 !important;
+    --inner-text-muted:#bcbcbc !important;--inner-border:#aaa !important;--inner-border-soft:#555 !important;
+    --brand-red:#e5e5e5 !important;--brand-red-hover:#fff !important;--brand-red-ink:#e5e5e5 !important;
+    --red9:#e5e5e5 !important;--red11:#e5e5e5 !important;--white:#fff !important;
+    --inner-accent:#f5f5f5 !important;--inner-accent-text:#111 !important;
+  }
+  :is(#login-modal,#signal-Connecting-overlay) {background:#000e !important;color:#f5f5f5 !important}
+  :is(#login-modal,#signal-Connecting-overlay)>div {background:#111 !important;color:#f5f5f5 !important;border:1px solid #fff !important}
+  #login-modal :is(#login-username,#login-password) {background:#080808 !important;color:#fff !important;border:1px solid #777 !important}
+  #login-modal input:-webkit-autofill {-webkit-box-shadow:0 0 0 1000px #080808 inset !important;-webkit-text-fill-color:#fff !important;caret-color:#fff !important}
+  #login-modal :is(#login-username,#login-password)::placeholder {color:#aaa !important}
+  #login-modal :is(#login-username,#login-password):is(:hover,:focus-visible) {border-color:#fff !important;outline-color:#fff !important}
+  #login-modal :is(button[type='submit'],#close-login-btn) {background:#98282c !important;color:#fff !important;border-color:#98282c !important}
+  #login-modal :is(button[type='submit'],#close-login-btn) * {color:#fff !important}
+  #login-modal :is(button[type='submit'],#close-login-btn):is(:hover,:focus-visible) {background:#772329 !important;color:#fff !important;border-color:#772329 !important}
+  #login-modal #remember-credentials-checkbox {accent-color:#fff !important}
+  #signal-Connecting-overlay #signal-progress-bar {background:#fff !important}
+}

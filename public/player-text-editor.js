@@ -14,7 +14,7 @@
   const launcher=document.createElement('button');launcher.id='text-edit-launcher';launcher.type='button';launcher.dataset.typeIgnore='';launcher.textContent='✎ 文本编辑';launcher.setAttribute('aria-haspopup','dialog');
   const panel=document.createElement('dialog');panel.id='text-edit-panel';panel.dataset.typeIgnore='';panel.dataset.keepOriginal='';panel.setAttribute('aria-labelledby','text-edit-title');
   panel.innerHTML=`<header><h2 id="text-edit-title">文本编辑</h2><button type="button" data-close aria-label="关闭文本编辑">关闭</button></header>
-    <p>点选页面文案，保存后立即应用。字体样式请使用另一个「字体设计」窗口。</p>
+    <p>点选页面文案，保存后立即应用。</p>
     <button type="button" id="text-edit-pick">点选页面文字</button>
     <div id="text-edit-fields" hidden><label for="text-edit-value">修改文案</label><textarea id="text-edit-value" rows="5" maxlength="4000"></textarea>
     <div id="text-edit-locations" hidden><label for="text-edit-source">这句文案有多个来源，请选定要修改的位置</label><select id="text-edit-source"></select></div>

@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-entry-state="checking">
 <head>
+  <link rel="stylesheet" href="/entry-layout-stability.css?v=session-restore-2">
+  <link rel="stylesheet" href="/login-loading-layout.css?v=stable-2">
   <link rel="preload" as="image" href="/assets/personnel-moon-icon-v1.png">
   <link rel="preload" as="image" href="/assets/sidebar-binder-clip-icon-v1.png">
-  <script>window.AVEDTypographyReady=new Promise(resolve=>{window.AVEDResolveTypography=resolve;});</script>
-  <link rel="stylesheet" href="/personal-hud.css?v=mobile-wave-stack-9">
+  <link rel="stylesheet" href="/personal-hud.css?v=forum-compose-9">
   <script src="terminal-preferences.js?v=effects-device-2"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=coin-1">
-  <link rel="stylesheet" href="/scratch-feedback.css?v=smaller-preview-12">
+  <link rel="stylesheet" href="/scratch-bomb.css?v=ticker-all-records-crt-1">
+  <link rel="stylesheet" href="/scratch-feedback.css?v=ticker-vertical-center-1">
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/player-art-restoration.css?v=prose-render-2">
+  <link rel="stylesheet" href="/player-art-restoration.css?v=receipt-grain-1">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=theme-aware-names-2">
   <link rel="stylesheet" href="/notice-document.css?v=notice-optional-2">
-  <link rel="stylesheet" href="/section-mastheads.css?v=header-alignment-6">
-  <link rel="stylesheet" href="/player-type-study.css?v=design-save-2">
+  <link rel="stylesheet" href="/section-mastheads.css?v=forum-compose-9">
+  <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
   <link rel="stylesheet" href="/player-text-editor.css?v=delete-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
   <link rel="stylesheet" href="/site-refinements.css?v=cobalt-wordmark-2">
@@ -24,7 +26,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <style>
     /* ==========================================================================
        【美工图片与配色替换区 — 零圆角直角硬朗网点拼贴 SCP 档案风格】
@@ -353,7 +355,7 @@
   <link rel="stylesheet" href="/player-layout.css">
   <link rel="stylesheet" href="/community.css">
 <link rel="stylesheet" href="/economy.css?v=signal-5">
-<link rel="stylesheet" href="/welfare.css?v=signal-5">
+<link rel="stylesheet" href="/welfare.css?v=compact-donation-6">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
 <link rel="stylesheet" href="/page-headings.css?v=warm-1">
@@ -367,7 +369,7 @@
 <link rel="stylesheet" href="/radix-palette.css?v=window-1">
 <link rel="stylesheet" href="/window-terminal.css?v=remove-reset-1">
 <script src="/window-style.js?v=unified-2"></script>
-  <link rel="stylesheet" href="/sky-pixel.css?v=sky-pixel-7">
+  <link rel="stylesheet" href="/sky-pixel.css?v=bet-multipliers-8">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -401,7 +403,7 @@
   <!-- ==========================================================================
        模块 0：老式机器柔和信号“登录中”过渡层
        ========================================================================== -->
-  <div id="signal-Connecting-overlay" role="dialog" aria-label="公司终端连接" aria-busy="false" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
+  <div id="signal-Connecting-overlay" data-type-ignore role="dialog" aria-label="公司终端连接" aria-busy="true" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
     <div class="signal-mesh w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
         <span>\\UPLINK\A.V.E.D.\TERMINAL_09</span>
@@ -410,14 +412,13 @@
       <div class="text-center py-4 space-y-3">
         <div class="text-xs tracking-[0.3em] text-neutral-400">&gt; A.V.E. DIRECTORATE &lt;</div>
         <div id="signal-status-title" class="text-base sm:text-lg font-bold tracking-widest text-white">
-          [ 正在建立终端连接... ]
+          正在确认登录状态
         </div>
         <div class="w-full h-1.5 bg-neutral-900 border border-white/25 overflow-hidden p-0.5">
           <div id="signal-progress-bar" class="h-full bg-white transition-all duration-300" style="width: 20%"></div>
         </div>
         <div aria-live="polite" id="signal-log-lines" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
-          <div>&gt; ANALOG CARRIER LOCKED... OK</div>
-          <div>&gt; VERIFYING EMPLOYEE CREDENTIALS...</div>
+          <div>&gt; 正在确认保存的员工会话……</div>
         </div>
       </div>
       <div class="border-t border-white/15 pt-2 mt-2 flex justify-between text-[10px] text-neutral-500">
@@ -430,7 +431,7 @@
   <!-- ==========================================================================
        模块 1：外层欢迎页面（融合宣发大图1 + 零圆角 + 按压主登录按钮）
        ========================================================================== -->
-  <main id="landing-view" class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
+  <main id="landing-view" data-type-ignore class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
 
     <div class="landing-edge-line w-full max-w-6xl flex flex-wrap justify-between items-center text-[10px] sm:text-[11px] tracking-[0.2em] text-neutral-400 font-mono-tech border-b border-white/15 pb-3 z-10">
       <div class="flex items-center gap-2">
@@ -513,7 +514,7 @@
   <!-- ==========================================================================
        模块 2：登录弹窗（已移除3个快捷员工按钮，改为原生支持浏览器记住账号密码 + 本地记忆）
        ========================================================================== -->
-  <div id="login-modal" class="fixed inset-0 z-40 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div id="login-modal" data-type-ignore class="fixed inset-0 z-40 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="w-full max-w-md bg-[#111111] border border-white/40 shadow-[0_0_60px_rgba(255,255,255,0.12)] text-neutral-100 relative">
       <div class="personnel-login-heading px-5 py-3.5 bg-black border-b border-white/20 flex justify-between items-center font-mono-tech">
         <div class="personnel-login-title flex items-center gap-2 text-xs tracking-widest">
@@ -592,11 +593,6 @@
             <div class="text-[#57534a]">扣款时点</div>
             <div id="ticket-modal-balance-preview" class="text-sm font-bold mt-0.5">85,000 → 84,000</div>
           </div>
-        </div>
-
-        <div class="text-[11px] text-[#57534a] space-y-1 font-mono-tech">
-          <div class="font-bold">▶ 刮奖说明</div>
-          <p>首次刮开时扣款并确定结果。未刮开可免费跳过；开始刮开后，奖金将直接记入余额。</p>
         </div>
 
         <div class="grid grid-cols-3 gap-3 pt-2 font-mono-tech text-xs">
@@ -830,9 +826,9 @@
             <div class="flex flex-wrap items-center gap-2 text-xs font-mono-tech">
               <div class="scp-search-control relative flex items-center">
                 <input id="scp-search-input" type="search"
-                  placeholder="检索责任人：蒋正一 / 溟座..."
+                  placeholder="检索收容物名称" aria-label="检索收容物名称或编号"
                   class="w-60 sm:w-64 px-3 py-1.5 border border-[var(--inner-border)] bg-white text-black placeholder:text-neutral-400 text-xs focus:outline-none">
-                <button id="scp-search-clear-x" type="button" title="清空搜索词" class="px-2 py-1.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold cursor-pointer">
+                <button id="scp-search-clear-x" type="button" title="检索收容物" class="px-2 py-1.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold cursor-pointer">
                   检索
                 </button>
               </div>
@@ -945,19 +941,19 @@
           <!-- 论坛列表页 -->
           <div id="forum-list-subview" class="space-y-5">
             <!-- 发起新匿名主题帖表单（已将上传图片合并为唯一的单一交互按钮，隐藏原生丑陋的“选择文件”控件） -->
-            <form id="new-forum-topic-form" class="retro-corner-box p-5 space-y-3 font-mono-tech">
+            <form id="new-forum-topic-form" class="retro-corner-box forum-compose p-5 space-y-3 font-mono-tech">
               <div class="text-xs font-bold flex flex-wrap items-center justify-between gap-2">
                 <span>➕ 发起新匿名主题帖</span>
                 <span class="text-[11px] opacity-65">上传图片需经管理员审核批准后方可在前台展示</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input id="new-topic-title" type="text" placeholder="输入帖子标题..." required
+              <div class="forum-compose-title-row">
+                <input id="new-topic-title" type="text" placeholder="输入帖子标题..." maxlength="120" required
                   class="sm:col-span-2 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs">
                 <button type="submit" class="press-cta inner-btn-primary py-2 px-4 font-bold text-xs cursor-pointer">
-                  [ 发布新主题帖 ]
+                  发布
                 </button>
               </div>
-              <textarea id="new-topic-content" rows="2" placeholder="在此输入正文内容..." required
+              <textarea id="new-topic-content" rows="4" maxlength="3000" placeholder="在此输入正文内容..." required
                 class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
 
               <!-- 单一合并的图片上传交互按钮 -->
@@ -967,7 +963,7 @@
                   <button id="new-topic-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
                     上传图片（需审核）
                   </button>
-                  <span id="new-topic-image-hint" class="text-[11px] text-[var(--inner-crimson)] font-bold">未选择附图</span>
+                  <span id="new-topic-image-hint" class="forum-image-filename"></span>
                 </div>
               </div>
             </form>
@@ -1040,7 +1036,7 @@
                     <button id="reply-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
                       🖼️ 上传本地附图 (需管理员审批)
                     </button>
-                    <span id="reply-image-selected-hint" class="text-[11px] text-[var(--inner-crimson)] font-bold">未选择附图</span>
+                    <span id="reply-image-selected-hint" class="forum-image-filename"></span>
                   </div>
                   <button type="submit" class="press-cta inner-btn-primary px-6 py-2 font-bold text-xs cursor-pointer">
                     [ 发送匿名回帖 ]
@@ -1071,13 +1067,13 @@
                 抑制矩阵
               </button>
               <button type="button" data-game="scratch" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                刮刮乐
+                刮刮彩票
               </button>
               <button type="button" data-game="derby" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 赛马竞速
               </button>
               <button type="button" data-game="doudizhu" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                假人牌桌
+                斗地主
               </button>
               <button type="button" data-game="stocks" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 KARMA指数
@@ -1518,69 +1514,7 @@
           <!-- ================================================================
                娱乐面板 5：牌桌（电脑对手）
                ================================================================ -->
-          <div id="game-panel-doudizhu" class="retro-corner-box p-4 sm:p-6 hidden space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--inner-border-soft)] pb-3">
-              <div>
-                <div class="text-[10px] font-mono-tech opacity-60">CARD TABLE // COMPUTER OPPONENTS</div>
-                <h3 class="text-base font-bold font-serif-sc">🃏 员工休息室 牌桌（电脑对手）</h3>
-                <p class="text-xs opacity-80">牌局获胜直接赢得 <strong>+¤ 20,000 账户余额</strong>！</p>
-              </div>
-              <button id="ddz-new-game-btn" type="button" class="inner-btn-primary px-4 py-2 font-mono-tech text-xs font-bold cursor-pointer self-start sm:self-auto">
-                [ 🔄 重新洗牌开局 ]
-              </button>
-            </div>
-
-            <div id="ddz-table" class="bg-[#141414] text-neutral-100 p-4 sm:p-5 space-y-5 border-2 border-[var(--inner-border)] font-mono-tech">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center text-xs">
-                <div class="bg-black/60 p-3 border border-white/15">
-                  <div class="font-bold text-white">LEFT // 电脑对手 A</div>
-                  <div id="ddz-ai-left-role" class="text-[11px] text-neutral-400">身份：待定</div>
-                  <div class="mt-1">剩余手牌: <span id="ddz-ai-left-count" class="font-bold text-sm text-white">17</span></div>
-                </div>
-
-                <div class="text-center space-y-1.5 py-1">
-                  <div class="text-[10px] text-neutral-400 tracking-widest">BASE CARDS // 底牌</div>
-                  <div id="ddz-hole-cards" class="flex justify-center gap-2"></div>
-                  <div id="ddz-turn-indicator" class="text-xs font-bold text-white pt-1">等待开始</div>
-                </div>
-
-                <div class="bg-black/60 p-3 border border-white/15 sm:text-right">
-                  <div class="font-bold text-white">RIGHT // 电脑对手 B</div>
-                  <div id="ddz-ai-right-role" class="text-[11px] text-neutral-400">身份：待定</div>
-                  <div class="mt-1">剩余手牌: <span id="ddz-ai-right-count" class="font-bold text-sm text-white">17</span></div>
-                </div>
-              </div>
-
-              <div class="min-h-[92px] bg-black/45 border border-white/15 p-4 flex flex-col items-center justify-center text-center">
-                <div id="ddz-table-status" class="text-xs text-neutral-400 mb-2">TABLE // 等待出牌</div>
-                <div id="ddz-last-played-cards" class="flex flex-wrap justify-center gap-1.5"></div>
-              </div>
-
-              <div class="space-y-3">
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span id="ddz-player-role-badge" class="px-2.5 py-1 bg-white text-black font-bold">身份：待抢地主</span>
-                  <span class="text-neutral-400 text-[11px]"></span>
-                </div>
-
-                <div id="ddz-player-hand" class="flex flex-wrap justify-center gap-1.5 py-2 min-h-[76px]"></div>
-
-                <div id="ddz-action-bar" class="flex flex-wrap justify-center gap-3 pt-1">
-                  <button id="ddz-call-landlord-btn" type="button" class="px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-xs cursor-pointer">
-                    [ 👑 抢地主 ]
-                  </button>
-                  <button id="ddz-play-btn" type="button" class="px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-xs cursor-pointer hidden">
-                    [ ✅ 出牌 ]
-                  </button>
-                  <button id="ddz-hint-btn" type="button" class="px-4 py-2 border border-white/40 hover:bg-white/15 text-white font-semibold text-xs cursor-pointer hidden">
-                    [ 💡 提示选牌 ]
-                  </button>
-                  <button id="ddz-pass-btn" type="button" class="px-4 py-2 bg-[#9e1b1b] hover:bg-red-700 text-white font-semibold text-xs cursor-pointer hidden">
-                    [ ⏭️ 要不起 / 过牌 ]
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div id="game-panel-doudizhu" class="hidden"></div>
 
           <!-- ================================================================
                娱乐面板 6：KARMA INDEX 股市
@@ -1633,31 +1567,38 @@
   <script src="/notices-ui.js?v=notice-optional-2" defer></script>
   <script src="/market-chart.js?v=tooltip-position-2" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=light-art-3" defer></script>
-  <script src="/game-results.js?v=total-return-1" defer></script>
-  <script src="/jackpot-ticker.js?v=live-only-5" defer></script>
-<script src="/scratch-symbols.js?v=2" defer></script>
-<script src="/scratch-feedback.js?v=live-only-7" defer></script>
+  <script src="/player-community.js?v=sky-six-window-2" defer></script>
+  <script src="/game-results.js?v=bomb-medical-1" defer></script>
+  <script src="/jackpot-ticker.js?v=ticker-all-records-crt-1" defer></script>
+<script src="/scratch-symbols.js?v=bomb-1" defer></script>
+<script src="/scratch-bomb.js?v=ember-origin-2" defer></script>
+<script src="/scratch-bomb-demo.js?v=bomb-inline-2" defer></script>
+<script src="/scratch-feedback.js?v=inverse-stable-results-1" defer></script>
   <script src="/currency-symbol.js?v=coin-1" defer></script>
   <script src="/sky-scene.js?v=sky-pixel-7" defer></script>
-  <script src="/sky-ui.js?v=sky-pixel-7" defer></script>
+  <script src="/sky-ui.js?v=bet-multipliers-8" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
-  <script src="/welfare-ui.js?v=ranking-anonymous-2" defer></script>
+  <script src="/welfare-ui.js?v=compact-donation-3" defer></script>
   <script src="/visual-style.js?v=light-art-2" defer></script>
-  <script src="/personal-hud.js?v=mobile-wave-stack-4" defer></script>
+  <script src="/personal-hud.js?v=account-ui-8" defer></script>
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
 <script src="/derby-ui.js?v=total-return-1" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
 <script src="/archive-board.js?v=board-4-1" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
-<script src="/player.js?v=sky6-covered-ticket-11-sky-2" defer></script>
-  <script src="/page-headings.js?v=light-art-2" defer></script>
+<link rel="stylesheet" href="/casino-switcher.css?v=slim-info-9">
+<link rel="stylesheet" href="/retro-window-chrome.css?v=scratch-window-4">
+<script src="/casino-switcher.js?v=header-center-8" defer></script>
+<script src="/player-startup.js?v=session-restore-2" defer></script>
+<link rel="stylesheet" href="/ddz-pixel.css?v=card-table-1">
+<script src="/ddz-rules.js?v=card-table-1" defer></script>
+<script src="/ddz-ui.js?v=card-table-1" defer></script>
+<script src="/player.js?v=session-restore-2" defer></script>
+  <script src="/page-headings.js?v=header-center-8" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=brand-mark-3-crt-1" defer></script>
   <script src="/landing-sphere.js?v=window-1" defer></script>
-  <script src="/player-design-client.js?v=design-save-2" defer></script>
-  <script src="/player-type-catalog.js?v=final-art-audit-1" defer></script>
-  <script src="/player-type-study.js?v=stable-layout-local-1" defer onerror="window.AVEDResolveTypography?.()"></script>
-  <script src="/player-text-editor.js?v=delete-1-design-save-2" defer></script>
+  <script src="/player-design-client.js?v=text-only-3" defer></script>
+  <script src="/player-text-editor.js?v=text-only-3" defer></script>
 </body>
 </html>

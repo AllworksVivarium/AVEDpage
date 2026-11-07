@@ -19,7 +19,7 @@ test('fixed rules replace stale administrator configuration once and remain stab
   db.prepare('INSERT INTO economy_config VALUES(1,42,?)').run(JSON.stringify(before));
   const service=installEconomy({db}),after=service.get(),{revision,...rules}=after;
   assert.ok(revision>42);assert.deepEqual(rules,defaultEconomy());
-  assert.ok(after.scratch.every(t=>Object.values(t.variants).every(p=>Math.abs(expectedReturn(p)-1.3)<1e-8)));
+  assert.ok(after.scratch.every(t=>Object.values(t.variants).every(p=>Math.abs(expectedReturn(p)-1.2)<1e-8)));
   assert.deepEqual(installEconomy({db}).get(),after);
   assert.equal(service.publicRules().tiers[0].topPrizes.three_match,100000);
  }finally{db.close();}

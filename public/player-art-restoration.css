@@ -168,3 +168,14 @@
     #game-panel-scratch .scratch-tier-btn {padding:8px 4px !important}
   }
 }
+
+/* Static receipt fibres: only theme colours and CSS, with no image requests. */
+@layer aved-restored-art {
+ #ticket-modal-card,#scratch-lobby-view .scratch-ticket-preview,#active-ticket-board-container{
+  --receipt-fibre:color-mix(in srgb,var(--scratch-ink) 8%,transparent);
+  --receipt-thread:color-mix(in srgb,var(--scratch-ink) 3%,transparent);
+  background-image:radial-gradient(ellipse 1px .55px at 2px 3px,var(--receipt-fibre) 75%,transparent 100%),radial-gradient(ellipse .6px 1px at 5px 7px,var(--receipt-fibre) 65%,transparent 100%),repeating-linear-gradient(174deg,transparent 0 5px,var(--receipt-thread) 5px 6px,transparent 6px 10px)!important;
+  background-size:7px 11px,13px 17px,29px 31px!important;
+  background-position:0 0,3px 5px,0 0!important;
+ }
+}

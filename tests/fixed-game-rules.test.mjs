@@ -10,10 +10,10 @@ test('removed admin routes cannot change fixed rules; restart and legacy storage
  db.prepare('INSERT INTO economy_config VALUES(1,99,?)').run(JSON.stringify(old));
  const dependencies={db,send:(r,status,data)=>Object.assign(r,{status,data}),requireEmployee:()=>({id:1}),recordLedger:()=>{throw Error('unexpected ledger write');}};
  let service=installEconomy(dependencies);
- assert.equal(service.get().scratch[0].returnPercent,130);assert.equal(service.get().sky.speed,25);
+ assert.equal(service.get().scratch[0].returnPercent,120);assert.equal(service.get().sky.speed,25);
  const stored=db.prepare('SELECT * FROM economy_config').get();assert.deepEqual(JSON.parse(stored.config_json),defaultEconomy());
  for(const [path,method] of [['/api/admin/economy','GET'],['/api/admin/economy','PUT'],['/api/admin/economy/generate','POST']]){const response={};assert.equal(await service.handle({method},response,new URL(path,'http://test')),true);assert.equal(response.status,404);}
- const callerCopy=service.get();callerCopy.scratch[0].returnPercent=1;assert.equal(service.get().scratch[0].returnPercent,130);
+ const callerCopy=service.get();callerCopy.scratch[0].returnPercent=1;assert.equal(service.get().scratch[0].returnPercent,120);
  service=installEconomy(dependencies);assert.equal(service.get().revision,stored.revision);
  const res={};await service.handle({method:'GET'},res,new URL('/api/player/economy','http://test'));assert.equal(res.status,200);assert.equal(res.data.tiers.length,6);
  db.close();
