@@ -6,6 +6,28 @@ const context={setTimeout,clearTimeout};vm.runInNewContext(readFileSync(new URL(
 test('a stalled font cannot block entry; fast resources retain their result',async()=>{let calls=0;const stalled=new Promise(()=>{});assert.equal(await within(stalled,10,()=>{calls++;return 'fallback';}),'fallback');assert.equal(calls,1);assert.equal(await within(Promise.resolve('font'),10,()=>{calls++;return 'fallback';}),'font');await new Promise(r=>setTimeout(r,20));assert.equal(calls,1);await assert.rejects(within(Promise.reject(Error('network')),10,()=>null),/network/);});
 test('only known pages can be restored; links do not accept account IDs or QQ numbers',()=>{const allowed=['profile','forum','casino'];assert.equal(route('#/forum',allowed),'forum');assert.equal(route('#/casino',allowed),'casino');for(const hash of ['#/123456789','?qq=123456789','#/admin','#/profile?employeeId=2'])assert.equal(route(hash,allowed),'profile');});
 
+test('critical art is decoded in a bounded queue; cold entry is paced and cached entry skips the delay',async()=>{
+ const saved=new Map(),storage={getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)},delays=[],urls=Array.from({length:9},(_,i)=>'/assets/icon-'+i+'.webp');
+ let active=0,peak=0,calls=0;
+ const load=async()=>{calls++;active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,1));active--;return true;};
+ const cold=context.AVEDStartup.assetCache({urls:[...urls,urls[0],'/api/me','https://example.invalid/image'],storage,load,delay:async ms=>delays.push(ms)});
+ assert.equal(cold.cached,false);const first=cold.prepare();assert.equal(cold.prepare(),first);
+ const result=await first;assert.equal(result.complete,true);assert.equal(result.cached,false);assert.equal(peak,3);assert.equal(calls,9);assert.deepEqual(delays,[1600]);assert.equal(cold.cached,true);
+ await cold.prepare();assert.equal(calls,9,'same-page entry reuses decoded assets');
+ const warm=context.AVEDStartup.assetCache({urls,storage,load,delay:()=>assert.fail('cached entry should not have a minimum delay')});
+ assert.equal(warm.cached,true);assert.equal((await warm.prepare()).cached,true);assert.equal(calls,18,'a cache marker still checks that images can load');
+ const updated=context.AVEDStartup.assetCache({urls:[...urls,'/assets/new-hash.webp'],storage,load,delay:async()=>{}});assert.equal(updated.cached,false,'changed art invalidates the marker');
+});
+
+test('failed art and blocked storage never prevent entry or create a false cache marker',async()=>{
+ const storage={getItem:()=>{throw Error('blocked');},setItem:()=>{throw Error('blocked');},removeItem:()=>{throw Error('blocked');}};
+ const failed=context.AVEDStartup.assetCache({urls:['/assets/a.webp'],storage,load:async()=>{throw Error('offline');},coldMinMs:0});
+ assert.equal((await failed.prepare()).complete,false);assert.equal(failed.cached,false);
+ const stalled=context.AVEDStartup.assetCache({urls:['/assets/a.webp'],storage,load:()=>new Promise(()=>{}),deadlineMs:5,coldMinMs:0});
+ assert.equal((await stalled.prepare()).complete,false);
+ const ok=context.AVEDStartup.assetCache({urls:['/assets/a.webp'],storage,load:async()=>true,coldMinMs:0});assert.equal((await ok.prepare()).complete,true);assert.equal(ok.cached,true);
+});
+
 test('refresh restores only after the server session and page initialization succeed',async()=>{
  let resolveSession;const session=new Promise(resolve=>{resolveSession=resolve;}),seen=[];
  const pending=context.AVEDStartup.restoreSession({load:()=>session,enter:async employee=>{seen.push(employee.id);},signedOut:()=>assert.fail('a valid session must not show the gateway'),unavailable:()=>assert.fail('a valid session must restore')});

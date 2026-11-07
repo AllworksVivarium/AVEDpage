@@ -1,3 +1,9 @@
+const avedSidebarSymbols={
+  welcome:['personnel-moon-icon-v1.sidebar64.018c1a150129.webp','145% auto'],news:['broadcast-ui-v1.sidebar64.1bf524df26f2.webp','130% auto'],
+  departments:['directory-disk-ui-v1.sidebar64.566c01d80579.webp','165% auto'],containment:['containment-folder-ui-v1.sidebar64.dfd0f5350cd7.webp','155% auto'],
+  life:['life-newspaper-ui-v1.sidebar64.5e5be33c9061.webp','120% auto'],forum:['forum-computer-ui-v1.sidebar64.1da86dc6c596.webp','155% auto'],casino:['recreation-cards-ui-v1.sidebar64.876aec31d4a1.webp','145% auto']
+};
+window.AVEDCriticalArt=[...Object.values(avedSidebarSymbols).map(([file])=>'/assets/'+file),'/assets/sidebar-binder-clip-icon-v1.cfd1cd0715d2.webp','/assets/medical.ae5509bedeb3.webp'];
 window.AVEDVisualStyle=function({byId}){
  const sidebar=byId('left-sidebar');
  // Authoring launchers enforce their own localhost-only boundary.
@@ -5,11 +11,7 @@ window.AVEDVisualStyle=function({byId}){
  document.body.classList.remove('editor-tools-hidden');
 
  // Preserve the original bitmap grain; luminance masks remove its black canvas.
- const symbols={
-  welcome:['personnel-moon-icon-v1.sidebar64.018c1a150129.webp','145% auto'],news:['broadcast-ui-v1.sidebar64.1bf524df26f2.webp','130% auto'],
-  departments:['directory-disk-ui-v1.sidebar64.566c01d80579.webp','165% auto'],containment:['containment-folder-ui-v1.sidebar64.dfd0f5350cd7.webp','155% auto'],
-  life:['life-newspaper-ui-v1.sidebar64.5e5be33c9061.webp','120% auto'],forum:['forum-computer-ui-v1.sidebar64.1da86dc6c596.webp','155% auto'],casino:['recreation-cards-ui-v1.sidebar64.876aec31d4a1.webp','145% auto']
- };
+ const symbols=avedSidebarSymbols;
  function symbol(name){const [file,size]=symbols[name],el=document.createElement('span');el.className='sidebar-symbol';el.setAttribute('aria-hidden','true');el.style.setProperty('--symbol-image','url("/assets/'+file+'")');el.style.setProperty('--symbol-size',size);return el;}
  for(const [name] of Object.entries(symbols)){const button=sidebar.querySelector('[data-nav="'+name+'"]');if(button){button.firstElementChild.replaceWith(symbol(name));button.setAttribute('aria-label',button.querySelector('.sidebar-label').textContent.trim());}}
  const megaphone=document.querySelector('.notice-masthead>img');if(megaphone){const el=symbol('news');el.classList.add('notice-broadcast-symbol');el.removeAttribute('aria-hidden');el.setAttribute('role','img');el.setAttribute('aria-label','广播喇叭');megaphone.replaceWith(el);}

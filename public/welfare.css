@@ -77,7 +77,7 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
 #inner-app-view .balance-rankings>section{border:0}
 #inner-app-view .balance-rankings>section[hidden]{display:none!important}
 #inner-app-view .balance-rankings h4{display:none}
-#inner-app-view .balance-rankings ol{max-height:224px;overflow-y:auto;overscroll-behavior:contain}
+#inner-app-view .balance-rankings ol{max-height:none;overflow:visible}
 #inner-app-view .ranking-tabs{display:flex;gap:5px;border-bottom:1px solid var(--inner-border-soft);margin-top:10px;padding-bottom:6px}
 #inner-app-view .ranking-tabs button{min-height:30px;padding:4px 10px;border:1px solid var(--inner-border-soft);background:transparent;color:var(--inner-text-main);font-size:12px;cursor:pointer}
 #inner-app-view .ranking-tabs button[aria-selected=true]{background:var(--inner-accent);color:var(--inner-accent-text);border-color:var(--inner-accent)}
@@ -106,6 +106,40 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
  body.theme-inner #inner-app-view #game-panel-home>:is(.reward-allocation,.card-room-lobby),body.theme-inner #inner-app-view #game-panel-home .welfare-dashboard>:is(.company-fund-panel,.company-ranking-panel){box-shadow:inset 0 1px #ffffff38,2px 3px 0 #00000020,0 5px 10px #0000000c!important}
  body.theme-inner #inner-app-view #lowest-balances .rank-donate{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border:1px solid var(--inner-accent)!important;min-height:34px;padding:5px 10px;opacity:1!important;font-weight:700;box-shadow:inset 1px 1px #ffffff55,inset -1px -2px #0005,0 2px 0 #0005!important}
  body.theme-inner #inner-app-view #lowest-balances .rank-donate:active{box-shadow:inset 1px 2px #0006!important;transform:translateY(1px)}
+}
+
+/* Full company registers; decoration is CSS/SVG and adds no image downloads. */
+@layer aved-personal {
+ #inner-app-view .company-ranking-panel{--rank-ink:var(--inner-accent);--rank-wash:color-mix(in srgb,var(--rank-ink) 9%,var(--inner-card-bg))}
+ #inner-app-view .company-ranking-panel[data-ranking=wealth]{--rank-ink:color-mix(in srgb,var(--inner-accent) 65%,#bd9639)}
+ #inner-app-view .company-ranking-panel[data-ranking=bankrupt]{--rank-ink:var(--inner-accent);--rank-wash:color-mix(in srgb,var(--inner-text-main) 7%,var(--inner-card-bg))}
+ #inner-app-view .company-ranking-panel[data-ranking=kindness]{--rank-ink:var(--inner-accent);--rank-wash:color-mix(in srgb,var(--inner-accent) 12%,var(--inner-card-bg))}
+ #inner-app-view .company-ranking-panel .ranking-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px!important;padding:0!important;border:0!important;margin-top:14px!important}
+ #inner-app-view .company-ranking-panel .ranking-tabs button{width:100%;min-width:0;min-height:44px!important;padding:9px 5px!important;font-size:14px!important;font-weight:700;line-height:1.5!important;box-shadow:inset 1px 1px #ffffff35,2px 3px 0 #0002!important}
+ #inner-app-view .company-ranking-panel .ranking-tabs button[aria-selected=true]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-color:var(--inner-accent)!important;box-shadow:inset 0 0 0 2px #ffffff25,2px 3px 0 #0003!important}
+ #inner-app-view .company-ranking-panel .ranking-tabs button:active{transform:translateY(1px);box-shadow:inset 1px 2px #0004!important}
+ #inner-app-view .company-ranking-panel .ranking-preferences{font-size:11px!important;gap:8px!important}
+ #inner-app-view .company-ranking-panel .ranking-preferences :is(label,select,summary){font-size:11px!important;line-height:1.5!important}
+ #inner-app-view .company-ranking-panel .ranking-preferences select{min-height:26px!important;padding:3px 5px!important}
+ #inner-app-view .company-ranking-panel .ranking-hero{position:relative;isolation:isolate;display:flex;align-items:center;gap:16px;overflow:hidden;margin-top:16px;padding:22px 18px;border:1px solid var(--rank-ink);border-block-width:3px;background:var(--rank-wash);box-shadow:inset 0 0 0 4px var(--inner-card-bg),inset 0 0 0 5px var(--rank-ink)}
+ #inner-app-view .company-ranking-panel .ranking-hero::after{content:'I';position:absolute;right:12px;top:-18px;font:900 130px/1 Georgia,serif;color:var(--rank-ink);opacity:.1;z-index:-1;pointer-events:none}
+ #inner-app-view .company-ranking-panel[data-ranking=bankrupt] .ranking-hero{background:repeating-linear-gradient(135deg,transparent 0 9px,color-mix(in srgb,var(--rank-ink) 8%,transparent) 9px 11px),var(--rank-wash);border-style:double}
+ #inner-app-view .company-ranking-panel[data-ranking=bankrupt] .ranking-hero::after{content:'↓';font-family:monospace;font-size:110px}
+ #inner-app-view .company-ranking-panel[data-ranking=kindness] .ranking-hero::after{content:'+';font-family:monospace;font-size:135px;top:-28px}
+ #inner-app-view .company-ranking-panel .ranking-hero svg{width:44px;height:44px;flex:none;fill:var(--rank-ink);filter:drop-shadow(3px 3px 0 #0002);shape-rendering:crispEdges}
+ #inner-app-view .company-ranking-panel .ranking-hero svg .rank-cut{fill:none;stroke:var(--inner-card-bg);stroke-width:2}
+ #inner-app-view .company-ranking-panel .ranking-hero h4{display:block;margin:5px 0 0;font-size:24px!important;font-weight:900;line-height:1.4!important;letter-spacing:.08em;color:var(--inner-text-main)}
+ #inner-app-view .company-ranking-panel .ranking-hero-code{display:block;font:9px/1.5 var(--terminal-type);letter-spacing:.1em;color:var(--inner-text-muted)}
+ #inner-app-view .company-ranking-panel .balance-rankings ol{max-height:none!important;height:auto!important;overflow:visible!important;margin-top:10px}
+ #inner-app-view .company-ranking-panel .balance-rankings li{min-height:38px;padding:8px 7px;gap:10px}
+ #inner-app-view .company-ranking-panel .balance-rankings .rank-top{position:relative;min-height:52px!important;margin-top:6px;padding:10px 8px!important;background:var(--rank-wash);border:1px solid color-mix(in srgb,var(--rank-ink) 45%,var(--inner-border-soft));box-shadow:2px 2px 0 #0002}
+ #inner-app-view .company-ranking-panel .rank-top .rank-number{display:grid;place-items:center;min-width:30px;width:30px;height:30px;opacity:1;font-weight:900;font-size:15px;color:var(--rank-ink);border:1px solid currentColor}
+ #inner-app-view .company-ranking-panel .rank-top-1 .rank-number{background:var(--inner-accent);color:var(--inner-accent-text);border-color:var(--inner-accent);clip-path:polygon(0 0,100% 0,100% 80%,80% 80%,80% 100%,20% 100%,20% 80%,0 80%)}
+ #inner-app-view .company-ranking-panel .rank-top-1{border-top:3px solid var(--rank-ink)!important}
+ #inner-app-view .company-ranking-panel[data-ranking=bankrupt] .rank-top{border-left:4px double var(--rank-ink)!important}
+ #inner-app-view .company-ranking-panel[data-ranking=kindness] .rank-top{border-left:4px solid var(--rank-ink)!important}
+ #inner-app-view .company-ranking-panel .ranking-self{outline:1px solid var(--inner-accent);outline-offset:-1px}
+ @media(max-width:380px){#inner-app-view .company-ranking-panel .ranking-tabs{gap:5px!important}#inner-app-view .company-ranking-panel .ranking-hero{gap:12px;padding:18px 12px}#inner-app-view .company-ranking-panel .ranking-hero h4{font-size:21px!important}#inner-app-view .company-ranking-panel .rank-top .rank-number{min-width:25px;width:25px;height:28px}}
 }
 
 @layer aved-personal {

@@ -5,6 +5,10 @@
  #game-panel-doudizhu.ddz-panel small{font-size:9px!important;line-height:1.5!important}
  #game-panel-doudizhu.ddz-panel h3{font-size:18px!important;line-height:1.4!important}
  #game-panel-doudizhu.ddz-panel .ddz-card-rank{font:bold 19px/1 'Courier New',monospace!important}
+ #game-panel-doudizhu.ddz-panel .ddz-joker .ddz-joker-name{writing-mode:vertical-rl;letter-spacing:2px;font:700 12px/1.1 var(--terminal-type)!important}
+ #game-panel-doudizhu.ddz-panel .ddz-joker .ddz-card-corner{font:700 10px/1 var(--terminal-type)!important}
+ #game-panel-doudizhu.ddz-panel .ddz-joker .ddz-card-pip{width:28px;height:28px;right:4px;bottom:19px}
+ #game-panel-doudizhu.ddz-panel .ddz-joker .ddz-card-pip svg{width:100%;height:100%;shape-rendering:crispEdges}
  #game-panel-doudizhu.ddz-panel .ddz-card-corner{font:bold 14px/1 'Courier New',monospace!important}
  #game-panel-doudizhu.ddz-panel .ddz-card-check{font:bold 13px/1 monospace!important}
  #game-panel-doudizhu.ddz-panel .ddz-seat-name strong{font-size:12px!important;line-height:1.4!important}

@@ -13,6 +13,19 @@ test('four-player bombs compare length first; only all four jokers form the rock
  assert.equal(R.beats(p([15,15,15,15,15,15,15,15]),p([16,16,17,17])),false);assert.equal(R.beats(p([16,16,17,17]),p([16,16,17,17])),false);
  assert.equal(R.beats(p([4,5,6,7,8,9]),p([3,4,5,6,7])),false);
 });
+
+test('every deck has the exact standard ranks, suits, labels and distinct jokers',()=>{
+ const labels={11:'J',12:'Q',13:'K',14:'A',15:'2'};
+ for(const size of [3,4])for(let trial=0;trial<10;trial++){
+  const g=dealTable(size),deck=[...g.hands.flat(),...g.bottom],copies=size===4?2:1;
+  assert.equal(deck.length,54*copies);assert.equal(new Set(deck.map(c=>c.id)).size,deck.length);
+  for(let rank=3;rank<=15;rank++)for(const suit of ['♠','♥','♣','♦']){
+   const matches=deck.filter(c=>c.val===rank&&c.suit===suit);assert.equal(matches.length,copies);
+   for(const c of matches){assert.equal(c.label,rank<=10?String(rank):labels[rank]);assert.equal(c.red,suit==='♥'||suit==='♦');}
+  }
+  for(const val of [16,17]){const jokers=deck.filter(c=>c.val===val);assert.equal(jokers.length,copies);assert.ok(jokers.every(c=>c.label===(val===16?'小王':'大王')&&c.red===(val===17)));}
+ }
+});
 test('deals, authority checks, round reset, and public views keep private hands private',()=>{
  for(const size of [3,4]){const s=dealTable(size);assert.equal(new Set([...s.hands.flat(),...s.bottom].map(c=>c.id)).size,size===3?54:108);assert.ok(s.hands.every(h=>h.length===(size===3?17:25)));
   assert.throws(()=>tableAction(s,1,'bid',{bid:3}));tableAction(s,0,'bid',{bid:3});assert.equal(s.hands[0].length,size===3?20:33);

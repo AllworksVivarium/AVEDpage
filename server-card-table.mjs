@@ -54,21 +54,21 @@ export function tableView(room,employeeId){
   seats:room.seats.map((p,i)=>p?{id:p.id,name:p.name,avatar:p.avatar,bot:p.bot,auto:p.auto,ready:p.ready,count:g?.hands[i].length||0,role:g?.landlord===i?'landlord':g?.landlord>=0?'farmer':null,last:g?.seatPlays[i]||null}:null),
   hand:g?[...g.hands[seat]].sort((a,b)=>b.val-a.val||a.id-b.id):[],bottom:g?.phase==='bidding'?Array(g.bottom.length).fill(null):g?.bottom||[],turn:g?.turn??-1,landlord:g?.landlord??-1,bid:g?.bid||0,multiplier:g?.multiplier||1,last:g?.last||null,event:g?.event||null,winner:g?.winner||null,spring:!!g?.spring};
 }
-export function installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights}){
+export function installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,clock=()=>Date.now(),schedule=setInterval,cancel=clearInterval}){
  db.exec('CREATE TABLE IF NOT EXISTS card_table_rooms(id TEXT PRIMARY KEY,state_json TEXT NOT NULL,updated_at INTEGER NOT NULL)');
  const wallet=installCardWallet({db,balanceFor,recordLedger});
  const rooms=new Map(),streams=new Set();
- const save=r=>{r.updatedAt=Date.now();db.prepare('INSERT INTO card_table_rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state_json=excluded.state_json,updated_at=excluded.updated_at').run(r.id,JSON.stringify(r),r.updatedAt);};
- for(const row of db.prepare('SELECT state_json FROM card_table_rooms').all()){const r=JSON.parse(row.state_json);rooms.set(r.id,r);r.deadline=Date.now()+30000;}
+ const save=r=>{r.updatedAt=clock();db.prepare('INSERT INTO card_table_rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state_json=excluded.state_json,updated_at=excluded.updated_at').run(r.id,JSON.stringify(r),r.updatedAt);};
+ for(const row of db.prepare('SELECT state_json FROM card_table_rooms').all()){const r=JSON.parse(row.state_json);rooms.set(r.id,r);if(!Number.isFinite(r.deadline))r.deadline=clock()+30000;}
  const playing=r=>['bidding','playing'].includes(r.game?.phase);
  const humans=r=>r.seats.filter(p=>p&&!p.bot&&!p.detached);
  const roomFor=id=>[...rooms.values()].find(r=>r.seats.some(p=>p?.id===id&&!p.detached));
- const view=(r,id)=>r?{...tableView(r,id),gameHighlight:r.money?.settlement?highlights?.roundEvent(id,'cards',r.money.round)||null:null,balance:balanceFor(id)}:null;
+ const view=(r,id)=>r?{...tableView(r,id),serverTime:clock(),gameHighlight:r.money?.settlement?highlights?.roundEvent(id,'cards',r.money.round)||null:null,balance:balanceFor(id)}:null;
  const write=(s,r)=>{if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}try{s.res.write('data: '+JSON.stringify({room:view(r,s.id),balance:balanceFor(s.id)})+'\n\n');}catch{streams.delete(s);}};
  const broadcast=r=>{for(const s of streams)if(r?.seats.some(p=>p?.id===s.id))write(s,roomFor(s.id));};
  // All mutations (including automatic turns) persist together with money. Restore memory on rollback.
  function mutate(r,fn){const previous=r?structuredClone(r):null,existed=r&&rooms.has(r.id);db.exec('BEGIN IMMEDIATE');try{
-  const result=fn();if(r){wallet.settle(r);r.revision++;r.deadline=Date.now()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?1100:30000);
+  const result=fn();if(r){wallet.settle(r);r.revision++;r.deadline=clock()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?1100:30000);
    if(!humans(r).length&&!playing(r)){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}else{save(r);rooms.set(r.id,r);}}
   db.exec('COMMIT');broadcast(r);return result;
  }catch(e){db.exec('ROLLBACK');if(r){for(const k of Object.keys(r))delete r[k];Object.assign(r,previous);if(existed)rooms.set(r.id,r);else rooms.delete(r.id);}throw e;}}
@@ -80,13 +80,13 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
   if(playing(r)){r.seats[i].detached=true;r.seats[i].auto=true;}else r.seats[i]=null;
   const remaining=humans(r);if(r.host===id&&remaining.length)r.host=remaining[0].id;
  }
- const timer=setInterval(()=>{for(const r of rooms.values()){
-  if(!playing(r)||Date.now()<r.deadline)continue;
+ const timer=schedule(()=>{for(const r of rooms.values()){
+  if(!playing(r)||clock()<r.deadline)continue;
   try{mutate(r,()=>{const p=r.seats[r.game.turn];if(!p.bot)p.auto=true;const seat=r.game.turn,move=botTurn(r.game);tableAction(r.game,seat,move.action,move);wallet.recordTurn(r,seat,move.action,true);});}
-  catch(e){console.error('Card table:',e.message);r.deadline=Date.now()+30000;}
+  catch(e){console.error('Card table:',e.message);r.deadline=clock()+30000;}
  }},350);timer.unref();
- const cleanup=setInterval(()=>{for(const r of rooms.values())if(!playing(r)&&Date.now()-r.updatedAt>86400000){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}},3600000);cleanup.unref();
- return {close(){clearInterval(timer);clearInterval(cleanup);for(const s of streams)s.res.end();},async handle(req,res,url){
+ const cleanup=schedule(()=>{for(const r of rooms.values())if(!playing(r)&&clock()-r.updatedAt>86400000){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}},3600000);cleanup.unref();
+ return {close(){cancel(timer);cancel(cleanup);for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/card-table'))return false;
   const actor=requireEmployee(req,res);if(!actor)return true;
   if(url.pathname==='/api/player/card-table/rooms'&&req.method==='GET'){

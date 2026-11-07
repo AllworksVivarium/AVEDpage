@@ -398,12 +398,24 @@
 
 
       const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const terminalArtCache=AVEDStartup.assetCache({urls:window.AVEDCriticalArt});
+      async function prepareTerminalArt(){
+        const cached=terminalArtCache.cached;let shown=false;
+        const reveal=()=>{
+          shown=true;signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
+          signalOverlay.dataset.assetLoading=cached?'warm':'cold';signalPhase('正在加载员工终端',35,'');
+        };
+        let delayed;
+        if(!cached||!signalOverlay.classList.contains('hidden'))reveal();else delayed=setTimeout(reveal,350);
+        try{await terminalArtCache.prepare();}finally{clearTimeout(delayed);}
+        return {cached,shown};
+      }
       function signalPhase(title,progress,line) {
         document.getElementById('signal-status-title').textContent=title;
         document.getElementById('signal-progress-bar').style.width=progress+'%';
         document.getElementById('signal-noise-code').textContent=progress===100?'CARRIER: LOCKED':'CARRIER: SYNCING';
         const logs=document.getElementById('signal-log-lines');if(progress<40)logs.replaceChildren();
-        const steps=['正在确认个人身份令牌……','正在连接公司内网……','正在加载公司档案……'];
+        const steps=signalOverlay.dataset.assetLoading?['正在点亮侧栏图标……','正在整理终端界面……','即将进入公司内网……']:['正在确认个人身份令牌……','正在连接公司内网……','正在加载公司档案……'];
         const count=progress<40?1:progress<80?2:3;
         steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');entry.style.animation='signalLogReveal .18s ease-out both';entry.style.animationDelay=(index*70)+'ms';logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
       }
@@ -439,8 +451,8 @@
           idleSession.start(true);
           await completeEnterIntranet(employee);
           signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
-          await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?80:420));
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
+          delete signalOverlay.dataset.assetLoading;
           try {
             if(remember)localStorage.setItem('aved_username',employee.account);else localStorage.removeItem('aved_username');
           } catch {}
@@ -451,6 +463,7 @@
           if(!remember)document.getElementById('login-password').value='';
         } catch(errorValue) {
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
+          delete signalOverlay.dataset.assetLoading;
           loginModal.classList.remove('hidden');loginModal.classList.add('flex');
           if(error)error.textContent=errorValue.message;
           document.getElementById('login-password').focus();
@@ -1708,6 +1721,7 @@
       async function completeEnterIntranet(emp){
         innerAppView.classList.add('intranet-preparing');
         try{
+        const art=await prepareTerminalArt();
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
@@ -1719,6 +1733,7 @@
         // Chat streams open only while their game panel is visible.
         startChatStreams();
         await nextPaint();
+        if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎回到公司，'+emp.name,100,'');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
         }finally{innerAppView.classList.remove('intranet-preparing');}
       }
@@ -1989,6 +2004,7 @@
             document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           },
           unavailable:()=>{
+            delete signalOverlay.dataset.assetLoading;
             signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');
             currentUser=null;signalPhase('暂时无法恢复页面',12,'');
             const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
@@ -1997,7 +2013,7 @@
           }
         });
         document.documentElement.dataset.entryState=entryState;signalOverlay.setAttribute('aria-busy','false');
-        if(entryState!=='checking'){signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');}
+        if(entryState!=='checking'){signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');delete signalOverlay.dataset.assetLoading;}
       })();
       function marketVisible(){return !!currentUser&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!byId('game-panel-stocks').classList.contains('hidden');}
       const marketVisibility=new MutationObserver(()=>{if(marketVisible())refreshMarket().catch(()=>{});});

@@ -56,6 +56,29 @@ test('a computer never bids below the current bid',()=>{
  const g={phase:'bidding',turn:0,bid:2,hands:[[{val:15}]]};assert.equal(botTurn(g).bid,0);
 });
 
+test('solo tables take over at 30 seconds in bidding and play without SSE or a client timer',async()=>{
+ for(const size of [3,4])for(const phase of ['bidding','playing']){
+  const db=new DatabaseSync(':memory:');db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,balance INTEGER);INSERT INTO employees VALUES(1,100000);
+   CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT,avatar_url TEXT);
+   CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);`);
+  let now=1000000,advance;
+  const deps={db,clock:()=>now,schedule:(fn,ms)=>{if(ms===350)advance=fn;return {unref(){}};},cancel:()=>{},readBody:async r=>r.body,requireEmployee:()=>({id:1}),sessionEmployee:()=>true,send:(r,status,data)=>Object.assign(r,{status,data}),balanceFor:()=>db.prepare('SELECT balance FROM employees WHERE id=1').get().balance,recordLedger:(_,delta)=>db.prepare('UPDATE employees SET balance=balance+? WHERE id=1').run(delta)};
+  let service=installCardTables(deps);
+  const call=async body=>{const res={};await service.handle({method:body?'POST':'GET',body},res,new URL('http://test/api/player/card-table'));assert.equal(res.status,200,JSON.stringify(res.data));return res.data.room;};
+  try{
+   let room=await call({action:'solo',size});
+   if(phase==='playing')room=await call({action:'bid',bid:3,room:room.id,revision:room.revision,requestId:randomUUID()});
+   const deadline=room.deadline,revision=room.revision,handCount=room.hand.length;
+   assert.equal(deadline-now,30000);now=deadline-1;advance();assert.equal((await call()).seats[0].auto,false);
+   now=deadline;advance();room=await call();assert.equal(room.seats[0].auto,true);assert.equal(room.revision,revision+1);assert.equal(room.serverTime,now);assert.equal(room.deadline-now,1100);
+   if(phase==='playing')assert.ok(room.hand.length<handCount);
+   now+=1099;advance();assert.equal((await call()).revision,room.revision);now++;advance();assert.equal((await call()).revision,room.revision+1);
+   // Restart cannot grant another 30 seconds to an already expired turn.
+   service.close();now+=40000;service=installCardTables(deps);room=await call();assert.ok(room.deadline<now);advance();assert.equal((await call()).revision,room.revision+1);
+  }finally{service.close();db.close();}
+ }
+});
+
 test('pure autoplay has no positive return, one manual play qualifies, and entry never cools down',()=>{
  const db=new DatabaseSync(':memory:');try{
   db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT); CREATE TABLE card_auto_limits(employee_id INTEGER PRIMARY KEY,streak INTEGER,cooldown_until INTEGER); INSERT INTO card_auto_limits VALUES(1,99,9999999999999);');

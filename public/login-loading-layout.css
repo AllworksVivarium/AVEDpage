@@ -14,4 +14,12 @@
  #signal-Connecting-overlay .signal-mesh>div:last-child span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #signal-Connecting-overlay .signal-mesh>div:last-child span:last-child{flex-shrink:0;white-space:nowrap}
  @media(max-width:360px){#signal-Connecting-overlay>.signal-mesh{padding:16px!important}#signal-Connecting-overlay #signal-status-title{font-size:18px!important}}
+ #signal-Connecting-overlay .signal-progress-track{box-sizing:border-box!important;height:8px!important;min-height:8px!important;padding:1px!important;border:1px solid #ffffff55!important;background:#101010!important}
+ #signal-Connecting-overlay #signal-progress-bar{display:block!important;height:100%!important;min-height:4px!important;background:#eee!important}
+ #signal-Connecting-overlay[data-asset-loading] #signal-progress-bar{transition:width .18s linear!important}
+ #signal-Connecting-overlay[data-asset-loading=cold] #signal-progress-bar{animation:terminalArtFill 1.6s cubic-bezier(.16,.75,.25,1) both!important}
+ #signal-Connecting-overlay[data-asset-loading=warm] #signal-progress-bar{animation:terminalArtFill .7s ease-out both!important}
+ #signal-Connecting-overlay[data-asset-loading=complete] #signal-progress-bar{animation:none!important;width:100%!important}
+ @keyframes terminalArtFill{from{width:2%}to{width:91%}}
+ @media(prefers-reduced-motion:reduce){#signal-Connecting-overlay[data-asset-loading] #signal-progress-bar{animation:none!important;transition:none!important;width:75%!important}#signal-Connecting-overlay[data-asset-loading=complete] #signal-progress-bar{width:100%!important}}
 }
