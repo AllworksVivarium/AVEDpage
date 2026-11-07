@@ -1,5 +1,14 @@
 {
   "name": "aved-terminal",
   "private": true,
-  "dependencies": { "sharp": "0.35.5" }
+  "scripts": {
+    "build:css": "tailwindcss -i tools/terminal-utilities.css -o public/terminal-utilities.css --minify",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
 }

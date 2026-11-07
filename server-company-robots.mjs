@@ -2,7 +2,7 @@ import {randomBytes} from 'node:crypto';
 export function ensureCompanyRobots(db){db.exec(`CREATE TABLE IF NOT EXISTS company_robots(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,codename TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);}
 export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log=()=>{}}){
  ensureCompanyRobots(db);
- const list=()=>db.prepare('SELECT r.employee_id AS id,r.codename,r.revision,COALESCE((SELECT SUM(delta) FROM balance_ledger WHERE employee_id=r.employee_id),0) AS balance FROM company_robots r ORDER BY r.employee_id').all();
+ const list=()=>db.prepare('SELECT r.employee_id AS id,r.codename,r.revision,0 AS balance FROM company_robots r ORDER BY r.employee_id').all().map(row=>({...row,balance:balanceFor(row.id)}));
  const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const v=fn();db.exec('COMMIT');return v;}catch(e){db.exec('ROLLBACK');throw e;}};
  return {list,async handle(req,res,url){if(!/^\/api\/admin\/company-robots(?:\/\d+)?$/.test(url.pathname))return false;const actor=requireAdmin(req,res);if(!actor)return true;
   try{if(req.method==='GET'&&url.pathname==='/api/admin/company-robots'){send(res,200,{items:list()});return true;}

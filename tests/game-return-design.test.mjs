@@ -7,7 +7,6 @@ import {defaultEconomy,installEconomy,expectedReturn,validateEconomy} from '../s
 import {spinSlot,slotPartialReturns} from '../server-slot.mjs';
 import {generateSealedTicket} from '../server-ticket.mjs';
 import {scratchGameTypes} from '../server-content.mjs';
-import {publicCards,newCards} from '../server-cards.mjs';
 
 function rng(seed=0x89712345){return()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return (seed>>>0)/4294967296;};}
 
@@ -61,5 +60,4 @@ test('main result shows actual total received, including principal, without clai
  assert.equal(show({cost:1000,prize:0}),'本局返还 ¤ 0');
  assert.equal(show({cost:1000,prize:1000,cancelled:true}),'撤班退回 ¤ 1,000');
  assert.equal(show({cost:1000,prize:undefined}),'正在确认结算');
- const cards=publicCards({...newCards(rng()),phase:'ended',winner:0},1);assert.equal(cards.cost,0);assert.equal(cards.prize,20000);
 });

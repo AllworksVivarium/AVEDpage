@@ -37,7 +37,9 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  END;${awardSQL()}`);
  const earned=id=>db.prepare(`SELECT d.code,d.title,d.description,a.created_at AS createdAt FROM earned_achievements a JOIN achievement_definitions d ON d.code=a.code WHERE a.employee_id=? AND d.enabled=1 ORDER BY a.created_at DESC,d.rowid`).all(id);
  function rewards(id) {const now=Date.now(),hour=Math.floor(now/3600000),daily=!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today());return {serverTime:now,balance:balanceFor(id),dailyClaimed:daily,dailyReward:10000,dailyResetAt:(Math.floor((now+28800000)/86400000)+1)*86400000-28800000,hourlyClaimed:!!db.prepare('SELECT 1 FROM hourly_claims WHERE employee_id=? AND hour=?').get(id,hour),hourlyResetAt:(hour+1)*3600000,hourlyReward:5000};}
- return {earned,async handle(req,res,url) {
+ db.exec(`INSERT INTO personal_metrics(employee_id,balance) SELECT e.id,COALESCE(SUM(l.delta),0) FROM employees e LEFT JOIN balance_ledger l ON l.employee_id=e.id GROUP BY e.id ON CONFLICT(employee_id) DO UPDATE SET balance=excluded.balance;`);
+ const balanceQuery=db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?');
+ return {balance:id=>balanceQuery.get(id)?.balance||0,earned,async handle(req,res,url) {
   const path=url.pathname;if(!['/api/profile','/api/player/history','/api/player/rewards','/api/player/rewards/hourly','/api/admin/achievements'].includes(path)||path==='/api/profile'&&req.method!=='GET')return false;
   const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
   try {

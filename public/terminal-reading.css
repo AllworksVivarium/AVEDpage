@@ -31,8 +31,8 @@
 #inner-app-view :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--inner-crimson)!important;outline-offset:3px}
 #inner-app-view :is(.notice-button,.terminal-key):disabled{transform:none;box-shadow:none}
 /* Texture is an independently reversible surface layer, never a text filter. */
-body.paper-texture.theme-inner #inner-app-view{--paper-wash:rgba(218,212,196,.64);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.png')!important;background-repeat:repeat;background-size:auto,720px 720px}
-body.paper-texture.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(238,233,221,.72);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.png');background-repeat:repeat;background-size:auto,720px 720px}
+body.paper-texture.theme-inner #inner-app-view{--paper-wash:rgba(218,212,196,.64);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.6f4e5c039632.webp')!important;background-repeat:repeat;background-size:auto,720px 720px}
+body.paper-texture.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(238,233,221,.72);background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),url('/assets/archive-paper-v1.6f4e5c039632.webp');background-repeat:repeat;background-size:auto,720px 720px}
 body.paper-texture.dark-mode.theme-inner #inner-app-view{--paper-wash:rgba(7,7,8,.94)}
 body.paper-texture.dark-mode.theme-inner #inner-app-view .retro-corner-box,body.paper-texture.dark-mode.theme-inner #inner-app-view .notice-comment{--paper-wash:rgba(16,17,19,.94)}
 .visual-style-choice .surface-choice-label{margin-top:14px}

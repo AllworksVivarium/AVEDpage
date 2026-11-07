@@ -3,8 +3,6 @@
 <head>
   <link rel="stylesheet" href="/entry-layout-stability.css?v=session-restore-2">
   <link rel="stylesheet" href="/login-loading-layout.css?v=stable-2">
-  <link rel="preload" as="image" href="/assets/personnel-moon-icon-v1.png">
-  <link rel="preload" as="image" href="/assets/sidebar-binder-clip-icon-v1.png">
   <link rel="stylesheet" href="/personal-hud.css?v=forum-compose-9">
   <script src="terminal-preferences.js?v=effects-device-2"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=coin-1">
@@ -25,8 +23,8 @@
   <link rel="stylesheet" href="/sidebar-art.css?v=planet-align-2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万业携生 // A.V.E.D. TERMINAL</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="stylesheet" href="/terminal-utilities.css?v=compiled-1">
+  <link data-inner-fonts="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================================
        【美工图片与配色替换区 — 零圆角直角硬朗网点拼贴 SCP 档案风格】
@@ -34,10 +32,10 @@
        ========================================================================== */
     :root {
       /* 1. 已绑定的宣发美术底图与预留插槽 */
-      --cover-bg-image: url("/assets/entrance.jpg");
+      --cover-bg-image: url("/assets/entrance.2ac482a14a01.webp");
 
-      --medical-card-bg: url("/assets/medical.jpg");
-      --megaphone-img: url("/assets/broadcast-ui-v1.png");
+      --medical-card-bg: url("/assets/medical.ae5509bedeb3.webp");
+      --megaphone-img: url("/assets/broadcast-ui-v1.9417d9e80963.webp");
 
       /* 2. 封面黑底与文字变量 */
       --landing-bg: #050505;
@@ -704,17 +702,17 @@
 
           <!-- 使用您上传的第4张高音喇叭图作为公司新闻通告图标 -->
           <button type="button" data-nav="news" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-left cursor-pointer transition">
-            <span class="sidebar-icon-slot" aria-hidden="true"><img src="/assets/broadcast-ui-v1.png" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20"></span>
+            <span class="sidebar-icon-slot" aria-hidden="true"><img src="/assets/broadcast-ui-v1.9417d9e80963.webp" alt="通告喇叭" class="w-5 h-5 object-contain shrink-0 border border-white/20"></span>
             <span class="sidebar-label truncate">内部通告</span>
           </button>
 
           <button type="button" data-nav="departments" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="sidebar-art-icon icon-disk" aria-hidden="true"><img src="/assets/directory-disk-ui-v1.png" alt="" loading="lazy"></span>
+            <span class="sidebar-art-icon icon-disk" aria-hidden="true"><img src="/assets/directory-disk-ui-v1.b3b8f2f75203.webp" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">员工名录</span>
           </button>
 
           <button type="button" data-nav="containment" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
-            <span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/containment-folder-ui-v1.png" alt="" loading="lazy"></span>
+            <span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/containment-folder-ui-v1.b50e265bdf87.webp" alt="" loading="lazy"></span>
             <span class="sidebar-label truncate">收容一览</span>
           </button>
 
@@ -743,7 +741,7 @@
         <section id="view-news" class="space-y-6 hidden">
           <div class="retro-corner-box p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-[var(--inner-crimson)]">
             <div class="notice-masthead flex">
-              <img src="/assets/broadcast-ui-v1.png" alt="A.V.E.D. 广播喇叭"
+              <img src="/assets/broadcast-ui-v1.9417d9e80963.webp" alt="A.V.E.D. 广播喇叭"
                 class="w-14 h-14 object-cover border-2 border-[var(--inner-border)] shrink-0 shadow">
               <div class="notice-masthead-text">
                 <div class="notice-kicker"><span lang="en">A.V.E.D. CENTRAL BROADCAST // OFFICIAL BULLETINS</span><span class="notice-kicker-separator" aria-hidden="true">|</span><bdi lang="he" dir="rtl">שידור מרכזי // הודעות רשמיות</bdi></div>

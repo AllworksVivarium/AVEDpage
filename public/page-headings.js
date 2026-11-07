@@ -9,7 +9,7 @@
     ['view-profile', 'EMPLOYEE HOME', 'דף הבית לעובד']
   ];
   const app=document.getElementById('inner-app-view');if(!app)return;
-  const icons={'view-news':['broadcast-ui-v1.png','130% auto'],'view-departments':['directory-disk-ui-v1.png','165% auto'],'view-containment':['containment-folder-ui-v1.png','155% auto'],'view-life':['life-newspaper-ui-v1.png','120% auto'],'view-forum':['forum-computer-ui-v1.png','auto 125%'],'view-casino':['recreation-cards-ui-v1.png','auto 115%']};
+  const icons={'view-news':['broadcast-ui-v1.9417d9e80963.webp','130% auto'],'view-departments':['directory-disk-ui-v1.b3b8f2f75203.webp','165% auto'],'view-containment':['containment-folder-ui-v1.b50e265bdf87.webp','155% auto'],'view-life':['life-newspaper-ui-v1.48c24fadce83.webp','120% auto'],'view-forum':['forum-computer-ui-v1.3a19603da100.webp','auto 125%'],'view-casino':['recreation-cards-ui-v1.8b6bd4c41153.webp','auto 115%']};
   const measure=new ResizeObserver(entries=>{for(const {target} of entries){const size=target.getBoundingClientRect().height;if(size)target.parentElement.style.setProperty('--section-masthead-height',size+'px');}});
   function update(){
     for(const [id,english,hebrew] of pages){

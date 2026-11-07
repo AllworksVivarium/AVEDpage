@@ -471,9 +471,9 @@
         if(!currentUser)return;
         if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
         if(target!=='welcome')history.replaceState(null,'','#/'+target);
-        if(target!=='profile'&&target!=='welcome')loadDeferredPlayerData().catch(e=>showToast(e.message,'warn'));
+        if(target!=='profile'&&target!=='welcome')loadDeferredPlayerData(target).catch(e=>showToast(e.message,'warn'));
         if(target==='welcome'&&currentUser){showProfile().catch(e=>showToast(e.message));return;}
-        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();refreshDirectory().catch(e=>showToast(e.message));}
+        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
@@ -496,6 +496,7 @@
           else sec.classList.add('hidden');
         });
 
+        if(target==='profile')renderProfile();
         if (target === 'containment') {
           scpBoardSelection=null;renderScpArchives();
           randomizeScpDualNamePlaceholder();
@@ -1759,9 +1760,9 @@
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
-      async function loadPlayerData(deferred=false) {
-        const expectedUser=currentUser?.id;
-        const data=await api('/api/player/state'+(deferred?'':'?bootstrap=1'),{timeoutMs:15000,retries:0});if(deferred&&currentUser?.id!==expectedUser)return null;if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
+      async function loadPlayerData() {
+        deferredSections.clear();deferredRequests.clear();
+        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
@@ -1773,15 +1774,30 @@
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
         return currentUser;
       }
-      let deferredPlayerRequest=null,deferredPlayerReady=false;
-      function loadDeferredPlayerData(){
-        if(deferredPlayerReady||!currentUser)return Promise.resolve();
-        if(deferredPlayerRequest)return deferredPlayerRequest;
-        deferredPlayerRequest=loadPlayerData(true).then(employee=>{
-          if(!employee)return;deferredPlayerReady=true;
-          renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();renderStocks();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();
-          if(!byId('view-profile').classList.contains('hidden'))renderProfile();
-        }).finally(()=>{deferredPlayerRequest=null;});return deferredPlayerRequest;
+      const deferredSections=new Set(),deferredRequests=new Map();
+      function loadDeferredPlayerData(section){
+        if(!currentUser||deferredSections.has(section))return Promise.resolve();
+        if(deferredRequests.has(section))return deferredRequests.get(section);
+        const owner=currentUser.id,panel=byId('view-'+section);panel?.setAttribute('aria-busy','true');
+        const task=api('/api/player/state?section='+encodeURIComponent(section)).then(data=>{
+          if(currentUser?.id!==owner)return;
+          if(section==='departments')employees=data.employees.map(employeeDirectoryCard);
+          if(section==='departments'||section==='life'){
+            departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
+            document.querySelectorAll('#life-filters [name="department"],#life-create [name="department"]').forEach(select=>{
+              const selected=select.value,first=select.options[0]?.textContent||'全部部门';select.innerHTML='<option value="">'+esc(first)+'</option>'+data.departments.map(d=>'<option value="'+esc(d.name)+'">'+esc(d.name)+'</option>').join('');select.value=selected;
+            });
+          }
+          if(section==='news')companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
+          if(section==='containment')scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
+          if(section==='forum'){forumThreads=data.forum.items;forumNext=data.forum.next;renderForumView();}
+          if(section==='casino'){marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();welfareUI.refresh().catch(()=>{});}
+          if(section==='news')renderCompanyNewsView();
+          if(section==='departments')renderDepartmentsAndPersonnel();
+          if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
+          deferredSections.add(section);
+        }).finally(()=>{deferredRequests.delete(section);panel?.removeAttribute('aria-busy');});
+        deferredRequests.set(section,task);return task;
       }
       function syncUserHeaderUI() {
         if(!currentUser)return;
@@ -1802,11 +1818,12 @@
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function completeEnterIntranet(emp){
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
+        document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
         renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();switchMainView(requestedPlayerView());
-        setTimeout(()=>{if(!currentUser)return;loadDeferredPlayerData().catch(e=>showToast(e.message,'warn'));communityUI.refresh();welfareUI.refresh().catch(()=>{});},1200);
+        communityUI.refresh();
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         // Chat streams open only while their game panel is visible.
         startChatStreams();
@@ -1873,7 +1890,7 @@
       function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){personalUI.render();}
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
-      async function showProfile(){switchMainView('profile');renderProfile();if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;playerGameRecords=d.gameRecords||null;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
+      async function showProfile(){switchMainView('profile');if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;playerGameRecords=d.gameRecords||null;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
       async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
       document.addEventListener('submit',event=>{
@@ -1974,6 +1991,7 @@
             showToast('委托已成交。');
           }
           else if(id.startsWith('cloud-music')){
+            if(!playerMusic.length)playerMusic=(await api('/api/music')).items||[];
             if(!playerMusic.length)throw new Error('广播频道暂无曲目。');const audio=byId('cloud-music-audio');
             if(id==='cloud-music-prev')musicIndex=(musicIndex-1+playerMusic.length)%playerMusic.length;
             if(id==='cloud-music-next')musicIndex=(musicIndex+1)%playerMusic.length;

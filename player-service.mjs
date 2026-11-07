@@ -5,7 +5,6 @@ import {spinSlot} from './server-slot.mjs';
 import {runners as derbyRules,derbyReturn} from './server-derby.mjs';
 import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
-import { newCards, cardsAction, publicCards } from './server-cards.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './server-content.mjs';
 import { generateSealedTicket, applyScratchBomb, settleGameTicket } from './server-ticket.mjs';
@@ -16,7 +15,7 @@ export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
   const chatStreams=new Map();
   const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
-  function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[])response.write(payload);}
+  function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[]){if(response.destroyed||response.writableLength>262144){response.destroy();chatStreams.get(room).delete(response);}else response.write(payload);}}
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
   };
@@ -167,6 +166,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         : currentLeverage;
     const nextRealizedPnl=realizedPnl+realizedPnlChange;
     if(!Number.isSafeInteger(nextCostBasis)||nextCostBasis<0||!Number.isSafeInteger(nextPositionNotional)||nextPositionNotional<0||!Number.isSafeInteger(realizedPnlChange)||!Number.isSafeInteger(nextRealizedPnl))throw new Error('交易结果超出限额。');
+    const available=balanceFor(id)+closeMarginRelease+realizedPnlChange;
+    if(openQuantity>0&&available<openMargin)throw new Error('可用余额不足。');
     const ledgerDelta=closeMarginRelease+realizedPnlChange-openMargin;
     recordLedger(id,ledgerDelta,(delta>0?'买涨 ':'买跌 ')+stock.code+' × '+Math.abs(delta)+' @'+leverage+'x'+(reason?(' · '+reason):''));
     const nextStopLoss=next===0?null:(stopLoss!==null?stopLoss:position?.stopLoss??null);
@@ -218,9 +219,6 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   }
   const replies=(id,viewer=0)=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,CASE WHEN r.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=r.employee_id) ELSE p.anonymous_name END AS anonymousName,r.identity_mode AS identityMode,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
     (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads f ON f.id=r.thread_id JOIN profiles p ON p.employee_id=r.employee_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND f.status='published' AND f.deleted_at='' ORDER BY r.id`).all(viewer,id).map(row=>({...row,imageData:mediaReference('reply',row.id,row.imageData)}));
-  const saveRound=(id,game,state)=>Number(db.prepare('INSERT INTO player_rounds(employee_id,game,state_json) VALUES(?,?,?)').run(id,game,JSON.stringify(state)).lastInsertRowid);
-  const loadRound=(id,round,game)=>{const r=db.prepare('SELECT state_json FROM player_rounds WHERE id=? AND employee_id=? AND game=?').get(round,id,game);if(!r)throw new Error('该局不存在，请重新开始。');return JSON.parse(r.state_json);};
-  const updateRound=(round,state)=>db.prepare('UPDATE player_rounds SET state_json=? WHERE id=?').run(JSON.stringify(state),round);
   return {log,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
@@ -229,19 +227,21 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     try {
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,2500000);
       if(path==='/api/player/state'&&req.method==='GET') {
-        const bootstrap=url.searchParams.get('bootstrap')==='1';
-        if(!bootstrap)transaction(()=>{processStockAutomations(id);});
+        const bootstrap=url.searchParams.get('bootstrap')==='1',section=url.searchParams.get('section');
+        if(section&&!['news','departments','containment','forum','casino','life'].includes(section))throw new Error('未知页面。');
+        const include=name=>!bootstrap&&(!section||section===name);
+        if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:bootstrap?null:marketService.history(),
+        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history(),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
           history:[],
-          employees:bootstrap?[]:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
-          departments:bootstrap?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
-          announcements:bootstrap?[]:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
-          dossiers:bootstrap?[]:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
-          forum:bootstrap?{items:[],next:null}:forum(Number.MAX_SAFE_INTEGER,id),stocks:bootstrap?[]:market(id),stockOrders:bootstrap?[]:pendingOrders(id),music:bootstrap?[]:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
+          employees:!include('departments')?[]:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
+          departments:!(include('departments')||include('life'))?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
+          announcements:!include('news')?[]:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
+          dossiers:!include('containment')?[]:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
+          forum:!include('forum')?{items:[],next:null}:forum(Number.MAX_SAFE_INTEGER,id),stocks:!include('casino')?[]:market(id),stockOrders:!include('casino')?[]:pendingOrders(id),music:!include('music')?[]:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});return true;
       }
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
@@ -292,18 +292,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const proof=random(),winner=derbyWinnerFromRandom(proof.random()),prize=derbyReturn(cost,data.runner,winner,proof.random);
         send(res,200,settle(id,'derby',cost,prize,{winner},proof));return true;
       }
-      if(path==='/api/player/games/cards'&&req.method==='POST') {
-        const action=data.action;
-        if(action==='start'){
-          const existing=db.prepare("SELECT id,state_json FROM player_rounds WHERE employee_id=? AND game='cards' ORDER BY id DESC LIMIT 1").get(id);
-          if(existing){const state=JSON.parse(existing.state_json);if(state.phase!=='ended'){send(res,200,{...publicCards(state,existing.id),balance:balanceFor(id)});return true;}}
-          const proof=random(),state={...newCards(proof.random),seed:proof.seed,seedHash:proof.seedHash};
-          const round=saveRound(id,'cards',state);log(id,'cards.start',round,{seedHash:proof.seedHash});send(res,200,{...publicCards(state,round),balance:balanceFor(id)});return true;
-        }
-        const state=loadRound(id,Number(data.round),'cards');
-        transaction(()=>{cardsAction(state,action,data.cards);if(state.phase==='ended'&&!state.settled){state.settled=true;const prize=state.winner===0?20000:0;if(prize)recordLedger(id,prize,'牌桌获胜');db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,'cards',0,prize,state.seed,state.seedHash,JSON.stringify({winner:state.winner,round:Number(data.round)}));award(id);}updateRound(data.round,state);log(id,'cards.'+action,data.round,{cards:data.cards||[],winner:state.winner});});
-        send(res,200,{...publicCards(state,data.round),balance:balanceFor(id),gameHighlight:getHighlights().roundEvent(id,'cards',Number(data.round))});return true;
-      }
+      if(path==='/api/player/games/cards'){send(res,410,{error:'旧牌桌已停用，请进入新版练习牌桌。',code:'GAME_RETIRED'});return true;}
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
         const code=url.searchParams.get('code')||'KARMA',period=Number(url.searchParams.get('period')||1);
@@ -333,6 +322,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
               const stopLoss=normalizeOptionalPrice(data.stopLoss);
               const takeProfit=normalizeOptionalPrice(data.takeProfit);
               if(orderType==='limit') {
+                if(db.prepare("SELECT COUNT(*) AS n FROM stock_orders WHERE employee_id=? AND status='open'").get(id).n>=100)throw new Error('未成交委托最多 100 笔，请先撤销部分委托。');
                 const limitPrice=normalizeOptionalPrice(data.limitPrice);
                 if(limitPrice===null)throw new Error('限价单需填写触发价格。');
                 db.prepare("INSERT INTO stock_orders(employee_id,code,side,quantity,leverage,limit_price,stop_loss,take_profit,status) VALUES(?,?,?,?,?,?,?,?,'open')").run(id,stock.code,side,quantity,leverage,limitPrice,stopLoss,takeProfit);
@@ -351,9 +341,11 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');
         res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
-        if(!chatStreams.has(room))chatStreams.set(room,new Set());chatStreams.get(room).add(res);
+        if(!chatStreams.has(room))chatStreams.set(room,new Set());
+        for(const old of [...chatStreams.get(room)].filter(r=>r.avedEmployeeId===id).slice(0,-1)){old.end();chatStreams.get(room).delete(old);}
+        res.avedEmployeeId=id;chatStreams.get(room).add(res);
         res.write('data: '+JSON.stringify({items:chatItems(room)})+'\n\n');
-        const timer=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}res.write(': heartbeat\n\n');emitChat(room);},20000);
+        const timer=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}if(res.writableLength>262144){res.destroy();return;}res.write('data: '+JSON.stringify({items:chatItems(room)})+'\n\n');},20000);
         res.on('close',()=>{clearInterval(timer);chatStreams.get(room)?.delete(res);});return true;
       }
       if(path==='/api/player/chat') {

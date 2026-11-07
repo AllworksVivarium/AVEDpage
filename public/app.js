@@ -24,6 +24,7 @@ window.addEventListener('online',probeServerStatus);
 
 // 切换欢迎页 / 登录页 / 主面板显示状态
 function show(section) {
+  if(section===dashboard)document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
   [welcome, loginCard, dashboard].forEach((x) => x.classList.add("hidden"));
   section.classList.remove("hidden");
 }
@@ -594,5 +595,5 @@ loadPortal().catch(()=>{});
 // 启动后先探测一次，再每 5 秒更新一次网络灯
 setNetworkSignalStatus("checking");
 probeServerStatus();
-setInterval(probeServerStatus, 5000);
+setInterval(()=>{if(!document.hidden)probeServerStatus();},30000);
 

@@ -2,6 +2,7 @@
 (function(root){
   const failure=(message,code,status=0)=>Object.assign(new Error(message),{code,status});
   function create({fetchImpl=(...args)=>fetch(...args),timeoutMs=45000,sleep=ms=>new Promise(r=>setTimeout(r,ms))}={}) {
+    const pending=new Map();
     async function once(path,options){
       const {timeoutMs:deadline=timeoutMs,...request}=options;
       const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),deadline);
@@ -16,9 +17,17 @@
       }catch(e){if(controller.signal.aborted||e.name==='AbortError')throw failure('连接超时，请检查网络后重试。','TIMEOUT');if(e instanceof TypeError&&!e.code)throw failure('连接中断，请检查网络后重试。','NETWORK');throw e;}
       finally{clearTimeout(timer);}
     }
-    async function request(path,options={}) {
+    async function perform(path,options={}) {
       const safe=!options.method||options.method==='GET',retries=options.retries??(safe?1:0);
       for(let attempt=0;;attempt++)try{return await once(path,options);}catch(e){if(attempt>=retries||!safe||!(['TIMEOUT','NETWORK','INVALID_RESPONSE'].includes(e.code)||[502,503,504].includes(e.status)))throw e;await sleep(250*(attempt+1));}
+    }
+    function request(path,options={}) {
+      const safe=!options.method||options.method==='GET';
+      if(!safe){pending.clear();return perform(path,options);}
+      const key=JSON.stringify([path,options]);
+      if(pending.has(key))return pending.get(key);
+      const task=perform(path,options).finally(()=>{if(pending.get(key)===task)pending.delete(key);});
+      pending.set(key,task);return task;
     }
     async function confirmSession(expected) {
       for(let attempt=0;attempt<3;attempt++){

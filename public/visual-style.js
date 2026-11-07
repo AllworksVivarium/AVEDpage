@@ -8,9 +8,9 @@ window.AVEDVisualStyle=function({byId}){
 
  // Preserve the original bitmap grain; luminance masks remove its black canvas.
  const symbols={
-  welcome:['personnel-moon-icon-v1.png','145% auto'],news:['broadcast-ui-v1.png','130% auto'],
-  departments:['directory-disk-ui-v1.png','165% auto'],containment:['containment-folder-ui-v1.png','155% auto'],
-  life:['life-newspaper-ui-v1.png','120% auto'],forum:['forum-computer-ui-v1.png','155% auto'],casino:['recreation-cards-ui-v1.png','145% auto']
+  welcome:['personnel-moon-icon-v1.0bbfd3f95189.webp','145% auto'],news:['broadcast-ui-v1.9417d9e80963.webp','130% auto'],
+  departments:['directory-disk-ui-v1.b3b8f2f75203.webp','165% auto'],containment:['containment-folder-ui-v1.b50e265bdf87.webp','155% auto'],
+  life:['life-newspaper-ui-v1.48c24fadce83.webp','120% auto'],forum:['forum-computer-ui-v1.3a19603da100.webp','155% auto'],casino:['recreation-cards-ui-v1.8b6bd4c41153.webp','145% auto']
  };
  function symbol(name){const [file,size]=symbols[name],el=document.createElement('span');el.className='sidebar-symbol';el.setAttribute('aria-hidden','true');el.style.setProperty('--symbol-image','url("/assets/'+file+'")');el.style.setProperty('--symbol-size',size);return el;}
  for(const [name] of Object.entries(symbols)){const button=sidebar.querySelector('[data-nav="'+name+'"]');if(button){button.firstElementChild.replaceWith(symbol(name));button.setAttribute('aria-label',button.querySelector('.sidebar-label').textContent.trim());}}

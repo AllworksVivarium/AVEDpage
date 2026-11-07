@@ -18,9 +18,10 @@ import {installSky} from './server-sky.mjs';
 import {installWelfare} from './server-welfare.mjs';
 import {directoryDepartment} from './server-directory.mjs';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import {workGate,burstLimiter} from './server-load-control.mjs';
+import {installStatic} from './server-static.mjs';
 import { mkdirSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, pbkdf2, pbkdf2Sync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
@@ -154,14 +155,15 @@ const hashPassword = password => {
   const hash = pbkdf2Sync(password, salt, 310000, 32, 'sha256').toString('hex');
   return `${salt}:${hash}`;
 };
-const derivePassword=promisify(pbkdf2);
+const derivePassword=promisify(pbkdf2),passwordWork=workGate();
+const hashPasswordAsync=password=>passwordWork(async()=>{const salt=randomBytes(16).toString('hex');return salt+':'+(await derivePassword(password,salt,310000,32,'sha256')).toString('hex');});
 const verifyPassword = async (password, stored) => {
   try {
     const [salt, saved] = stored.split(':');
-    const candidate = await derivePassword(password, salt, 310000, 32, 'sha256');
+    const candidate = await passwordWork(()=>derivePassword(password, salt, 310000, 32, 'sha256'));
     const expected = Buffer.from(saved, 'hex');
     return candidate.length === expected.length && timingSafeEqual(candidate, expected);
-  } catch { return false; }
+  } catch(error) { if(error.status===503)throw error;return false; }
 };
 
 const employeeCount = db.prepare('SELECT COUNT(*) AS n FROM employees').get().n;
@@ -198,7 +200,7 @@ const sessionsTtl = 8 * 60 * 60 * 1000;
 const cookieSecurity = process.env.COOKIE_SECURE === 'true' ? '; Secure' : '';
 if(!db.prepare('PRAGMA table_info(sessions)').all().some(c=>c.name==='issued_at'))db.exec('ALTER TABLE sessions ADD COLUMN issued_at INTEGER NOT NULL DEFAULT 0');
 const attempts=loginLimiter();
-const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png', '.webp':'image/webp' };
+const loginBursts=burstLimiter({limit:60,windowMs:60000}),actionBursts=burstLimiter();
 const readBody = (req, maxBytes=32768) => new Promise((resolveBody, reject) => {
   const chunks = []; let size = 0;
   req.on('data', chunk => { size += chunk.length; if (size > maxBytes) { reject(new Error('too large')); req.destroy(); } else chunks.push(chunk); });
@@ -231,7 +233,7 @@ const requireAdmin = (req, res) => {
 };
 const validText = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max;
 const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
-const balanceFor = employeeId => db.prepare('SELECT COALESCE(SUM(delta),0) AS balance FROM balance_ledger WHERE employee_id=?').get(employeeId).balance;
+const balanceFor = employeeId => personal ? personal.balance(employeeId) : db.prepare('SELECT COALESCE(SUM(delta),0) AS balance FROM balance_ledger WHERE employee_id=?').get(employeeId).balance;
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Shanghai' }).format(new Date());
 const secureRoll = (seedHex, range) => {
   const seed = Buffer.from(seedHex, 'hex');
@@ -272,7 +274,19 @@ const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,
 const media=installMedia({db,send,requireEmployee});
 const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
-const server = createServer(async (req, res) => {
+db.exec(`
+ CREATE INDEX IF NOT EXISTS chat_room_active ON chat_messages(room,id) WHERE deleted_at='';
+ CREATE INDEX IF NOT EXISTS replies_thread_active ON forum_replies(thread_id,id) WHERE status='published' AND deleted_at='';
+ CREATE INDEX IF NOT EXISTS posts_notice_active ON posts(announcement_id,id) WHERE status='published' AND deleted_at='';
+ CREATE INDEX IF NOT EXISTS dossier_comment_active ON dossier_comments(dossier_id,id) WHERE deleted_at='';
+ CREATE INDEX IF NOT EXISTS orders_employee_open ON stock_orders(employee_id,id) WHERE status='open';
+ CREATE INDEX IF NOT EXISTS derby_pending ON derby_bets(race_id) WHERE settled=0;
+ CREATE INDEX IF NOT EXISTS sky_pending ON sky_passengers(flight_id) WHERE status='aboard';
+ CREATE INDEX IF NOT EXISTS fund_employee_kind ON company_fund(employee_id,kind);
+ CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+`);
+const serveStatic=installStatic({publicDir,design:playerDesign});
+const server = createServer({headersTimeout:15000,requestTimeout:30000},async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
     if (url.pathname === '/api/health' && req.method === 'GET') {
@@ -291,6 +305,7 @@ const server = createServer(async (req, res) => {
     if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400)playerService.log(actor.id,req.method,url.pathname);});}
     if(await playerDesign.handle(req,res,url))return;
     if (url.pathname === '/api/login' && req.method === 'POST') {
+      const limited=loginBursts(network.address);if(limited)return send(res,429,{error:'接入请求过于频繁，请稍后重试。',code:'LOGIN_LIMITED'},{'Retry-After':String(limited)});
       const now=Date.now();
       const {identifier,username,password,remember}=await readBody(req);
       const loginName=typeof identifier==='string'?identifier.trim():(typeof username==='string'?username.trim():'');
@@ -314,7 +329,10 @@ const server = createServer(async (req, res) => {
       const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${remember ? 2592000 : 28800}${cookieSecurity}`;
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
-    if (url.pathname.startsWith('/api/') && ['POST','PUT','PATCH','DELETE'].includes(req.method) && !adminMutation(req,res)) return;
+    if(req.method==='POST'&&(url.pathname.startsWith('/api/player/games/')||url.pathname==='/api/player/stocks'||url.pathname==='/api/player/chat'||url.pathname==='/api/player/card-table'||url.pathname.startsWith('/api/games/'))){
+      const actor=requireEmployee(req,res);if(!actor)return;const retry=actionBursts(actor.id);
+      if(retry)return send(res,429,{error:'操作过于频繁，请稍后重试。',code:'ACTION_LIMITED'},{'Retry-After':String(retry)});
+    }
     if(await media.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;
     if(await originalMusic.handle(req,res,url))return;
@@ -576,10 +594,11 @@ const server = createServer(async (req, res) => {
       if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或收容物名称（最多 80 字）。'});
       if (!isNpc&&(!validText(username,40)||typeof password!=='string'||password.length<6)) return send(res,400,{error:'请填写唯一用户名、员工姓名，并设置至少 6 位密码。'});
       if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||initialBalance<0||initialBalance>100000000))return send(res,400,{error:'初始余额必须是 0 到 100,000,000 之间的整数。'});
+      const passwordHash=await hashPasswordAsync(isNpc?randomBytes(32).toString('hex'):password);
       try {
         db.exec('BEGIN IMMEDIATE');
         const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),hashPassword(isNpc?randomBytes(32).toString('hex'):password),displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind);
+          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind);
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,`匿名员工-${id}`,data.archiveBio?.trim()||'');
         if(!isNpc&&initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         db.exec('COMMIT');return send(res,201,{id});
@@ -600,11 +619,12 @@ const server = createServer(async (req, res) => {
       if(qq===undefined)return send(res,400,{error:'QQ 号最多 30 个字符。'});
       if(previous.isNpc&&!isNpc&&enabled&&(!password||password.length<6))return send(res,400,{error:'启用员工账号前请设置登录密码。'});
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
+      const passwordHash=typeof password==='string'&&password?await hashPasswordAsync(password):null;
       try{
         const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:enabled?1:0,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(data.archiveBio!==undefined)db.prepare('UPDATE profiles SET bio=? WHERE employee_id=?').run(data.archiveBio.trim(),employeeId);
-        if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(hashPassword(password),employeeId);
+        if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(passwordHash,employeeId);
         return send(res,200,{ok:true});
       }catch{return send(res,409,{error:'QQ 号已被其他员工使用，请检查后重试。'});}
     }
@@ -676,13 +696,9 @@ const server = createServer(async (req, res) => {
       ? (['aved.space','www.aved.space','localhost','127.0.0.1'].includes(hostname)?'player-terminal.html':'admin-terminal.html')
       : url.pathname==='/admin'?'admin-terminal.html':url.pathname==='/player'?'player-terminal.html':url.pathname.slice(1);
     if (file.includes('..') || file.includes('\\')) return send(res,404,{error:'not found'});
-    try {
-      const data = await playerDesign.render(file,await readFile(resolve(publicDir,file)));
-      res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream','Cache-Control':extname(file)==='.html'?'no-store':'no-cache','X-Content-Type-Options':'nosniff'});
-      res.end(data);
-    } catch { res.writeHead(404); res.end('Not found'); }
+    await serveStatic(req,res,file);
   } catch (error) {
-    if (!res.headersSent) send(res,error.message==='too large'?413:400,{error:error.message==='too large'?'提交内容过大。':'请求暂时无法处理。'});
+    if (!res.headersSent) send(res,error.status===503?503:error.message==='too large'?413:400,{error:error.message==='too large'?'提交内容过大。':'请求暂时无法处理。'});
     else res.destroy();
     if (error.message !== 'bad json' && error.message !== 'too large') console.error('Request error:',error);
   }

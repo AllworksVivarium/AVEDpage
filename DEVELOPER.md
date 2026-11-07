@@ -14,7 +14,7 @@
 
 - 玩家：public/player-terminal.html、public/player.js、public/player-layout.css。保留下载原版黑色开屏和 Logo，后续美工从这些文件继续修改。
 - 管理员：public/admin-terminal.html、public/app.js、public/admin-extra.js、public/admin-layout.css、public/style.css。
-- 后端：server.mjs 处理鉴权与基础业务；player-service.mjs 处理玩家业务、审核、聊天和活动记录；server-content.mjs、server-ticket.mjs、server-cards.mjs 保存玩法配置与结算逻辑。
+- 后端：server.mjs 处理鉴权与基础业务；player-service.mjs 处理玩家业务、审核、聊天和活动记录；server-content.mjs、server-ticket.mjs、server-card-table.mjs 保存玩法配置与结算逻辑。
 - 部署：Dockerfile、compose.yaml、deploy/；管理员恢复工具：admin-account.mjs。
 - 数据：服务器 data/wanyehui.db（含运行时 WAL/SHM）。代码仓库不保存真实数据。Windows 预览使用独立 data-local/。
 

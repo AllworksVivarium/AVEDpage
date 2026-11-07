@@ -17,7 +17,8 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='shared-sky'").get())tx(()=>{for(const row of db.prepare("SELECT id,employee_id,state_json FROM player_rounds WHERE game='sky'").all()){const s=JSON.parse(row.state_json);if(!s.settled){recordLedger(row.employee_id,s.cost,'旧架次撤回');s.settled=true;s.prize=s.cost;s.migrated=true;db.prepare('UPDATE player_rounds SET state_json=? WHERE id=?').run(JSON.stringify(s),row.id);}}db.prepare("INSERT INTO economy_migrations VALUES('shared-sky')").run();});
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='sky-settlement-v2'").get())tx(()=>{for(const p of db.prepare("SELECT s.*,f.seed,f.seed_hash FROM sky_passengers s JOIN sky_flights f ON f.id=s.flight_id WHERE s.status='aboard'").all()){recordLedger(p.employee_id,p.cost,'架次维护退回');db.prepare("UPDATE sky_passengers SET status='cancelled',prize=cost,settled_at=? WHERE flight_id=? AND employee_id=?").run(Date.now(),p.flight_id,p.employee_id);db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(p.employee_id,'sky',p.cost,p.cost,p.seed,p.seed_hash,JSON.stringify({flight:p.flight_id,cancelled:true}));}db.prepare("INSERT INTO economy_migrations VALUES('sky-settlement-v2')").run();});
  const streams=new Set();let revealTimer=null,revealScheduled=0;
- const rules=f=>({breakEvenDepth:200,...JSON.parse(f.rules_json),lossFraction:1});
+ let rulesJson,cachedRules;
+ const rules=f=>{if(rulesJson!==f.rules_json){rulesJson=f.rules_json;cachedRules={breakEvenDepth:200,...JSON.parse(f.rules_json),lossFraction:1};}return cachedRules;};
  const depth=(f,now=Date.now())=>Math.min(2000,Math.max(100,Math.floor(100+Math.max(0,now-f.depart_at)*rules(f).speed/1000)));
  const revealTime=f=>f.depart_at+(f.safety_line-100)/rules(f).speed*1000;
  function finish(f,p,atDepth,now,expired=false){
@@ -76,11 +77,11 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   // One shared deadline, not a timer per robot/client. Reveal promptly without exposing it early.
   if(!f.ended_at&&revealScheduled!==f.id){clearTimeout(revealTimer);revealScheduled=f.id;revealTimer=setTimeout(()=>{revealScheduled=0;try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},Math.max(1,Math.ceil(revealTime(f)-Date.now())));revealTimer.unref();}
   const passengers=streams.size?passengersFor(f):null;for(const s of streams)write(s,f,passengers);}
- const timer=setInterval(()=>{try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},500);timer.unref();
+ const timer=setInterval(()=>{try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},1000);timer.unref();
  return {close(){clearInterval(timer);clearTimeout(revealTimer);for(const s of streams)s.res.end();streams.clear();},async handle(req,res,url){if(!url.pathname.startsWith('/api/player/games/sky/'))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
   const path=url.pathname;
   if(path.endsWith('/stream')&&req.method==='GET'){
-   for(const old of [...streams].filter(x=>x.id===actor.id).slice(0,-2)){old.res.end();streams.delete(old);}
+   for(const old of [...streams].filter(x=>x.id===actor.id).slice(0,-1)){old.res.end();streams.delete(old);}
    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});const stream={id:actor.id,res};streams.add(stream);write(stream,current());
    const authTimer=setInterval(()=>{if(!sessionEmployee(req)){res.end();streams.delete(stream);}},15000);authTimer.unref();res.on('close',()=>{clearInterval(authTimer);streams.delete(stream);});return true;
   }

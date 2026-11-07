@@ -51,9 +51,9 @@
     border:0!important;border-bottom:1px solid var(--inner-border-soft)!important;background:transparent!important;
     color:var(--inner-text-main)!important;text-align:left;
   }
-  #left-sidebar #sidebar-toggle-btn .sidebar-toggle-symbol {--symbol-image:url('/assets/sidebar-binder-clip-icon-v1.png');--symbol-size:auto 108%;flex:0 0 28px!important;width:28px!important;height:28px!important}
+  #left-sidebar #sidebar-toggle-btn .sidebar-toggle-symbol {--symbol-image:url('/assets/sidebar-binder-clip-icon-v1.cfd1cd0715d2.webp');--symbol-size:auto 108%;flex:0 0 28px!important;width:28px!important;height:28px!important}
   #left-sidebar #sidebar-toggle-btn .sidebar-toggle-symbol::before {
-    mask-image:url('/assets/sidebar-binder-clip-icon-v1.png')!important;mask-mode:alpha!important;
+    mask-image:url('/assets/sidebar-binder-clip-icon-v1.cfd1cd0715d2.webp')!important;mask-mode:alpha!important;
     mask-size:auto 108%!important;background:currentColor!important;
   }
   #left-sidebar.w-16 #sidebar-toggle-btn {justify-content:center!important;padding:8px 0!important;gap:0!important}

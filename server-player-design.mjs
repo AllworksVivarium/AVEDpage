@@ -65,5 +65,5 @@ export function installPlayerDesign({db,root,send,readBody,requireAdmin,sessionE
     }catch(e){send(res,e.message==='too large'?413:400,{error:e.message==='too large'?'提交内容过大。':e.message});}
     return true;
   }
-  return {handle,render:async(file,data)=>files.includes('public/'+file)&&get('public/'+file,[]).length?Buffer.from((await describe('public/'+file)).rendered):data};
+  return {handle,revision:file=>files.includes('public/'+file)?designHash(JSON.stringify(get('public/'+file,[]))):'',render:async(file,data)=>files.includes('public/'+file)&&get('public/'+file,[]).length?Buffer.from((await describe('public/'+file)).rendered):data};
 }

@@ -2,10 +2,19 @@ import {createHash} from 'node:crypto';
 import {avatarBytes} from './server-avatar.mjs';
 
 const imagePattern=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
+const versions=new Map();let versionBytes=0;
 export function mediaReference(kind,id,value,size) {
-  if(!value||!imagePattern.test(value))return value||'';
-  const version=createHash('sha256').update(value).digest('hex').slice(0,20);
-  return `/api/media/${kind}/${id}?v=${version}`+(kind==='avatar'&&size?`&size=${size}`:'');
+  if(!value||!value.startsWith('data:image/'))return value||'';
+  let version=versions.get(value);
+  if(!version){
+    if(!imagePattern.test(value))return value;
+    version=createHash('sha256').update(value).digest('hex').slice(0,20);
+    if(value.length<=4*1024*1024){
+      while(versions.size&&(versionBytes+value.length>4*1024*1024||versions.size>=256)){const key=versions.keys().next().value;versionBytes-=key.length;versions.delete(key);}
+      versions.set(value,version);versionBytes+=value.length;
+    }
+  }
+  return `/api/media/${kind}/${id}?v=${version}`+(kind==='avatar'?`&size=${size||256}`:'');
 }
 export function installMedia({db,send,requireEmployee}) {
   db.exec('CREATE TABLE IF NOT EXISTS avatar_thumbnails(employee_id INTEGER NOT NULL,version TEXT NOT NULL,size INTEGER NOT NULL,image BLOB NOT NULL,PRIMARY KEY(employee_id,version,size))');

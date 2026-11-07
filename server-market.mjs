@@ -44,15 +44,16 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     const opening=db.prepare('SELECT open FROM stock_candles WHERE code=? AND bucket>=? ORDER BY bucket LIMIT 1').get(code,start)?.open||price;
     return {code,price,change:opening?Math.round((price/opening-1)*10000)/100:0};
   }
-  function items(id) {
-    advance();
     const holdingColumns=new Set(db.prepare('PRAGMA table_info(stock_holdings)').all().map(c=>c.name));
     const tradeColumns=new Set(db.prepare('PRAGMA table_info(stock_trades)').all().map(c=>c.name));
     const hasHolding=name=>holdingColumns.has(name);
     const hasTrade=name=>tradeColumns.has(name);
+  function items(id) {
+    advance();
     const lastOpenLeverageByCode=new Map();
+    const needsLegacyLeverage=!hasHolding('leverage')||!!db.prepare('SELECT 1 FROM stock_holdings WHERE employee_id=? AND quantity<>0 AND COALESCE(leverage,0)<=0 LIMIT 1').get(id);
     try {
-      if(hasTrade('code')&&hasTrade('leverage')) {
+      if(needsLegacyLeverage&&hasTrade('code')&&hasTrade('leverage')) {
         const sql=hasTrade('holding_after')
           ? 'SELECT code,leverage FROM stock_trades WHERE employee_id=? AND holding_after<>0 ORDER BY id DESC'
           : 'SELECT code,leverage FROM stock_trades WHERE employee_id=? ORDER BY id DESC';
@@ -62,7 +63,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       }
     } catch {}
 
-    if(lastOpenLeverageByCode.size===0) {
+    if(needsLegacyLeverage&&lastOpenLeverageByCode.size===0) {
       try {
         for(const row of db.prepare("SELECT target,details FROM activity_logs WHERE employee_id=? AND action IN ('stock.buy','stock.sell') ORDER BY id DESC LIMIT 300").all(id)) {
           if(lastOpenLeverageByCode.has(row.target))continue;

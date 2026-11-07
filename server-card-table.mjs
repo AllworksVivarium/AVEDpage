@@ -59,7 +59,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  const save=room=>{room.updatedAt=Date.now();db.prepare('INSERT INTO card_table_rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state_json=excluded.state_json,updated_at=excluded.updated_at').run(room.id,JSON.stringify(room),room.updatedAt);};
  for(const row of db.prepare('SELECT state_json FROM card_table_rooms WHERE updated_at>?').all(Date.now()-86400000)){try{const r=JSON.parse(row.state_json);rooms.set(r.id,r);r.deadline=Date.now()+30000;}catch{}}
  const roomFor=id=>[...rooms.values()].find(r=>r.seats.some(p=>p?.id===id));
- const write=(s,r)=>{try{s.res.write('data: '+JSON.stringify({room:r?tableView(r,s.id):null})+'\n\n');}catch{streams.delete(s);}};
+ const write=(s,r)=>{if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}try{s.res.write('data: '+JSON.stringify({room:r?tableView(r,s.id):null})+'\n\n');}catch{streams.delete(s);}};
  function changed(r){r.revision++;r.deadline=Date.now()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?1100:30000);save(r);for(const s of streams)if(r.seats.some(p=>p?.id===s.id))write(s,r);}
  const person=e=>{const p=db.prepare('SELECT anonymous_name,avatar_url FROM profiles WHERE employee_id=?').get(e.id)||{};return {id:e.id,name:p.anonymous_name||e.display_name||e.username,avatar:String(p.avatar_url||'').startsWith('data:')?mediaReference('avatar',e.id,p.avatar_url,64):'',ready:true,bot:false,auto:false};};
  const bots=r=>{const names=['方片 07','梅花 12','红桃 03'];r.seats=r.seats.map((p,i)=>p||{id:-i-1,name:names[(i-1+3)%3],avatar:'',bot:true,ready:true,auto:false});};

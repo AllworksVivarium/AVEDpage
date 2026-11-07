@@ -6,7 +6,7 @@ export async function avatarBytes(value,size=64){
  const match=String(value||'').match(pattern);if(!match)throw Error('头像不是本地图片。');
  const input=Buffer.from(match[1],'base64');if(input.length>1650000)throw Error('头像不能超过 1.5 MB。');
  // Bound simultaneous decoders as well as libvips threads on small servers.
- if(active>=2)await new Promise(resolve=>waiting.push(resolve));else active++;
+ if(active>=2){if(waiting.length>=8)throw Error('头像处理繁忙，请稍后重试。');await new Promise(resolve=>waiting.push(resolve));}else active++;
  try{return await sharp(input,{limitInputPixels:16000000,animated:false}).rotate().resize(size,size,{fit:'cover',position:'centre'}).webp({quality:size===64?65:80,effort:3}).toBuffer();}
  finally{const next=waiting.shift();if(next)next();else active--;}
 }

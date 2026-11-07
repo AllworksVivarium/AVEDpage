@@ -36,22 +36,22 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
   return race;
  }
  const streams=new Set();
- function snapshot(id,race=current()) {
+ function sharedSnapshot(race) {
   const now=Date.now(),phase=now<race.start_at?'BETTING':now<race.finish_at?'RACING':'RESULT',t=Math.max(0,Math.min(1,(now-race.start_at)/(race.finish_at-race.start_at))),config=raceRules(race);
   // Deterministic, shared trajectories. Never disclose the seed or future winner while betting/racing.
   const progress=config.runners.map(x=>{const noise=createHmac('sha256',race.seed).update('pace:'+x.id).digest().readUInt32BE(0)/4294967296;return Math.max(0,Math.min(100,t*100+(Math.sin(t*Math.PI*3+noise*6)-Math.sin(noise*6))*Math.sin(t*Math.PI)*8-(x.id===race.winner?0:3+noise*8)*t*t));});
-  const self=db.prepare('SELECT runner,cost,prize,settled FROM derby_bets WHERE race_id=? AND employee_id=?').get(race.id,id)||null;
   const history=db.prepare('SELECT id,winner,seed,seed_hash AS seedHash FROM derby_races WHERE settled=1 ORDER BY id DESC LIMIT 6').all();
-  return {round:race.id,gameHighlight:highlights.roundEvent(id,'derby',race.id),phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,seedHash:race.seed_hash,...(race.settled?{seed:race.seed,winner:race.winner}:{}),partialReturns:config.partialReturns,winProbabilities:config.runners.map(x=>x.weight),runners:config.runners.map(({weight,...x})=>({...x,progress:progress[x.id]})),self,balance:balanceFor(id),entrants:db.prepare('SELECT COUNT(*) AS n FROM derby_bets WHERE race_id=?').get(race.id).n,history};
+  return {round:race.id,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,seedHash:race.seed_hash,...(race.settled?{seed:race.seed,winner:race.winner}:{}),partialReturns:config.partialReturns,winProbabilities:config.runners.map(x=>x.weight),runners:config.runners.map(({weight,...x})=>({...x,progress:progress[x.id]})),entrants:db.prepare('SELECT COUNT(*) AS n FROM derby_bets WHERE race_id=?').get(race.id).n,history};
  }
- function write(s,race){if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}s.res.write('data: '+JSON.stringify(snapshot(s.id,race))+'\n\n');}
- const timer=setInterval(()=>{try{if(!streams.size&&!db.prepare('SELECT 1 FROM derby_bets WHERE settled=0 LIMIT 1').get())return;const race=current();for(const s of streams)write(s,race);}catch(e){console.error('Shared derby:',e.message);}},750);timer.unref();
+ function snapshot(id,race=current(),shared=sharedSnapshot(race)){return {...shared,self:db.prepare('SELECT runner,cost,prize,settled FROM derby_bets WHERE race_id=? AND employee_id=?').get(race.id,id)||null,balance:balanceFor(id),gameHighlight:highlights.roundEvent(id,'derby',race.id)};}
+ function write(s,race,shared){if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}s.res.write('data: '+JSON.stringify(snapshot(s.id,race,shared))+'\n\n');}
+ const timer=setInterval(()=>{try{if(!streams.size&&!db.prepare('SELECT 1 FROM derby_bets WHERE settled=0 LIMIT 1').get())return;const race=current(),shared=sharedSnapshot(race);for(const s of streams)write(s,race,shared);}catch(e){console.error('Shared derby:',e.message);}},750);timer.unref();
  return {close(){clearInterval(timer);for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/games/derby'))return false;const employee=requireEmployee(req,res);if(!employee)return true;
   try {
    const path=url.pathname;if(path==='/api/player/games/derby/current'&&req.method==='GET'){send(res,200,snapshot(employee.id));return true;}
    if(path==='/api/player/games/derby/stream'&&req.method==='GET') {
-    for(const old of [...streams].filter(s=>s.id===employee.id).slice(0,-2)){old.res.end();streams.delete(old);}
+    for(const old of [...streams].filter(s=>s.id===employee.id).slice(0,-1)){old.res.end();streams.delete(old);}
     res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});const s={id:employee.id,res};streams.add(s);write(s,current());const auth=setInterval(()=>{if(!sessionEmployee(req))res.end();},15000);auth.unref();res.on('close',()=>{clearInterval(auth);streams.delete(s);});return true;
    }
    if(path==='/api/player/games/derby/bet'&&req.method==='POST') {
@@ -60,7 +60,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
      if(!Number.isInteger(d.runner)||!runners[d.runner]||!Number.isSafeInteger(d.bet)||d.bet<100||d.bet>1000000)throw Error('请选择跑道，投入为 100 至 1,000,000 的整数。');
      const existing=db.prepare('SELECT runner,cost FROM derby_bets WHERE race_id=? AND employee_id=?').get(race.id,employee.id);if(existing){if(existing.runner!==d.runner||existing.cost!==d.bet)throw Error('本场委托已封存，不可更改。');return;}
      if(balanceFor(employee.id)<d.bet)throw Error('余额不足。');recordLedger(employee.id,-d.bet,'联机赛马投入 #'+race.id);db.prepare('INSERT INTO derby_bets(race_id,employee_id,runner,cost) VALUES(?,?,?,?)').run(race.id,employee.id,d.runner,d.bet);
-    });send(res,200,snapshot(employee.id,race));for(const s of streams)write(s,race);return true;
+    });send(res,200,snapshot(employee.id,race));const shared=sharedSnapshot(race);for(const s of streams)write(s,race,shared);return true;
    }
    send(res,409,{error:'赛场已改为共享场次，请刷新终端。'});return true;
   }catch(e){send(res,400,{error:e.message});return true;}
