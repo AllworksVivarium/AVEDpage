@@ -22,7 +22,7 @@ export function personnelAssignment(data,previous={}){
   const isLeadership=kind==='planning_member';
   if(isLeadership){
     if(directoryDepartments.includes(department))positionTitle='部长';
-    else if(!positionTitle)throw new Error('公司直属领导请填写实际职务名称。');
+    else if(!positionTitle)throw new Error('自定义职位请填写实际职位名称。');
   }else if(kind==='player_employee'){
     if(/部长|领导|董事|总裁|总监|监察长|顾问|总经理|副总|主席|会长/.test(positionTitle))throw new Error('玩家不能担任领导职务，请选择企划组领导身份。');
     positionTitle=positionTitle||'成员';

@@ -38,8 +38,8 @@ export function installStatic({publicDir,design,maxBytes=16*1024*1024}) {
       const ext=extname(file),text=['.html','.css','.js','.json','.svg'].includes(ext);
       const value=text&&info.size<=1024*1024?await asset(file,path,info):null;
       const etag=value?.etag||`W/"${info.size.toString(16)}-${info.mtimeMs.toString(16)}"`;
-      const headers={'Content-Type':mime[ext]||'application/octet-stream','Cache-Control':ext==='.html'?'no-store':/\.[a-f0-9]{12}\./.test(file)?'public, max-age=31536000, immutable':'no-cache','ETag':etag,'X-Content-Type-Options':'nosniff',...(value?{Vary:'Accept-Encoding'}:{})};
-      if(ext!=='.html'&&String(req.headers['if-none-match']||'').split(/\s*,\s*/).some(x=>x==='*'||x.replace(/^W\//,'')===etag.replace(/^W\//,''))){res.writeHead(304,headers);res.end();return;}
+      const headers={'Content-Type':mime[ext]||'application/octet-stream','Cache-Control':/\.[a-f0-9]{12}\./.test(file)?'public, max-age=31536000, immutable':['.jpg','.jpeg','.png','.webp','.woff','.woff2','.ttf'].includes(ext)?'public, max-age=3600, stale-while-revalidate=86400':'no-cache','ETag':etag,'X-Content-Type-Options':'nosniff',...(value?{Vary:'Accept-Encoding'}:{})};
+      if(String(req.headers['if-none-match']||'').split(/\s*,\s*/).some(x=>x==='*'||x.replace(/^W\//,'')===etag.replace(/^W\//,''))){res.writeHead(304,headers);res.end();return;}
       const acceptsGzip=String(req.headers['accept-encoding']||'').split(',').some(x=>/^gzip(?:\s*;|$)/i.test(x.trim())&&!/;\s*q=0(?:\.0*)?\s*$/i.test(x));
       const zipped=value?.zipped&&acceptsGzip,body=value&&(zipped?value.zipped:value.data);
       res.writeHead(200,{...headers,...(zipped?{'Content-Encoding':'gzip'}:{}),'Content-Length':body?body.length:info.size});

@@ -40,7 +40,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.el.style?.setProperty?.('--result-left',(railEnd+(width-railEnd)/2)+'px');
   state.el.style?.setProperty?.('--result-width',Math.min(340,width-railEnd-24)+'px');
  }
- function showToast({prize,multiplier,record,cost=0,penalty=0}){
+ function showToast({prize,multiplier,cost=0,penalty=0}){
   let state=window.AVEDScratchToast;
   if(!state){
    const el=document.createElement('section'),bar=document.createElement('div'),caption=document.createElement('span'),close=document.createElement('button'),body=document.createElement('div'),label=document.createElement('div'),amount=document.createElement('div');
@@ -55,10 +55,10 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.el.dataset.tone='inverse';if(state.caption)state.caption.textContent='A.V.E.D. / RESULT';
   state.el.dataset.outcome=penalty>0?'bomb':'award';state.el.dataset.presentation=special?'special':'ordinary';
   positionToast(state);
-  state.label.textContent=!special?'本局收入 ¤ '+Number(prize).toLocaleString():penalty>0?'刮出'+(penalty>=cost*4?'超大炸弹':penalty>=cost*2?'大炸弹':'炸弹')+'了！':(record?'个人本玩法新纪录！':category);
+  state.label.textContent=!special?'本局收入 ¤ '+Number(prize).toLocaleString():penalty>0?'刮出'+(penalty>=cost*4?'超大炸弹':penalty>=cost*2?'大炸弹':'炸弹')+'了！':category;
   state.amount.textContent=penalty>0?'本局扣除医疗费 ¤ '+Number(penalty).toLocaleString():'本局收入 ¤ '+Number(prize).toLocaleString();state.amount.hidden=!special;state.el.hidden=false;
   state.el.classList.remove('scratch-award-enter');if(animated()){void state.el.offsetWidth;state.el.classList.add('scratch-award-enter');}
-  state.timer=setTimeout(()=>{state.el.hidden=true;},penalty>0?3500:record?5000:multiplier>=10?4000:multiplier>=5?2500:1500);
+  state.timer=setTimeout(()=>{state.el.hidden=true;},penalty>0?3500:multiplier>=10?4000:multiplier>=5?2500:1500);
  }
  function settle(banner,{cost,prize,penalty=0,cells,gameHighlight},mode='manual'){
   if(penalty>0){banner.dataset.scratchFeedback='bomb';banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');if(isActive()&&!document.hidden){showToast({cost,prize,penalty,multiplier:0});playSfx('scratch-bomb-'+(1+penalty/cost));const host=document.getElementById('active-ticket-board-container'),bomb=cells?.find(c=>c.isBomb),source=bomb?host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"] svg')||host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"]'):host;const rect=source?.getBoundingClientRect?.();window.AVEDScratchBomb?.show({host,cost,penalty,origin:rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:undefined,animated:animated()});}return;}
@@ -66,12 +66,12 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
   banner.classList.remove('scratch-result-arriving');
 
-  const record=!!gameHighlight?.personalBest,multiplier=cost>0?prize/cost:0;
-  if(record)banner.dataset.scratchFeedback='record';
-  else if(multiplier>=5)banner.dataset.scratchFeedback=multiplier>=50?'supreme':multiplier>=10?'jackpot':'big';
-  if(isActive()&&!document.hidden)showToast({prize,multiplier,record});
+  const multiplier=cost>0?prize/cost:0;
+  if(isActive()&&!document.hidden)window.AVEDPersonalRecord?.show(gameHighlight);
+  if(multiplier>=5)banner.dataset.scratchFeedback=multiplier>=50?'supreme':multiplier>=10?'jackpot':'big';
+  if(isActive()&&!document.hidden)showToast({prize,multiplier});
   if(isActive()&&!document.hidden){
-   if(record||prize>cost){playSfx(record?'scratch-record':multiplier>=50?'scratch-jackpot-supreme':multiplier>=20?'scratch-jackpot-major':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':mode==='all'?'scratch-win-all':'scratch-win');burst(Math.max(record?4:1,multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:multiplier>=5?3:1));if(multiplier>=10)rain(multiplier);}
+   if(prize>cost){playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=20?'scratch-jackpot-major':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':mode==='all'?'scratch-win-all':'scratch-win');burst(multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:multiplier>=5?3:1);if(multiplier>=10)rain(multiplier);}
    else if(prize===0)playSfx('scratch-zero');
   }
  }
@@ -80,5 +80,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
  document.addEventListener('click',e=>{if(e.target.closest('[data-nav],#scratch-back-lobby-btn')){clear();hideToast();}});
  document.addEventListener('aved-effects-change',()=>{if(!animated())clear();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){clear();hideToast();}});reduced.addEventListener('change',()=>{if(reduced.matches)clear();});
- return {reveal,settle,clear};
+ // Moving to another ticket dismisses ticket-specific UI, not ongoing award particles.
+ function nextTicket(){window.AVEDScratchBomb?.clear();hideToast();}
+ return {reveal,settle,clear,nextTicket};
 };

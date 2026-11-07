@@ -40,8 +40,8 @@ export function installGameHighlights({db,send,requireEmployee}) {
  }
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='highlights-five-times-v2'").get()){
   db.exec(`BEGIN IMMEDIATE;
-   INSERT INTO game_highlights(ticket_id,employee_id,game,round_id,alias,cost,prize,personal_best,broadcast,created_at)
-   SELECT t.id,t.employee_id,t.game,COALESCE(json_extract(t.result_json,'$.round'),json_extract(t.result_json,'$.flight')),COALESCE(NULLIF(p.anonymous_name,''),'未署名员工'),t.cost,t.prize,0,1,t.created_at
+   INSERT INTO game_highlights(ticket_id,employee_id,game,round_id,alias,cost,prize,personal_best,broadcast,created_at,penalty)
+   SELECT t.id,t.employee_id,t.game,COALESCE(json_extract(t.result_json,'$.round'),json_extract(t.result_json,'$.flight')),COALESCE(NULLIF(p.anonymous_name,''),'未署名员工'),t.cost,t.prize,0,1,t.created_at,COALESCE(json_extract(t.result_json,'$.penalty'),0)
    FROM game_tickets t LEFT JOIN profiles p ON p.employee_id=t.employee_id
    WHERE t.game IN ('scratch','slot','sky','derby','cards') AND t.cost>0 AND t.prize>=t.cost*5 AND t.created_at>=datetime('now','-30 minutes')
     AND COALESCE(json_extract(t.result_json,'$.cancelled'),0)=0 AND COALESCE(json_extract(t.result_json,'$.migrated'),0)=0
@@ -55,10 +55,10 @@ export function installGameHighlights({db,send,requireEmployee}) {
   WHEN NEW.game IN ('scratch','slot','sky','derby','cards') AND NEW.prize>0
    AND COALESCE(json_extract(NEW.result_json,'$.cancelled'),0)=0 AND COALESCE(json_extract(NEW.result_json,'$.migrated'),0)=0
   BEGIN
-   INSERT INTO game_highlights(ticket_id,employee_id,game,round_id,alias,cost,prize,personal_best,broadcast,created_at)
+   INSERT INTO game_highlights(ticket_id,employee_id,game,round_id,alias,cost,prize,personal_best,broadcast,created_at,penalty)
     SELECT NEW.id,NEW.employee_id,NEW.game,COALESCE(json_extract(NEW.result_json,'$.round'),json_extract(NEW.result_json,'$.flight')),
      COALESCE((SELECT NULLIF(anonymous_name,'') FROM profiles WHERE employee_id=NEW.employee_id),'未署名员工'),
-     NEW.cost,NEW.prize,(${best}),(${rare}),NEW.created_at WHERE (${best}) OR (${rare});
+     NEW.cost,NEW.prize,(${best}),(${rare}),NEW.created_at,COALESCE(json_extract(NEW.result_json,'$.penalty'),0) WHERE (${best}) OR (${rare});
    INSERT INTO game_personal_records VALUES(NEW.employee_id,NEW.game,NEW.id,NEW.cost,NEW.prize,NEW.created_at)
     ON CONFLICT(employee_id,game) DO UPDATE SET ticket_id=excluded.ticket_id,cost=excluded.cost,prize=excluded.prize,created_at=excluded.created_at
     WHERE excluded.prize>game_personal_records.prize;
@@ -66,7 +66,7 @@ export function installGameHighlights({db,send,requireEmployee}) {
  const columns='ticket_id AS ticketId,employee_id AS employeeId,game,alias,cost,prize,personal_best AS personalBest,broadcast,penalty,created_at AS createdAt';
  const records=id=>{const byGame=db.prepare('SELECT game,ticket_id AS ticketId,cost,prize,created_at AS createdAt FROM game_personal_records WHERE employee_id=? ORDER BY prize DESC,ticket_id').all(id);return {highest:byGame[0]||null,byGame};};
  const event=(id,ticket)=>db.prepare(`SELECT ${columns} FROM game_highlights WHERE employee_id=? AND ticket_id=?`).get(id,ticket)||null;
- const roundEvent=(id,game,round)=>db.prepare(`SELECT ${columns} FROM game_highlights WHERE employee_id=? AND game=? AND round_id=? ORDER BY ticket_id DESC LIMIT 1`).get(id,game,round)||null;
+ const roundEvent=(id,game,round)=>db.prepare(`SELECT ${columns} FROM game_highlights WHERE employee_id=? AND game=? AND round_id=? ORDER BY personal_best DESC,prize DESC,ticket_id DESC LIMIT 1`).get(id,game,round)||null;
  return {records,event,roundEvent,async handle(req,res,url){
   if(url.pathname!=='/api/player/game-highlights')return false;
   if(!requireEmployee(req,res))return true;

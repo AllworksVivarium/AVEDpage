@@ -139,6 +139,17 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(noticeCount,noticeComments.length);assert.equal(noticeCount,1);
   assert.equal((await api('/api/admin/announcements',{title:'日期核验',body:'正文',issuer:'收容部',issuedOn:'2026-02-30'})).status,400);
   const state=(await player('/api/player/state')).data;assert.ok(state.serverTime);assert.ok(state.market.candles.length);
+  const index=state.stocks.find(s=>s.code==='KARMA');assert.ok(index);
+  assert.equal(index.price,Math.round(state.market.index.price/100));
+  const indexBuy=await player('/api/player/stocks',{code:'KARMA',intent:'open',side:'long',quantity:2,leverage:3,price:1});
+  assert.equal(indexBuy.status,200);assert.equal(indexBuy.data.items.find(s=>s.code==='KARMA').holding,2);
+  assert.equal(indexBuy.data.market.candles.at(-1).volume,2);
+  assert.ok(indexBuy.data.market.candles.at(-1).close>100000,'index candles retain their quote units');
+  assert.equal((await player('/api/player/stocks',{code:'KARMA',intent:'open',side:'short',quantity:1})).status,400);
+  assert.equal((await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:3})).status,400);
+  const indexClose=await player('/api/player/stocks',{code:'KARMA',intent:'close',side:'long',quantity:2,stopLoss:1});
+  assert.equal(indexClose.status,200);assert.equal(indexClose.data.items.find(s=>s.code==='KARMA').holding,0);
+  assert.equal(indexClose.data.balance,100000,'closing uses server position direction and releases margin');
   const code=state.stocks[0].code;
   const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,leverage:10,price:1,seed:'client-injected'});
   assert.equal(buy.status,200);const stock=buy.data.items.find(s=>s.code===code);
@@ -179,4 +190,22 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(trades[1].before,3);
   assert.equal(trades[1].after,1);
   assert.ok(snapshot.prepare('SELECT COUNT(*) AS n FROM stock_candles').get().n>=4);snapshot.close();
+});
+
+test('index mirrors equally weighted constituent returns and accepts future listings without self-weighting',()=>{
+ const db=new DatabaseSync(':memory:');
+ db.exec(`CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER);
+ CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER,cost_basis INTEGER DEFAULT 0,realized_pnl INTEGER DEFAULT 0);
+ INSERT INTO stock_prices VALUES('A','甲',1000,0,0),('B','乙',2000,0,0);`);
+ let at=Date.parse('2026-11-07T12:00:00Z');const market=installMarket(db,{clock:()=>at,automatic:false});
+ db.exec("UPDATE stock_market_bases SET price=1000 WHERE code='A';UPDATE stock_market_bases SET price=2000 WHERE code='B';UPDATE stock_prices SET price=1200 WHERE code='A';UPDATE stock_prices SET price=1800 WHERE code='B';UPDATE stock_prices SET price=1 WHERE code='KARMA'");
+ assert.equal(market.history().index.price,1050000,'20% and -10% produce an equally weighted +5%');
+ db.exec("INSERT INTO stock_prices VALUES('NEW','新增',3000,0,0)");at+=5000;market.advance();
+ assert.ok(db.prepare("SELECT price FROM stock_market_bases WHERE code='NEW'").get());
+ const rows=db.prepare("SELECT s.price,b.price AS base FROM stock_prices s JOIN stock_market_bases b ON b.code=s.code WHERE s.code<>'KARMA'").all();
+ const expected=Math.round(rows.reduce((sum,s)=>sum+s.price/s.base,0)/rows.length*1000000);
+ assert.equal(market.history().index.price,expected);
+ assert.equal(db.prepare("SELECT price FROM stock_prices WHERE code='KARMA'").get().price,Math.round(expected/100));
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM stock_market_bases WHERE code='KARMA'").get().n,0);
+ market.close();db.close();
 });

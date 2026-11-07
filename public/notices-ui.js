@@ -25,7 +25,7 @@
     },
     comments(items) {
       return items.map(item => `<article class="notice-comment inner-card-alt">
-        <header class="notice-comment-heading"><div class="notice-comment-identity"><span class="notice-comment-author">${escape(item.displayName)}</span><span class="notice-comment-department">${escape([...new Set([item.department,item.positionTitle].filter(Boolean))].join(' '))}</span></div>${time(item.createdAt, 'relative-clock')}</header>
+        <header class="notice-comment-heading"><div class="notice-comment-identity"><span class="notice-comment-author">${escape(item.displayName)}</span><span class="notice-comment-department">${escape([...new Set([/^公司直属(?:领导)?$/.test(item.department||'')&&item.positionTitle?'':item.department,item.positionTitle].filter(Boolean))].join(' '))}</span></div>${time(item.createdAt, 'relative-clock')}</header>
         <div class="notice-comment-body terminal-prose">${paragraphs(escape(item.body))}</div>
       </article>`).join('') || '<p class="notice-empty">暂无留言。</p>';
     }

@@ -9,11 +9,11 @@
   }
   syncDeleted(document.body);
   new MutationObserver(records=>{for(const r of records){if(r.type==='characterData')syncDeleted(r.target);else for(const n of r.addedNodes)syncDeleted(n);}}).observe(document.body,{childList:true,subtree:true,characterData:true});
-  const design=window.AVEDPlayerDesign;if(!design)return;
+  const design=window.AVEDPlayerDesign;if(!design?.local)return;
   const undoKey='aved_text_editor_undo';let picking=false,target=null,original='',matches=[],undoRecord=null,requestId=0,saving=false;
   const launcher=document.createElement('button');launcher.id='text-edit-launcher';launcher.type='button';launcher.dataset.typeIgnore='';launcher.textContent='✎ 文本编辑';launcher.setAttribute('aria-haspopup','dialog');
   const panel=document.createElement('dialog');panel.id='text-edit-panel';panel.dataset.typeIgnore='';panel.dataset.keepOriginal='';panel.setAttribute('aria-labelledby','text-edit-title');
-  panel.innerHTML=`<header><h2 id="text-edit-title">文本编辑</h2><button type="button" data-close aria-label="关闭文本编辑">关闭</button></header>
+  panel.innerHTML=`<header><h2 id="text-edit-title">文本编辑</h2><button type="button" data-close aria-label="关闭文本编辑">×</button></header>
     <p>点选页面文案，保存后立即应用。</p>
     <button type="button" id="text-edit-pick">点选页面文字</button>
     <div id="text-edit-fields" hidden><label for="text-edit-value">修改文案</label><textarea id="text-edit-value" rows="5" maxlength="4000"></textarea>

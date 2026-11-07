@@ -55,13 +55,43 @@ async function renderSpeechRecords(){
 }
 
 async function renderContentAdmin(section='announcements'){
- const [news,files]=await Promise.all([section==='announcements'?api('/api/announcements'):{items:[]},section==='dossiers'?api('/api/dossiers'):{items:[]}]);
+ const [news,files]=await Promise.all([section==='announcements'?api('/api/admin/announcements'):{items:[]},section==='dossiers'?api('/api/dossiers'):{items:[]}]);
  const publicationInput=n=>new Date(AVEDTime.parse(n?.publishedAt||n?.createdAt||new Date().toISOString()).getTime()+8*3600000).toISOString().slice(0,19);
  const noticeFields=n=>`<label>标题<input name="title" required maxlength="150" value="${esc(n?.title||'')}"></label><label>正文<textarea name="body" required maxlength="5000" rows="5">${esc(n?.body||'')}</textarea></label><label>称呼（选填，留空不显示）<input name="recipient" maxlength="200" placeholder="例如：各部门、全体员工：" value="${esc(n?.recipient||'')}"></label><label>落款（选填，留空不显示）<input name="issuer" maxlength="80" placeholder="例如：万业携生行政部" value="${esc(n?.issuer||'')}"></label><label>发布时间（北京时间）<input name="publishedAt" type="datetime-local" step="1" required value="${publicationInput(n)}"></label><label><span><input name="pinned" type="checkbox" ${n?.pinned?'checked':''}>置顶</span></label><button class="small-action">${n?'保存修改':'发布公告'}</button>`;
  const fields=f=>`<label>编号<input name="code" required maxlength="30" value="${esc(f?.code||'')}"></label><label>名称<input name="title" required maxlength="100" value="${esc(f?.title||'')}"></label><label>所属部门<input name="department" maxlength="80" value="${esc(f?.department||'')}"></label><label>收容状态<input name="status" maxlength="40" value="${esc(f?.status||'观察中')}"></label><label>卷宗正文<textarea name="summary" required maxlength="12000" rows="6">${esc(f?.summary||'')}</textarea></label><button class="small-action">${f?'保存修改':'登记卷宗'}</button>`;
- $('#panel').innerHTML=`<h3>公告与收容卷宗</h3><section class="admin-section" data-content-section="announcements"><h4>公告</h4><details><summary>发布新公告</summary><form class="community-form" data-content-form="announcements">${noticeFields()}</form></details>${news.items.map(n=>`<article class="admin-post"><h4>${esc(n.title)}</h4><small>${AVEDTime.markup(n.createdAt)}</small><p class="announcement-body">${esc(n.body)}</p><details><summary>编辑公告</summary><form class="community-form" data-content-form="announcements" data-id="${n.id}">${noticeFields(n)}</form></details><button class="small-action danger" data-content-delete="announcements/${n.id}">删除公告</button></article>`).join('')}</section><section class="admin-section" data-content-section="dossiers"><h4>收容卷宗</h4><details><summary>登记新收容物</summary><form class="community-form" data-content-form="dossiers">${fields()}</form></details>${files.items.map(f=>`<article class="admin-post"><h4>${esc(f.code)} ${esc(f.title)}</h4><details><summary>编辑卷宗</summary><form class="community-form" data-content-form="dossiers" data-id="${f.id}">${fields(f)}</form></details><button class="small-action danger" data-content-delete="dossiers/${f.id}">删除卷宗</button></article>`).join('')}</section>`;
+ $('#panel').innerHTML=`<h3>公告与收容卷宗</h3><section class="admin-section" data-content-section="announcements"><h4>公告</h4><details><summary>发布新公告</summary><form class="community-form" data-content-form="announcements">${noticeFields()}</form></details><div id="admin-notice-list"></div><button id="admin-notice-more" class="small-action" type="button">继续加载</button></section><section class="admin-section" data-content-section="dossiers"><h4>收容卷宗</h4><details><summary>登记新收容物</summary><form class="community-form" data-content-form="dossiers">${fields()}</form></details>${files.items.map(f=>`<article class="admin-post"><h4>${esc(f.code)} ${esc(f.title)}</h4><details><summary>编辑卷宗</summary><form class="community-form" data-content-form="dossiers" data-id="${f.id}">${fields(f)}</form></details><button class="small-action danger" data-content-delete="dossiers/${f.id}">删除卷宗</button></article>`).join('')}</section>`;
  for(const item of document.querySelectorAll('[data-content-section]')){if(item.dataset.contentSection!==section)item.remove();else item.querySelector('h4')?.remove();}
  bindContentForms(()=>renderContentAdmin(section));
+ if(section==='announcements'){
+  const list=$('#admin-notice-list'),more=$('#admin-notice-more');let next=news.next,busy=false;
+  function append(items){
+   for(const n of items){
+    const article=document.createElement('article');article.className='admin-post';
+    article.innerHTML=`<h4>${n.pinned?'置顶 · ':''}${esc(n.title)}</h4><small>${AVEDTime.markup(n.createdAt)}</small><p class="announcement-body admin-notice-excerpt">${esc(n.excerpt)}</p><details data-notice-editor><summary>查看与编辑</summary><div data-notice-content></div></details><button class="small-action danger" data-content-delete="announcements/${n.id}">删除公告</button>`;
+    list.append(article);const details=article.querySelector('[data-notice-editor]'),content=article.querySelector('[data-notice-content]');let loaded=false,loading=false;
+    details.addEventListener('toggle',async()=>{
+     if(!details.open||loaded||loading)return;loading=true;content.textContent='正在读取公告…';
+     try{const {item}=await api('/api/admin/announcements/'+n.id);if(!article.isConnected)return;
+      content.innerHTML=`<form class="community-form" data-content-form="announcements" data-id="${n.id}">${noticeFields(item)}</form><details data-notice-comments><summary>公告评论</summary><div data-comment-list></div><button class="small-action" type="button" data-comment-more>继续加载评论</button></details>`;
+      bindContentForms(()=>renderContentAdmin(section));loaded=true;
+      const comments=content.querySelector('[data-notice-comments]'),box=content.querySelector('[data-comment-list]'),button=content.querySelector('[data-comment-more]');let cursor=0,fetching=false,started=false;
+      async function readComments(){if(fetching||cursor===null)return;fetching=true;button.disabled=true;
+       try{const page=await api('/api/admin/announcements/'+n.id+'/comments?offset='+cursor);if(!article.isConnected)return;
+        for(const c of page.items){const row=document.createElement('article');row.className='admin-post';row.innerHTML=`<b>${esc(c.displayName||'离职员工')}</b><p class="announcement-body">${esc(c.body)}</p><form class="community-form"><label>发布日期与时间（北京时间）<input name="createdAt" type="datetime-local" step="1" required value="${publicationInput(c)}"></label><button class="small-action">保存评论时间</button><span role="status"></span></form>`;
+         const form=row.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const save=form.querySelector('button'),status=form.querySelector('[role=status]');save.disabled=true;status.textContent='';try{await api('/api/admin/posts/'+c.id,{method:'PUT',body:JSON.stringify({createdAt:form.elements.createdAt.value})});status.textContent='已保存';}catch(error){status.textContent=error.message;}finally{save.disabled=false;}};box.append(row);
+        }
+        cursor=page.next;button.hidden=cursor===null;started=true;if(!box.children.length)box.textContent='暂无评论。';
+       }catch(error){alert(error.message);}finally{fetching=false;button.disabled=false;}
+      }
+      comments.addEventListener('toggle',()=>{if(comments.open&&!started)readComments();});button.onclick=readComments;
+     }catch(error){content.textContent=error.message+'；收起后重新展开可重试。';}finally{loading=false;}
+    });
+   }
+   bindContentForms(()=>renderContentAdmin(section));
+  }
+  append(news.items);if(!news.items.length)list.textContent='暂无公告。';more.hidden=next===null;
+  more.onclick=async()=>{if(busy||next===null)return;busy=true;more.disabled=true;try{const page=await api('/api/admin/announcements?offset='+next);if(!list.isConnected)return;append(page.items);next=page.next;more.hidden=next===null;}catch(error){alert(error.message);}finally{busy=false;more.disabled=false;}};
+ }
 }
 
 function bindContentForms(render){

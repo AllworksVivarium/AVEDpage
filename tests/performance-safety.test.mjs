@@ -13,11 +13,14 @@ import {workGate,burstLimiter} from '../server-load-control.mjs';
 
 test('static compression, conditional caching, HEAD, large streams and text-edit invalidation',async t=>{
  const dir=await mkdtemp(join(tmpdir(),'aved-static-'));let revision='one';
- await writeFile(join(dir,'app.js'),'// hello\n'.repeat(1000));await writeFile(join(dir,'big.woff2'),Buffer.alloc(2*1024*1024,7));
+ await writeFile(join(dir,'index.html'),'<main>preview</main>');await writeFile(join(dir,'image.123456789abc.webp'),'image');await writeFile(join(dir,'app.js'),'// hello\n'.repeat(1000));await writeFile(join(dir,'big.woff2'),Buffer.alloc(2*1024*1024,7));
  const serve=installStatic({publicDir:dir,maxBytes:20000,design:{revision:()=>revision,render:async(_file,data)=>Buffer.concat([data,Buffer.from(revision)])}});
  const server=createServer((req,res)=>serve(req,res,req.url.slice(1)));await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  t.after(async()=>{server.closeAllConnections();await new Promise(r=>server.close(r));assert.ok(resolve(dir).startsWith(resolve(tmpdir())+sep));await rm(dir,{recursive:true,force:true});});
  const first=await fetch(base+'/app.js',{headers:{'accept-encoding':'gzip'}});assert.equal(first.status,200);assert.equal(first.headers.get('content-encoding'),'gzip');assert.ok((await first.text()).endsWith('one'));
+ const html=await fetch(base+'/index.html');assert.equal(html.headers.get('cache-control'),'no-cache');assert.equal((await fetch(base+'/index.html',{headers:{'if-none-match':html.headers.get('etag')}})).status,304);
+ assert.match((await fetch(base+'/big.woff2')).headers.get('cache-control'),/max-age=3600/);
+ assert.match((await fetch(base+'/image.123456789abc.webp')).headers.get('cache-control'),/immutable/);
  const etag=first.headers.get('etag');assert.equal((await fetch(base+'/app.js',{headers:{'if-none-match':etag}})).status,304);
  const head=await fetch(base+'/app.js',{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');
  const plain=await fetch(base+'/app.js',{headers:{'accept-encoding':'gzip;q=0'}});assert.equal(plain.headers.get('content-encoding'),null);
@@ -66,4 +69,19 @@ test('forged rewards, duplicate tickets, unfunded stock exposure and retired car
  const actual=db.prepare('SELECT SUM(delta) balance FROM balance_ledger WHERE employee_id=?').get(id).balance;
  assert.equal((await req('/api/me')).data.balance,actual);assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(id).balance,actual);
  assert.equal(db.prepare('SELECT count(*) n FROM game_tickets WHERE employee_id=?').get(id).n,1);
+});
+
+test('reference cache expires, isolates callers, clears on mutations, and never caches financial state',async()=>{
+ let now=0,calls=0;class Clock extends Date{static now(){return now;}}
+ const ctx={setTimeout,clearTimeout,AbortController,Date:Clock};vm.runInNewContext(await readFile(new URL('../public/http-client.js',import.meta.url),'utf8'),ctx);
+ const http=ctx.AVEDHttp.create({fetchImpl:async()=>({ok:true,status:200,json:async()=>({n:++calls,nested:{value:1}})})});
+ const a=await http.request('/api/player/directory');a.nested.value=99;
+ assert.equal((await http.request('/api/player/directory')).nested.value,1);assert.equal(calls,1);
+ now=30001;await http.request('/api/player/directory');assert.equal(calls,2);
+ await http.request('/api/player/stocks');await http.request('/api/player/stocks');assert.equal(calls,4);
+ await http.request('/api/me',{cacheTtlMs:99999});await http.request('/api/me',{cacheTtlMs:99999});assert.equal(calls,6);
+ await http.request('/api/profile',{method:'PUT'});await http.request('/api/player/directory');assert.equal(calls,8);
+ let release,musicReads=0;const concurrent=ctx.AVEDHttp.create({fetchImpl:async(path)=>{if(path==='/api/music'){musicReads++;await new Promise(r=>release=r);}return {ok:true,status:200,json:async()=>({ok:true})};}});
+ const read=concurrent.request('/api/music');await concurrent.request('/api/logout',{method:'POST'});release();await read;
+ const fresh=concurrent.request('/api/music');release();await fresh;assert.equal(musicReads,2,'a pre-logout read cannot populate the new session cache');
 });

@@ -8,7 +8,7 @@ import {parse} from './vendor/acorn.mjs';
 import {saveProjectType} from './local-type-design.mjs';
 
 export const projectRoot=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-export const sourceFiles=['player-terminal.html','player.js','player-community.js','personal-ui.js','page-headings.js','terminal-frame.js','terminal-preferences.js','window-style.js','print-signal.js','notices-ui.js','market-chart.js','sky-ui.js','economy-ui.js','welfare-ui.js','visual-style.js','rewards-ui.js','derby-ui.js','landing-sphere.js'].map(f=>'public/'+f);
+export const sourceFiles=['player-terminal.html','player.js','player-community.js','personal-ui.js','page-headings.js','terminal-frame.js','terminal-preferences.js','window-style.js','print-signal.js','notices-ui.js','market-chart.js','sky-ui.js','economy-ui.js','welfare-ui.js','visual-style.js','rewards-ui.js','derby-ui.js','landing-sphere.js','personal-hud.js','ddz-ui.js','card-room-lobby.js','casino-switcher.js'].map(f=>'public/'+f);
 const digest=s=>createHash('sha256').update(s).digest('hex');
 export const normalize=s=>s.replace(/\s+/gu,' ').trim();
 const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:'\u00a0'};
@@ -117,4 +117,4 @@ export function startEditor({port=4177,previewPort=4176,root=projectRoot,files=s
   server.listen(port,'127.0.0.1',()=>console.log('AVED 本地文本编辑已启动：http://127.0.0.1:'+port+'；仅接受本地预览 '+previewPort+'。'));
   return server;
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))startEditor({port:Number(process.env.AVED_EDITOR_PORT||4177),previewPort:Number(process.env.AVED_PREVIEW_PORT||4176)});
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))startEditor({port:Number(process.env.AVED_EDITOR_PORT||4177),previewPort:Number(process.env.AVED_PREVIEW_PORT||4180)});

@@ -6,7 +6,7 @@
     if(!rows.length){container.innerHTML='<p class="market-empty">等待首笔行情。</p>';return;}
 
     const width=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));
-    const height=360,left=74,right=18,top=20,bottom=246,volumeTop=275,volumeBottom=325;
+    const height=width<500?240:300,left=64,right=12,top=16,bottom=height-90,volumeTop=height-65,volumeBottom=height-30;
     const highest=Math.max(...rows.map(c=>c.high)),lowest=Math.min(...rows.map(c=>c.low));
     const padding=Math.max((highest-lowest)*.12,highest*.001,1),upper=highest+padding,lower=lowest-padding;
     const y=price=>top+(upper-price)/(upper-lower)*(bottom-top);
@@ -38,10 +38,10 @@
       svg+='<line x1="'+x+'" y1="'+y(c.high)+'" x2="'+x+'" y2="'+y(c.low)+'" stroke="'+color+'" stroke-width="1.5"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+bodyY+'" width="'+candleWidth+'" height="'+bodyHeight+'" fill="'+color+'"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+(volumeBottom-volumeHeight)+'" width="'+candleWidth+'" height="'+Math.max(1,volumeHeight)+'" fill="'+color+'" opacity=".65"/></g>';
-      if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="348" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
+      if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(height-10)+'" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
     });
 
-    svg+='<text x="'+left+'" y="267" class="market-axis">成交量</text></svg>';
+    svg+='<text x="'+left+'" y="'+(volumeTop-8)+'" class="market-axis">成交量</text></svg>';
     container.innerHTML=svg;
     container.style.position='relative';
     details(rows.at(-1));

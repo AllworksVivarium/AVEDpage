@@ -2,7 +2,9 @@
 (function(root){
   const failure=(message,code,status=0)=>Object.assign(new Error(message),{code,status});
   function create({fetchImpl=(...args)=>fetch(...args),timeoutMs=45000,sleep=ms=>new Promise(r=>setTimeout(r,ms))}={}) {
-    const pending=new Map();
+    const pending=new Map(),cache=new Map();let generation=0;
+    const ttlFor=path=>({'/api/player/economy':30000,'/api/player/directory':30000,'/api/music':300000}[path]||0);
+    const copy=data=>JSON.parse(JSON.stringify(data));
     async function once(path,options){
       const {timeoutMs:deadline=timeoutMs,...request}=options;
       const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),deadline);
@@ -23,10 +25,21 @@
     }
     function request(path,options={}) {
       const safe=!options.method||options.method==='GET';
-      if(!safe){pending.clear();return perform(path,options);}
-      const key=JSON.stringify([path,options]);
+      const {cacheTtlMs=ttlFor(path),...transport}=options;
+      if(!safe){generation++;cache.clear();pending.clear();return perform(path,transport);}
+      // Only low-frequency reference endpoints are eligible, never balances or market state.
+      const ttl=Math.min(ttlFor(path),Math.max(0,Number(cacheTtlMs)||0)),key=JSON.stringify([path,transport]);
+      const hit=cache.get(key);
+      if(ttl&&hit&&Date.now()-hit.at<ttl)return Promise.resolve(copy(hit.data));
       if(pending.has(key))return pending.get(key);
-      const task=perform(path,options).finally(()=>{if(pending.get(key)===task)pending.delete(key);});
+      const version=generation;
+      const task=perform(path,transport).then(data=>{
+        if(ttl&&version===generation){
+          if(cache.size>=32)cache.delete(cache.keys().next().value);
+          cache.set(key,{at:Date.now(),data:copy(data)});
+        }
+        return data;
+      }).finally(()=>{if(pending.get(key)===task)pending.delete(key);});
       pending.set(key,task);return task;
     }
     async function confirmSession(expected) {

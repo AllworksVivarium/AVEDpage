@@ -9,7 +9,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     CREATE TABLE IF NOT EXISTS stock_market_bases(code TEXT PRIMARY KEY,price INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS stock_quote_clock(id INTEGER PRIMARY KEY CHECK(id=1),quoted_at INTEGER NOT NULL);
     INSERT OR IGNORE INTO stock_quote_clock VALUES(1,0);
-    INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices;`);
+    INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA';`);
   const upsert=db.prepare(`INSERT INTO stock_candles(code,bucket,open,high,low,close,quote_seed) VALUES(?,?,?,?,?,?,?)
     ON CONFLICT(code,bucket) DO UPDATE SET high=MAX(high,excluded.high),low=MIN(low,excluded.low),close=excluded.close,quote_seed=excluded.quote_seed`);
   const bucketFor=t=>Math.floor(t/60000)*60000;
@@ -17,21 +17,28 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     upsert.run(code,bucketFor(at),open,Math.max(open,close),Math.min(open,close),close,seed);
   }
   function indexValue() {
-    const list=db.prepare('SELECT s.price,b.price AS base FROM stock_prices s JOIN stock_market_bases b ON b.code=s.code').all();
+    const list=db.prepare("SELECT s.price,b.price AS base FROM stock_prices s JOIN stock_market_bases b ON b.code=s.code WHERE s.code<>'KARMA'").all();
     return list.length?Math.round(list.reduce((sum,s)=>sum+s.price/s.base,0)/list.length*1000000):1000000;
   }
+  function syncIndex(at){
+    db.prepare("INSERT INTO stock_prices(code,name,price,change,tick) VALUES('KARMA','KARMA 大盘',?,0,?) ON CONFLICT(code) DO UPDATE SET price=excluded.price,tick=excluded.tick WHERE stock_prices.price<>excluded.price").run(Math.max(1,Math.round(indexValue()/100)),Math.floor(at/60000));
+  }
+  // New listings acquire a baseline automatically; the index itself is not a constituent.
+  syncIndex(clock());
   function advance(at=clock()) {
-    if(at-db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at<5000)return;
+    if(at-db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at<5000){syncIndex(at);return;}
     const owned=!db.isTransaction;
     if(owned)db.exec('BEGIN IMMEDIATE');
     try {
+      db.exec("INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA'");
       const before=indexValue(),seed=randomBytes(32).toString('hex');
-      for(const s of db.prepare('SELECT code,price FROM stock_prices').all()) {
+      for(const s of db.prepare("SELECT code,price FROM stock_prices WHERE code<>'KARMA'").all()) {
         const roll=createHmac('sha256',Buffer.from(seed,'hex')).update(s.code).digest().readUInt32BE(0)/4294967296;
         const price=Math.max(30,Math.round(s.price*(1+(roll-.5)*.012)));
         candle(s.code,s.price,price,seed,at);
         db.prepare('UPDATE stock_prices SET price=?,tick=? WHERE code=?').run(price,Math.floor(at/60000),s.code);
       }
+      syncIndex(at);
       candle('KARMA',before,indexValue(),seed,at);
       db.prepare('UPDATE stock_quote_clock SET quoted_at=? WHERE id=1').run(at);
       if(owned)db.exec('COMMIT');
@@ -120,7 +127,8 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
   }
   function trade(code,quantity,price) {
     const volume=Math.abs(quantity),bucket=bucketFor(clock());
-    candle(code,price,price,'',clock());candle('KARMA',indexValue(),indexValue(),'',clock());
+    if(code!=='KARMA')candle(code,price,price,'',clock());
+    candle('KARMA',indexValue(),indexValue(),'',clock());
     db.prepare('UPDATE stock_candles SET volume=volume+?,turnover=turnover+? WHERE code IN (?,?) AND bucket=?').run(volume,volume*price,code,'KARMA',bucket);
   }
   advance();

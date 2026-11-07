@@ -82,7 +82,7 @@
 
 - `GET /api/player/state`：当前员工、余额、资料、永久成就、签到、公告、档案、部门、目录、论坛首 10 条、持仓、音乐。
 - `GET /api/player/forum?before=id`：后续 10 条论坛主题。`POST /api/player/forum`：`{title,body,imageData?}`。
-- `GET/POST /api/player/forum/:id`：查看回复 / 新回复 `{body,imageData?}`。图文整体待审；文本直接发布。
+- `GET/POST /api/player/forum/:id`：查看回复 / 新回复 `{body,imageData?}`。图文整体待审；文本直接发布。GET 默认最早 20 条，`?after=id` 继续读取，返回 `thread`、`items`、`next`、`changesCursor`；`?since=changesCursor` 读取最多 20 条变更，返回 `items`、`removed`、`changesCursor`、`moreChanges`。游标只接受非负安全整数；主帖未公开时拒绝读取。
 - `GET /api/admin/moderation`、`POST /api/admin/moderation/thread/:id` 或 `reply/:id`：完整图文审核；提交 `{action:"approve"|"reject"}`。
 - `GET /api/admin/activity?before=id`：每页 100 条历史快照和操作记录。不会返回密码哈希或会话密钥。
 - `POST /api/player/games/scratch`：`{tier,type}`；服务器根据有效票种生成种子、票面、奖额并结算。

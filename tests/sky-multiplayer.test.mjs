@@ -7,20 +7,18 @@ import {tmpdir} from 'node:os';
 import {join,resolve,sep} from 'node:path';
 import {createServer} from 'node:net';
 import {DatabaseSync} from 'node:sqlite';
+import {skyMultiplier,skySurvival} from '../server-sky-rules.mjs';
 import {defaultEconomy} from '../server-economy.mjs';
 
-test('sky pacing and risk curve: mean 400m, rare 150m, approximately 130% reference return',()=>{
+test('broad bell-shaped safety distribution and accelerating payouts with 125% adventure return',()=>{
  const r=defaultEconomy().sky,total=r.ranges.reduce((n,x)=>n+x.weight,0);
- const mean=r.ranges.reduce((n,x)=>n+(x.min+x.max)/2*x.weight,0)/total;
- assert.ok(Math.abs(mean-400)<1);assert.ok(r.ranges.every(x=>x.min>=150));
- assert.equal(r.ranges.filter(x=>x.min<180).reduce((n,x)=>n+x.weight,0)/total,.005);
- assert.equal(r.breakEvenDepth,207);assert.equal(r.boardingSeconds,12);
- // Count all crashes as zero. A line exactly at the planned depth reveals before a jump.
- const survival=d=>r.ranges.reduce((sum,x)=>sum+x.weight*Math.max(0,Math.min(1,(x.max-Math.max(d+1,x.min)+1)/(x.max-x.min+1))),0)/total;
- const returns=Array.from({length:1901},(_,i)=>(i+100)*survival(i+100)/r.breakEvenDepth);
- assert.ok(Math.abs(300*survival(300)/r.breakEvenDepth-1.3)<.005);
- assert.ok(Math.abs(Math.max(...returns)-1.3)<.001);
-
+ assert.equal(total,1000000);assert.equal(r.ranges[0].weight/total,.005);assert.equal(r.boardingSeconds,12);
+ assert.ok(skyMultiplier(100,r)<1);assert.ok(skyMultiplier(200,r)<1);
+ assert.ok(skySurvival(215,r.ranges)<1&&skySurvival(215,r.ranges)>.97);
+ for(let d=280;d<=850;d++){const value=skyMultiplier(d,r)*skySurvival(d,r.ranges);assert.ok(Math.abs(value-1.25)<1e-10);}
+ let previous=0;for(let d=100;d<=1120;d++){const m=skyMultiplier(d,r);assert.ok(m>=previous&&m<=50);previous=m;}
+ assert.ok(skyMultiplier(850,r)-skyMultiplier(700,r)>skyMultiplier(550,r)-skyMultiplier(400,r));
+ assert.equal(skyMultiplier(300,{breakEvenDepth:207}),300/207,'old flights retain linear payouts');
 });
 
 test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat and restart',async t=>{
@@ -42,7 +40,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  const a=await login('pilot-a'),b=await login('pilot-b'),call=(cookie,path,method,body)=>req(cookie,'/api/player/games/sky/'+path,method,body);
  db=new DatabaseSync(join(folder,'wanyehui.db'));
  const flight=(await call(a,'current')).data;
- assert.equal(flight.breakEvenDepth,207);assert.equal(flight.landingMs,14000);
+ assert.equal(flight.breakEvenDepth,216);assert.equal(flight.landingMs,14000);
  db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=600 WHERE id=?').run(Date.now()+12000,flight.round);
  const flightA=await stream(a,'/api/player/games/sky/stream'),flightB=await stream(b,'/api/player/games/sky/stream');
  await until(()=>flightA.length&&flightB.length);
@@ -57,7 +55,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()-6000,flight.round);
  const opens=await Promise.all([call(a,'jump','POST',{round:flight.round}),call(a,'jump','POST',{round:flight.round})]);assert.ok(opens.every(x=>x.status===200));assert.equal(opens[0].data.self.status,'landed');
  const prize=opens[0].data.self.prize;assert.equal(opens[1].data.self.prize,prize);assert.equal(opens[1].data.balance,90000+prize);assert.ok(!('safetyLine' in opens[0].data));
- assert.equal(prize,Math.floor(10000*opens[0].data.self.depth/207));
+ assert.equal(prize,Math.floor(10000*skyMultiplier(opens[0].data.self.depth,opens[0].data.payoutRules)));
  const earlyHistory=(await req(a,'/api/games/history')).data.items.find(x=>x.game==='sky');assert.ok(!('safetyLine' in JSON.parse(earlyHistory.result)),'cashout history must not leak the shared limit');
  await until(()=>flightB.some(x=>x.passengers.some(p=>p.status==='landed')));
  assert.equal((await call(b,'current')).data.self.status,'aboard');assert.equal((await call(a,'current')).data.passengers.filter(p=>p.isRobot).length,0,'two humans need no companion');
@@ -72,7 +70,23 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  db.prepare('UPDATE sky_flights SET ended_at=? WHERE id=?').run(Date.now()-1,flight.round);
  const next=(await call(a,'current')).data;assert.notEqual(next.round,flight.round);assert.equal(next.previous.safetyLine,600);assert.ok(!('safetyLine' in next));
  db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=600 WHERE id=?').run(Date.now()+12000,next.round);
- await call(a,'start','POST',{round:next.round,bet:100});db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()-1000,next.round);
+ await call(a,'start','POST',{round:next.round,bet:100});
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM sky_companion_arrivals WHERE flight_id=?').get(next.round).n,0,'no companions before the final four seconds');
+ db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()+3900,next.round);
+ const waiting=(await call(a,'current')).data;
+ assert.equal(waiting.phase,'BOARDING');assert.equal(waiting.passengers.length,1);
+ const arrivals=db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=?').all(next.round);
+ assert.equal(arrivals.length,1,'an eligible pool of one yields one companion');
+ assert.ok(arrivals[0].board_at>=waiting.departAt-4000&&arrivals[0].board_at<waiting.departAt);
+ assert.equal((await req(admin,'/api/admin/company-robots')).data.items[0].balance,10000,'planning does not spend funds');
+ await call(a,'current');assert.deepEqual(db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=?').all(next.round),arrivals);
+ db.prepare('UPDATE sky_companion_arrivals SET board_at=? WHERE flight_id=?').run(Date.now()-1,next.round);
+ const boarding=(await call(a,'current')).data;
+ assert.equal(boarding.phase,'BOARDING');assert.ok(boarding.passengers.some(p=>p.id===robot.id),'companion is visible in the helicopter before takeoff');
+ const originalPlan=db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round);
+ assert.equal(originalPlan.jump_at,Math.round(boarding.departAt+(originalPlan.jump_depth-100)/boarding.speed*1000));
+ const takeoff=Date.now()-1000;db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(takeoff,next.round);
+ db.prepare('UPDATE sky_robot_plans SET jump_at=? WHERE flight_id=?').run(Math.round(takeoff+(originalPlan.jump_depth-100)/boarding.speed*1000),next.round);
  const allOpened=(await call(a,'jump','POST',{round:next.round})).data;assert.equal(allOpened.self.status,'landed');assert.equal(allOpened.phase,'DROPPING');assert.ok(!('safetyLine' in allOpened),'all cashouts must not reveal line early');
  const bot=allOpened.passengers.find(p=>p.isRobot);assert.equal(bot.id,robot.id);assert.equal(bot.alias,'陪玩测试员');assert.equal(bot.cost,1000);assert.ok(!('jump_depth' in bot));assert.ok(!('jump_at' in bot));
  const planned=db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round);assert.ok(Number.isSafeInteger(planned.jump_at));assert.equal(planned.jump_at,Math.round(allOpened.departAt+(planned.jump_depth-100)/allOpened.speed*1000));
@@ -80,11 +94,30 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  await call(a,'current');assert.deepEqual(db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round),planned);assert.equal(db.prepare('SELECT COUNT(*) n FROM sky_robot_plans WHERE flight_id=?').get(next.round).n,1);
  // Restart keeps the same persisted choice, including catch-up when nobody watches.
  await stop();db.prepare('UPDATE sky_robot_plans SET jump_depth=180,jump_at=? WHERE flight_id=?').run(Date.now()-500,next.round);db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()-4000,next.round);start();await ready();
- const resumed=(await call(a,'current')).data.passengers.find(p=>p.isRobot);assert.equal(resumed.status,'landed');assert.equal(resumed.prize,Math.floor(1000*180/207));
- await call(a,'current');assert.equal((await req(admin,'/api/admin/company-robots')).data.items[0].balance,9000+Math.floor(1000*180/207));
+ const resumed=(await call(a,'current')).data.passengers.find(p=>p.isRobot);assert.equal(resumed.status,'landed');assert.equal(resumed.prize,Math.floor(1000*skyMultiplier(180,defaultEconomy().sky)));
+ await call(a,'current');assert.equal((await req(admin,'/api/admin/company-robots')).data.items[0].balance,9000+Math.floor(1000*skyMultiplier(180,defaultEconomy().sky)));
  assert.equal(db.prepare("SELECT COUNT(*) n FROM game_tickets WHERE employee_id=? AND game='sky'").get(robot.id).n,1);
  // A watched but empty flight does not create robot spending.
  db.prepare('UPDATE sky_flights SET ended_at=? WHERE id=?').run(Date.now()-1,next.round);const empty=(await call(a,'current')).data;
  db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()-1,empty.round);assert.equal((await call(a,'current')).data.passengers.length,0);
+
+ // A larger pool chooses one to three distinct companions in separate arrival slots.
+ for(const codename of ['晚风','远山'])assert.equal((await req(admin,'/api/admin/company-robots','POST',{codename,balance:10000})).status,200);
+ db.prepare('UPDATE sky_flights SET ended_at=? WHERE id=?').run(Date.now()-1,empty.round);
+ const solo=(await call(a,'current')).data;
+ await call(a,'start','POST',{round:solo.round,bet:100});
+ const depart=Date.now()+3900;db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(depart,solo.round);
+ await call(a,'current');
+ const chosen=db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=? ORDER BY board_at').all(solo.round);
+ assert.ok(chosen.length>=1&&chosen.length<=3);assert.equal(new Set(chosen.map(x=>x.employee_id)).size,chosen.length);
+ for(let i=0;i<chosen.length;i++){assert.ok(chosen[i].board_at>=depart-4000&&chosen[i].board_at<depart);if(i)assert.ok(chosen[i].board_at>chosen[i-1].board_at);}
+ // Restart inside the boarding window retains precisely the scheduled employees.
+ await stop();start();await ready();await call(a,'current');
+ assert.deepEqual(db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=? ORDER BY board_at').all(solo.round),chosen);
+ db.prepare('UPDATE sky_companion_arrivals SET board_at=? WHERE flight_id=?').run(Date.now()-1,solo.round);
+ const withCompany=(await call(a,'current')).data;
+ assert.equal(withCompany.phase,'BOARDING');assert.equal(withCompany.passengers.length,chosen.length+1);
+ const spent=db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE reason=?").get('共享空投登机 #'+solo.round).n;
+ await call(a,'current');assert.equal(db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE reason=?").get('共享空投登机 #'+solo.round).n,spent,'arrivals charge once');
 
 });

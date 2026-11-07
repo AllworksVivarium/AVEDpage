@@ -1,3 +1,4 @@
+import {skyRules} from './server-sky-rules.mjs';
 import {randomBytes,createHash,createHmac} from 'node:crypto';
 import {scratchTiers,scratchGameTypes} from './server-content.mjs';
 import {slotRules} from './server-slot.mjs';
@@ -22,7 +23,7 @@ export function returnRatePool(percent,tierId='t1'){
  pool[0].weight+=correction;
  return [{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
 }
-export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id)]))})),sky:{boardingSeconds:12,speed:25,breakEvenDepth:207,lossFraction:1,ranges:[{min:150,max:179,weight:50},{min:180,max:299,weight:950},{min:300,max:429,weight:6500},{min:430,max:629,weight:2200},{min:630,max:900,weight:300}]}};}
+export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id)]))})),sky:skyRules()};}
 function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>32)throw Error('奖池需包含 2 至 32 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(![1,2,4].includes(x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
 export function validateEconomy(c){
  if(!c||!Array.isArray(c.scratch)||c.scratch.length!==scratchTiers.length)throw Error('票种配置不完整。');
@@ -37,7 +38,7 @@ export function installEconomy({db,send,readBody,requireAdmin,requireEmployee,ba
  db.prepare('INSERT OR IGNORE INTO economy_config VALUES(1,1,?)').run(JSON.stringify(defaultEconomy()));
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='affordable-shares'").get()){
   db.exec('BEGIN IMMEDIATE');try{
-   for(const s of db.prepare('SELECT code,price FROM stock_prices').all()){const price=Math.max(1,Math.floor(s.price/10));for(const h of db.prepare('SELECT employee_id,quantity FROM stock_holdings WHERE code=? AND quantity>0').all(s.code)){const remainder=(s.price-price*10)*h.quantity;if(remainder)recordLedger(h.employee_id,remainder,'拆股零差结余 '+s.code);}db.prepare('UPDATE stock_prices SET price=? WHERE code=?').run(price,s.code);db.prepare('UPDATE stock_holdings SET quantity=quantity*10 WHERE code=?').run(s.code);db.prepare('UPDATE stock_market_bases SET price=price/10.0 WHERE code=?').run(s.code);db.prepare('UPDATE stock_candles SET open=MAX(1,ROUND(open/10.0)),high=MAX(1,ROUND(high/10.0)),low=MAX(1,ROUND(low/10.0)),close=MAX(1,ROUND(close/10.0)),volume=volume*10 WHERE code=?').run(s.code);}
+   for(const s of db.prepare("SELECT code,price FROM stock_prices WHERE code<>'KARMA'").all()){const price=Math.max(1,Math.floor(s.price/10));for(const h of db.prepare('SELECT employee_id,quantity FROM stock_holdings WHERE code=? AND quantity>0').all(s.code)){const remainder=(s.price-price*10)*h.quantity;if(remainder)recordLedger(h.employee_id,remainder,'拆股零差结余 '+s.code);}db.prepare('UPDATE stock_prices SET price=? WHERE code=?').run(price,s.code);db.prepare('UPDATE stock_holdings SET quantity=quantity*10 WHERE code=?').run(s.code);db.prepare('UPDATE stock_market_bases SET price=price/10.0 WHERE code=?').run(s.code);db.prepare('UPDATE stock_candles SET open=MAX(1,ROUND(open/10.0)),high=MAX(1,ROUND(high/10.0)),low=MAX(1,ROUND(low/10.0)),close=MAX(1,ROUND(close/10.0)),volume=volume*10 WHERE code=?').run(s.code);}
    db.prepare("INSERT INTO economy_migrations VALUES('affordable-shares')").run();db.exec('COMMIT');
   }catch(e){db.exec('ROLLBACK');throw e;}
  }

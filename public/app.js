@@ -241,7 +241,7 @@ async function renderGames() {
     api("/api/games/history"),
   ]);
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开封印。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th><th>封签编号</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td><td class="hash-cell">${esc(x.seedHash)}</td></tr>`).join("") || '<tr><td colspan="5">暂无记录</td></tr>'}</tbody></table></div>`;
+    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开奖区。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td></tr>`).join("") || '<tr><td colspan="4">暂无记录</td></tr>'}</tbody></table></div>`;
   $("#gameCheckin").addEventListener("click", async (e) => {
     e.currentTarget.disabled = true;
     try {
@@ -260,7 +260,7 @@ async function renderGames() {
       await loadPortal();
       await renderGames();
       $("#scratchResult").innerHTML =
-        `<b>${esc(r.prizeName)}${r.prize ? `：+${Number(r.prize).toLocaleString()} 点` : ""}</b><small>随机种子 ${esc(r.seed)} 校验值 ${esc(r.seedHash)}</small>`;
+        `<b>${esc(r.prizeName)}${r.prize ? `：+${Number(r.prize).toLocaleString()} 点` : ""}</b>`;
     } catch (err) {
       alert(err.message);
       e.currentTarget.disabled = false;
@@ -273,7 +273,7 @@ async function renderGames() {
       await loadPortal();
       await renderGames();
       $("#slotResult").innerHTML =
-        `<b class="slot-symbols">${r.symbols.map(esc).join("　")}</b><small>${r.prize ? `获得 ${Number(r.prize).toLocaleString()} 点` : "未中奖"} 随机种子 ${esc(r.seed)} 校验值 ${esc(r.seedHash)}</small>`;
+        `<b class="slot-symbols">${r.symbols.map(esc).join("　")}</b><small>${r.prize ? `获得 ${Number(r.prize).toLocaleString()} 点` : "未中奖"}</small>`;
     } catch (err) {
       alert(err.message);
       e.currentTarget.disabled = false;
@@ -344,7 +344,7 @@ const personnelIdentityNames={player_employee:'玩家 · 部门员工',player_co
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
-  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>职务 / 身份显示文本<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>自定义职位<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
   const department=form.querySelector('[name=department]');department.before(fields);
   const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
   kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';let wasMinister=false;
@@ -359,12 +359,17 @@ function enhancePersonnelForms(employees){
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
    const enabled=form.querySelector('[name=enabled]');if(enabled){enabled.disabled=noLogin;if(noLogin)enabled.checked=false;}
-   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，身份与职务由管理员分配。':leader?'选择具体部门即为该部门部长；公司直属请填写自定义职务。此身份不自动授予后台管理权限。':'玩家为部门成员，不分配领导职务。';
+   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，身份与职务由管理员分配。':leader?'选择具体部门即为该部门部长；选择“自定义职位”后填写实际职位名称。此身份不自动授予后台管理权限。':'玩家为部门成员，不分配领导职务。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
 }
 function rosterDepartment(value){const text=String(value||'');return /收容/.test(text)?'收容部':/武器|武装|武裝|作战/.test(text)?'武装部':/研究|科研/.test(text)?'科研部':/后勤|後勤/.test(text)?'后勤部':/医疗|醫療|医療/.test(text)?'医疗部':'公司直属';}
+function employeeBalanceControl(employee){
+ const value=Number(employee.balance).toLocaleString();
+ if(employee.isNpc)return value;
+ return value+'<details class="employee-balance-control"><summary>设置余额</summary><form class="employee-balance-form" data-employee-id="'+employee.id+'" data-expected-balance="'+employee.balance+'"><label>目标余额（可为负数）<input name="balance" type="number" min="-100000000" max="100000000" step="1" value="'+employee.balance+'" required></label><label>调整原因<input name="reason" maxlength="200" placeholder="填写本次调整原因" required></label><button type="submit" class="small-action">保存余额</button><span role="status"></span></form></details>';
+}
 async function renderAdmin() {
   if (currentUser?.role !== "admin")
     throw new Error("只有管理员可以访问此页面。");
@@ -375,7 +380,7 @@ async function renderAdmin() {
     '<tr data-roster-department="'+esc(rosterDepartment(e.department))+'"><td>' + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
     "</td><td>" + esc(e.department || "未填写") +
-    "</td><td>" + Number(e.balance).toLocaleString() +
+    "</td><td>" + employeeBalanceControl(e) +
     "</td><td>" + (e.isNpc ? "—" : e.role === "admin" ? "管理员" : "员工") +
     "</td><td>" + (e.isNpc ? personnelIdentityNames[e.identityKind] : e.enabled ? "启用" : "停用") +
     '</td><td><details><summary>编辑</summary><form class="employee-edit-form" data-employee-id="' +
@@ -392,13 +397,13 @@ async function renderAdmin() {
   $("#panel").innerHTML =
     '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 通讯记录</p></div><span class="admin-count">员工 ' +
     employees.length +
-    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="0" step="1" placeholder="初始余额（可填 0）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
+    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="-100000000" max="100000000" step="1" placeholder="初始余额（可为负数）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
     ' 位员工 登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
     '</tbody></table></div></section>';
 
-  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}select.value=value;input.replaceWith(select);});
+  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name==='公司直属'?'自定义职位':name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
   const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
   const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
@@ -412,6 +417,14 @@ async function renderAdmin() {
     qqNumber: v.get("qqNumber"),
     department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
     initialBalance: Number(v.get("initialBalance") || 0),
+  }));
+
+  document.querySelectorAll('.employee-balance-form').forEach(form=>form.addEventListener('submit',async event=>{
+    event.preventDefault();const button=form.querySelector('button'),status=form.querySelector('[role=status]');button.disabled=true;status.textContent='正在保存…';
+    try{
+      await api('/api/admin/employees/'+form.dataset.employeeId+'/balance',{method:'POST',body:JSON.stringify({balance:Number(form.elements.balance.value),expectedBalance:Number(form.dataset.expectedBalance),reason:form.elements.reason.value})});
+      await renderAdmin();
+    }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
   }));
 
   document.querySelectorAll(".employee-edit-form").forEach((form) =>

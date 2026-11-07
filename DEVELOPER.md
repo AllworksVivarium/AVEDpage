@@ -1,89 +1,72 @@
-# AVED 开发者说明
+# AVED 开发与维护说明
 
-## 2026-11-06 当前开发重点
+更新：2026-11-08。本文描述当前源码；线上版本以服务器部署提交为准。历史交接文件仅供追溯，不作为当前规则。
 
-- 移动端显示优先；中英文品牌保留，侧栏点击导航后保持展开，由收起按钮、遮罩或 Escape 手动关闭。
-- 临时配色包含原配色、暖炭红和黑金绛红；每套区分米色日间与深黑夜间。
-- sidebar-art.css 以亮度蒙版展示原始图标，统一主体大小并消除黑色底板；图标源文件保留，未重新生成。
-- 娱乐室导航和滚动字幕共用固定区域，切换游戏不重建字幕或重新开始动画。
-- 每日签到固定 10,000；整点补给每周期 5,000。历史领取金额不改，仍由服务端防止重复领取。
+## 架构与运行
 
-本版本以 AllworksVivarium/AVEDpage 的 main 为共同源码。域名已购买，部署目标为东京 AWS Ubuntu。部署步骤见 [AWS-DEPLOY.md](AWS-DEPLOY.md)。功能清单描述代码实现，不代表已通过浏览器、AWS 或多人压力测试。
+- Node.js 24、原生 HTTP、SQLite WAL，单进程运行。运行前 `npm ci`，启动 `node server.mjs`；Windows 可用 `local-preview.mjs`。
+- 玩家入口 `public/player-terminal.html`；管理入口 `public/admin-terminal.html`。`aved.space` 和 `authority.aved.space` 使用同一后端，权限由会话和角色校验。
+- `server.mjs` 组合业务模块、鉴权和路由。`player-service.mjs` 提供页面分段数据、论坛、交易与部分游戏接口。
+- 上传影像通过授权媒体接口返回；头像派生小尺寸缓存。静态文本支持压缩和 ETag，带内容哈希的素材长期缓存。
+- `.env`、数据库、头像原件、真实员工资料和密钥不入 Git。预览数据库必须与生产隔离。
 
-## 两个页面与文件归属
+## 页面与模块
 
-- 玩家：public/player-terminal.html、public/player.js、public/player-layout.css。保留下载原版黑色开屏和 Logo，后续美工从这些文件继续修改。
-- 管理员：public/admin-terminal.html、public/app.js、public/admin-extra.js、public/admin-layout.css、public/style.css。
-- 后端：server.mjs 处理鉴权与基础业务；player-service.mjs 处理玩家业务、审核、聊天和活动记录；server-content.mjs、server-ticket.mjs、server-card-table.mjs 保存玩法配置与结算逻辑。
-- 部署：Dockerfile、compose.yaml、deploy/；管理员恢复工具：admin-account.mjs。
-- 数据：服务器 data/wanyehui.db（含运行时 WAL/SHM）。代码仓库不保存真实数据。Windows 预览使用独立 data-local/。
+| 功能 | 主要模块 |
+| --- | --- |
+| 登录、页面进入和懒加载 | player.js、player-startup.js、http-client.js、server-auth.mjs |
+| 个人主页、配色和签到 | personal-hud.js、rewards-ui.js、server-personal.mjs、server-appearance.mjs |
+| 公告与评论 | notices-ui.js、admin-community.js、server.mjs、server-community.mjs |
+| 论坛与生活记录 | player-community.js、forum-replies.js、server-forum-replies.mjs、server-community.mjs |
+| 收容档案 | archive-board.js、archive-room-restoration.css、server-personnel.mjs |
+| 刮刮乐 | server-ticket.mjs、server-economy.mjs、scratch-feedback.js |
+| 异常回路 | server-slot.mjs、slot-effects.js |
+| 下班竞速 | server-derby.mjs、server-animal-race.mjs、derby-ui.js、derby-scene.js |
+| 共享速降 | server-sky.mjs、server-sky-rules.mjs、sky-ui.js、sky-scene.js |
+| 斗太姥 | server-card-table.mjs、server-card-wallet.mjs、ddz-ui.js、ddz-rules.js |
+| 证券与账目 | server-market.mjs、market-chart.js、economy-ui.js、welfare-ui.js |
+| 大奖与个人纪录 | server-game-highlights.mjs、jackpot-ticker.js、personal-record.js |
 
-Node.js 24 + 原生 HTTP + SQLite WAL。首次运行先执行 `npm ci`；Sharp 用于头像缩略图，Docker 构建会自动安装锁定依赖。两个域名均反代同一个 4173 应用，并保留 Host。aved.space 显示玩家端，authority.aved.space 显示管理员端，后端接口仍按登录权限检查。域名本身不赋予管理员权限。
+当前个人主页加载 personal-hud.js；personal-ui.js 是旧版保留文件，不应误当成当前界面入口。
 
-## 已有代码能力
+## 已确认的行为与边界
 
-- 用户名唯一，角色名不重复时也可登录，密码至少 6 位。浏览器密码管理器可记账号密码；网页仅保存用户名偏好，余额、帖子和个人资料不作为本地业务数据保存。
-- 同源 HttpOnly 会话；管理员 API 校验角色。HTTPS 就绪后可显式设置 COOKIE_SECURE=true，HTTP 预览保持 false。
-- 员工录入、资料修改、停用、密码重置、删除；后台余额调整接口与流水；匿名发言对应真人查询接口。删除操作有确认。
-- 公告、档案、论坛、头像、匿名名、签到、余额与成就从数据库读取。
-- 图文主题/回复整条待审，管理员看到文字和图片，批准后公开；纯文字直接发布。
-- activity_logs 保存数据库变更快照、登录及管理请求记录。删帖/删除账号不会清空历史审计快照；不记录明文密码或会话令牌。这是业务操作审计，不是所有鼠标点击的录像。
-- 刮刮乐、老虎机、竞速、空投、牌桌由服务端生成随机种子、结算并写流水；玩家不能提交自己计算的奖金。
-- 聊天使用 SSE 推送，消息持久化；Nginx 必须关闭代理缓冲。
-- 音乐曲目由后台录入 HTTPS 外链。待办已移除。
-- /api/health 检查应用和数据库连接，未登录 /api/me 返回 401 属于预期。
+- 玩家资料按页面异步读取，首屏 bootstrap 不下载完整论坛、目录或游戏历史。余额和交易状态不使用长期前端缓存。
+- 论坛主题每页 10 条；回复按 ID 顺序每页 20 条。`GET /api/player/forum/:id?after=ID` 加载后续回复；`?since=REVISION` 最多返回 20 条变化和移除编号。返回 `changesCursor`、`moreChanges`，首次及分页读取另有 `next`。定时同步不重建未变化的回复节点，草稿表单保持原位。
+- `forum_reply_clock` 和 `forum_reply_versions` 由回复写入触发器更新。每条回复仅保留最新版本号，删除保留编号，不额外复制正文或图片。旧数据首次读取建立客户端同步基线。
+- 股票仅在娱乐室与股票子面板同时可见、页面处于前台时轮询。切回时补一次刷新；已有请求使用 busy 锁合并。
+- 联机速降、竞速和牌桌使用真实服务端状态和 SSE；切离对应玩法时关闭连接。单进程广播尚未扩展为多实例消息总线。
+- 所有下注、扣款、返还和结算由服务端处理。客户端提交操作和金额意向，不能上传最终余额或自算奖金。
+- 图文发帖先审核，普通文字直接发表。管理员公告每次 10 条摘要，展开后加载正文和评论；公告评论可修改发布时间。
+- 玩家端公司直属身份显示自定义职位；管理员字段名为“自定义职位”。
+- 收容页面进入时短暂遮蔽部分文字，约 45ms 更换乱码、95ms 恢复；普通点击、检索和评论更新不重播进入效果。
+- 三套配色、日夜模式、特效开关保留；论坛表情按需加载本地资源，无搜索框。
+- 管理端记录筛选年份固定为 2026、2027，这是明确产品设定，不自动扩展。
+- 像素西装人默认头像仅做过概念预览，已明确取消实装。
 
-## 尚未完成或需要验收
+## 游戏规则与反馈
 
-1. 本轮已完成隔离数据库下的登录/证券 API 测试、慢连接登录和三端布局浏览器检查；头像、审核、重复点击和多人并发仍需继续验收。
-2. 牌桌目前是简化规则的两位电脑对手，不是完整规则的三人联机斗地主；空投是个人架次，聊天共享。
-3. 还需并发与断线恢复测试、游戏请求幂等键、完整奖励数值审核。随机性本身不等于公平性或可公开验证的抽奖承诺。
-4. 登录已有进程内失败次数限制，但 Nginx 后面的连接可能共用代理 IP；应在可信代理配置完善后按账号及来源细化。密码哈希当前同步计算，高峰集中登录可能短暂阻塞事件循环。
-5. 审计快照可能重复保存图片，数据库会较快增长。后续迁移图片到对象存储并在数据库保存引用；增加必要索引和分页。不要擅自删除历史审计。
-6. 数据库备份恢复、监控告警、部署回滚演练尚未自动完成。备份必须用 SQLite 一致性备份或停服务后复制整个数据目录，不能分别热拷贝正在变化的 DB/WAL/SHM 当作可靠备份。
-7. 当前 SSE 广播仅在单 Node 进程内。单机 20–30 在线可先观察；多实例前需要共享消息通道与数据库方案，不能直接多开 SQLite 容器当成扩容。
+概率与结算以对应服务端模块为准，修改时同步模拟测试；下述回报率为长期统计口径，不保证个人收益。
 
-## 下一步顺序
+- 刮刮乐保持现有六档票价与三种刮票样式，约 120% 平均返还；炸弹机制和追加医疗费保留。首次实际刮开时服务端购票结算，展示结果后才触发本人反馈。下一张保留仍在播放的礼花。
+- 异常回路使用五列转轮、组合奖、稀有大奖和过载维修费；当前模拟平均返还约 122%。转轮停稳后再播放结果。
+- 五选手竞速包含三只猫、小猪、法斗法棍；可分别押第一名和最后一名。各选手各位次概率 20%，命中返还 6.25 倍；15 秒下注、25 秒比赛、6 秒结果。赛道事件由服务器结果驱动，客户端不能控制选手。
+- 速降各架次共享隐藏安全线，服务器记录每人开伞时间和返还。允许早开伞亏本；奖金曲线上升。既有架次使用自身保存规则，新架次才使用新参数。
+- 斗太姥支持三人和四人真实牌桌、电脑补位。开局锁定 10,000，底注 100 × 叫分 × 倍率，剩余筹码结算后释放，系统提供胜方额外奖金。离桌托管只完成当前局，不自动开下一局。当前策略：整局没有手动出牌则不获得正收益，不能用纯托管持续刷钱；具体以 `autoProfitPolicy` 为准。
+- 好彩时刻展示近 30 分钟满足门槛的真实结算；个人破纪录独立处理。只有本人、`personalBest===1`、实际盈利且五分钟内的事件可以触发个人提示。按账号和 ticketId 保存最多 128 个已播编号，重复 SSE、重连和刷新不重复庆祝。所有五种游戏接入同一个提示，关闭特效或减少动态效果时保留静态金额。
+- 各玩法分别保存个人最高奖金并触发破纪录反馈；个人主页从中展示最高单局奖金。不能用世界播报触发他人的破纪录礼花；证券收益不计入小游戏纪录。
 
-1. 东京服务器启动容器；两个域名解析到同一东京 IP；Nginx 转发与 HTTPS 恢复。
-2. 登录管理员，登记一位玩家，验收玩家登录、发帖、图文审核和余额持久化。
-3. 完成备份、活动记录及多人聊天室验收，再逐步调整 UI、交互、美术。
-4. 按真实 CPU、内存、延迟和数据库增长评估是否升级，而非仅按注册人数购买更大服务器。
+## 验证与发布
 
-## 多人协作约定
+运行 `node --test --test-timeout=30000 tests/*.test.mjs`，维护脚本另运行 `python tests/daily-maintenance_test.py`。HTTP 集成测试使用独立临时数据库和端口，不访问生产玩家资料。
 
-- UI 开发改玩家 HTML/CSS/JS；管理员页面单独维护，禁止用玩家页面覆盖它。
-- API.md 是接口约定；后端改字段时同步文档和调用方。美工修改必须保留 API 调用和登录状态处理。
-- 功能分支提交 PR，团队合并 main 后才部署。服务器自动更新只跟踪 main，不代表每次保存文件立即上线。
-- 服务器不编辑被 Git 跟踪的代码；环境配置放 .env，真实内容通过管理端录入。
-- 自动更新遇到本地改动或分叉会停止，不强制覆盖。更新重启会暂时断开聊天，浏览器 SSE 会重连，不是零停机部署。
-- 后续数据库结构升级必须保留旧数据并设计迁移；迁移前做一致性备份。
+发布顺序：确认当前改动与远端 main → 测试 → 生产一致性备份 → 推送已验证提交至 main → 执行 aved-auto-update.service → 检查部署提交、容器、两站首页/API、静态资源和数据库完整性。生产目录 `/root/AVED`，容器 `aved-web-1`。保留服务器 `.env`、数据目录以及经单独配置的 compose.override.yaml。
 
-## 参考
+不要通过热拷贝分别保存运行中的 DB/WAL/SHM。使用 SQLite backup 或 VACUUM INTO，并验证备份；需要回滚时同时评估代码、数据库迁移和已有业务写入。
 
-- [Docker Ubuntu 安装](https://docs.docker.com/engine/install/ubuntu/)
-- [Nginx 反向代理](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
-- [AWS EC2 CloudWatch 指标](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html)
+## 仍需跟进
 
-## 本轮界面与行情调整
-
-- 侧边栏按钮固定在目录标题上方，移除底部重复收起操作；窄屏目录使用遮罩展开。
-- 保留原版黑色开屏主元素；用户提交登录立即显示连接框，完成认证、资料读取和界面准备后才进入公司内页。
-- public/terminal-time.js 统一日期显示规则；完整时间仍保存在后端，不修改审计原始时间。
-- server-market.mjs 保存分钟行情；public/market-chart.js 绘制响应式 SVG K 线、成交量和键盘可访问的报价。
-- 提示文本使用公司内语境；已有系统默认通告仅按完整旧文案匹配更新，不覆盖员工撰写的通告。
-- `node --test tests/terminal-market.test.mjs` 覆盖自然日边界、K 线持久化/合并、服务端定价和持仓、登录、部分遮蔽恢复。
-
-
-## 社区维护版本
-
-登录可靠性修复：server-media.mjs 将图片分离为独立授权请求；server-auth.mjs 处理可信代理、重复 Cookie 和失败限额；sessions 新增 issued_at，重复同名 Cookie 优先选择有效的最新登录，不撤销其他设备的会话。密码核验使用异步 PBKDF2。管理员页面确认会话后再显示工作台，忽略过时的自动恢复结果。HTML 不缓存，脚本带版本查询参数。tests/login-flow.test.mjs 覆盖断流/超时、重试、重复 Cookie、双端会话、HTTPS 和大头像下的资料包大小。
-
-- server-community.mjs 在原有玩家模块之后初始化增量表结构，在路由中先于原有处理器匹配；保留线上数据。
-- 新文件 public/player-community.js 和 admin-community.js 分别提供生活记录、修订窗口、内容维护与追溯检索。community.css 负责共享布局；terminology.js 只改展示，编辑控件和词库原词保留原文。
-- 原版开屏和图片字节不变，资源拆到 public/assets；内页背景图和密集网点已移除。
-- 公告使用上海自然日的相对时间，编辑记录使用相对天数与时分；后台日期筛选输入保留。数据库保留原始时间。
-- 部门股票扩充到五支；原证券代码、持仓、余额及既有报价保留。外部行情尚未接入，不能把当前内部报价称为真实市场数据。
-- 待定：回复双视图、前台应急角色及外部行情的数据源与归一化基准。没有新增前台管理权限。
-- deploy/update.sh 仅在版本变化或服务不健康时构建；成功通过健康检查后记录 .git/aved-deployed-revision，避免无更新仍重启。
-- 验证：隔离数据库覆盖身份同步、真人署名、作者权限、修订前后快照、审核、检索、保留式移除和头像审计例外。浏览器检查桌面、平板、手机布局和新增页面。
+- 管理端图片审核目前仍整体读取待审列表，分页与进一步懒加载按产品要求暂缓。
+- 自动化功能测试不能代替二核 2G、30～40 人同时在线的压力测试和低端实体手机帧率验证。
+- 不直接多开 SQLite 容器扩容；若将来使用多个服务实例，需要设计共享广播与数据一致性。
+- 多个 Codex 窗口可能共享同一工作目录。编辑前重读目标段落，禁止整文件回滚覆盖别人的修改；发布使用固定快照并再次确认差异。

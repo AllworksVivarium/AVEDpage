@@ -467,11 +467,19 @@
 
       function requestedPlayerView(){return AVEDStartup.route(location.hash,['profile',...mainViews]);}
       window.addEventListener('hashchange',()=>{if(currentUser)switchMainView(requestedPlayerView());});
+      let containmentVisit=0;
       function switchMainView(target) {
         if(!currentUser)return;
         if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
+        const enteringContainment=target==='containment'&&document.getElementById('view-containment').classList.contains('hidden');
+        const visit=++containmentVisit;
         if(target!=='welcome')history.replaceState(null,'','#/'+target);
-        if(target!=='profile'&&target!=='welcome')loadDeferredPlayerData(target).catch(e=>showToast(e.message,'warn'));
+        const sectionReady=target!=='profile'&&target!=='welcome'?loadDeferredPlayerData(target):null;
+        if(sectionReady)Promise.resolve(sectionReady).then(async()=>{
+          if(!enteringContainment||visit!==containmentVisit)return;
+          await nextPaint();
+          if(visit===containmentVisit&&!document.getElementById('view-containment').classList.contains('hidden'))triggerScpTitleRedactionGlitch();
+        }).catch(e=>showToast(e.message,'warn'));
         if(target==='welcome'&&currentUser){showProfile().catch(e=>showToast(e.message));return;}
         if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
@@ -498,9 +506,8 @@
 
         if(target==='profile')renderProfile();
         if (target === 'containment') {
-          scpBoardSelection=null;renderScpArchives();
+          if(enteringContainment)scpBoardSelection=null;renderScpArchives();
           randomizeScpDualNamePlaceholder();
-          triggerScpTitleRedactionGlitch();
         } else if (target === 'forum') {
           renderForumView();
 
@@ -609,17 +616,17 @@
       // ======================================================================
       // 分页 3：收容物一览（随机黑块乱码闪烁恢复 + 双人浅色提示搜索框 + 磁吸标题 + 空状态组件）
       // ======================================================================
-      let currentDualNameHint = '蒋正一 / 溟座';
 
 
 
-      // Board names and summaries share one 50 ms restoration deadline.
+      // One short redaction sequence per entry into the archive view.
       let scpBoardSelection=null;
       function triggerScpTitleRedactionGlitch() {
         AVEDArchiveBoard.glitch({document,enabled:!document.body.classList.contains('effects-off')&&!prefersReducedMotion});
       }
 
       function renderScpArchives() {
+        AVEDArchiveBoard.cancel();
         document.querySelectorAll('.scp-filter-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===selectedScpFilter)));
         const listEl = document.getElementById('scp-list-container');
         const emptyBox = document.getElementById('scp-empty-state-box');
@@ -684,14 +691,13 @@
             <div data-scp-id="${item.id}" aria-current="${active}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 ${active ? 'border-[#9e1b1b] shadow-lg' : 'border-black/60 opacity-90 hover:opacity-100'} transition cursor-pointer select-none flex flex-col justify-between">
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <span class="archive-pin-label text-[10px] font-mono-tech font-bold px-1.5 py-0.5 bg-black text-white">${item.pinLabel}</span>
-                  <div class="clue-pin" title="档案图钉"></div>
+                  <span class="archive-item-code font-mono-tech">${item.id}</span>
                   <span class="text-[10px] font-mono-tech font-bold text-[#9e1b1b]">${item.level}</span>
                 </div>
 
                 <div class="archive-evidence-strip bg-[#141413] text-[#e8e3d5] p-2 mb-2 font-mono-tech text-[10px] flex items-center justify-between border border-black">
-                  <span class="truncate">📷 ${item.polaroidTag}</span>
-                  <span class="text-red-400 font-bold ml-1 shrink-0">${item.id}</span>
+                  <span>${item.polaroidTag}</span>
+
                 </div>
 
                 <!-- 磁吸式收容物名称标题按钮 + 随机黑块乱码目标 -->
@@ -702,12 +708,12 @@
                 <p class="scp-glitchable-summary text-xs text-[#4a463f] line-clamp-1 leading-relaxed mb-2">${item.summary}</p>
               </div>
 
-              <div class="archive-clues pt-2 border-t border-black/15 space-y-1.5">
+              ${item.clues.length?`<div class="archive-clues pt-2 border-t border-black/15 space-y-1.5">
 
                 <div class="flex flex-wrap gap-1">
                   ${item.clues.map(c => `<span class="text-[10px] font-mono-tech px-1.5 py-0.5 bg-[#e2dccb] text-[#141413] border border-black/20">#${c}</span>`).join('')}
                 </div>
-              </div>
+              </div>`:''}
             </div>
           `;
         }).join('');
@@ -722,9 +728,8 @@
 
         const currentScp = scpItemsData.find(i => i.id === selectedScpId) || scpItemsData[0];
         detailEl.innerHTML = `
-          <div class="flex items-center justify-between text-[11px] font-mono-tech opacity-65 border-b border-[var(--inner-border-soft)] pb-2 mb-3">
-            <span>&gt; ARCHIVE DOSSIER // ${currentScp.id} &lt;</span>
-            <span>${currentScp.pinLabel}</span>
+          <div class="scp-dossier-heading flex items-center justify-between text-[11px] font-mono-tech opacity-65 border-b border-[var(--inner-border-soft)] pb-2 mb-3">
+            <span>收容物卷宗</span><span>${currentScp.id}</span>
           </div>
 
           <div class="border-b-2 border-[var(--inner-border)] pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -744,10 +749,10 @@
             <span class="opacity-60">IMAGE SLOT RESERVED</span>
           </div>
 
-          <div class="inner-card-alt p-3 mb-4 text-xs font-mono-tech space-y-1.5">
+          <div class="scp-dossier-meta inner-card-alt p-3 mb-4 text-xs font-mono-tech space-y-1.5">
             <div class="flex justify-between border-b border-[var(--inner-border-soft)] pb-1">
               <span class="opacity-70">管辖部门 / 责任人:</span>
-              <strong>${currentScp.department} (${currentScp.handlers})</strong>
+              <strong>${currentScp.department}${currentScp.handlers?` (${currentScp.handlers})`:""}</strong>
             </div>
             <div class="flex justify-between border-b border-[var(--inner-border-soft)] pb-1">
               <span class="opacity-70">收容位置:</span>
@@ -826,7 +831,6 @@
         scpSimulatedEmpty = false;
         scpSearchKeyword = scpSearchInput.value;
         renderScpArchives();
-        triggerScpTitleRedactionGlitch();
       });
 
 
@@ -847,12 +851,6 @@
         showToast('已清除筛选并恢复全部收容物档案！', 'success');
       });
 
-      document.getElementById('scp-empty-secondary-link').addEventListener('click', () => {
-        scpSimulatedEmpty = false;
-        scpSearchKeyword = currentDualNameHint;
-        scpSearchInput.value = currentDualNameHint;
-        renderScpArchives();
-      });
 
 
       document.querySelectorAll('.scp-filter-btn').forEach(btn => {
@@ -864,7 +862,6 @@
           });
           btn.className = 'scp-filter-btn px-3 py-1.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold cursor-pointer';
           renderScpArchives();
-          triggerScpTitleRedactionGlitch();
         });
       });
 
@@ -887,11 +884,6 @@
 
 
 
-      document.getElementById('forum-refresh-skeleton-btn').addEventListener('click', () => {
-        currentForumThreadId = null;
-        playSfx('click');
-        renderForumView();
-      });
 
 
 
@@ -956,7 +948,6 @@
         currentDepth: 100.0,
         safeLineDepth: 1200,
         touchdownDepth: 1416,
-        waxHash: '7c4a91e0b2f8',
         playerBoarded: false,
         playerBet: 1000,
         playerJumped: false,
@@ -974,17 +965,6 @@
 
       let skydiveRafId = null;
 
-      function simpleHashString(str) {
-        let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
-        for (let i = 0, ch; i < str.length; i++) {
-          ch = str.charCodeAt(i);
-          h1 = Math.imul(h1 ^ ch, 2654435761);
-          h2 = Math.imul(h2 ^ ch, 1597334677);
-        }
-        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-        return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
-      }
 
       function depthToMultiplier(depth) {
         if (depth < 100) return 0;
@@ -1056,7 +1036,6 @@
           document.getElementById('skydive-airship-extra-count').textContent = `机上 ${skydiveState.passengers.length}`;
         }
 
-        document.getElementById('skydive-wax-hash').textContent = skydiveState.waxHash.substring(0, 10) + '...';
 
         const totalOnBoard = skydiveState.passengers.length;
         const landedCount = skydiveState.passengers.filter(p => p.status === 'LANDED').length;
@@ -1138,12 +1117,12 @@
       // 分页 6-2：五轮五线 收容抑制矩阵（已全部替换为 SCP 工业收容符号，无猫咪）
       // ======================================================================
       const slot5x3Symbols = [
-        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 88, m4: 468, m5: 2600 },
-        { id: 'rad', icon: '☢️', name: '高危核心', m3: 34, m4: 78, m5: 187 },
-        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 17, m4: 36, m5: 78 },
-        { id: 'file', icon: '📁', name: '机密卷宗', m3: 9, m4: 18, m5: 32 },
-        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 6, m4: 9, m5: 15 },
-        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 4, m4: 6, m5: 8 }
+        { id: 'eye', icon: '👁️', name: '收容之眼', m3: 60, m4: 120, m5: 650 },
+        { id: 'rad', icon: '☢️', name: '高危核心', m3: 12, m4: 35, m5: 120 },
+        { id: 'lock', icon: '🔺', name: '几何抑制锁', m3: 6, m4: 17, m5: 45 },
+        { id: 'file', icon: '📁', name: '机密卷宗', m3: 3.5, m4: 8, m5: 18 },
+        { id: 'dna', icon: '🧬', name: '记忆血清', m3: 2, m4: 4.5, m5: 10 },
+        { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 1.5, m4: 3, m5: 6 }
       ];
 
       const slot5x3Lines = [
@@ -1155,11 +1134,12 @@
       ];
 
       const slot5x3Mechanisms = [
-        { id: 'mech_1', title: '协议一 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×3 倍特别津贴', discovered: false },
+        { id: 'mech_1', title: '协议一 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×4 倍特别津贴', discovered: false },
         { id: 'mech_2', title: '协议二 辐射共振回响', desc: '首尾两列同时出现高危核心，返还本转投入的 50%', discovered: false },
-        { id: 'mech_3', title: '协议三 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×2 倍科研奖金', discovered: false }
+        { id: 'mech_3', title: '协议三 跨维样本序列', desc: '中线五格全为不同收容符号，触发 ×3 倍科研奖金', discovered: false }
       ];
 
+      let pendingSlotRequest=null;
       let slot5x3State = {
         board: [
           [slot5x3Symbols[2], slot5x3Symbols[5], slot5x3Symbols[4], slot5x3Symbols[1], slot5x3Symbols[0]],
@@ -1167,8 +1147,6 @@
           [slot5x3Symbols[4], slot5x3Symbols[3], slot5x3Symbols[0], slot5x3Symbols[5], slot5x3Symbols[2]]
         ],
         winningCells: new Set(),
-        tubePlainSeed: '',
-        tubeHash: '',
         history: [],
         spinning: false
       };
@@ -1186,7 +1164,7 @@
             const isWin = slot5x3State.winningCells.has(`${r}_${c}`);
             html += `
               <div class="slot-cell h-16 sm:h-18 bg-[#e8e3d5] border-2 ${isWin ? 'is-winning border-[#9e1b1b] ring-2 ring-white scale-[1.02]' : 'border-black'} text-[#141413] flex flex-col items-center justify-center shadow-inner transition">
-                <span class="slot-symbol text-xl sm:text-2xl" aria-hidden="true">${sym.icon}</span>
+                <span class="slot-symbol text-xl sm:text-2xl" aria-hidden="true">${AVEDPixelIcons.render(sym.id)}</span>
                 <span class="slot-symbol-name text-[10px] font-mono-tech font-bold opacity-80 mt-0.5">${sym.name}</span>
               </div>
             `;
@@ -1203,7 +1181,7 @@
         if (payBody) {
           payBody.innerHTML = slot5x3Symbols.map(s => `
             <tr>
-              <td class="py-1.5 font-bold">${s.icon} ${s.name}</td>
+              <td class="py-1.5 font-bold">${AVEDPixelIcons.render(s.id)} ${s.name}</td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m3}×</div><div class="font-bold">${(s.m3 * lineBet).toLocaleString()}</div></td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m4}×</div><div class="font-bold">${(s.m4 * lineBet).toLocaleString()}</div></td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m5}×</div><div class="font-bold text-[#9e1b1b]">${(s.m5 * lineBet).toLocaleString()}</div></td>
@@ -1225,23 +1203,23 @@
       }
 
       function renderSlot5x3History() {
-        document.getElementById('slot5x3-history-header').textContent = `— 本桶记录 共 ${slot5x3State.history.length} 转`;
+        document.getElementById('slot5x3-history-header').textContent = `— 运转记录 共 ${slot5x3State.history.length} 转`;
         const listEl = document.getElementById('slot5x3-history-list');
         if (!listEl) return;
         if (slot5x3State.history.length === 0) {
-          listEl.innerHTML = `<div class="py-4 text-center opacity-60">新序列桶刚封上，尚未运转。</div>`;
+          listEl.innerHTML = `<div class="py-4 text-center opacity-60">尚无运转记录。</div>`;
           return;
         }
         listEl.innerHTML = slot5x3State.history.map((h, i) => `
           <div class="p-2 inner-card-alt flex justify-between items-center">
             <span>#${i + 1} 转 | 投入 ${h.bet.toLocaleString()}</span>
-            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win})}</strong>
+            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind})}</strong>
           </div>
         `).join('');
       }
 
       function initSlot5x3Game() {
-        createNewSlotTube();
+        loadSlotHistory();
         renderSlot5x3Board();
       }
 
@@ -1271,7 +1249,7 @@
 
 
       // ======================================================================
-      // 分页 6-3：多档位 3 款封印配给刮刮乐（已彻底去除猫咪，改为严肃 SCP 收容配给主题，隐藏EV）
+      // 分页 6-3：多档位 3 款配给刮刮乐（已彻底去除猫咪，改为严肃 SCP 收容配给主题，隐藏EV）
       // ======================================================================
       const scratchTiers = [
         { id: 't1', name: 'D级配给', cost: 1000, internalEv: 0.50, mult: 1 },
@@ -1535,96 +1513,6 @@
       // ======================================================================
       // 分页 6-4：异常竞速赛马
       // ======================================================================
-      const derbyRunners = [
-        { id: 0, name: '1号 法棍 (法斗)', icon: '🐕', odds: 2.2, desc: '稳健巡游，胜率高' },
-        { id: 1, name: '2号 几何折跃兽', icon: '🦌', odds: 3.5, desc: '偶发短距瞬移' },
-        { id: 2, name: '3号 深潜触须体', icon: '🦑', odds: 5.0, desc: '后程爆发极强' },
-        { id: 3, name: '4号 混沌电子羊', icon: '🐑', odds: 8.5, desc: '冷门高倍黑马' }
-      ];
-
-      let derbyState = {
-        round: 104,
-        secretPlainSeed: '',
-        preCommitHash: '',
-        predeterminedWinnerId: 0,
-        selectedHorseId: 0,
-        running: false,
-        positions: [0, 0, 0, 0]
-      };
-
-      const derbyChatLog = [];
-
-
-
-      function renderDerbyTracksAndButtons() {
-        const tracksEl = document.getElementById('derby-tracks-container');
-        if (tracksEl) {
-          tracksEl.innerHTML = derbyRunners.map((h, idx) => {
-            const pct = Math.min(92, derbyState.positions[idx]);
-            return `
-              <div class="space-y-1">
-                <div class="flex justify-between text-[11px]">
-                  <span>${h.name} <span class="text-amber-400">[赔率 ${h.odds}x]</span></span>
-                  <span class="opacity-60">${h.desc}</span>
-                </div>
-                <div class="h-8 bg-black border border-white/20 relative flex items-center px-2">
-                  <div class="absolute right-3 top-0 bottom-0 border-r-2 border-dashed border-red-500/70"></div>
-                  <div class="transition-all duration-100 text-lg" style="margin-left: ${pct}%">${h.icon}</div>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-
-        const btnsEl = document.getElementById('derby-horse-select-btns');
-        if (btnsEl) {
-          btnsEl.innerHTML = derbyRunners.map(h => {
-            const active = derbyState.selectedHorseId === h.id;
-            return `
-              <button type="button" data-horse-id="${h.id}"
-                class="derby-pick-btn p-2.5 border text-left transition cursor-pointer ${active ? 'bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold' : 'inner-card-alt opacity-80 hover:opacity-100'}">
-                <div class="text-xs font-bold">${h.icon} ${h.name}</div>
-                <div class="text-[11px] text-[var(--inner-crimson)] font-bold mt-0.5">赔率: ${h.odds} 倍</div>
-              </button>
-            `;
-          }).join('');
-
-          btnsEl.querySelectorAll('.derby-pick-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              if (derbyState.running) return;
-              derbyState.selectedHorseId = parseInt(btn.getAttribute('data-horse-id'), 10);
-              playSfx('click');
-              renderDerbyTracksAndButtons();
-            });
-          });
-        }
-
-        const chosen = derbyRunners[derbyState.selectedHorseId];
-        document.getElementById('derby-current-bet-info').textContent = `已选：${chosen.name} (${chosen.odds}倍)`;
-      }
-
-
-      document.getElementById('derby-next-round-btn').addEventListener('click', () => {
-        derbyState.round += 1;
-        initDerbyRound();
-      });
-
-      function renderDerbyChat() {
-        const box = document.getElementById('derby-chat-messages');
-        if (!box) return;
-        box.innerHTML = derbyChatLog.map(m => `
-          <div class="p-2 inner-card-alt space-y-0.5">
-            <div class="flex justify-between text-[10px] opacity-70">
-              <strong class="text-[var(--inner-crimson)]">${m.sender}</strong>
-              <span>${m.time}</span>
-            </div>
-            <div class="text-xs">${m.text}</div>
-          </div>
-        `).join('');
-        box.scrollTop = box.scrollHeight;
-      }
-
-
       // 娱乐室子导航切换
       const gamePanels = ['home', 'skydive', 'slots', 'scratch', 'derby', 'doudizhu', 'stocks'];
       document.querySelectorAll('.game-tab-btn').forEach(btn => {
@@ -1649,22 +1537,24 @@
       function applyMarket(data) {
         if(data.items)stocksData.splice(0,stocksData.length,...data.items);
         if(data.orders)stockOrdersData.splice(0,stockOrdersData.length,...data.orders);
-        if(data.market)marketView=data.market;
+        if(data.market?.code===marketCode&&data.market.period===marketPeriod)marketView=data.market;
         if(data.serverTime)AVEDTime.sync(data.serverTime);
         if(typeof data.balance==='number'){currentUser.balance=data.balance;syncUserHeaderUI();}
         renderStocks();
       }
       async function refreshMarket() {
-        if(!currentUser||marketBusy)return;marketBusy=true;
+        if(!marketVisible()||marketBusy)return;marketBusy=true;
         const code=marketCode,period=marketPeriod;
         try {
           const data=await api('/api/player/stocks?code='+encodeURIComponent(code)+'&period='+period);
           if(code===marketCode&&period===marketPeriod)applyMarket(data);
         } finally {marketBusy=false;if(code!==marketCode||period!==marketPeriod)refreshMarket().catch(e=>showToast(e.message));}
       }
+      const byId=id=>document.getElementById(id);
+      window.AVEDPersonalRecord=AVEDPersonalRecords.create({getUser:()=>currentUser,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden'),playSfx,onRecord:()=>{profileFreshAt=0;}});
+      const slotEffects=AVEDSlotEffects({panel:byId('game-panel-slots'),grid:byId('slot5x3-grid'),playSfx});
       function renderStocks() {
         economyUI?.renderHoldings();
-        const availableBalance=currentUser?.balance||0;
         const movementMeta=(current,previous)=>previous==null?{arrow:'•',className:'tick-flat'}:(current>previous?{arrow:'↑',className:'tick-up'}:(current<previous?{arrow:'↓',className:'tick-down'}:{arrow:'•',className:'tick-flat'}));
         const value=marketView?.index;
         if(value){
@@ -1675,7 +1565,7 @@
           previousIndexPrice=value.price;
         }
         const select=document.getElementById('stock-chart-symbol');
-        select.innerHTML='<option value="KARMA">KARMA INDEX</option>'+stocksData.map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+'</option>').join('');select.value=marketCode;
+        select.innerHTML='<option value="KARMA">KARMA INDEX</option>'+stocksData.filter(stock=>stock.code!=='KARMA').map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+'</option>').join('');select.value=marketCode;
         document.getElementById('stock-chart-period').value=String(marketPeriod);
         const quote=marketView?.quote;
         if(quote){
@@ -1687,47 +1577,46 @@
           const change=document.getElementById('market-selected-change');change.textContent=(quote.change>=0?'+':'')+quote.change.toFixed(2)+'%';change.className=quote.change>=0?'market-up':'market-down';
           AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA'});
         }
-        const container=document.getElementById('stocks-table-body');
-        if(container.contains(document.activeElement)&&document.activeElement.matches('[data-stock-quantity], [data-stock-stop-input], [data-stock-take-input], [data-stock-leverage-input]'))return;
-        const previousInputs=new Map([...container.querySelectorAll('[data-stock-quantity]')].map(input=>[input.dataset.stockQuantity,input.value]));
-        const leverageInputs=new Map([...container.querySelectorAll('[data-stock-leverage-input]')].map(input=>[input.dataset.stockLeverageInput,input.value]));
-        const stopInputs=new Map([...container.querySelectorAll('[data-stock-stop-input]')].map(input=>[input.dataset.stockStopInput,input.value]));
-        const takeInputs=new Map([...container.querySelectorAll('[data-stock-take-input]')].map(input=>[input.dataset.stockTakeInput,input.value]));
-        container.innerHTML=stocksData.map((stock,index)=>{const move=movementMeta(stock.price,previousQuotePrices.get(stock.code));const moveColorClass=move.className==='tick-up'?'market-up':(move.className==='tick-down'?'market-down':'');const leverageSelected=leverageInputs.get(stock.code)||'3';const estTrade=stock.price*Number(previousInputs.get(stock.code)||1);const estMargin=Math.ceil(estTrade/Number(leverageSelected||3));return `<article class="stock-quote-card" data-stock-index="${index}" data-stock-code="${esc(stock.code)}">
-          <div class="stock-quote-heading"><button type="button" data-stock-chart-code="${esc(stock.code)}">${esc(stock.code)}</button><span class="${stock.change>=0?'market-up':'market-down'}">${stock.change>=0?'+':''}${stock.change.toFixed(2)}%</span></div>
-          <h4>${esc(stock.name)}</h4><div class="stock-price-row"><strong class="stock-quote-price ${moveColorClass}">${fmtMoney(stock.price)}</strong><span class="market-tick-indicator ${move.className}" aria-label="实时方向">${move.arrow}</span></div>
-          <p>持仓 ${Math.abs(stock.holding).toLocaleString()} 股（${stock.side==='short'?'买跌':'买涨'}）｜ 保证金 ${fmtMoney(stock.marginUsed||0)} ｜ 名义仓位 ${fmtMoney(stock.positionNotional||0)} ｜ 均价 ${fmtMoney(stock.avgCost||0)}${stock.effectiveLeverage?` ｜ 杠杆 ${stock.effectiveLeverage}x`:''}</p>
-          <label>委托数量<input id="stock-quantity-${index}" data-stock-quantity="${esc(stock.code)}" data-stock-price="${stock.price}" data-stock-holding="${stock.holding}" type="number" min="1" max="10000" step="1" value="${esc(previousInputs.get(stock.code)||'1')}"></label>
-          <label>杠杆倍数<select id="stock-leverage-${index}" data-stock-leverage-input="${esc(stock.code)}"><option value="3" ${leverageSelected==='3'?'selected':''}>3x</option><option value="10" ${leverageSelected==='10'?'selected':''}>10x</option></select></label>
-          <label>止损（可选）<input id="stock-stop-${index}" data-stock-stop-input="${esc(stock.code)}" type="number" min="1" step="1" value="${esc(stopInputs.get(stock.code)||'')}"></label>
-          <label>止盈（可选）<input id="stock-take-${index}" data-stock-take-input="${esc(stock.code)}" type="number" min="1" step="1" value="${esc(takeInputs.get(stock.code)||'')}"></label>
-          <p class="portfolio-empty text-xs">可用余额 ${fmtMoney(availableBalance)} ｜ 预计成交额 <span class="stock-est-trade">${fmtMoney(estTrade)}</span> ｜ 预计保证金 <span class="stock-est-margin">${fmtMoney(estMargin)}</span> ｜ 余额可为负</p>
-          <div class="stock-trade-actions"><button type="button" data-long-idx="${index}" data-long-code="${esc(stock.code)}" class="stock-buy-btn">买涨</button><button type="button" data-short-idx="${index}" data-short-code="${esc(stock.code)}" class="stock-sell-btn">买跌</button></div>
-        </article>`;}).join('');
+        const container=byId('stocks-table-body');
+        const orderedStocks=[...stocksData].sort((a,b)=>Number(b.code==='KARMA')-Number(a.code==='KARMA'));
+        container.innerHTML=orderedStocks.map(stock=>`<button type="button" class="stock-list-row" data-stock-chart-code="${esc(stock.code)}" aria-pressed="${marketCode===stock.code}"><span><b>${esc(stock.name)}</b><small>${esc(stock.code)}</small></span><strong class="${stock.change>=0?'market-up':'market-down'}">${fmtMoney(stock.price)}</strong><span class="stock-list-change ${stock.change>=0?'market-up':'market-down'}">${stock.change>=0?'+':''}${stock.change.toFixed(2)}%</span></button>`).join('');
+        const tradeSelect=byId('stock-trade-symbol'),oldCode=tradeSelect.value;
+        tradeSelect.innerHTML=orderedStocks.map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+' · '+esc(stock.code)+'</option>').join('');
+        tradeSelect.value=stocksData.some(s=>s.code===marketCode)?marketCode:stocksData.some(s=>s.code===oldCode)?oldCode:stocksData[0]?.code||'';
+        renderTradeTicket();
         stocksData.forEach(stock=>previousQuotePrices.set(stock.code,stock.price));
       }
-      document.getElementById('next-market-tick-btn').addEventListener('click',()=>refreshMarket().catch(e=>showToast(e.message,'warn')));
-      document.getElementById('stock-chart-symbol').addEventListener('change',event=>{marketCode=event.target.value;refreshMarket().catch(e=>showToast(e.message,'warn'));});
-      document.getElementById('stock-chart-period').addEventListener('change',event=>{marketPeriod=Number(event.target.value);refreshMarket().catch(e=>showToast(e.message,'warn'));});
-      document.getElementById('stocks-table-body').addEventListener('click',event=>{const button=event.target.closest('[data-stock-chart-code]');if(button){marketCode=button.dataset.stockChartCode;refreshMarket().catch(e=>showToast(e.message,'warn'));}});
-      document.getElementById('stocks-table-body').addEventListener('input',event=>{
-        const el=event.target;
-        const card=el.closest('.stock-quote-card');
-        if(!card)return;
-        const qtyInput=card.querySelector('[data-stock-quantity]');
-        if(!qtyInput)return;
-        const code=qtyInput.dataset.stockQuantity;
-        const quantity=Number(qtyInput.value)||0;
-        const leverageInput=card.querySelector('[data-stock-leverage-input]');
-        const leverage=Number(leverageInput?.value)||3;
-        const marketPrice=Number(qtyInput.dataset.stockPrice)||0;
-        const dealPrice=marketPrice;
-        card.querySelector('.stock-est-trade')&&(card.querySelector('.stock-est-trade').textContent=fmtMoney(dealPrice*quantity));
-        card.querySelector('.stock-est-margin')&&(card.querySelector('.stock-est-margin').textContent=fmtMoney(Math.ceil((dealPrice*quantity)/leverage)));
-        if(el.matches('[data-stock-stop-input], [data-stock-take-input], [data-stock-quantity], [data-stock-leverage-input]')) {
-          card.dataset.stockCode=code;
+      // One persistent ticket: live quotes never replace quantity or risk inputs.
+      const stockDrafts=new Map();
+      let draftCode='',stockTradeBusy=false;
+      function renderTradeTicket(){
+        const code=byId('stock-trade-symbol').value,stock=stocksData.find(s=>s.code===code);
+        if(draftCode!==code){
+          if(draftCode)stockDrafts.set(draftCode,Object.fromEntries(['quantity','leverage','stop','take'].map(key=>[key,byId('stock-trade-'+key).value])));
+          const draft=stockDrafts.get(code)||{quantity:'1',leverage:'10',stop:'',take:''};
+          for(const key of ['quantity','leverage','stop','take'])byId('stock-trade-'+key).value=draft[key];
+          draftCode=code;
         }
-      });
+        byId('stock-trade-position').textContent=stock?'现价 '+fmtMoney(stock.price)+' · 持仓 '+Math.abs(stock.holding).toLocaleString()+(code==='KARMA'?' 份':' 股')+(stock.holding?'（'+(stock.holding<0?'买跌':'买涨')+'）':''):'请选择证券';
+        const amount=(stock?.price||0)*(Number(byId('stock-trade-quantity').value)||0),leverage=Number(byId('stock-trade-leverage').value)||10;
+        byId('stock-est-trade').textContent=fmtMoney(amount);
+        byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
+        byId('stock-trade-ticket').querySelectorAll('[data-stock-trade-side]').forEach(button=>button.disabled=!stock||stockTradeBusy||(button.dataset.stockTradeSide==='close'?!stock.holding:stock.holding&&((stock.holding>0)!==(button.dataset.stockTradeSide==='long'))));
+      }
+      function selectMarket(code){
+        marketCode=code;
+        if(stocksData.some(s=>s.code===code)){byId('stock-trade-symbol').value=code;renderTradeTicket();}
+        byId('stock-chart-symbol').value=code;
+        byId('stocks-table-body').querySelectorAll('[data-stock-chart-code]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.stockChartCode===code)));
+        refreshMarket().catch(e=>showToast(e.message,'warn'));
+      }
+      byId('next-market-tick-btn').addEventListener('click',()=>refreshMarket().catch(e=>showToast(e.message,'warn')));
+      byId('stock-chart-symbol').addEventListener('change',event=>selectMarket(event.target.value));
+      byId('stock-chart-period').addEventListener('change',event=>{marketPeriod=Number(event.target.value);refreshMarket().catch(e=>showToast(e.message,'warn'));});
+      byId('stocks-table-body').addEventListener('click',event=>{const button=event.target.closest('[data-stock-chart-code]');if(button)selectMarket(button.dataset.stockChartCode);});
+      document.querySelector('[data-market-index]').addEventListener('click',()=>selectMarket('KARMA'));
+      byId('stock-trade-symbol').addEventListener('change',event=>selectMarket(event.target.value));
+      byId('stock-trade-ticket').addEventListener('input',event=>{if(event.target.matches('input,select'))renderTradeTicket();});
 
       // 在线牌桌
       const rankOrder = [
@@ -1752,7 +1641,6 @@
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
       let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false;
-      const byId=id=>document.getElementById(id);
       function showToast(message,type='info') {
         const el=document.createElement('div');el.className='aved-toast';el.dataset.type=type;el.setAttribute('role','status');
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
@@ -1761,12 +1649,13 @@
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
+        forumListPosition=null;forumListMarkup='';
         deferredSections.clear();deferredRequests.clear();
-        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
+        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;window.AVEDAppearance?.setEntitlements(playerProfile.appearance);playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
-        currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:data.employee.department,
+        currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:/^公司直属(?:领导)?$/.test(data.employee.department||'')&&data.employee.positionTitle?data.employee.positionTitle:data.employee.department,
           identityKind:data.employee.identityKind,positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
@@ -1817,17 +1706,21 @@
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function completeEnterIntranet(emp){
+        innerAppView.classList.add('intranet-preparing');
+        try{
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        renderScratchTiersAndLobby();initSlot5x3Game();initDerbyRound();switchMainView(requestedPlayerView());
+        renderScratchTiersAndLobby();initSlot5x3Game();switchMainView(requestedPlayerView());
         communityUI.refresh();
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         // Chat streams open only while their game panel is visible.
         startChatStreams();
+        await nextPaint();
         document.documentElement.dataset.entryState='ready';
+        }finally{innerAppView.classList.remove('intranet-preparing');}
       }
       function renderCompanyNewsView(){
         const n=companyNews.find(n=>n.id===currentNewsId);
@@ -1850,29 +1743,52 @@
       function randomizeScpDualNamePlaceholder(){const item=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)]:null;byId('scp-search-input').placeholder=item?(item.searchName||item.codeName):'检索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
       function readImageFileAsDataUrl(file,callback){if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1500000){showToast('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。','warn');return;}const reader=new FileReader();reader.onload=()=>callback(reader.result);reader.readAsDataURL(file);}
-      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
+      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button forum-edit-action" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
       const attachment=item=>item.imageData?`<img src="${esc(item.imageData)}" class="max-w-full max-h-96 object-contain mt-3" alt="随帖影像" loading="lazy">`:'';
-      function returnForumList(){currentForumThreadId=null;renderForumView();byId('view-forum').scrollIntoView({block:'start'});}
+      const forumReplies=AVEDForumReplies({api,container:byId('forum-detail-replies-list'),count:byId('forum-detail-reply-count'),
+        enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
+        onError:message=>showToast(message,'warn'),onThread:thread=>{const index=forumThreads.findIndex(t=>String(t.id)===String(thread.id));if(index>=0)forumThreads[index]=thread;renderForumMain(thread);},
+        renderItem:r=>`<div class="forum-post-meta"><b>${forumAuthor(r)} · ${fmtMoney(r.balance)}</b>${AVEDTime.markup(r.createdAt)}</div><p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}`});
+      function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)} · 余额 ${fmtMoney(th.balance)}</span>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
+      let forumListPosition=null,forumListMarkup='',forumRestoring=false;
+      function forumScrollRoot(){
+        for(let el=byId('view-forum').parentElement;el&&el!==document.body;el=el.parentElement){if(el.scrollHeight>el.clientHeight&&/auto|scroll/.test(getComputedStyle(el).overflowY))return el;}
+        return document.scrollingElement;
+      }
+      function rememberForumPosition(button){const card=button.closest('article');forumListPosition={id:button.dataset.cloudThread,offset:card.getBoundingClientRect().top,top:forumScrollRoot().scrollTop};}
+      function returnForumList(){
+        const root=forumScrollRoot(),anchoring=root.style.overflowAnchor;root.style.overflowAnchor='none';
+        currentForumThreadId=null;forumRestoring=true;renderForumView();
+        const restore=()=>{
+          const saved=forumListPosition,card=saved&&byId('forum-threads-list-container').querySelector('[data-forum-thread="'+CSS.escape(String(saved.id))+'"]');
+          root.scrollTo({top:card?root.scrollTop+card.getBoundingClientRect().top-saved.offset:saved?.top||0,behavior:'instant'});
+        };
+        requestAnimationFrame(()=>{restore();requestAnimationFrame(()=>{restore();root.style.overflowAnchor=anchoring;forumRestoring=false;});});
+      }
       function renderForumView(){
         const th=forumThreads.find(t=>String(t.id)===String(currentForumThreadId));
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
-        byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;
-        if(!th){currentForumThreadId=null;byId('forum-threads-list-container').innerHTML=forumThreads.map(t=>`<article class="retro-corner-box p-5 space-y-2"><div class="font-mono-tech text-xs">${forumAuthor(t)} ${AVEDTime.markup(t.createdAt)} 余额 ${fmtMoney(t.balance)}</div><h3 class="font-bold text-lg forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt whitespace-pre-wrap">${esc(Array.from(t.body||'').slice(0,240).join(''))}${Array.from(t.body||'').length>240?'…':''}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>';
-          if(forumNext)byId('forum-threads-list-container').insertAdjacentHTML('beforeend','<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>');
+        byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;byId('forum-refresh-skeleton-btn').hidden=!!th;
+        if(!th){currentForumThreadId=null;forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box p-5 space-y-2"><div class="forum-post-meta"><span>${forumAuthor(t)} · 余额 ${fmtMoney(t.balance)}</span>${AVEDTime.markup(t.createdAt)}</div><h3 class="font-bold text-lg forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt whitespace-pre-wrap">${esc(Array.from(t.body||'').slice(0,70).join(''))}${Array.from(t.body||'').length>70?'…':''}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>')+(forumNext?'<button id="forum-load-more" class="retro-corner-box w-full p-4">继续加载</button>':'');
+          if(markup!==forumListMarkup){forumListMarkup=markup;byId('forum-threads-list-container').innerHTML=markup;}
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        byId('forum-detail-main-post').innerHTML=`<div class="text-xs mb-4">${forumAuthor(th)} ${AVEDTime.markup(th.createdAt)} 余额 ${fmtMoney(th.balance)}</div><h3 class="text-xl font-bold">${esc(th.title)}</h3><p class="whitespace-pre-wrap mt-4">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;
-        api('/api/player/forum/'+th.id).then(d=>{if(String(currentForumThreadId)!==String(th.id))return;
-          byId('forum-detail-replies-list').innerHTML=d.items.map(r=>`<article class="inner-card-alt p-4 space-y-2"><b>${forumAuthor(r)}</b> ${AVEDTime.markup(r.createdAt)} ${fmtMoney(r.balance)}<p class="whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}${forumEditControl(r,'reply')}</article>`).join('')||'<p>暂无回复。</p>';
-          byId('forum-detail-reply-count').textContent='全部回复 ('+d.items.length+')';}).catch(e=>showToast(e.message,'warn'));
+        renderForumMain(th);forumReplies.open(th.id);
       }
-      function forumAuthor(item){return item.identityMode==='real'?esc(item.anonymousName)+' <i class="forum-real-badge">实名</i>':'匿名';}
-      async function refreshForum(){const selected=currentForumThreadId,d=await api('/api/player/forum');if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected);d.items.push(detail.thread);}catch(e){if(e.status===401)throw e;}}forumThreads=d.items;forumNext=d.next;renderForumView();}
+      function forumAuthor(item){return esc(item.anonymousName||'未登记代号')+(item.identityMode==='real'?' <i class="forum-real-badge">实名</i>':'');}
+      async function refreshForum(){
+        const selected=currentForumThreadId,d=await api('/api/player/forum');
+        // A reply/edit refreshes the head without throwing away pages already browsed.
+        const tail=selected&&d.next?forumThreads.filter(t=>Number(t.id)<Number(d.items.at(-1)?.id)):[];
+        let items=[...d.items,...tail],next=tail.length?forumNext:d.next;
+        if(selected&&!d.items.some(t=>String(t.id)===String(selected))){try{const detail=await api('/api/player/forum/'+selected),index=items.findIndex(t=>String(t.id)===String(selected));if(index<0)items.push(detail.thread);else items[index]=detail.thread;}catch(e){if(e.status===401)throw e;items=items.filter(t=>String(t.id)!==String(selected));}}
+        forumThreads=items;forumNext=next;renderForumView();
+      }
       async function loadMoreForum(){if(!forumNext||forumLoading)return;forumLoading=true;const el=byId('forum-load-more');if(el){el.disabled=true;el.innerHTML='<span class="animate-pulse">正在载入更多帖子… ▰ ▰ ▰</span>';byId('forum-skeleton-container').classList.remove('hidden');}
-        try{const d=await api('/api/player/forum?before='+forumNext);forumThreads.push(...d.items);forumNext=d.next;renderForumView();}finally{forumLoading=false;byId('forum-skeleton-container').classList.add('hidden');}}
-      window.addEventListener('scroll',()=>{if(currentUser&&!byId('view-forum').classList.contains('hidden')&&!currentForumThreadId&&innerHeight+scrollY>document.documentElement.scrollHeight-200)loadMoreForum().catch(e=>showToast(e.message));},{passive:true});
-      function createNewSlotTube(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>({bet:h.cost,win:h.prize}));byId('slot5x3-seal-status').textContent='封签已核验';byId('slot5x3-seal-hash').textContent='独立封签';byId('slot5x3-revealed-tube-seed').textContent='转轮停止后可核验封签。';renderSlot5x3History();}
-      function initDerbyRound(){derbyState.running=false;derbyState.positions=[0,0,0,0];byId('derby-status-text').textContent='请选择跑道并开闸。';byId('derby-pre-hash').textContent='赛场封签已就绪';byId('derby-start-race-btn').classList.remove('hidden');byId('derby-next-round-btn').classList.add('hidden');renderDerbyTracksAndButtons();}
+        try{const d=await api('/api/player/forum?before='+forumNext),ids=new Set(forumThreads.map(t=>String(t.id)));forumThreads.push(...d.items.filter(t=>!ids.has(String(t.id))));forumNext=d.next;renderForumView();}finally{forumLoading=false;byId('forum-skeleton-container').classList.add('hidden');const button=byId('forum-load-more');if(button){button.disabled=false;button.textContent='继续加载';}}}
+      window.addEventListener('scroll',()=>{if(currentUser&&!forumRestoring&&!byId('view-forum').classList.contains('hidden')&&!currentForumThreadId&&innerHeight+scrollY>document.documentElement.scrollHeight-200)loadMoreForum().catch(e=>showToast(e.message));},{passive:true});
+      function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind};});renderSlot5x3History();}
+
       function initSkydiveGame(){pollSky().catch(e=>showToast(e.message));}
       function initDoudizhu(){cardTableUI?.ensure();}
       function renderSky(state){skyRound=state.round;skyUI.render(state);}
@@ -1892,7 +1808,7 @@
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
       async function showProfile(){switchMainView('profile');if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;playerGameRecords=d.gameRecords||null;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
       function stop(event){event.preventDefault();event.stopImmediatePropagation();}
-      async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;button.disabled=false;}}}
+      async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;if(button.hasAttribute('data-stock-trade-side'))renderTradeTicket();else button.disabled=false;}}}
       document.addEventListener('submit',event=>{
         const form=event.target;const id=form.id;
         const handled=['new-forum-topic-form','forum-detail-reply-form','news-detail-comment-form','scp-realname-comment-form','skydive-chat-form','derby-chat-form','cloud-profile-form'];
@@ -1901,7 +1817,7 @@
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form';
             const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
-            form.reset();form.querySelector('[name=identityMode]').value='anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';await refreshForum();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
+            form.reset();form.querySelector('[name=identityMode]').value='anonymous';if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';await refreshForum();if(reply&&!d.pending)await forumReplies.reveal(d.id);showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
           }else if(id==='scp-realname-comment-form'){
@@ -1916,28 +1832,28 @@
           }
         });
       },true);
-      async function loadDossierComments(dossier){const d=await api('/api/player/dossiers/'+dossier.dbId+'/comments');dossier.realComments=d.items.map(c=>({id:String(c.id),authorName:esc(c.displayName),authorRole:esc(c.department),time:AVEDTime.markup(c.createdAt),text:esc(c.body)}));renderScpArchives();triggerScpTitleRedactionGlitch();}
+      async function loadDossierComments(dossier){const d=await api('/api/player/dossiers/'+dossier.dbId+'/comments');dossier.realComments=d.items.map(c=>({id:String(c.id),authorName:esc(c.displayName),authorRole:esc(c.department),time:AVEDTime.markup(c.createdAt),text:esc(c.body)}));renderScpArchives();}
       document.addEventListener('click',event=>{
         const card=event.target.closest('[data-scp-id]');if(card){const dossier=scpItemsData.find(d=>d.id===card.dataset.scpId);if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         const button=event.target.closest('button,a');if(!button)return;const id=button.id;
         if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();byId('news-detail-subview').scrollIntoView({block:'start'});return;}
-        if(button.dataset.cloudThread){stop(event);currentForumThreadId=button.dataset.cloudThread;renderForumView();byId('view-forum').scrollIntoView({block:'start'});return;}
+        if(button.dataset.cloudThread){stop(event);rememberForumPosition(button);currentForumThreadId=button.dataset.cloudThread;renderForumView();byId('view-forum').scrollIntoView({block:'start'});return;}
         if(button.dataset.nav==='welcome'){stop(event);showProfile().catch(e=>showToast(e.message));return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
-        if(button.dataset.nav){api('/api/player/view',{method:'POST',body:{page:button.dataset.nav}}).catch(()=>{});}
         if(button.dataset.game==='doudizhu')initDoudizhu();
-        const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','slot5x3-verify-tube-btn','derby-start-race-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
-        const trade=button.hasAttribute('data-long-idx')||button.hasAttribute('data-short-idx');
+        const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
+        const trade=button.hasAttribute('data-stock-trade-side');
+        if(trade&&stockTradeBusy)return;
         if(!handled.includes(id)&&!trade)return;stop(event);
         if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','无论余额为正数还是负数，重置后都会回到零。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
           if(id==='forum-load-more')return loadMoreForum();
-          if(id==='forum-refresh-skeleton-btn')return refreshForum();
+          if(id==='forum-refresh-skeleton-btn'){currentForumThreadId=null;forumListPosition=null;await refreshForum();byId('view-forum').scrollIntoView({block:'start'});return;}
           if(id==='ticket-modal-confirm-btn'||id==='scratch-next-ticket'){
             const type=id==='scratch-next-ticket'?activeIssuedTicket?.gameType:pendingTicketType;if(!type)throw new Error('请先选择票种。');
             if(scratchActivating)return;
-            scratchFeedback.clear();
+            scratchFeedback.nextTicket();
             const tier={...selectedTier};const cost=id==='scratch-next-ticket'?tier.cost:Number(byId('ticket-modal-price').dataset.cost),revision=id==='scratch-next-ticket'?economyRevision:Number(byId('ticket-modal-price').dataset.revision);
             activeIssuedTicket={draft:true,requestKey:crypto.randomUUID(),tier:{...tier,cost},gameType:type,cost,revision,cells:Array.from({length:type.cellsCount},(_,idx)=>({idx,revealed:false,label:idx===3?'核准印':'领赏号',sub:'待核准'}))};
             byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');
@@ -1945,39 +1861,41 @@
             byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
             byId('active-ticket-result-banner').textContent='尚未扣款 · 首次刮开时扣除票价，可免费跳过。';renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='跳过此张';if(id==='ticket-modal-confirm-btn')byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
           }else if(id==='slot5x3-spin-btn'){
-            const d=await api('/api/player/games/slot',{method:'POST',body:{bet:Number(byId('slot5x3-bet-input').value)}});
-            slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize});
-            d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);slot5x3State.tubePlainSeed=d.seed;slot5x3State.tubeHash=d.seedHash;
-            byId('slot5x3-seal-hash').textContent=d.seedHash;byId('slot5x3-win-summary').textContent=AVEDGameResults.text(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
-          }else if(id==='slot5x3-verify-tube-btn'){byId('slot5x3-revealed-tube-seed').textContent=slot5x3State.tubePlainSeed?'种子 '+slot5x3State.tubePlainSeed:'请先完成一转。';}
-          else if(id==='derby-start-race-btn'){
-            const d=await api('/api/player/games/derby',{method:'POST',body:{bet:Number(byId('derby-bet-amount').value),runner:derbyState.selectedHorseId}});
-            derbyState.running=true;byId('derby-start-race-btn').classList.add('hidden');byId('derby-pre-hash').textContent=d.seedHash;let ticks=0;
-            const timer=setInterval(()=>{ticks++;derbyState.positions=derbyRunners.map(r=>Math.min(r.id===d.result.winner?92:80,ticks*(r.id===d.result.winner?8:6)));renderDerbyTracksAndButtons();if(ticks>=12){clearInterval(timer);derbyState.running=false;currentUser.balance=d.balance;syncUserHeaderUI();byId('derby-status-text').textContent=derbyRunners[d.result.winner].name+' 夺冠 · '+AVEDGameResults.text(d);byId('derby-revealed-seed').textContent='种子 '+d.seed;byId('derby-next-round-btn').classList.remove('hidden');}},120);
-          }else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
+            if(!pendingSlotRequest||pendingSlotRequest.owner!==currentUser.id)pendingSlotRequest={owner:currentUser.id,bet:Number(byId('slot5x3-bet-input').value),requestKey:crypto.randomUUID()};
+            slotEffects.start();
+            let d,showSlotAward=false;try{d=await api('/api/player/games/slot',{method:'POST',body:pendingSlotRequest});pendingSlotRequest=null;showSlotAward=await slotEffects.finish(d);}catch(error){if(error.status>=400&&error.status<500)pendingSlotRequest=null;throw error;}finally{slotEffects.cancel();}
+            slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize,penalty:d.penalty,penaltyKind:d.result.penaltyKind});
+            d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);
+            byId('slot5x3-win-summary').textContent=AVEDGameResults.text(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
+            if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
+          }
+          else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
           else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
           else if(trade){
-            const long=button.hasAttribute('data-long-idx');
-            const index=Number(button.getAttribute(long?'data-long-idx':'data-short-idx'));
-            const code=button.getAttribute(long?'data-long-code':'data-short-code')||'';
-            const quantityInput=byId('stock-quantity-'+index);
+            stockTradeBusy=true;renderTradeTicket();
+            try{
+            const closing=button.dataset.stockTradeSide==='close';
+            const long=button.dataset.stockTradeSide==='long';
+            const code=byId('stock-trade-symbol').value;
+            const quantityInput=byId('stock-trade-quantity');
             if(!quantityInput)throw new Error('未找到委托输入框，请刷新后重试。');
             const quantity=Number(quantityInput.value);
             if(!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('委托数量应为 1 至 10,000 的整数。');
             if(!code)throw new Error('证券代码缺失，请刷新后重试。');
-            const leverageInput=byId('stock-leverage-'+index);
+            const leverageInput=byId('stock-trade-leverage');
             if(!leverageInput)throw new Error('未找到杠杆设置，请刷新后重试。');
             const leverage=Math.round(Number(leverageInput.value));
             if(![3,10].includes(leverage))throw new Error('杠杆仅支持 3x 或 10x。');
-            const stopRaw=byId('stock-stop-'+index)?.value;
-            const takeRaw=byId('stock-take-'+index)?.value;
+            const stopRaw=closing?'':byId('stock-trade-stop')?.value;
+            const takeRaw=closing?'':byId('stock-trade-take')?.value;
             const parseOptional=value=>value==null||value===''?null:Math.round(Number(value));
             const stopLoss=parseOptional(stopRaw),takeProfit=parseOptional(takeRaw);
             if(stopLoss!==null&&(!Number.isSafeInteger(stopLoss)||stopLoss<=0))throw new Error('止损价需为正整数。');
             if(takeProfit!==null&&(!Number.isSafeInteger(takeProfit)||takeProfit<=0))throw new Error('止盈价需为正整数。');
             const stock=stocksData.find(item=>item.code===code);
             const currentPrice=Number(stock?.price);
-            if(Number.isFinite(currentPrice)&&currentPrice>0){
+            if(closing&&(!stock?.holding||quantity>Math.abs(stock.holding)))throw new Error('平仓数量不能超过当前持仓。');
+            if(!closing&&Number.isFinite(currentPrice)&&currentPrice>0){
               if(long){
                 if(stopLoss!==null&&stopLoss>=currentPrice)throw new Error('买涨时止损需低于现价。');
                 if(takeProfit!==null&&takeProfit<=currentPrice)throw new Error('买涨时止盈需高于现价。');
@@ -1986,9 +1904,10 @@
                 if(takeProfit!==null&&takeProfit>=currentPrice)throw new Error('买跌时止盈需低于现价。');
               }
             }
-            const d=await api('/api/player/stocks?code='+encodeURIComponent(marketCode)+'&period='+marketPeriod,{method:'POST',body:{code,side:long?'long':'short',quantity,leverage,orderType:'market',stopLoss,takeProfit}});
+            const d=await api('/api/player/stocks?code='+encodeURIComponent(marketCode)+'&period='+marketPeriod,{method:'POST',body:{code,intent:closing?'close':'open',side:long?'long':'short',quantity,leverage,orderType:'market',stopLoss,takeProfit}});
             applyMarket(d);
             showToast('委托已成交。');
+            }finally{stockTradeBusy=false;renderTradeTicket();}
           }
           else if(id.startsWith('cloud-music')){
             if(!playerMusic.length)playerMusic=(await api('/api/music')).items||[];
@@ -2036,17 +1955,18 @@
       const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-reveal-all-cells-btn').after(nextTicket);
       byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');
 
-      cardTableUI=AVEDCardTableUI({api,esc,getUser:()=>currentUser,playSfx});
+      cardTableUI=AVEDCardTableUI({api,esc,getUser:()=>currentUser,playSfx,onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
       const skyUI=AVEDSkyUI({api,esc,byId,playSfx,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
+      AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});
       window.AVEDRefreshPersonal=()=>{if(currentUser&&!byId('view-profile').classList.contains('hidden'))renderProfile();};
       AVEDRewardsUI({api,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
-      AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
+      AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast,playSfx});
       AVEDVisualStyle({byId});
       byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
@@ -2058,8 +1978,6 @@
       document.addEventListener('visibilitychange',()=>idleSession.check());
       window.addEventListener('storage',event=>{if(event.key==='aved_last_activity_v1')idleSession.check();});
       (async()=>{
-        signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-        signalPhase('正在恢复当前页面',12,'正在确认个人身份令牌……');
         const entryState=await AVEDStartup.restoreSession({
           load:async()=>{
             if(idleSession.stale()){await apiLogout();throw Object.assign(new Error('员工会话已过期。'),{status:401,code:'SESSION_EXPIRED'});}
@@ -2071,6 +1989,7 @@
             document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           },
           unavailable:()=>{
+            signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');
             currentUser=null;signalPhase('暂时无法恢复页面',12,'');
             const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
             message.textContent='连接未完成，尚未确认登录状态。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
@@ -2080,9 +1999,13 @@
         document.documentElement.dataset.entryState=entryState;signalOverlay.setAttribute('aria-busy','false');
         if(entryState!=='checking'){signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');}
       })();
-      setInterval(()=>{if(currentUser&&!document.hidden&&!byId('game-panel-stocks').classList.contains('hidden'))refreshMarket().catch(()=>{});},5000);
+      function marketVisible(){return !!currentUser&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!byId('game-panel-stocks').classList.contains('hidden');}
+      const marketVisibility=new MutationObserver(()=>{if(marketVisible())refreshMarket().catch(()=>{});});
+      for(const el of [byId('view-casino'),byId('game-panel-stocks')])marketVisibility.observe(el,{attributes:true,attributeFilter:['class']});
+      document.addEventListener('visibilitychange',()=>{if(marketVisible())refreshMarket().catch(()=>{});});
+      setInterval(()=>{if(marketVisible())refreshMarket().catch(()=>{});},5000);
 
-      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)renderForumView();if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
+      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)forumReplies.refresh();if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
 
 
     })();

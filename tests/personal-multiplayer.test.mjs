@@ -91,9 +91,10 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  assert.equal(scratchRetryRepeated.ticketId,scratchRetryFirst.ticketId);assert.equal(scratchRetryRepeated.balance,scratchRetryFirst.balance);
  const scratchRetryMismatch=await p('/api/player/games/scratch','POST',{...scratchRequest,type:'lucky_num'});assert.notEqual(scratchRetryMismatch.status,200);
  const stale=await p('/api/player/games/scratch','POST',{tier:'t1',type:'three_match',cost:1000,revision:rules.revision-1});assert.equal(stale.data.code,'RULES_CHANGED');assert.equal((await p('/api/me')).data.balance,scratchRetryFirst.balance);
- const slot=(await p('/api/player/games/slot','POST',{bet:1000})).data;let counter=0;
+ const slot=(await p('/api/player/games/slot','POST',{bet:1000,requestKey:'test-slot-once-123456'})).data;let counter=0;
  const replay=spinSlot(1000,()=>createHmac('sha256',Buffer.from(slot.seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296);
- assert.equal(slot.prize,replay.prize);assert.deepEqual(slot.result,replay.result);assert.equal(slot.balance,scratchRetryFirst.balance-1000+slot.prize);
+ assert.equal(slot.prize,replay.prize);assert.deepEqual(slot.result,{...replay.result,requestKey:'test-slot-once-123456'});assert.equal(slot.balance,scratchRetryFirst.balance-1000+slot.prize-slot.penalty);
+ const retrySlot=(await p('/api/player/games/slot','POST',{bet:1000,requestKey:'test-slot-once-123456'})).data;assert.equal(retrySlot.ticketId,slot.ticketId);assert.equal(retrySlot.balance,slot.balance);
  // A pre-upgrade race without a rule snapshot must keep the original odds and zero consolation.
  db.prepare('UPDATE derby_races SET next_at=? WHERE id=?').run(Date.now()-1,race.round);
  let legacy=(await p('/api/player/games/derby/current')).data;

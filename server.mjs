@@ -16,6 +16,7 @@ import { installPlayerService } from './player-service.mjs';
 import {installEconomy,proofRandom} from './server-economy.mjs';
 import {installSky} from './server-sky.mjs';
 import {installWelfare} from './server-welfare.mjs';
+import {installAppearance} from './server-appearance.mjs';
 import {directoryDepartment} from './server-directory.mjs';
 import { createServer } from 'node:http';
 import {workGate,burstLimiter} from './server-load-control.mjs';
@@ -249,9 +250,10 @@ const secureRoll = (seedHex, range) => {
 };
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs };
+  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs,appearance:appearance.snapshot(employeeId) };
 };
 const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
+const appearance=installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 const adminMutation = (req, res) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -272,7 +274,7 @@ const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balan
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const media=installMedia({db,send,requireEmployee});
-const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee});
+const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
 db.exec(`
  CREATE INDEX IF NOT EXISTS chat_room_active ON chat_messages(room,id) WHERE deleted_at='';
@@ -341,6 +343,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if(await derby.handle(req,res,url))return;
     if(await companyRobots.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
+    if(await appearance.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
     if(await sky.handle(req,res,url))return;
     if(await community.handle(req,res,url))return;
@@ -593,14 +596,14 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
       if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或收容物名称（最多 80 字）。'});
       if (!isNpc&&(!validText(username,40)||typeof password!=='string'||password.length<6)) return send(res,400,{error:'请填写唯一用户名、员工姓名，并设置至少 6 位密码。'});
-      if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||initialBalance<0||initialBalance>100000000))return send(res,400,{error:'初始余额必须是 0 到 100,000,000 之间的整数。'});
+      if(initialBalance!==undefined&&(!Number.isSafeInteger(initialBalance)||Math.abs(initialBalance)>100000000))return send(res,400,{error:'初始余额必须是 -100,000,000 到 100,000,000 之间的整数，可为负数。'});
       const passwordHash=await hashPasswordAsync(isNpc?randomBytes(32).toString('hex'):password);
       try {
         db.exec('BEGIN IMMEDIATE');
         const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
           .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind);
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,`匿名员工-${id}`,data.archiveBio?.trim()||'');
-        if(!isNpc&&initialBalance>0)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
+        if(!isNpc&&initialBalance)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         db.exec('COMMIT');return send(res,201,{id});
       } catch { if(db.isTransaction)db.exec('ROLLBACK');return send(res,409,{error:'账号或 QQ 号已存在，请检查后重试。'}); }
     }
@@ -639,13 +642,18 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if (url.pathname.startsWith('/api/admin/employees/') && url.pathname.endsWith('/balance') && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
       const employeeId = Number(url.pathname.split('/')[4]);
-      const { delta,reason } = await readBody(req);
+      const { delta,balance,expectedBalance,reason } = await readBody(req),setting=balance!==undefined;
       const employee = db.prepare('SELECT id FROM employees WHERE id=?').get(employeeId);
-      if (!employee || !Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 100000000 || !validText(reason,200)) return send(res,400,{error:'余额变动信息无效。'});
+      if (!employee || !validText(reason,200) || (setting
+        ? delta!==undefined || !Number.isSafeInteger(balance) || Math.abs(balance)>100000000 || !Number.isSafeInteger(expectedBalance)
+        : !Number.isSafeInteger(delta) || delta===0 || Math.abs(delta)>100000000)) return send(res,400,{error:'请填写有效的整数余额和调整原因；余额可为负数。'});
       db.exec('BEGIN IMMEDIATE');
       try {
-        if (balanceFor(employeeId) + delta < 0) { db.exec('ROLLBACK'); return send(res,400,{error:'余额不能低于零。'}); }
-        db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason,created_by) VALUES (?,?,?,?)').run(employeeId,delta,reason.trim(),admin.id);
+        const current=balanceFor(employeeId);
+        if(setting&&current!==expectedBalance){db.exec('ROLLBACK');return send(res,409,{error:'余额已发生变化，请刷新员工名册后重新设置。'});}
+        const change=setting?balance-current:delta;
+        if(!Number.isSafeInteger(change)||!Number.isSafeInteger(current+change)){db.exec('ROLLBACK');return send(res,400,{error:'余额超出可处理的整数范围。'});}
+        if(change)db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason,created_by) VALUES (?,?,?,?)').run(employeeId,change,reason.trim(),admin.id);
         db.exec('COMMIT');
       } catch (error) { db.exec('ROLLBACK'); throw error; }
       return send(res,200,{balance:balanceFor(employeeId)});
@@ -661,6 +669,34 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if (!requireAdmin(req,res)) return;
       if(!db.prepare('DELETE FROM dossiers WHERE id=?').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'卷宗不存在。'});
       return send(res,200,{ok:true});
+    }
+    if (url.pathname === '/api/admin/announcements' && req.method === 'GET') {
+      if(!requireAdmin(req,res))return;
+      const offset=Number(url.searchParams.get('offset')||0);
+      if(!Number.isSafeInteger(offset)||offset<0||offset>1000000)return send(res,400,{error:'无效分页。'});
+      const items=db.prepare(`SELECT id,title,substr(body,1,141) AS excerpt,pinned,COALESCE(NULLIF(published_at,''),created_at) AS createdAt FROM announcements ORDER BY pinned DESC,datetime(COALESCE(NULLIF(published_at,''),created_at)) DESC,id DESC LIMIT 11 OFFSET ?`).all(offset);
+      const more=items.length>10;if(more)items.pop();
+      return send(res,200,{items:items.map(x=>({...x,excerpt:Array.from(x.excerpt).length>140?Array.from(x.excerpt).slice(0,140).join('')+'…':x.excerpt})),next:more?offset+items.length:null});
+    }
+    if (/^\/api\/admin\/announcements\/\d+$/.test(url.pathname) && req.method === 'GET') {
+      if(!requireAdmin(req,res))return;
+      const item=db.prepare("SELECT id,title,body,pinned,recipient,CASE WHEN issuer_explicit=1 THEN issuer ELSE '' END AS issuer,drafter,issued_on AS issuedOn,COALESCE(NULLIF(published_at,''),created_at) AS createdAt FROM announcements WHERE id=?").get(Number(url.pathname.split('/').at(-1)));
+      return send(res,item?200:404,item?{item}:{error:'公告不存在。'});
+    }
+    if (/^\/api\/admin\/announcements\/\d+\/comments$/.test(url.pathname) && req.method === 'GET') {
+      if(!requireAdmin(req,res))return;
+      const offset=Number(url.searchParams.get('offset')||0);
+      if(!Number.isSafeInteger(offset)||offset<0||offset>1000000)return send(res,400,{error:'无效分页。'});
+      const items=db.prepare("SELECT p.id,p.body,p.created_at AS createdAt,e.display_name AS displayName FROM posts p LEFT JOIN employees e ON e.id=p.employee_id WHERE p.announcement_id=? AND p.deleted_at='' ORDER BY julianday(p.created_at),p.id LIMIT 11 OFFSET ?").all(Number(url.pathname.split('/')[4]),offset);
+      const more=items.length>10;if(more)items.pop();return send(res,200,{items,next:more?offset+items.length:null});
+    }
+    if (/^\/api\/admin\/posts\/\d+$/.test(url.pathname) && req.method === 'PUT') {
+      if(!requireAdmin(req,res))return;
+      const data=await readBody(req);let stamp;
+      try{stamp=announcementPublicationTime(data.createdAt);if(!stamp)throw Error('请填写评论发布日期和时间。');}catch(error){return send(res,400,{error:error.message});}
+      const id=Number(url.pathname.split('/').at(-1));
+      if(!db.prepare("UPDATE posts SET created_at=? WHERE id=? AND deleted_at=''").run(stamp,id).changes)return send(res,404,{error:'评论不存在。'});
+      return send(res,200,{ok:true,createdAt:stamp});
     }
     if (url.pathname === '/api/admin/announcements' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;

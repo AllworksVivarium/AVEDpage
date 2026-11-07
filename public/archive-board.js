@@ -25,7 +25,7 @@
     const state={timers:[],clear:clearTimer,restore};active=state;
     const frame=n=>{for(const {el,chars,indices,seed} of changes){const next=[...chars];indices.forEach((i,j)=>next[i]=glyphs[(seed+j+n)%glyphs.length]);el.textContent=next.join('');}};
     frame(0);
-    state.timers.push(setTimer(()=>frame(1),16),setTimer(()=>frame(2),32),setTimer(()=>{restore();if(active===state)active=null;},50));
+    state.timers.push(setTimer(()=>frame(1),45),setTimer(()=>{restore();if(active===state)active=null;},95));
   }
   const api={sample,glitch,cancel};
   if(typeof module==='object'&&module.exports)module.exports=api;

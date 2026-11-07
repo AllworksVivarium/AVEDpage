@@ -1,0 +1,19 @@
+.card-room-lobby{border:1px solid var(--inner-border-soft,#aaa);padding:10px 12px;background:var(--inner-paper,transparent);color:var(--inner-text,inherit);margin:10px 0}
+.card-room-lobby header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0;margin:0;flex-wrap:wrap}
+.card-room-controls{display:flex;align-items:center;gap:6px;margin:0}
+.card-room-lobby button,.card-room-lobby select{font:inherit;border:1px solid var(--inner-border-soft,#aaa);border-radius:0;min-height:32px;padding:5px 8px;background:transparent;color:inherit}
+.card-room-lobby button{cursor:pointer}.card-room-lobby button:disabled{opacity:.45;cursor:default}
+.card-room-lobby button:focus-visible,.card-room-lobby select:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.card-room-controls [data-room-size]{background:var(--inner-accent,#87583f);color:var(--inner-accent-text,#fff)}
+.card-room-lobby [data-room-current]{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0}
+.card-room-lobby [hidden]{display:none!important}.card-room-lobby [data-room-status]{margin:6px 0}
+.card-room-list article{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;border-top:1px solid var(--inner-border-soft,#aaa);padding:8px 0}
+.card-room-list article:first-child{margin-top:8px}.card-room-list article:last-child{padding-bottom:0}
+.card-room-list strong{display:block;overflow-wrap:anywhere}.card-room-list small{display:block;opacity:.65}.card-room-list article>span{white-space:nowrap;opacity:.75}
+.card-room-empty{margin:8px 0 0}
+#game-panel-doudizhu>.card-room-lobby{background:var(--ddz-dark);color:var(--ddz-ink);border-color:var(--ddz-rim)}
+@layer aved-type-system{
+ #inner-app-view .card-room-lobby h3{font-size:15px!important;line-height:1.4!important;margin:0!important}
+ #inner-app-view .card-room-lobby :is(button,select,strong,[data-room-current]){font-size:12px!important;line-height:1.4!important}
+ #inner-app-view .card-room-lobby :is(small,p,article>span){font-size:11px!important;line-height:1.5!important}
+}

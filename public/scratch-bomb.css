@@ -67,9 +67,9 @@ body.effects-off .scratch-bomb-blast{display:none!important}
 body.dark-mode #inner-app-view #view-casino .aved-jackpot-text{color:#ee8071!important}
 #inner-app-view #view-casino .aved-jackpot-strip[data-outcome="bomb"] .aved-jackpot-viewport{background:#e5dbc7!important}
 #inner-app-view #view-casino .aved-jackpot-strip[data-outcome="bomb"] .aved-jackpot-text{color:#141413!important;text-shadow:none!important}
-#inner-app-view #view-casino .aved-jackpot-text.is-overflowing{animation:jackpot-read-line 6s linear both}
-@keyframes jackpot-next-row{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes jackpot-read-line{from{transform:translateX(var(--ticker-start))}to{transform:translateX(0)}}
+#inner-app-view #view-casino .aved-jackpot-text.is-overflowing{animation:jackpot-read-line 7s linear both}
+@keyframes jackpot-next-row{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes jackpot-read-line{0%,10%{transform:translateX(0)}86%,100%{transform:translateX(var(--ticker-end))}}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-row,body.effects-off #inner-app-view #view-casino .aved-jackpot-text{animation:none!important}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-viewport{overflow-x:auto}
 @media(prefers-reduced-motion:reduce){#inner-app-view #view-casino .aved-jackpot-row.aved-jackpot-message,#inner-app-view #view-casino .aved-jackpot-text{animation:none!important}#inner-app-view #view-casino .aved-jackpot-viewport{overflow-x:auto}}
@@ -96,7 +96,7 @@ body.effects-off #inner-app-view #view-casino .aved-jackpot-viewport{overflow-x:
 
 #inner-app-view #view-casino .aved-jackpot-strip{display:flex!important;height:46px!important;min-height:46px!important;max-height:46px!important}
 #inner-app-view #view-casino .aved-jackpot-outgoing{position:absolute;inset:0 auto auto 4px;white-space:nowrap;font-size:12px!important;line-height:24px;pointer-events:none;animation:jackpot-old-row .35s ease-in both}
-@keyframes jackpot-old-row{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
+@keyframes jackpot-old-row{from{transform:translateY(0);opacity:1}to{transform:translateY(100%);opacity:0}}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-outgoing{animation:none!important}
 @media(prefers-reduced-motion:reduce){#inner-app-view #view-casino .aved-jackpot-outgoing{animation:none!important}}
 
@@ -108,3 +108,8 @@ body.effects-off #inner-app-view #view-casino .aved-jackpot-outgoing{animation:n
 #inner-app-view #view-casino .aved-jackpot-outgoing[data-outcome="award"]{color:#ae2621}
 body.dark-mode #inner-app-view #view-casino .aved-jackpot-outgoing[data-outcome="award"]{color:#ee8071}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-strip::before,body.effects-off #inner-app-view #view-casino .aved-jackpot-strip::after{display:none!important}
+
+#inner-app-view #view-casino .aved-jackpot-viewport{text-align:left!important;direction:ltr}
+#inner-app-view #view-casino .aved-jackpot-row{justify-content:flex-start!important}
+#inner-app-view #view-casino .aved-jackpot-outgoing{overflow:visible}
+#inner-app-view #view-casino .aved-jackpot-outgoing>span{display:block;white-space:nowrap}

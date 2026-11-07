@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-entry-state="checking">
 <head>
-  <link rel="stylesheet" href="/entry-layout-stability.css?v=session-restore-2">
+  <link rel="stylesheet" href="/popup-density.css?v=1">
+  <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
   <link rel="stylesheet" href="/login-loading-layout.css?v=stable-2">
-  <link rel="stylesheet" href="/personal-hud.css?v=forum-compose-9">
-  <script src="terminal-preferences.js?v=effects-device-2"></script>
+  <link rel="stylesheet" href="/personal-hud.css?v=claimed-opacity-12">
+  <script src="terminal-preferences.js?v=theme-owned-3"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=coin-1">
-  <link rel="stylesheet" href="/scratch-bomb.css?v=ticker-all-records-crt-1">
+  <link rel="stylesheet" href="/scratch-bomb.css?v=ticker-left-read-2">
   <link rel="stylesheet" href="/scratch-feedback.css?v=ticker-vertical-center-1">
   <meta charset="UTF-8">
   <link rel="stylesheet" href="/player-art-restoration.css?v=receipt-grain-1">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
-  <link rel="stylesheet" href="/archive-room-restoration.css?v=theme-aware-names-2">
-  <link rel="stylesheet" href="/notice-document.css?v=notice-optional-2">
-  <link rel="stylesheet" href="/section-mastheads.css?v=forum-compose-9">
+  <link rel="stylesheet" href="/archive-room-restoration.css?v=compact-archive-3">
+  <link rel="stylesheet" href="/notice-document.css?v=notice-compact-accent-3">
+  <link rel="stylesheet" href="/section-mastheads.css?v=compact-news-entry-15">
   <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
   <link rel="stylesheet" href="/player-text-editor.css?v=delete-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
   <link rel="stylesheet" href="/site-refinements.css?v=cobalt-wordmark-2">
-  <link rel="stylesheet" href="/palette-preview.css?v=cobalt-quiet-2">
+  <link rel="stylesheet" href="/palette-preview.css?v=accent-consistency-3">
   <link rel="stylesheet" href="/market-chart-fixes.css?v=tooltip-position-2">
   <link rel="stylesheet" href="/sidebar-art.css?v=planet-align-2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -352,8 +353,8 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css">
   <link rel="stylesheet" href="/community.css">
-<link rel="stylesheet" href="/economy.css?v=signal-5">
-<link rel="stylesheet" href="/welfare.css?v=compact-donation-6">
+<link rel="stylesheet" href="/economy.css?v=compact-market-2">
+<link rel="stylesheet" href="/welfare.css?v=donation-dialog-9">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
 <link rel="stylesheet" href="/page-headings.css?v=warm-1">
@@ -368,6 +369,8 @@
 <link rel="stylesheet" href="/window-terminal.css?v=remove-reset-1">
 <script src="/window-style.js?v=unified-2"></script>
   <link rel="stylesheet" href="/sky-pixel.css?v=bet-multipliers-8">
+  <link rel="stylesheet" href="/forum-emoji.css?v=2">
+  <script src="/forum-emoji.js?v=1" defer></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -389,10 +392,10 @@
       <p id="confirm-modal-desc" class="text-xs text-neutral-300 leading-relaxed">此操作一旦执行将立即生效，请再次核对。</p>
       <div class="grid grid-cols-2 gap-3 pt-2 text-xs">
         <button id="confirm-modal-cancel-btn" type="button" class="py-2.5 border border-white/30 hover:bg-white/10 text-neutral-200 font-bold cursor-pointer">
-          [ 取消操作 ]
+          取消操作
         </button>
         <button id="confirm-modal-ok-btn" type="button" class="press-cta py-2.5 bg-[#9e1b1b] hover:bg-red-700 text-white font-bold cursor-pointer">
-          [ 确认执行 ]
+          确认执行
         </button>
       </div>
     </div>
@@ -635,7 +638,7 @@
             <strong id="top-balance-val" class="text-xs sm:text-sm font-bold text-[var(--inner-crimson)]">¤ —</strong>
             <button id="zero-balance-btn" type="button" title="将当前账户余额一键归零（需二次确认）"
               class="px-1.5 py-0.5 text-[10px] border border-[var(--inner-crimson)] text-[var(--inner-crimson)] hover:bg-[var(--inner-crimson)] hover:text-white transition cursor-pointer">
-              [归零]
+              归零
             </button>
           </div>
 
@@ -676,7 +679,7 @@
           </button>
 
           <button id="logout-btn" type="button" class="px-2.5 py-1.5 border border-[var(--inner-border)] hover:bg-[var(--inner-crimson)] hover:text-white transition cursor-pointer">
-            [登出]
+            登出
           </button>
         </div>
       </div>
@@ -842,14 +845,14 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <!-- 左侧 6 列：收容物档案板列表区（有数据态与空状态高度一致 min-h-[460px] 避免跳动） -->
-            <div class="archive-pinboard lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner min-h-[460px] flex flex-col justify-between">
+            <div class="archive-pinboard lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner flex flex-col">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
-                <span>ARCHIVE PINBOARD // 点击收容物名称查阅卷宗</span>
+                <span>在册收容物 · 点击查阅卷宗</span>
 
               </div>
 
               <!-- 有数据网格 -->
-              <div id="scp-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-auto"></div>
+              <div id="scp-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
 
               <!-- 空状态组件 (Empty State Pattern：描边插图居中 + 原因说明 + 单一主 CTA + 次级弱化链接，与有数据态高度一致) -->
               <div id="scp-empty-state-box" class="hidden my-auto py-10 px-4 text-center flex-col items-center justify-center space-y-4 retro-corner-box min-h-[380px]">
@@ -872,10 +875,7 @@
                 <!-- 唯一主 CTA 按钮（带磁吸交互） + 弱化为链接的次级操作 -->
                 <div class="flex flex-col items-center gap-2.5 pt-2 font-mono-tech text-xs">
                   <button id="scp-empty-primary-cta" type="button" class="magnetic-cta inner-btn-primary px-6 py-2.5 font-bold cursor-pointer">
-                    [ 清除筛选并恢复全部档案 ]
-                  </button>
-                  <button id="scp-empty-secondary-link" type="button" class="underline opacity-70 hover:opacity-100 text-[11px] cursor-pointer">
-                    填充默认示例检索词（蒋正一 / 溟座）
+                    清除筛选并恢复全部档案
                   </button>
                 </div>
               </div>
@@ -902,7 +902,7 @@
                   <input id="scp-realname-comment-input" type="text" placeholder="以您的真实员工身份发表收容观察评议..." required
                     class="flex-1 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs focus:outline-none">
                   <button type="submit" class="magnetic-cta inner-btn-primary px-5 py-2 font-bold text-xs whitespace-nowrap cursor-pointer">
-                    [ 发表 ]
+                    发表
                   </button>
                 </form>
               </div>
@@ -941,8 +941,8 @@
             <!-- 发起新匿名主题帖表单（已将上传图片合并为唯一的单一交互按钮，隐藏原生丑陋的“选择文件”控件） -->
             <form id="new-forum-topic-form" class="retro-corner-box forum-compose p-5 space-y-3 font-mono-tech">
               <div class="text-xs font-bold flex flex-wrap items-center justify-between gap-2">
-                <span>➕ 发起新匿名主题帖</span>
-                <span class="text-[11px] opacity-65">上传图片需经管理员审核批准后方可在前台展示</span>
+                <span>发起新主题帖</span>
+
               </div>
               <div class="forum-compose-title-row">
                 <input id="new-topic-title" type="text" placeholder="输入帖子标题..." maxlength="120" required
@@ -954,10 +954,12 @@
               <textarea id="new-topic-content" rows="4" maxlength="3000" placeholder="在此输入正文内容..." required
                 class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
 
+              <p class="forum-upload-note">附图经管理员审核后展示。</p>
               <!-- 单一合并的图片上传交互按钮 -->
               <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                 <div class="flex items-center gap-3">
                   <input id="new-topic-image-input" type="file" accept="image/*" class="hidden">
+                  <button type="button" data-forum-emoji-target="new-topic-content" aria-haspopup="dialog" aria-controls="forum-emoji-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M8 8v2m8-2v2M7 14q5 6 10 0"/></svg>表情</button>
                   <button id="new-topic-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
                     上传图片（需审核）
                   </button>
@@ -1017,7 +1019,7 @@
 
             <div class="retro-corner-box p-5 space-y-4">
               <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-2 font-mono-tech text-xs">
-                <span id="forum-detail-reply-count" class="font-bold">💬 全部跟帖楼层 (0)</span>
+                <span id="forum-detail-reply-count" class="font-bold">全部回复 (0)</span>
                 <span class="opacity-65"></span>
               </div>
 
@@ -1025,21 +1027,16 @@
 
               <!-- 帖子内跟帖表单（同样合并为单一图片上传按钮） -->
               <form id="forum-detail-reply-form" class="space-y-3 pt-3 border-t border-[var(--inner-border-soft)] font-mono-tech">
-                <div class="text-xs font-bold">发表跟帖回复</div>
-                <textarea id="forum-detail-reply-text" rows="2" placeholder="输入跟帖内容..." required
+                <div class="text-xs font-bold">跟帖内容</div>
+                <textarea id="forum-detail-reply-text" rows="2" maxlength="2000" placeholder="输入跟帖内容..." required
                   class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
-                <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div class="flex items-center gap-3">
-                    <input id="forum-detail-reply-image" type="file" accept="image/*" class="hidden">
-                    <button id="reply-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
-                      🖼️ 上传本地附图 (需管理员审批)
-                    </button>
-                    <span id="reply-image-selected-hint" class="forum-image-filename"></span>
-                  </div>
-                  <button type="submit" class="press-cta inner-btn-primary px-6 py-2 font-bold text-xs cursor-pointer">
-                    [ 发送匿名回帖 ]
-                  </button>
+                <div class="forum-compose-footer forum-reply-actions">
+                  <input id="forum-detail-reply-image" type="file" accept="image/*" class="hidden">
+                  <button type="button" data-forum-emoji-target="forum-detail-reply-text" aria-haspopup="dialog" aria-controls="forum-emoji-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M8 8v2m8-2v2M7 14q5 6 10 0"/></svg>表情</button>
+                  <button id="reply-upload-trigger-btn" type="button" title="上传图片需管理员审核" class="inner-card-alt">本地附图</button>
+                  <button type="submit" class="press-cta inner-btn-primary">回贴</button>
                 </div>
+                <span id="reply-image-selected-hint" class="forum-image-filename"></span>
               </form>
             </div>
           </div>
@@ -1048,8 +1045,8 @@
         <!-- ====================================================================
              独立分页 6：员工娱乐室（全部去猫咪化，改为纯正 SCP 收容工业复古风：
              1. 直升机索降跳伞 [60fps丝滑连续下坠 + 20秒休整 + 沉默干员Bot + 真实玩家发言头像上直升机]
-             2. 五轮五线 收容抑制矩阵 [工业收容符号]
-             3. 封印配给刮刮乐
+             2. 五轮五线 异常回路 [工业收容符号]
+             3. 配给刮刮乐
              4. 异常竞速赛马
              5. 牌桌（电脑对手）
              6. KARMA INDEX）
@@ -1062,16 +1059,16 @@
                 高空速降
               </button>
               <button type="button" data-game="slots" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                抑制矩阵
+                异常回路
               </button>
               <button type="button" data-game="scratch" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 刮刮彩票
               </button>
               <button type="button" data-game="derby" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                赛马竞速
+                下班竞速
               </button>
               <button type="button" data-game="doudizhu" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                斗地主
+                智斗太姥
               </button>
               <button type="button" data-game="stocks" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 KARMA指数
@@ -1171,7 +1168,7 @@
                       <span id="skydive-bottom-left-hint" class="text-neutral-400">尚未登机</span>
                       <button id="skydive-open-chute-btn" type="button" disabled
                         class="press-cta px-7 py-2 bg-white text-black font-bold text-xs tracking-wider disabled:opacity-30 cursor-pointer">
-                        [ 🪂 立即拉绳开伞 ]
+                        🪂 立即拉绳开伞
                       </button>
                       <span class="text-[11px] text-neutral-400">着陆区</span>
                     </div>
@@ -1193,10 +1190,6 @@
                     <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">整备时间</strong>
                       <span class="opacity-85">每架次之间有 20 秒停机整备与登机押注窗口</span>
-                    </div>
-                    <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">安全封印</strong>
-                      <span class="opacity-85">每班安全线深度在起飞前已封入 SHA-256 封印，安全线在 150 至 1449 米之间</span>
                     </div>
                     <div class="flex gap-3">
                       <strong class="text-[#9e1b1b] shrink-0 w-14">超线坠毁</strong>
@@ -1238,10 +1231,6 @@
                   <button id="skydive-board-btn" type="button" class="press-cta w-full py-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-xs tracking-wider cursor-pointer">
                     确认登机 1,000
                   </button>
-
-                  <p class="text-[11px] opacity-75 leading-relaxed">
-                    安全线起飞前已封入加密哈希 (<code id="skydive-wax-hash">7c4a...9e1b</code>)，触地后开封核验。
-                  </p>
                 </div>
 
                 <!-- 机上名单 -->
@@ -1272,7 +1261,7 @@
           </div>
 
           <!-- ================================================================
-               娱乐面板 2：五轮五线 收容抑制矩阵（已全部替换为硬朗 SCP 收容符号：收容之眼、辐射核心、抑制锁、机密卷宗、血清药剂、镇定配给）
+               娱乐面板 2：五轮五线 异常回路（已全部替换为硬朗 SCP 收容符号：收容之眼、辐射核心、抑制锁、机密卷宗、血清药剂、镇定配给）
                ================================================================ -->
           <div id="game-panel-slots" class="hidden space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -1280,7 +1269,7 @@
               <div class="lg:col-span-8 space-y-4">
                 <div class="slot-machine bg-[#121316] text-[#f5f2eb] p-5 border-2 border-[var(--inner-border)] shadow-xl space-y-4">
                   <div class="slot-machine-heading flex items-center justify-between text-xs font-mono-tech text-neutral-300 border-b border-white/20 pb-2">
-                    <span>FIVE-REEL MATRIX // 五轮五线</span>
+                    <span>ANOMALY CIRCUIT // 异常回路</span>
 
                     <span>从最左一列连起</span>
                   </div>
@@ -1310,7 +1299,7 @@
                 <!-- 赔付簿与三处隐藏收容协议 -->
                 <div class="retro-corner-box game-rule-card p-5 space-y-4">
                   <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 倍数 × 每线押注 从最左一轮连起</div>
-                  <h4 class="text-lg font-bold font-serif-sc">收容矩阵赔付簿</h4>
+                  <h4 class="text-lg font-bold font-serif-sc">异常回路赔付簿</h4>
 
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                     <div class="slot-paytable-wrap md:col-span-7">
@@ -1325,7 +1314,7 @@
                         </thead>
                         <tbody id="slot5x3-paytable-body" class="divide-y divide-[var(--inner-border-soft)]"></tbody>
                       </table>
-                      <p class="text-[11px] opacity-70 mt-2">总投入平分到 5 条线：投入 500 = 每线 100。奖金包含返还本金；最终金额以服务器结算为准。未触发连线或协议时，95% 概率返还本局投入的 5%—75%，其余返还 0。最大损失为本局投入。</p>
+                      <p class="text-[11px] opacity-70 mt-2">总投入平分到 5 条线：投入 500 = 每线 100。奖金包含返还本金；最终金额以服务器结算为准。未触发连线或协议时，95% 概率返还本局投入的 5%—75%，其余返还 0。每局另有 0.5% 概率回路过载，追加扣除投入的 2 倍维修费，原有奖金照常结算；最多损失投入的 3 倍，可产生负余额。</p>
                     </div>
 
                     <div class="md:col-span-5 space-y-4">
@@ -1372,32 +1361,17 @@
                   </div>
 
                   <button id="slot5x3-spin-btn" type="button" class="press-cta w-full py-3.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-sm tracking-wider cursor-pointer">
-                    ↻ 启动矩阵旋转
+                    ↻ 启动回路
                     <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 五线</span>
                   </button>
-                </div>
-
-                <div class="retro-corner-box p-4 space-y-3">
-                  <div class="text-[11px] text-[#9e1b1b] font-bold">— 序列桶 开局前封印</div>
-                  <h4 class="text-base font-bold font-serif-sc">哈希封印</h4>
-                  <div class="p-3 inner-card-alt flex items-center gap-3">
-                    <div class="w-7 h-7 bg-[#9e1b1b] text-white flex items-center justify-center font-bold shrink-0">封</div>
-                    <div class="overflow-hidden">
-                      <div id="slot5x3-seal-status" class="font-bold">序列桶已封印 运行中</div>
-                      <div class="text-[10px] opacity-70 truncate">封条 <code id="slot5x3-seal-hash">92e4dccdf503eedc...</code></div>
-                    </div>
-                  </div>
-                  <button id="slot5x3-verify-tube-btn" type="button" class="w-full py-2 border border-[var(--inner-border)] hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer">
-                    🔓 开封核验种子并更换新序列桶
-                  </button>
-                  <p id="slot5x3-revealed-tube-seed" class="text-[10px] opacity-75">公开当前序列桶种子、换一枚新封印；此前每一转均可复算。</p>
+                  <p class="slot-overload-rule">0.5% 概率过载 · 另扣投入的 2 倍维修费，可产生负余额。</p>
                 </div>
 
                 <div class="retro-corner-box p-4 space-y-2.5">
-                  <div id="slot5x3-history-header" class="text-[11px] text-[#9e1b1b] font-bold">— 本桶记录 共 0 转</div>
+                  <div id="slot5x3-history-header" class="text-[11px] text-[#9e1b1b] font-bold">— 运转记录 共 0 转</div>
                   <h4 class="text-base font-bold font-serif-sc">运转日志</h4>
                   <div id="slot5x3-history-list" class="space-y-1.5 max-h-48 overflow-y-auto text-[11px]">
-                    <div class="py-4 text-center opacity-60">新序列桶刚封上，尚未运转。</div>
+                    <div class="py-4 text-center opacity-60">尚无运转记录。</div>
                   </div>
                 </div>
               </div>
@@ -1405,7 +1379,7 @@
           </div>
 
           <!-- ================================================================
-               娱乐面板 3：封印配给刮刮乐（已彻底去除猫咪元素，改为严肃 SCP 收容配给主题，隐藏EV）
+               娱乐面板 3：配给刮刮乐（已彻底去除猫咪元素，改为严肃 SCP 收容配给主题，隐藏EV）
                ================================================================ -->
           <div id="game-panel-scratch" class="retro-corner-box p-4 sm:p-6 hidden space-y-5">
             <div class="space-y-3">
@@ -1444,69 +1418,9 @@
           <!-- ================================================================
                娱乐面板 4：异常竞速赛马
                ================================================================ -->
-          <div id="game-panel-derby" class="retro-corner-box p-4 sm:p-6 hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div class="lg:col-span-8 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--inner-border-soft)] pb-2.5 font-mono-tech text-xs">
-                  <div>
-                    <span class="font-bold text-sm font-serif-sc">🐎 异常生物竞速试验场 (VIVARIUM DERBY)</span>
-                    <span id="derby-round-badge" class="ml-2 px-2 py-0.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)]">第 #104 场</span>
-                  </div>
-                  <div class="text-[11px]">
-                    <span>开局前封印哈希 (SHA-256): </span>
-                    <code id="derby-pre-hash" class="px-1.5 py-0.5 bg-black text-emerald-400">8f9d...3a1b</code>
-                  </div>
-                </div>
-
-                <div id="derby-tracks-container" class="space-y-3 bg-[#141414] text-white p-4 border-2 border-[var(--inner-border)] font-mono-tech"></div>
-
-                <div id="derby-seed-verify-bar" class="p-3 inner-card-alt text-xs font-mono-tech flex flex-wrap items-center justify-between gap-2">
-                  <span id="derby-status-text" class="font-bold text-[var(--inner-crimson)]">等待开赛</span>
-                  <span id="derby-revealed-seed" class="opacity-75">明文种子将在冲线后揭晓以供核验</span>
-                </div>
-
-                <div class="retro-corner-box p-4 space-y-3 font-mono-tech text-xs">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-bold">1. 选择押注目标：</span>
-                    <span id="derby-current-bet-info" class="text-[var(--inner-crimson)] font-bold">当前未下注</span>
-                  </div>
-                  <div id="derby-horse-select-btns" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
-
-                  <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[var(--inner-border-soft)]">
-                    <div class="flex items-center gap-2">
-                      <span>2. 下注金额:</span>
-                      <select id="derby-bet-amount" class="px-2.5 py-1.5 border border-[var(--inner-border)] bg-white text-black font-bold">
-                        <option value="2000">¤ 2,000</option>
-                        <option value="10000" selected>¤ 10,000</option>
-                        <option value="50000">¤ 50,000</option>
-                        <option value="100000">¤ 100,000</option>
-                      </select>
-                    </div>
-                    <div class="flex gap-2">
-                      <button id="derby-start-race-btn" type="button" class="press-cta inner-btn-primary px-6 py-2 font-bold cursor-pointer">
-                        [ 🏁 确认下注并开闸 ]
-                      </button>
-                      <button id="derby-next-round-btn" type="button" class="px-4 py-2 border border-[var(--inner-border)] font-bold cursor-pointer hidden">
-                        [ 下一场 ]
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="lg:col-span-4 retro-corner-box flex flex-col h-[460px] font-mono-tech text-xs">
-                <div class="p-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold flex items-center justify-between">
-                  <span>💬 赛场实时聊天室</span>
-                  <span class="text-[10px] text-emerald-400">● 在线同步</span>
-                </div>
-                <div id="derby-chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-black/5"></div>
-                <form id="derby-chat-form" class="p-2.5 border-t border-[var(--inner-border-soft)] flex gap-1.5">
-                  <input id="derby-chat-input" type="text" placeholder="发送赛场聊天..." required
-                    class="flex-1 px-2.5 py-1.5 border border-[var(--inner-border-soft)] bg-white text-black text-xs">
-                  <button type="submit" class="inner-btn-primary px-3 py-1.5 font-bold cursor-pointer">发送</button>
-                </form>
-              </div>
-            </div>
+          <div id="game-panel-derby" class="hidden">
+            <div id="derby-chat-messages" role="log" aria-label="赛场聊天"></div>
+            <form id="derby-chat-form"><input id="derby-chat-input" type="text" placeholder="说点什么，为它们加油…" maxlength="500" required aria-label="赛场消息"><button type="submit">发送</button></form>
           </div>
 
           <!-- ================================================================
@@ -1517,33 +1431,38 @@
           <!-- ================================================================
                娱乐面板 6：KARMA INDEX 股市
                ================================================================ -->
-          <div id="game-panel-stocks" class="retro-corner-box p-5 sm:p-6 hidden space-y-5">
-            <div class="bg-[#111111] text-neutral-100 p-4 border border-white/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono-tech">
-              <div>
-                <div class="text-[10px] text-neutral-400 tracking-[0.25em]">A.V.E.D. BENCHMARK COMPOSITE</div>
-                <div class="flex items-baseline gap-3 mt-1">
-                  <span class="text-lg sm:text-xl font-bold tracking-wider text-white">KARMA INDEX</span>
-                  <span id="karma-index-val" class="text-xl sm:text-2xl font-bold text-white">—</span>
-                  <span id="karma-index-tick" class="market-tick-indicator tick-flat" aria-label="指数实时方向">•</span>
-                  <span id="karma-index-delta" class="text-xs px-2 py-0.5 bg-white text-black font-bold">—</span>
-                </div>
-              </div>
-              <button id="next-market-tick-btn" type="button" class="px-4 py-2 bg-white text-black font-bold text-xs tracking-wider hover:bg-neutral-200 transition cursor-pointer">
-                [ NEXT TICK // 刷新行情 ]
-              </button>
-            </div>
-
-            <section class="market-terminal" aria-label="证券行情">
-              <div class="market-toolbar">
-                <label>证券 <select id="stock-chart-symbol"><option value="KARMA">KARMA INDEX</option></select></label>
-                <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option></select></label>
-                <span class="market-legend"><i class="market-up">■ 上涨</i><i class="market-down">■ 下跌</i></span>
-              </div>
-              <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-tick" class="market-tick-indicator tick-flat" aria-label="证券实时方向">•</span><span id="market-selected-change">—</span></div>
-              <p id="market-candle-details" class="market-candle-details">等待行情。</p>
-              <div id="stock-candles" class="market-chart"></div>
+          <div id="game-panel-stocks" class="retro-corner-box hidden">
+            <header class="stock-index-bar">
+              <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX</small><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></button>
+              <button id="next-market-tick-btn" type="button">刷新行情</button>
+            </header>
+            <section class="stock-watchlist" aria-label="股票行情列表">
+              <div class="stock-list-heading"><span>名称 / 代码</span><span>最新价</span><span>涨跌幅</span></div>
+              <div id="stocks-table-body"></div>
             </section>
-            <div id="stocks-table-body" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            <div class="stock-workspace">
+              <section class="market-terminal" aria-label="证券行情">
+                <div class="market-toolbar">
+                  <label>证券 <select id="stock-chart-symbol"><option value="KARMA">KARMA INDEX</option></select></label>
+                  <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option></select></label>
+                </div>
+                <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-tick" class="market-tick-indicator tick-flat">•</span><span id="market-selected-change">—</span></div>
+                <p id="market-candle-details" class="market-candle-details">等待行情。</p>
+                <div id="stock-candles" class="market-chart"></div>
+              </section>
+              <section id="stock-trade-ticket" class="stock-trade-ticket" aria-label="股票交易">
+                <header><h3>快捷交易</h3><span>TRADE</span></header>
+                <label class="stock-trade-symbol">证券<select id="stock-trade-symbol" aria-label="交易证券"></select></label>
+                <p id="stock-trade-position"></p>
+                <div class="stock-order-fields">
+                  <label>委托数量<input id="stock-trade-quantity" type="number" min="1" max="10000" step="1" value="1"></label>
+                  <label>杠杆倍数<select id="stock-trade-leverage"><option value="3">3x</option><option value="10" selected>10x</option></select></label>
+                </div>
+                <details class="stock-order-advanced"><summary>止盈 / 止损（可选）</summary><div class="stock-order-fields"><label>止损价<input id="stock-trade-stop" type="number" min="1" step="1"></label><label>止盈价<input id="stock-trade-take" type="number" min="1" step="1"></label></div></details>
+                <p class="stock-order-estimate">成交额 <b id="stock-est-trade">—</b><span>预计保证金 <b id="stock-est-margin">—</b></span></p>
+                <div class="stock-trade-actions"><button type="button" data-stock-trade-side="long" class="stock-buy-btn">做多开仓</button><button type="button" data-stock-trade-side="short" class="stock-sell-btn">做空开仓</button><button type="button" data-stock-trade-side="close" class="stock-close-btn">平仓</button></div>
+              </section>
+            </div>
           </div>
 
         </section>
@@ -1560,43 +1479,54 @@
   <!-- ==========================================================================
        核心交互逻辑层
        ========================================================================== -->
-  <script src="/http-client.js?v=signal-5" defer></script>
+  <script src="/http-client.js?v=reference-cache-1" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=notice-optional-2" defer></script>
-  <script src="/market-chart.js?v=tooltip-position-2" defer></script>
+  <script src="/notices-ui.js?v=custom-position-2" defer></script>
+  <script src="/market-chart.js?v=compact-market-1" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=sky-six-window-2" defer></script>
-  <script src="/game-results.js?v=bomb-medical-1" defer></script>
-  <script src="/jackpot-ticker.js?v=ticker-all-records-crt-1" defer></script>
-<script src="/scratch-symbols.js?v=bomb-1" defer></script>
+  <script src="/player-community.js?v=compact-popup-2" defer></script>
+  <script src="/game-results.js?v=game-balance-1" defer></script>
+  <script src="/forum-replies.js?v=1" defer></script>
+  <script src="/personal-record.js?v=1" defer></script>
+  <link rel="stylesheet" href="/personal-record.css?v=1">
+  <script src="/jackpot-ticker.js?v=ticker-left-read-2" defer></script>
+<script src="/pixel-game-icons.js?v=1" defer></script>
+<script src="/scratch-symbols.js?v=game-balance-1" defer></script>
 <script src="/scratch-bomb.js?v=ember-origin-2" defer></script>
 <script src="/scratch-bomb-demo.js?v=bomb-inline-2" defer></script>
-<script src="/scratch-feedback.js?v=inverse-stable-results-1" defer></script>
+<script src="/scratch-feedback.js?v=personal-record-2" defer></script>
   <script src="/currency-symbol.js?v=coin-1" defer></script>
   <script src="/sky-scene.js?v=sky-pixel-7" defer></script>
-  <script src="/sky-ui.js?v=bet-multipliers-8" defer></script>
+  <script src="/sky-rules.js?v=1" defer></script>
+<script src="/sky-ui.js?v=personal-record-2" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/welfare-ui.js?v=compact-donation-3" defer></script>
   <script src="/visual-style.js?v=light-art-2" defer></script>
-  <script src="/personal-hud.js?v=account-ui-8" defer></script>
+  <script src="/personal-hud.js?v=claimed-state-10" defer></script>
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
-<script src="/derby-ui.js?v=total-return-1" defer></script>
+<link rel="stylesheet" href="/derby-pixel.css?v=animals-1">
+<script src="/derby-scene.js?v=animals-1" defer></script>
+<script src="/derby-ui.js?v=personal-record-2" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
-<script src="/archive-board.js?v=board-4-1" defer></script>
+<script src="/archive-board.js?v=entry-glitch-2" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
 <link rel="stylesheet" href="/casino-switcher.css?v=slim-info-9">
-<link rel="stylesheet" href="/retro-window-chrome.css?v=scratch-window-4">
-<script src="/casino-switcher.js?v=header-center-8" defer></script>
+<link rel="stylesheet" href="/retro-window-chrome.css?v=claimed-opacity-9">
+<script src="/casino-switcher.js?v=game-balance-1" defer></script>
 <script src="/player-startup.js?v=session-restore-2" defer></script>
-<link rel="stylesheet" href="/ddz-pixel.css?v=card-table-1">
+<link rel="stylesheet" href="/ddz-pixel.css?v=card-lift-menu-5">
+  <link rel="stylesheet" href="/card-room-lobby.css?v=card-room-lobby-1">
 <script src="/ddz-rules.js?v=card-table-1" defer></script>
-<script src="/ddz-ui.js?v=card-table-1" defer></script>
-<script src="/player.js?v=session-restore-2" defer></script>
+<script src="/ddz-ui.js?v=personal-record-6" defer></script>
+<script src="/card-room-lobby.js?v=game-balance-1" defer></script>
+<link rel="stylesheet" href="/slot-effects.css?v=reels-1">
+<script src="/slot-effects.js?v=reels-2" defer></script>
+<script src="/player.js?v=forum-record-poll-9" defer></script>
   <script src="/page-headings.js?v=header-center-8" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=brand-mark-3-crt-1" defer></script>
   <script src="/landing-sphere.js?v=window-1" defer></script>
-  <script src="/player-design-client.js?v=text-only-3" defer></script>
-  <script src="/player-text-editor.js?v=text-only-3" defer></script>
+  <script src="/player-design-client.js?v=local-only-4" defer></script>
+  <script src="/player-text-editor.js?v=compact-popup-2" defer></script>
 </body>
 </html>

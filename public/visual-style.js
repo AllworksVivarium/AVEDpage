@@ -1,16 +1,14 @@
 window.AVEDVisualStyle=function({byId}){
  const sidebar=byId('left-sidebar');
- const editorToggle=document.createElement('label');editorToggle.className='editor-tools-toggle sidebar-expanded';
- editorToggle.innerHTML='<input type="checkbox" id="editor-tools-visible"> 编辑工具';sidebar.insertBefore(editorToggle,sidebar.querySelector('.terminal-audio'));
- const editorCheck=editorToggle.querySelector('input');let editorVisible=true;try{editorVisible=localStorage.getItem('aved_editor_tools_visible_v1')!=='off';}catch{}
- function applyEditorVisibility(){document.body.classList.toggle('editor-tools-hidden',!editorCheck.checked);if(!editorCheck.checked)for(const id of ['text-edit-panel','type-study-panel']){const panel=byId(id);if(panel?.open)panel.close();}}
- editorCheck.checked=editorVisible;applyEditorVisibility();editorCheck.addEventListener('change',()=>{applyEditorVisibility();try{localStorage.setItem('aved_editor_tools_visible_v1',editorCheck.checked?'on':'off');}catch{}});
+ // Authoring launchers enforce their own localhost-only boundary.
+ // Clear the old sidebar toggle's hidden state so local editing stays available.
+ document.body.classList.remove('editor-tools-hidden');
 
  // Preserve the original bitmap grain; luminance masks remove its black canvas.
  const symbols={
-  welcome:['personnel-moon-icon-v1.0bbfd3f95189.webp','145% auto'],news:['broadcast-ui-v1.9417d9e80963.webp','130% auto'],
-  departments:['directory-disk-ui-v1.b3b8f2f75203.webp','165% auto'],containment:['containment-folder-ui-v1.b50e265bdf87.webp','155% auto'],
-  life:['life-newspaper-ui-v1.48c24fadce83.webp','120% auto'],forum:['forum-computer-ui-v1.3a19603da100.webp','155% auto'],casino:['recreation-cards-ui-v1.8b6bd4c41153.webp','145% auto']
+  welcome:['personnel-moon-icon-v1.sidebar64.018c1a150129.webp','145% auto'],news:['broadcast-ui-v1.sidebar64.1bf524df26f2.webp','130% auto'],
+  departments:['directory-disk-ui-v1.sidebar64.566c01d80579.webp','165% auto'],containment:['containment-folder-ui-v1.sidebar64.dfd0f5350cd7.webp','155% auto'],
+  life:['life-newspaper-ui-v1.sidebar64.5e5be33c9061.webp','120% auto'],forum:['forum-computer-ui-v1.sidebar64.1da86dc6c596.webp','155% auto'],casino:['recreation-cards-ui-v1.sidebar64.876aec31d4a1.webp','145% auto']
  };
  function symbol(name){const [file,size]=symbols[name],el=document.createElement('span');el.className='sidebar-symbol';el.setAttribute('aria-hidden','true');el.style.setProperty('--symbol-image','url("/assets/'+file+'")');el.style.setProperty('--symbol-size',size);return el;}
  for(const [name] of Object.entries(symbols)){const button=sidebar.querySelector('[data-nav="'+name+'"]');if(button){button.firstElementChild.replaceWith(symbol(name));button.setAttribute('aria-label',button.querySelector('.sidebar-label').textContent.trim());}}
@@ -21,8 +19,9 @@ window.AVEDVisualStyle=function({byId}){
   darkroom:{name:'钴蓝静频',day:['#E8EDF1','#D4DEE6','#5279A4','#4E6F92'],night:['#090F23','#D4DBEF','#203DB5','#50638B']},
   mineral:{name:'矿物收藏',day:['#EDE9E2','#CDC7BE','#87583F','#777D7C'],night:['#151310','#EDE9E2','#C5926B','#A17E69']}
  };
+ let entitlements=null;
  function applyPalette(value){
-  const selected=Object.hasOwn(palettes,value)?value:'mineral';
+  const selected=Object.hasOwn(palettes,value)&&(!entitlements||entitlements.owned.includes(value))?value:'oxblood';
   document.documentElement.dataset.palettePreview=selected;
   const night=document.documentElement.dataset.savedTheme==='night';document.body.classList.toggle('dark-mode',night);
   const button=byId('theme-toggle-btn');if(button){button.disabled=false;button.title=night?'切换为日间模式':'切换为夜间模式';button.setAttribute('aria-label',button.title);}
@@ -36,5 +35,5 @@ window.AVEDVisualStyle=function({byId}){
  function applyPattern(value){const selected=['grid','dots','ascii','plain'].includes(value)?value:'grid';document.body.dataset.terminalPattern=selected;try{localStorage.setItem('aved_terminal_pattern_v1',selected);}catch{}}
  let savedPattern='grid';try{savedPattern=localStorage.getItem('aved_terminal_pattern_v1')||'grid';}catch{}
  applyPattern(savedPattern);
- window.AVEDAppearance={palettes,setPalette:applyPalette,setPattern:applyPattern};
+ window.AVEDAppearance={palettes,setPalette:applyPalette,setPattern:applyPattern,get entitlements(){return entitlements;},setEntitlements(value){entitlements=value||{owned:['oxblood'],prices:{oxblood:0,mineral:20000,darkroom:20000}};applyPalette(document.documentElement.dataset.palettePreview);}};
 };

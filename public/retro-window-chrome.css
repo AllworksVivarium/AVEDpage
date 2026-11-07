@@ -1,10 +1,10 @@
 /* Shared, theme-aware old-system window frame. Does not affect the landing page. */
 @layer aved-personal {
- body.theme-inner :is(dialog,#ticket-modal-card,#global-confirm-modal>div,#inner-app-view #view-profile.personal-hud dialog.hud-dialog){
-  box-sizing:border-box;border:2px solid var(--inner-text-main)!important;border-radius:0!important;outline:1px solid var(--inner-bg)!important;outline-offset:2px;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;
-  box-shadow:inset 0 0 0 2px var(--inner-bg),5px 5px 0 var(--inner-text-main),7px 7px 0 var(--inner-bg),8px 8px 0 var(--inner-text-main)!important;
+ body.theme-inner :is(dialog:not(#text-edit-panel):not(#type-study-panel),#ticket-modal-card,#global-confirm-modal>div,#inner-app-view #view-profile.personal-hud dialog.hud-dialog){
+  box-sizing:border-box;border:1px solid var(--inner-text-main)!important;border-radius:0!important;outline:1px solid var(--inner-bg)!important;outline-offset:1px;background:var(--system-window-face)!important;color:var(--inner-text-main)!important;
+  box-shadow:inset 1px 1px 0 #ffffff40,3px 3px 0 #0005!important;
  }
- body.theme-inner #casino-switch-window{border:2px solid var(--inner-bg)!important;outline:2px solid var(--inner-text-main)!important;outline-offset:2px;box-shadow:inset 0 0 0 2px var(--inner-bg),5px 5px 0 var(--inner-text-main),7px 7px 0 var(--inner-bg),8px 8px 0 var(--inner-text-main)!important}
+ body.theme-inner #casino-switch-window{background:var(--system-window-face)!important;color:var(--inner-text-main)!important;border:1px solid var(--inner-text-main)!important;outline:1px solid var(--inner-bg)!important;outline-offset:1px;box-shadow:inset 1px 1px 0 #ffffff40,3px 3px 0 #0005!important}
  body.theme-inner :is(dialog.hud-dialog,#casino-switch-window)>header,body.theme-inner #ticket-modal-header-band{border-bottom:3px double currentColor!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;min-height:34px}
  body.theme-inner :is(dialog.hud-dialog,#casino-switch-window)>header :is(span,h3,small){color:inherit!important}
  body.theme-inner :is(dialog.hud-dialog,#casino-switch-window)>header button{border:1px solid currentColor!important;box-shadow:inset 1px 1px 0 #ffffff40,inset -1px -1px 0 #0005!important;background:transparent!important;color:inherit!important;border-radius:0!important}
@@ -14,14 +14,42 @@
 
 @layer aved-personal {
  body.theme-inner .scratch-award-toast{
-  --result-paper:var(--inner-text-main)!important;--result-ink:var(--inner-bg)!important;--result-line:var(--inner-bg)!important;--result-bar:var(--inner-accent)!important;--result-bar-ink:var(--inner-accent-text)!important;
-  background:var(--result-paper)!important;color:var(--result-ink)!important;border:2px solid var(--inner-bg)!important;outline:2px solid var(--inner-text-main)!important;outline-offset:2px;border-radius:0!important;
-  box-shadow:inset 0 0 0 2px var(--inner-bg),5px 5px 0 var(--inner-text-main),7px 7px 0 var(--inner-bg),8px 8px 0 var(--inner-text-main)!important;
+  --result-paper:var(--system-window-face)!important;--result-ink:var(--inner-text-main)!important;--result-line:var(--inner-border)!important;--result-bar:var(--inner-accent)!important;--result-bar-ink:var(--inner-accent-text)!important;
+  background:var(--result-paper)!important;color:var(--result-ink)!important;border:1px solid var(--inner-text-main)!important;outline:1px solid var(--inner-bg)!important;outline-offset:1px;border-radius:0!important;
+  box-shadow:inset 1px 1px 0 #ffffff40,3px 3px 0 #0005!important;
  }
  body.theme-inner .scratch-award-toast .scratch-award-titlebar{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-bottom:3px double currentColor!important}
- body.theme-inner .scratch-award-toast .scratch-award-body{background:var(--inner-text-main)!important;color:var(--inner-bg)!important}
- body.theme-inner .scratch-award-toast :is(.scratch-award-label,.scratch-award-amount){color:var(--inner-bg)!important}
+ body.theme-inner .scratch-award-toast .scratch-award-body{background:var(--result-paper)!important;color:var(--result-ink)!important}
+ body.theme-inner .scratch-award-toast :is(.scratch-award-label,.scratch-award-amount){color:var(--result-ink)!important}
  body.theme-inner .scratch-award-toast :is(.scratch-award-caption,.scratch-award-close){color:var(--inner-accent-text)!important}
  body.theme-inner .scratch-award-toast .scratch-award-close{border:1px solid currentColor!important;background:transparent!important;box-shadow:inset 1px 1px #ffffff40,inset -1px -1px #0005!important}
  body.theme-inner .scratch-bomb-stamp{background:var(--inner-text-main)!important;color:var(--inner-bg)!important;border:2px solid var(--inner-bg)!important;outline:2px solid var(--inner-text-main)!important;outline-offset:2px;box-shadow:5px 5px 0 var(--inner-text-main),7px 7px 0 var(--inner-bg)!important}
+}
+
+/* Keep page patterns intact; the brighter window face is a separate surface. */
+body.theme-inner{--system-window-face:color-mix(in srgb,var(--inner-bg) 30%,#fff 70%);--system-window-control:var(--inner-card-bg);--system-window-font:'AVED IPix','AVED Plex Mono',monospace;--system-key-shadow:inset 1px 1px 0 #ffffff70,inset -1px -2px 0 #0004,0 2px 0 #0005,0 0 5px color-mix(in srgb,var(--inner-text-main) 8%,transparent)}
+body.theme-inner.dark-mode{--system-window-face:color-mix(in srgb,var(--inner-card-bg) 94%,#fff 6%)}
+html[data-palette-preview=oxblood] body.theme-inner:not(.dark-mode){--system-window-face:#f4f0e8;--system-window-control:#e6dfd3}
+html[data-palette-preview=mineral] body.theme-inner:not(.dark-mode){--system-window-face:#f5f1e9;--system-window-control:#e8e1d6}
+html[data-palette-preview=darkroom] body.theme-inner:not(.dark-mode){--system-window-face:#f2f5f7;--system-window-control:#e3ebf0}
+@layer aved-personal {
+ body.theme-inner :is(dialog:not(#text-edit-panel):not(#type-study-panel),#casino-switch-window,#ticket-modal-card,#global-confirm-modal,.scratch-award-toast),
+ body.theme-inner :is(dialog:not(#text-edit-panel):not(#type-study-panel),#casino-switch-window,#ticket-modal-card,#global-confirm-modal,.scratch-award-toast) :is(span,p,b,strong,label,input,textarea,select,button,h2,h3,h4,small,summary,li){font-family:var(--system-window-font)!important;font-style:normal!important}
+ body.theme-inner dialog:not(#text-edit-panel):not(#type-study-panel)>header{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-bottom:3px double currentColor!important}
+ body.theme-inner dialog:not(#text-edit-panel):not(#type-study-panel)>header :is(b,button,h2,h3,span){color:inherit!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud #hud-edit{width:min(420px,max(280px,67vw));max-width:calc(100vw - 32px)}
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-checkins>button{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-color:var(--inner-accent)!important;box-shadow:inset 1px 1px #ffffff35,inset -1px -1px #0005!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-checkins>button:disabled{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;opacity:var(--hud-claim-opacity,1)!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-checkins>button:not(:disabled):hover{background:var(--inner-accent-hover,var(--inner-accent))!important}
+ body.theme-inner #inner-app-view #casino-switch-window [data-game]{background:var(--system-window-control)!important;color:var(--inner-text-main)!important;border-color:var(--inner-border-soft)!important;box-shadow:var(--system-key-shadow)!important}
+ body.theme-inner #inner-app-view #casino-switch-window [data-game] span{color:inherit!important}
+ body.theme-inner #inner-app-view #casino-switch-window [data-game][aria-pressed=true]{border:2px solid var(--inner-text-main)!important;box-shadow:inset 1px 1px #0004!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud button.hud-frame{box-shadow:var(--system-key-shadow)!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud button.hud-frame:not(:disabled):hover{box-shadow:inset 1px 1px #ffffff80,inset -1px -2px #0005,0 3px 0 #0005,0 0 8px color-mix(in srgb,var(--inner-text-main) 14%,transparent)!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-dialog :is(input,textarea,select){background:var(--system-window-control)!important;color:var(--inner-text-main)!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-dialog-body button{background:var(--system-window-control)!important;color:var(--inner-text-main)!important}
+ body.theme-inner #inner-app-view :is(.casino-home-shortcuts button,.welfare-dashboard button,.card-room-lobby button,#forum-global-back,#scratch-back-lobby-btn),body.theme-inner #inner-app-view #view-profile.personal-hud .hud-dialog-body button{box-shadow:var(--system-key-shadow)!important}
+ body.theme-inner #inner-app-view #view-profile.personal-hud button.hud-frame:not(:disabled):active,
+ body.theme-inner #inner-app-view #view-profile.personal-hud .hud-dialog-body button:not(:disabled):active,
+ body.theme-inner #inner-app-view :is(.casino-home-shortcuts button,.welfare-dashboard button,.card-room-lobby button,#casino-switch-window [data-game],#forum-global-back,#scratch-back-lobby-btn):not(:disabled):active{box-shadow:inset 1px 2px 0 #0006,inset -1px -1px 0 #ffffff30!important;transform:translateY(1px)}
 }

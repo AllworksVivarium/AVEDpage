@@ -1,7 +1,7 @@
 /* Entry screens have their own first-paint metrics, independent of saved inner typography. */
 @layer aved-entry-stable {
+ #inner-app-view.intranet-preparing{visibility:hidden!important;pointer-events:none!important}
  html[data-entry-state="checking"] #landing-view{visibility:hidden!important;pointer-events:none!important}
- html[data-entry-state="checking"] #signal-Connecting-overlay{display:flex!important}
  #signal-Connecting-overlay #session-restore-retry{justify-self:start;box-sizing:border-box;min-height:22px!important;height:22px!important;padding:0 10px!important;border:1px solid currentColor;background:transparent;color:inherit;font-size:12px!important;line-height:20px!important;cursor:pointer}
  :is(#landing-view,#login-modal){--entry-copy:'Courier New','Songti SC','SimSun',serif;font-family:var(--entry-copy)!important;font-size:14px!important;line-height:1.5!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
  #landing-view .floating-kanji{box-sizing:content-box;display:inline-block!important;width:2.24em!important;text-align:center!important;font-family:'Songti SC','SimSun',serif!important;font-size:clamp(26px,4.2vw,64px)!important;line-height:1.2!important;font-weight:900!important;letter-spacing:.08em!important}

@@ -98,10 +98,10 @@ export function applyScratchBomb(ticket,penaltyMultiplier,random){
 export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof){
  return transaction(()=>{
   if(balanceFor(id)<cost)throw new Error('余额不足。');
-  const penalty=game==='scratch'?(result.penalty||0):0;
-  if(!Number.isSafeInteger(penalty)||penalty<0||(penalty&&(![cost,cost*2,cost*4].includes(penalty)||prize!==0)))throw new Error('炸弹扣款无效。');
+  const penalty=['scratch','slot'].includes(game)?(result.penalty||0):0;
+  if(!Number.isSafeInteger(penalty)||penalty<0||(penalty&&(game==='slot'?penalty!==cost*2||result.penaltyKind!=='overload':![cost,cost*2,cost*4].includes(penalty)||prize!==0)))throw new Error('炸弹扣款无效。');
   if(cost)recordLedger(id,-cost,game+'投入');
-  if(penalty)recordLedger(id,-penalty,'刮刮乐炸弹追加扣款');
+  if(penalty)recordLedger(id,-penalty,game==='slot'?'异常回路过载维修费':'刮刮乐炸弹追加扣款');
   if(prize)recordLedger(id,prize,game+'奖金');
   const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,game,cost,prize,proof.seed,proof.seedHash,JSON.stringify(result));
   award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,penalty,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash,gameHighlight:getHighlights().event(id,Number(row.lastInsertRowid))};

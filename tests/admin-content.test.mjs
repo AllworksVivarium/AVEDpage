@@ -29,6 +29,24 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'同步后的正文',pinned:true})).status,200);
  let publicNews=(await p('/api/announcements')).data.items.find(x=>x.id===news.data.id);assert.equal(publicNews.title,'修改后公告');assert.equal(publicNews.body,'同步后的正文');assert.equal(publicNews.pinned,1);
  assert.equal((await p('/api/admin/announcements/'+news.data.id,'PUT',{title:'篡改',body:'不允许',pinned:false})).status,403);
+ // Management lists carry bounded summaries; full text is loaded only on expansion.
+ for(let i=0;i<12;i++)assert.equal((await a('/api/admin/announcements','POST',{title:'分页公告'+i,body:'长正文'.repeat(100),pinned:false})).status,201);
+ const pageOne=(await a('/api/admin/announcements')).data;assert.equal(pageOne.items.length,10);assert.equal(pageOne.next,10);assert.ok(pageOne.items.every(x=>!('body' in x)&&Array.from(x.excerpt).length<=141));
+ const pageTwo=(await a('/api/admin/announcements?offset='+pageOne.next)).data;assert.ok(pageTwo.items.length>0);assert.equal(pageTwo.next,null);assert.ok(pageTwo.items.every(x=>!pageOne.items.some(y=>y.id===x.id)));
+ const longNotice=pageOne.items.find(x=>x.title.startsWith('分页公告'));assert.ok(longNotice.excerpt.endsWith('…'));assert.equal((await a('/api/admin/announcements/'+longNotice.id)).data.item.body,'长正文'.repeat(100));
+ assert.equal((await p('/api/admin/announcements')).status,403);assert.equal((await p('/api/admin/announcements/'+news.data.id)).status,403);
+ const comment=await p('/api/posts','POST',{announcementId:news.data.id,body:'评论时间测试'});assert.equal(comment.status,201);
+ const datePath='/api/admin/posts/'+comment.data.id;
+ assert.equal((await p(datePath,'PUT',{createdAt:'2026-10-01T12:34:56'})).status,403);
+ assert.equal((await a(datePath,'PUT',{createdAt:'2026-02-30T12:00'})).status,400);
+ assert.equal((await a(datePath,'PUT',{})).status,400);
+ assert.equal((await a(datePath,'PUT',{createdAt:'2026-10-01T12:34:56',body:'不能顺便改正文'})).status,200);
+ const comments=(await a('/api/admin/announcements/'+news.data.id+'/comments')).data;assert.equal(comments.items[0].createdAt,'2026-10-01T04:34:56.000Z');assert.equal(comments.items[0].body,'评论时间测试');
+ const visibleComment=(await p('/api/posts?announcementId='+news.data.id)).data.items.find(x=>x.id===comment.data.id);assert.equal(visibleComment.createdAt,'2026-10-01T04:34:56.000Z');
+ for(let i=0;i<11;i++)assert.equal((await p('/api/posts','POST',{announcementId:news.data.id,body:'分页评论'+i})).status,201);
+ const commentPage=(await a('/api/admin/announcements/'+news.data.id+'/comments')).data;assert.equal(commentPage.items.length,10);assert.equal(commentPage.next,10);
+ const commentTail=(await a('/api/admin/announcements/'+news.data.id+'/comments?offset=10')).data;assert.equal(commentTail.items.length,2);assert.equal(commentTail.next,null);
+ assert.equal((await p('/api/admin/announcements/'+news.data.id+'/comments')).status,403);
  const doc=await a('/api/admin/dossiers','POST',{code:'TEST-EDIT',title:'原卷宗',department:'科研部',status:'观察中',summary:'原档案'});assert.equal(doc.status,201);
  assert.equal((await a('/api/admin/dossiers/'+doc.data.id,'PUT',{code:'TEST-EDIT',title:'新卷宗',department:'科研部',status:'稳定',summary:'同步后的档案'})).status,200);
  assert.equal((await p('/api/dossiers')).data.items.find(x=>x.id===doc.data.id).summary,'同步后的档案');
@@ -78,6 +96,23 @@ test('content edits reach players, removals survive restart, and balance rejects
  const past=await a('/api/admin/announcements','POST',{title:'旧公告',body:'测试',pinned:false,publishedAt:'2020-01-01T08:00:00'});
  for(const item of [oldPinned,future,past])assert.equal(item.status,201);
  const timeDb=new DatabaseSync(join(folder,'wanyehui.db'));
+ // Administrators may create debt and set a signed balance; players cannot do so.
+ const debtor=await a('/api/admin/employees','POST',{username:'debt-player',password,displayName:'负余额测试员工',initialBalance:-5000});assert.equal(debtor.status,201);
+ assert.equal(timeDb.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(debtor.data.id).balance,-5000);
+ const balancePath='/api/admin/employees/'+emp.data.id+'/balance';
+ const setDebt={balance:-1234,expectedBalance:balanceBefore,reason:'管理员记录负余额'};
+ assert.equal((await p(balancePath,'POST',setDebt)).status,403);
+ assert.equal((await a(balancePath,'POST',setDebt)).status,200);assert.equal((await p('/api/me')).data.balance,-1234);
+ const ledgerCount=timeDb.prepare('SELECT COUNT(*) n FROM balance_ledger WHERE employee_id=?').get(emp.data.id).n;
+ assert.equal((await a(balancePath,'POST',{...setDebt,balance:2000})).status,409,'stale balance must not overwrite a later change');
+ assert.equal((await a(balancePath,'POST',{...setDebt,expectedBalance:-1234})).status,200);
+ assert.equal(timeDb.prepare('SELECT COUNT(*) n FROM balance_ledger WHERE employee_id=?').get(emp.data.id).n,ledgerCount,'saving an unchanged balance creates no extra ledger entry');
+ assert.equal((await a(balancePath,'POST',{delta:-100,reason:'管理员追加扣款'})).status,200);assert.equal((await p('/api/me')).data.balance,-1334);
+ for(const balance of [1.5,100000001,-100000001])assert.equal((await a(balancePath,'POST',{balance,expectedBalance:-1334,reason:'无效值测试'})).status,400);
+ assert.equal((await a(balancePath,'POST',{balance:0,reason:'缺少旧余额'})).status,400);
+ assert.equal((await a(balancePath,'POST',{balance:balanceBefore,expectedBalance:-1334,reason:'恢复测试余额'})).status,200);
+ assert.equal(timeDb.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(emp.data.id).balance,balanceBefore);
+ assert.equal(timeDb.prepare('SELECT SUM(delta) balance FROM balance_ledger WHERE employee_id=?').get(emp.data.id).balance,balanceBefore);
  const created=timeDb.prepare('SELECT created_at FROM announcements WHERE id=?').get(news.data.id).created_at;
  assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'修改后公告',body:'同步后的正文',pinned:false,publishedAt:'2026-11-06T18:14:12'})).status,200);
  const ids=[oldPinned.data.id,future.data.id,news.data.id,past.data.id];

@@ -46,22 +46,80 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
 }
 
 /* Compact mutual-aid metrics and inline donation controls. */
-#inner-app-view #company-fund-summary{gap:8px}
-#company-fund-summary>article{padding:10px 12px;min-width:0}
-#company-fund-summary span{margin-bottom:5px}
-#inner-app-view .donation-form{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:16px 0;margin:16px 0}
+#inner-app-view #company-fund-summary{gap:6px}
+#company-fund-summary>article{padding:7px 9px;min-width:0}
+#company-fund-summary span{margin-bottom:2px}
+#inner-app-view .donation-form{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding:10px 0;margin:10px 0}
 #inner-app-view .donation-form h4{font-size:15px!important;margin:0}
 #inner-app-view .donation-entry-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch;width:100%;max-width:340px;min-width:0}
-#inner-app-view .donation-entry-row input{height:40px;min-height:40px;padding:8px 10px;font-size:15px!important;line-height:1.4!important;border-radius:0;color:var(--inner-text-main)}
-#inner-app-view .donation-entry-row button{height:40px;min-height:40px;min-width:64px;padding:8px 14px;white-space:nowrap;font-size:13px!important;line-height:1.4!important;border-radius:0}
-#inner-app-view .donation-presets{gap:8px}
-#inner-app-view .donation-presets button{padding:6px 8px;font-size:11px!important;line-height:1.6!important}
+#inner-app-view .donation-entry-row input{height:32px;min-height:32px;padding:5px 8px;font-size:13px!important;line-height:1.4!important;border-radius:0;color:var(--inner-text-main)}
+#inner-app-view .donation-entry-row button{height:32px;min-height:32px;min-width:54px;padding:5px 10px;white-space:nowrap;font-size:12px!important;line-height:1.4!important;border-radius:0}
+#inner-app-view .donation-presets{gap:6px}
+#inner-app-view .donation-presets button{min-height:28px;padding:4px 6px;font-size:10px!important;line-height:1.5!important}
 #inner-app-view .donation-status:empty{display:none}
 @layer aved-site {
  #inner-app-view #company-fund-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  @media(min-width:1000px){#inner-app-view #company-fund-summary{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
 }
 @layer aved-type-system {
- #inner-app-view #company-fund-summary span{font-size:12px!important;line-height:1.5!important}
- #inner-app-view #company-fund-summary strong{font-size:17px!important;line-height:1.4!important}
+ #inner-app-view #company-fund-summary span{font-size:11px!important;line-height:1.4!important}
+ #inner-app-view #company-fund-summary strong{font-size:15px!important;line-height:1.4!important}
+ #inner-app-view .welfare-heading h3{font-size:16px!important;line-height:1.4!important;margin:0!important}
+ #inner-app-view .balance-rankings h4{font-size:14px!important;line-height:1.4!important}
+}
+
+/* Compact company accounts and rankings without shrinking the numeric reading area. */
+#inner-app-view .welfare-dashboard{border-top-width:2px;padding-top:12px;margin-top:14px}
+#inner-app-view .welfare-heading{gap:8px;margin-bottom:10px;padding:0 0 8px;align-items:center;flex-wrap:nowrap}
+#inner-app-view .welfare-heading .section-kicker{display:none}
+#inner-app-view .welfare-heading .community-button{min-height:30px;padding:4px 8px;flex:none}
+#inner-app-view .balance-rankings{display:block;margin-top:0}
+#inner-app-view .balance-rankings>section{border:0}
+#inner-app-view .balance-rankings>section[hidden]{display:none!important}
+#inner-app-view .balance-rankings h4{display:none}
+#inner-app-view .balance-rankings ol{max-height:224px;overflow-y:auto;overscroll-behavior:contain}
+#inner-app-view .ranking-tabs{display:flex;gap:5px;border-bottom:1px solid var(--inner-border-soft);margin-top:10px;padding-bottom:6px}
+#inner-app-view .ranking-tabs button{min-height:30px;padding:4px 10px;border:1px solid var(--inner-border-soft);background:transparent;color:var(--inner-text-main);font-size:12px;cursor:pointer}
+#inner-app-view .ranking-tabs button[aria-selected=true]{background:var(--inner-accent);color:var(--inner-accent-text);border-color:var(--inner-accent)}
+#inner-app-view .balance-rankings li{padding:6px 4px;gap:7px;min-height:32px}
+#inner-app-view .balance-rankings .rank-number{min-width:16px}
+#inner-app-view .balance-rankings .rank-donate{min-height:28px;padding:3px 7px}
+#inner-app-view .ranking-preferences{margin:10px 0 0;gap:8px;align-items:center}
+#inner-app-view .ranking-preferences select{padding:4px 7px;min-height:30px}
+#inner-app-view .ranking-help{font-size:11px;opacity:.75;position:relative}
+#inner-app-view .ranking-help summary{cursor:pointer}
+#inner-app-view .ranking-help small{display:block;max-width:220px}
+@media(min-width:850px){#inner-app-view .welfare-dashboard .donation-form{grid-template-columns:auto minmax(160px,260px) auto;align-items:center}}
+
+/* Separate real sections, with page-pattern gutters between their frames. */
+@layer aved-personal {
+ body.theme-inner #inner-app-view #game-panel-home{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+ body.theme-inner #inner-app-view #game-panel-home>:is(.reward-allocation,.card-room-lobby,.welfare-dashboard){margin:16px 0 0!important;padding:12px!important;border:1px solid var(--inner-border-soft)!important;border-top:2px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;scroll-margin-top:64px}
+ body.theme-inner #inner-app-view .casino-home-shortcuts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}
+ body.theme-inner #inner-app-view :is(.casino-home-shortcuts button,#forum-global-back,#scratch-back-lobby-btn,#directory-back){min-height:36px;padding:6px 10px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;box-shadow:inset 1px 1px #ffffff40,inset -1px -1px #0003!important;font-size:12px!important;line-height:1.4!important;border-radius:0!important}
+ body.theme-inner #inner-app-view :is(.casino-home-shortcuts button,#forum-global-back,#scratch-back-lobby-btn,#directory-back):active{box-shadow:inset 1px 1px #0005!important}
+ body.theme-inner #inner-app-view :is(#header-quick-checkin-btn,#hourly-claim){background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;box-shadow:inset 1px 1px #ffffff35,inset -1px -1px #0004!important}
+ body.theme-inner #inner-app-view :is(#header-quick-checkin-btn,#hourly-claim):disabled{background:color-mix(in srgb,var(--inner-accent) 28%,var(--inner-card-bg))!important;color:var(--inner-text-main)!important;opacity:1!important}
+ body.theme-inner #inner-app-view #game-panel-home>.welfare-dashboard{padding:0!important;border:0!important;background:transparent!important}
+ body.theme-inner #inner-app-view #game-panel-home .welfare-dashboard>:is(.company-fund-panel,.company-ranking-panel){padding:12px!important;border:1px solid var(--inner-border-soft)!important;border-top:2px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;scroll-margin-top:64px}
+ body.theme-inner #inner-app-view .company-ranking-panel{margin-top:16px}
+ body.theme-inner #inner-app-view #game-panel-home>:is(.reward-allocation,.card-room-lobby),body.theme-inner #inner-app-view #game-panel-home .welfare-dashboard>:is(.company-fund-panel,.company-ranking-panel){box-shadow:inset 0 1px #ffffff38,2px 3px 0 #00000020,0 5px 10px #0000000c!important}
+ body.theme-inner #inner-app-view #lowest-balances .rank-donate{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border:1px solid var(--inner-accent)!important;min-height:34px;padding:5px 10px;opacity:1!important;font-weight:700;box-shadow:inset 1px 1px #ffffff55,inset -1px -2px #0005,0 2px 0 #0005!important}
+ body.theme-inner #inner-app-view #lowest-balances .rank-donate:active{box-shadow:inset 1px 2px #0006!important;transform:translateY(1px)}
+}
+
+@layer aved-personal {
+ #inner-app-view #company-fund-summary>article{border-top:2px solid var(--inner-crimson)!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm){box-sizing:border-box!important;width:min(360px,calc(100vw - 32px))!important;min-width:0!important;height:fit-content!important;min-height:0!important;max-height:calc(100dvh - 48px)!important;padding:0!important;overflow:auto!important;text-align:left!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm)>header{position:static!important;min-height:44px!important;padding:9px 14px!important;background:var(--inner-card-alt)!important;color:var(--inner-text-main)!important;border-bottom:1px solid var(--inner-border)!important}
+ #view-casino :is(.welfare-transfer-dialog,.welfare-confirm)>header button{display:grid!important;place-items:center!important;flex:0 0 28px!important;width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;font:20px/1 monospace!important;background:transparent!important;color:inherit!important;border:1px solid var(--inner-border-soft)!important;box-shadow:none!important}
+ #view-casino .welfare-transfer-dialog>form{display:block!important;padding:16px!important;margin:0!important}
+ #view-casino .welfare-transfer-dialog [data-transfer-entry]{display:grid;gap:14px}
+ #view-casino .welfare-transfer-dialog p{margin:0!important;line-height:1.7!important;overflow-wrap:anywhere}
+ #view-casino .welfare-transfer-dialog label{display:grid!important;gap:7px!important}
+ #view-casino .welfare-transfer-dialog input{box-sizing:border-box!important;width:100%!important;height:40px!important;min-height:40px!important;padding:8px 10px!important;margin:0!important;font-size:16px!important}
+ #view-casino .welfare-transfer-dialog [data-transfer-entry]>button{justify-self:end;padding:7px 14px!important;min-height:36px!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
+ #view-casino .welfare-transfer-dialog [data-transfer-review]{display:grid;gap:16px}
+ #view-casino .welfare-transfer-dialog .transfer-actions{display:flex!important;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin:0!important}
+ #view-casino .welfare-transfer-dialog [data-transfer-status]:not(:empty){margin-top:12px!important}
 }

@@ -3,8 +3,11 @@ window.AVEDSkyScene=function(canvas,labelLayer){
  const skyCache=document.createElement('canvas'),skyContext=skyCache.getContext('2d'),backdrop=canvas.getContext('2d'),terrain=document.createElement('canvas'),runway=document.createElement('canvas'),actors=document.createElement('canvas');
  runway.id='flight-runway-canvas';runway.setAttribute('aria-hidden','true');terrain.id='flight-terrain-canvas';actors.id='flight-actors-canvas';terrain.setAttribute('aria-hidden','true');actors.setAttribute('aria-hidden','true');canvas.after(terrain,runway,actors);
  const terrainContext=terrain.getContext('2d'),runwayContext=runway.getContext('2d'),actorContext=actors.getContext('2d'),images=new Map(),labels=new Map();let c=backdrop,w=0,h=0,terrainNight=null,skyKey=null,visibleLabels=new Set();
+ // ResizeObserver supplies dimensions without synchronous layout reads during animation.
+ let displayWidth=1,displayHeight=1;
+ new ResizeObserver(entries=>{const box=entries[0].contentRect;displayWidth=Math.max(1,box.width);displayHeight=Math.max(1,box.height);}).observe(canvas);
  const ease=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
- function nameplate(p,x,y){visibleLabels.add(p.id);let el=labels.get(p.id);if(!el){el=document.createElement('span');el.className='flight-nameplate';labels.set(p.id,el);labelLayer.append(el);}if(el.textContent!==p.alias)el.textContent=p.alias||'员工';if(el.hidden)el.hidden=false;el.style.left=(x/w*100)+'%';el.style.top=(y/h*100)+'%';}
+ function nameplate(p,x,y){visibleLabels.add(p.id);let el=labels.get(p.id);if(!el){el=document.createElement('span');el.className='flight-nameplate';labels.set(p.id,el);labelLayer.append(el);}if(el.textContent!==p.alias)el.textContent=p.alias||'员工';if(el.hidden)el.hidden=false;el.style.transform='translate3d('+(x*displayWidth/w)+'px,'+(y*displayHeight/h)+'px,0) translateX(-50%)';}
  const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t;
  const colors=['#f4c88a','#a5d8c3','#cca8e5','#91c7e0','#f2a094','#c8d78b'];
  function rect(x,y,ww,hh,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.ceil(ww),Math.ceil(hh));}
@@ -49,7 +52,7 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   rect(w*.54,top+11,w*.2,1,'#c5c39a');text('A.V.E.D. / LZ',w*.64,top+23,'#8eab9d',5);
  }
  function paint(state,now,depth,animated,selfId){
-  const cw=Math.max(1,Math.round(canvas.clientWidth/2)),ch=Math.max(1,Math.round(canvas.clientHeight/2));
+  const cw=Math.max(1,Math.round(displayWidth/2)),ch=Math.max(1,Math.round(displayHeight/2));
   if(cw!==w||ch!==h){w=cw;h=ch;for(const layer of [canvas,terrain,runway,actors,skyCache]){layer.width=w;layer.height=h;layer.getContext('2d').imageSmoothingEnabled=false;}terrainNight=null;skyKey=null;}
   c=backdrop;actorContext.clearRect(0,0,w,h);
   visibleLabels.clear();
@@ -99,8 +102,8 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   const cameraDepth=depth+(landing?state.speed*2.8*(1-Math.exp(-elapsed/2800)):0);
   const mean=Math.max(240,state.expectedSafety||400),approach=ease((cameraDepth-140)/(mean-140));
   const offset=board?90:90*(1-approach),opacity=board?0:ease((cameraDepth-140)/140)*.9;
-  terrain.style.transform='translate3d(0,'+(offset*canvas.clientHeight/h)+'px,0)';terrain.style.opacity=String(opacity);
-  runway.style.transform='translate3d(0,'+((landing?32*(1-ease(elapsed/420)):32)*canvas.clientHeight/h)+'px,0)';runway.style.opacity=landing?'1':'0';
+  terrain.style.transform='translate3d(0,'+(offset*displayHeight/h)+'px,0)';terrain.style.opacity=String(opacity);
+  runway.style.transform='translate3d(0,'+((landing?32*(1-ease(elapsed/420)):32)*displayHeight/h)+'px,0)';runway.style.opacity=landing?'1':'0';
   c=actorContext;
   const selected=[...state.passengers];if(selected.length>24){const own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];}
   if(board){
@@ -114,8 +117,8 @@ window.AVEDSkyScene=function(canvas,labelLayer){
    for(let i=0;i<shown.length;i++){
     const p=shown[i],x=48+(i%columns+.5)*(w-53)/columns,row=Math.floor(i/columns),startY=h*.57+row*Math.min(43,(h*.33)/Math.max(1,rows));
     const bob=animated?Math.sin(t/360+p.id)*2:0;let y=startY,actorX=x,chute=p.status==='landed',grounded=false;
-    if(chute){const age=Math.max(0,now-p.settledAt),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=mix(seatY,startY,entry);actorX=mix(mix(seatX,x,entry),x,ease(age/1000));y=openY-18*ease(age/600)+Math.min(age/1000,14)*1.1;
-     if(landing){const revealAge=Math.max(0,state.revealedAt-p.settledAt),from=openY-18*ease(revealAge/600)+Math.min(revealAge/1000,14)*1.1,k=clamp((elapsed-1300)/(4600+clamp((state.safetyLine-p.depth)/Math.max(1,state.safetyLine))*1200));y=mix(from,h-37,ease(k));grounded=k>=1;}
+    if(chute){const age=Math.max(0,now-p.settledAt),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=mix(seatY,startY,entry);actorX=mix(mix(seatX,x,entry),x,ease(age/1000));
+     const descent=window.AVEDSkyScene.passengerMotion(state,p,now,openY,h);y=descent.y;grounded=descent.grounded;
      person(p,actorX+(animated&&!grounded?Math.sin(t/850+p.id)*3:0),y+bob*(grounded?0:1),true,p.id===selfId,t,animated,grounded);
     }else if(p.status==='crashed'){
      const age=now-p.settledAt,k=clamp(age/650);y=mix(startY,h-36,k*k);
@@ -127,4 +130,31 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   }
  }
  return {preview(){paint({phase:'BOARDING',departAt:Date.now(),passengers:[]},Date.now(),100,false,0);},paint:(...args)=>{paint(...args);for(const [id,el] of labels){const hidden=!visibleLabels.has(id);if(el.hidden!==hidden)el.hidden=hidden;}},reset(){if(images.size>128)images.clear();for(const el of labels.values())el.remove();labels.clear();}};
+};
+
+// Presentation only: follow the freefall camera until opening, then keep only 22%
+// of freefall speed. Depth differences stay visible, even beyond the upper edge.
+// The sealed safety line is used only AFTER the server has revealed it.
+window.AVEDSkyScene.passengerMotion=function(state,p,now,originY,height){
+ const speed=state.speed,scale=height/500,ratio=.22,tau=.3;
+ const travel=at=>{const seconds=Math.max(0,(at-p.settledAt)/1000);return speed*(ratio*seconds+(1-ratio)*tau*(1-Math.exp(-seconds/tau)));};
+ const gap=at=>Math.max(0,100+Math.max(0,at-state.departAt)*speed/1000-p.depth-travel(at));
+ if(state.phase!=='LANDING')return {y:originY-gap(now)*scale,grounded:false};
+ const difference=gap(state.revealedAt),duration=window.AVEDSkyScene.landingDelay(state,p);
+ const k=Math.max(0,Math.min(1,(now-state.revealedAt)/duration));
+ // Accelerate toward the ground instead of easing to a hover before contact.
+ // A later, deeper opening keeps a faster descent through the final approach.
+ const power=2+2*Math.max(0,Math.min(1,(p.depth-100)/Math.max(1,state.safetyLine-100)));
+ const from=originY-difference*scale,target=height-37;
+ // Ease the camera to a stop without snapping employees back into the frame.
+ const age=Math.max(0,(state.revealedAt-p.settledAt)/1000);
+ const velocity=-speed*(1-ratio)*(1-Math.exp(-age/tau))*scale;
+ const y=from+(target-from)*Math.pow(k,power)+velocity*(duration/1000)*k*(1-k)*(1-k);
+ return {y,grounded:k>=1};
+};
+window.AVEDSkyScene.landingDelay=function(state,p){
+ const seconds=Math.max(0,(state.revealedAt-p.settledAt)/1000);
+ const travel=state.speed*(.22*seconds+.78*.3*(1-Math.exp(-seconds/.3)));
+ const difference=Math.max(0,state.safetyLine-p.depth-travel);
+ return Math.ceil(Math.min(Math.max(1000,(state.landingMs||14000)-1500),5000+Math.min(7000,difference/Math.max(1,state.speed)*550)));
 };

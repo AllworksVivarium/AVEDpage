@@ -52,6 +52,11 @@ html[data-time-display="absolute"] .login-card label:has(input[type=checkbox])>s
 .admin-post>.admin-button-panel{display:inline-block;margin-right:10px}
 
 /* Keep robot balances separate from the human personnel editor. */
+.employee-balance-control{margin-top:6px}
+.employee-balance-form{display:grid;gap:8px;min-width:220px;padding:10px 0}
+.employee-balance-form label{display:grid;gap:4px;font-size:12px}
+.employee-balance-form input{box-sizing:border-box;width:100%;min-width:0}
+.employee-balance-form [role=status]{white-space:normal;font-size:12px}
 .admin-mode .company-robots-panel{max-width:960px}
 .admin-mode .company-robots-panel h2{margin:0 0 8px}
 .admin-mode .company-robots-panel h3{margin:16px 0 8px;font-size:15px}
@@ -63,3 +68,6 @@ html[data-time-display="absolute"] .login-card label:has(input[type=checkbox])>s
 .admin-mode .robot-row [role=status]{grid-column:1/-1;font-size:12px;overflow-wrap:anywhere}
 .admin-mode .robot-row [role=status]:empty{display:none}
 @media(max-width:480px){.admin-mode .company-robots-panel .robot-row{grid-template-columns:minmax(0,1fr) minmax(78px,.6fr) auto;gap:6px}.admin-mode .robot-row button{padding:8px}.admin-mode .robot-row input{padding:8px}}
+
+.admin-notice-excerpt{display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#admin-notice-list .admin-post>h4{overflow-wrap:anywhere}

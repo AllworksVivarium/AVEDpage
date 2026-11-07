@@ -21,7 +21,7 @@ window.AVEDEconomyUI=function({api,esc,byId,getUser,onBalance,showToast,stocks,r
   const positionNotional=list.reduce((sum,s)=>sum+(s.positionNotional||0),0);
   const unrealized=list.reduce((sum,s)=>sum+(s.unrealizedPnl||0),0);
   const realized=list.reduce((sum,s)=>sum+(s.realizedPnl||0),0);
-  summary.innerHTML='<p class="stock-risk-notice">虚拟投资游戏，现实投资需谨慎！</p><span class="section-kicker">FUNDS</span><h3>交易资金</h3><div class="portfolio-grid stock-funds-grid"><article class="stock-quote-card stock-funds-card"><h4>可用余额</h4><strong class="stock-quote-price stock-funds-value '+cashClass+'">'+money(cash)+'</strong><p>账户允许为负数</p></article><article class="stock-quote-card stock-funds-card"><h4>占用保证金</h4><strong class="stock-quote-price stock-funds-value">'+money(costBasis)+'</strong><p>当前持仓总保证金</p></article><article class="stock-quote-card stock-funds-card"><h4>名义仓位</h4><strong class="stock-quote-price stock-funds-value">'+money(positionNotional)+'</strong><p>市场敞口（非实际占款）</p></article><article class="stock-quote-card stock-funds-card"><h4>盈亏概览</h4><strong class="stock-quote-price stock-funds-value '+((unrealized+realized)>=0?'market-up':'market-down')+'">'+signed(unrealized+realized)+'</strong><p>浮动 '+signed(unrealized)+' ｜ 已实现 '+signed(realized)+'</p></article></div>';
+  summary.innerHTML='<div class="stock-funds-grid">'+[['可用余额',money(cash),cashClass],['占用保证金',money(costBasis),''],['名义仓位',money(positionNotional),''],['盈亏概览',signed(unrealized+realized),(unrealized+realized)>=0?'market-up':'market-down']].map(([label,value,color])=>'<article class="stock-funds-card"><h4>'+label+'</h4><strong class="stock-funds-value '+color+'">'+value+'</strong></article>').join('')+'</div>';
  }
  function showView(next){view=next;for(const child of stocksPanel.children)if(child!==nav&&child!==summary)child.hidden=child===holdings?view!=='holdings':view==='holdings';nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.portfolioView===view)));renderHoldings();}
  nav.onclick=e=>{const b=e.target.closest('[data-portfolio-view]');if(!b)return;showView(b.dataset.portfolioView);refreshMarket().catch(err=>showToast(err.message));};
@@ -42,7 +42,7 @@ window.AVEDEconomyUI=function({api,esc,byId,getUser,onBalance,showToast,stocks,r
    renderHoldings();
    try{
     const action=position.holding>0?'sell':'buy';
-    const payload=await api('/api/player/stocks',{method:'POST',body:{code,action,quantity,orderType:'market'}});
+    const payload=await api('/api/player/stocks',{method:'POST',body:{code,intent:'close',quantity,orderType:'market'}});
     if(Array.isArray(payload?.items)){
      const list=stocks();
      list.splice(0,list.length,...payload.items);
@@ -59,7 +59,7 @@ window.AVEDEconomyUI=function({api,esc,byId,getUser,onBalance,showToast,stocks,r
    }
    return;
   }
-  const b=e.target.closest('[data-position-code]');if(!b)return;showView('quotes');stocksPanel.querySelector('[data-stock-chart-code="'+b.dataset.positionCode+'"]')?.click();byId('stocks-table-body').scrollIntoView({behavior:'smooth',block:'nearest'});
+  const b=e.target.closest('[data-position-code]');if(!b)return;showView('quotes');stocksPanel.querySelector('[data-stock-chart-code="'+b.dataset.positionCode+'"]')?.click();byId('stock-trade-ticket').scrollIntoView({behavior:'smooth',block:'nearest'});
  };
  return {configure,renderHoldings};
 };

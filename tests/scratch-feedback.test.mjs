@@ -33,7 +33,20 @@ test('one shared toast replaces previous awards and uses tier-specific expiry',(
  fx.settle(banner,{cost:1000,prize:1250});assert.equal(timers.at(-1).ms,1500);
  other.settle(banner,{cost:1000,prize:5000});assert.equal(ctx.window.AVEDScratchToast.label.textContent,'刮出大奖了！');assert.equal(ctx.window.AVEDScratchToast.amount.hidden,false);assert.equal(timers.at(-1).ms,2500);assert.ok(cancelled.includes(1));
  fx.settle(banner,{cost:1000,prize:20000});assert.equal(timers.at(-1).ms,4000);
- fx.settle(banner,{cost:1000,prize:30000,gameHighlight:{personalBest:1}});assert.equal(timers.at(-1).ms,5000);
- assert.equal(nodes.length,1);assert.equal(banner.textContent,'本局获得');assert.match(ctx.window.AVEDScratchToast.label.textContent,/新纪录/);assert.match(ctx.window.AVEDScratchToast.amount.textContent,/30,000/);
+ let forwarded;ctx.window.AVEDPersonalRecord={show:event=>{forwarded=event;}};
+ const record={personalBest:1,ticketId:9};fx.settle(banner,{cost:1000,prize:30000,gameHighlight:record});assert.equal(timers.at(-1).ms,4000);assert.equal(forwarded,record);
+ assert.equal(nodes.length,1);assert.equal(banner.textContent,'本局获得');assert.match(ctx.window.AVEDScratchToast.label.textContent,/大奖/);assert.match(ctx.window.AVEDScratchToast.amount.textContent,/30,000/);
  timers.at(-1).fn();assert.equal(ctx.window.AVEDScratchToast.el.hidden,true);
+});
+
+
+test('next ticket preserves running fireworks but clears the previous toast and bomb',()=>{
+ const layers=[],timers=[];let bombClears=0;
+ const element=()=>({dataset:{},children:[],style:{},classList:{add(){},remove(){}},setAttribute(){},addEventListener(){},append(el){this.children.push(el);},remove(){this.removed=true;}});
+ const ctx={window:{AVEDScratchBomb:{clear(){bombClears++;}}},document:{hidden:false,addEventListener(){},createElement:element,body:{append(el){if(el.className.includes('scratch-electronic-confetti'))layers.push(el);}}},matchMedia:()=>({matches:false,addEventListener(){}}),innerWidth:1200,innerHeight:800,clearTimeout(){},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;}};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
+ const fx=ctx.window.AVEDScratchFeedback();fx.settle(element(),{cost:1000,prize:20000});
+ assert.equal(layers.length,2);fx.nextTicket();assert.equal(bombClears,1);assert.equal(ctx.window.AVEDScratchToast.el.hidden,true);assert.ok(layers.every(l=>!l.removed));
+ timers.find(t=>t.ms===1950).fn();assert.ok(layers[0].removed);assert.ok(!layers[1].removed);
+ timers.find(t=>t.ms===5400).fn();assert.ok(layers[1].removed);
 });

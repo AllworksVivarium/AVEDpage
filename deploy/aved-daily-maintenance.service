@@ -1,0 +1,14 @@
+[Unit]
+Description=AVED daily two-copy backup and empty game cleanup
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/aved-daily-maintenance.lock /usr/bin/python3 /usr/local/lib/aved/daily-maintenance.py
+ExecStartPost=-/usr/bin/docker builder prune --force --keep-storage 256MB
+Nice=15
+IOSchedulingClass=idle
+TimeoutStartSec=300
+UMask=0077
+StandardOutput=null
+StandardError=null

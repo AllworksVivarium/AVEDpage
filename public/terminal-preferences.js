@@ -4,9 +4,9 @@
  let appearance={};try{appearance=JSON.parse(read('aved_appearance_v2','{}'))||{};}catch{}
  const palettes=['oxblood','darkroom','mineral'];
  const theme=['day','night'].includes(appearance.theme)?appearance.theme:read('aved_theme_v1','day');
- const palette=palettes.includes(appearance.palette)?appearance.palette:read('aved_palette_preview_v1','mineral');
+ const palette=palettes.includes(appearance.palette)?appearance.palette:read('aved_palette_preview_v1','oxblood');
  document.documentElement.dataset.savedTheme=theme==='night'?'night':'day';
- document.documentElement.dataset.palettePreview=palettes.includes(palette)?palette:'mineral';
+ document.documentElement.dataset.palettePreview=palettes.includes(palette)?palette:'oxblood';
  window.AVEDSaveAppearance=()=>{
   const {savedTheme:theme,palettePreview:palette}=document.documentElement.dataset;
   save('aved_appearance_v2',JSON.stringify({theme,palette}));

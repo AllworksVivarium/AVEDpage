@@ -1,0 +1,51 @@
+/* Shared animal race: low-resolution art, readable controls, no downloaded art. */
+#game-panel-derby{--race-ink:#e6dcc4;--race-paper:#263e43;--race-gold:#e1bc85;padding:0;border:0;background:transparent}
+#game-panel-derby .animal-race{color:var(--inner-text-main);font:13px/1.5 Arial,"Microsoft YaHei",sans-serif}
+#game-panel-derby .race-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px}
+#game-panel-derby .race-heading h2{font-size:24px;margin:3px 0;font-weight:700}
+#game-panel-derby .race-heading small{font:10px monospace;letter-spacing:.12em;opacity:.6}
+#game-panel-derby .race-connection{font:10px monospace;opacity:.75;white-space:nowrap}
+#game-panel-derby .animal-race-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px;align-items:start}
+#game-panel-derby .animal-stage{border:2px solid #263e43;background:var(--race-paper);color:var(--race-ink);box-shadow:3px 3px 0 #182e3640}
+#game-panel-derby .animal-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;border-bottom:1px solid #8d9b7c55;font:11px monospace}
+#game-panel-derby .animal-topline strong{color:var(--race-gold)}
+#game-panel-derby .animal-track{position:relative;overflow:hidden}
+#game-panel-derby canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+#game-panel-derby .animal-names{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#9baf9440;border-top:1px solid #9baf9440}
+#game-panel-derby .animal-names span{background:#263e43;text-align:center;padding:8px 2px;font-size:11px;white-space:nowrap}
+#game-panel-derby .animal-names b{color:var(--race-gold);font:10px monospace;margin-right:4px}
+#game-panel-derby .animal-status{min-height:43px;margin:0;padding:12px 13px;font-size:12px;color:var(--race-ink);border-top:1px solid #9baf9440}
+#game-panel-derby .animal-status.is-profit{color:#ffdc96;background:#57604a}
+#game-panel-derby .race-slip{border:1px solid var(--inner-border-soft);background:var(--inner-card-bg);padding:15px}
+#game-panel-derby .race-slip h3{font-size:16px;margin:2px 0 12px}
+#game-panel-derby .race-market-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+#game-panel-derby .race-market-tabs button{border:1px solid var(--inner-border-soft);padding:9px 4px;background:transparent;color:inherit;cursor:pointer;font:12px inherit}
+#game-panel-derby .race-market-tabs button[aria-pressed="true"]{background:#304b4d;color:#f4d7a2;border-color:#304b4d}
+#game-panel-derby .animal-options{display:grid;gap:5px;margin:8px 0 12px;border:0;padding:0}
+#game-panel-derby .animal-options label{display:flex;align-items:center;gap:6px;border:1px solid var(--inner-border-soft);padding:2px 8px;min-height:38px;cursor:pointer}
+#game-panel-derby .animal-options label:has(input:checked){border-color:#a38151;background:#b59c6b22}
+#game-panel-derby .animal-options img{width:38px;height:31px;image-rendering:pixelated;object-fit:contain}
+#game-panel-derby .animal-options input{margin:0;accent-color:#7f6747}
+#game-panel-derby .animal-options small{margin-left:auto;opacity:.65;font-size:10px}
+#game-panel-derby .race-amount{display:block;font-size:11px}
+#game-panel-derby .race-amount input{display:block;width:100%;margin:5px 0 8px;padding:9px;background:var(--inner-card-alt);color:inherit;border:1px solid var(--inner-border-soft);font:16px monospace}
+#game-panel-derby .race-amounts{display:flex;gap:5px;margin-bottom:12px}
+#game-panel-derby .race-amounts button{flex:1;padding:5px 2px;border:1px solid var(--inner-border-soft);background:transparent;color:inherit;font:11px monospace;cursor:pointer}
+#game-panel-derby .race-submit{width:100%;padding:11px;border:2px solid #263e43;background:#e1bc85;color:#263e43;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #263e43}
+#game-panel-derby button:disabled,#game-panel-derby input:disabled{opacity:.5;cursor:default}
+#game-panel-derby .race-tickets{padding-top:10px;font-size:11px}
+#game-panel-derby .race-tickets p{margin:7px 0;padding-bottom:7px;border-bottom:1px solid var(--inner-border-soft)}
+#game-panel-derby .race-rule-note{font-size:11px;opacity:.7;margin:12px 0 0;line-height:1.7}
+#game-panel-derby .animal-radio{margin-top:18px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-derby .animal-radio h3{font-size:12px;margin:0;padding:10px 12px;border-bottom:1px solid var(--inner-border-soft)}
+#game-panel-derby .animal-radio h3 small{font:9px monospace;opacity:.6;margin-left:8px}
+#game-panel-derby #derby-chat-messages{height:125px;padding:10px 12px;overflow-y:auto;font-size:12px}
+#game-panel-derby #derby-chat-form{display:flex;gap:6px;padding:8px;border-top:1px solid var(--inner-border-soft)}
+#game-panel-derby #derby-chat-input{min-width:0;flex:1;padding:8px;background:transparent;border:1px solid var(--inner-border-soft);color:inherit;font-size:12px}
+#game-panel-derby #derby-chat-form button{padding:6px 12px;background:#304b4d;color:#f4d7a2;border:0}
+
+
+@media(max-width:1100px){#game-panel-derby .animal-race-layout{grid-template-columns:minmax(0,1fr)}#game-panel-derby .race-slip{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:16px}#game-panel-derby .race-slip h3,#game-panel-derby .race-rule-note{grid-column:1/-1}#game-panel-derby .race-select{grid-row:2/5}#game-panel-derby .race-market-tabs{grid-column:2}#game-panel-derby .race-stake{grid-column:2}#game-panel-derby .race-tickets{grid-column:1/-1}}
+@media(max-width:520px){#game-panel-derby .race-heading h2{font-size:21px}#game-panel-derby .race-heading{margin-bottom:10px}#game-panel-derby .race-slip{padding:11px;column-gap:10px}#game-panel-derby .animal-options label{padding:2px 5px;gap:3px}#game-panel-derby .animal-options small{display:none}#game-panel-derby .animal-options img{width:30px;height:27px}#game-panel-derby .animal-options span{font-size:12px}#game-panel-derby .animal-topline{font-size:10px;padding:9px}#game-panel-derby .animal-names span{font-size:10px}#game-panel-derby .animal-names b{margin-right:2px}}
+
+#game-panel-derby .animal-radio{grid-column:1/-1;margin-top:0}

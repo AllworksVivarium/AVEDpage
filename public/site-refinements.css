@@ -348,15 +348,6 @@
  }
 }
 
-@layer aved-device-effects {
- body.editor-tools-hidden :is(#text-edit-launcher,#type-study-launcher,#text-edit-panel,#type-study-panel) {display:none!important}
- #left-sidebar.w-16 .editor-tools-toggle {display:none!important}
-}
-@layer aved-site {
- #left-sidebar .editor-tools-toggle {display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px 0;font-size:12px;color:var(--inner-text-muted);cursor:pointer}
- #left-sidebar .editor-tools-toggle input {width:14px;height:14px;accent-color:var(--brand-red)}
-}
-
 @layer aved-type-system {
  #inner-app-view .terminal-brand-mark,#inner-app-view .terminal-brand-mark * {filter:none!important;text-shadow:none!important;animation:none!important}
 }

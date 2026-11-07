@@ -1,0 +1,15 @@
+/* First cascade layer: shared dimensions win over per-window legacy rules. */
+@layer aved-popup-density {
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading,#global-confirm-modal>div>div:first-child){box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:nowrap!important;gap:8px!important;height:30px!important;min-height:30px!important;max-height:30px!important;padding:2px 8px!important;line-height:18px!important}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading,#global-confirm-modal>div>div:first-child) :is(h2,h3,b,span){min-width:0;margin-block:0!important;padding-block:0!important;font-size:12px!important;line-height:18px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading)>:not(button){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band)>button:not(#close-login-btn){box-sizing:border-box!important;display:grid!important;place-items:center!important;position:relative;flex:0 0 22px!important;width:22px!important;min-width:22px!important;max-width:22px!important;height:22px!important;min-height:22px!important;max-height:22px!important;padding:0!important;margin:0!important;font:16px/1 monospace!important;border-width:1px!important;cursor:pointer}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band)>button::after{content:'';position:absolute;inset:-4px}
+ body #login-modal #close-login-btn{height:22px!important;min-height:22px!important;padding:0 5px!important;font-size:11px!important;line-height:20px!important}
+ body #casino-switch-window>header>div>small{display:none!important}
+ body #speech-edit-dialog>header h2{border:0!important;padding:0!important}
+ body #speech-edit-dialog>header{margin-bottom:12px!important}
+ body .admin-dialog>header{margin-bottom:12px!important}
+ body .scratch-award-toast .scratch-award-close{width:18px!important;height:16px!important;min-height:16px!important;flex-basis:18px!important;font-size:14px!important}
+ body .slot-award-card>button{width:20px!important;height:20px!important;min-height:20px!important;padding:0!important;font-size:16px!important;line-height:20px!important}
+}

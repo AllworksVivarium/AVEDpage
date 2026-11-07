@@ -1,0 +1,79 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {randomUUID} from 'node:crypto';
+import {cardSettlement,installCardWallet} from '../server-card-wallet.mjs';
+import {installCardTables,botTurn} from '../server-card-table.mjs';
+
+test('card stakes are affordable; payouts conserve the pot plus a 25% system bonus',()=>{
+ for(const size of [3,4])for(let landlord=0;landlord<size;landlord++)for(const winner of ['landlord','farmers'])for(const bid of [1,2,3])for(const multiplier of [1,2,4,8,16,32,64]){
+  const r=cardSettlement(size,landlord,winner,bid,multiplier);
+  assert.equal(r.players.reduce((s,p)=>s+p.stake,0),r.pot);
+  assert.equal(r.players.reduce((s,p)=>s+p.reward,0),r.pot+r.bonus);
+  assert.equal(r.players.reduce((s,p)=>s+p.net,0),r.bonus);
+  for(const p of r.players){assert.ok(p.stake<=10000);assert.ok(p.release>=0);assert.ok(Number.isSafeInteger(p.release));}
+ }
+});
+
+test('card money survives restart, settles once, rolls back errors and follows departing humans',async t=>{
+ const db=new DatabaseSync(':memory:');db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,balance INTEGER);INSERT INTO employees VALUES(1,30000),(2,9999);
+ CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT,avatar_url TEXT);
+ CREATE TABLE ledger(employee_id INTEGER,delta INTEGER,reason TEXT);CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);`);
+ const deps={db,readBody:async r=>r.body,requireEmployee:r=>({id:r.id,username:'test'}),sessionEmployee:()=>true,send:(r,status,data)=>Object.assign(r,{status,data}),balanceFor:id=>db.prepare('SELECT balance FROM employees WHERE id=?').get(id).balance,
+ recordLedger:(id,delta,reason)=>{db.prepare('INSERT INTO ledger VALUES(?,?,?)').run(id,delta,reason);db.prepare('UPDATE employees SET balance=balance+? WHERE id=?').run(delta,id);}};
+ let service=installCardTables(deps);t.after(()=>{service.close();db.close();});
+ const call=async(id,body)=>{const res={};await service.handle({id,method:body?'POST':'GET',body},res,new URL('http://test/api/player/card-table'));return res;};
+ assert.equal((await call(2,{action:'solo',size:3})).status,400);
+ db.exec("CREATE TRIGGER reject_money BEFORE INSERT ON ledger BEGIN SELECT RAISE(ABORT,'test failure'); END");
+ assert.equal((await call(1,{action:'solo',size:3})).status,400);assert.equal(deps.balanceFor(1),30000);assert.equal(db.prepare('SELECT count(*) n FROM card_money_rounds').get().n,0);
+ db.exec('DROP TRIGGER reject_money');
+ const started=await call(1,{action:'solo',size:3});assert.equal(started.status,200);assert.equal(deps.balanceFor(1),20000);
+ const id=started.data.room.id;service.close();
+ const r=JSON.parse(db.prepare('SELECT state_json FROM card_table_rooms WHERE id=?').get(id).state_json);
+ Object.assign(r.game,{phase:'playing',turn:0,landlord:0,bid:1,multiplier:1,last:null});r.game.hands[0]=[{id:999,val:3,label:'3',suit:'♠'}];r.game.plays[1]=1;
+ db.prepare('UPDATE card_table_rooms SET state_json=? WHERE id=?').run(JSON.stringify(r),id);
+ service=installCardTables(deps);let v=(await call(1)).data.room;assert.equal(v.money.round,started.data.room.money.round);
+ const play={action:'play',cards:[999],room:id,revision:v.revision,requestId:randomUUID(),balance:999999,prize:999999};
+ db.exec("CREATE TRIGGER reject_settle BEFORE INSERT ON ledger WHEN NEW.delta>0 BEGIN SELECT RAISE(ABORT,'settlement write failure'); END");
+ assert.equal((await call(1,play)).status,400);assert.equal(deps.balanceFor(1),20000);assert.equal((await call(1)).data.room.phase,'playing');assert.equal(db.prepare('SELECT settlement_json FROM card_money_rounds').get().settlement_json,null);
+ db.exec('DROP TRIGGER reject_settle');
+ const finish=await call(1,play);assert.equal(finish.status,200);assert.equal(finish.data.room.money.settlement.stake,200);assert.equal(finish.data.room.money.settlement.reward,500);assert.equal(deps.balanceFor(1),30300);assert.equal(db.prepare('SELECT cost FROM game_tickets').get().cost,200);
+ const rows=db.prepare('SELECT count(*) n FROM ledger').get().n;await call(1,play);assert.equal(db.prepare('SELECT count(*) n FROM ledger').get().n,rows);
+ assert.equal(db.prepare('SELECT system_delta FROM card_money_rounds').get().system_delta,-300);
+ await new Promise(resolve=>setTimeout(resolve,1200));
+ assert.equal((await call(1)).data.room.phase,'ended','the timer never starts the next round');
+ assert.equal(db.prepare('SELECT count(*) n FROM card_money_rounds').get().n,1);
+ service.close();service=installCardTables(deps);v=(await call(1)).data.room;assert.equal(v.money.settlement.reward,500);assert.equal(deps.balanceFor(1),30300);
+ let next=await call(1,{action:'start',room:id,revision:v.revision,requestId:randomUUID()});assert.equal(next.status,200);assert.equal(deps.balanceFor(1),20300);
+ const round=next.data.room.money.round;
+ await call(1,{action:'leave',room:id,revision:next.data.room.revision,requestId:randomUUID()});assert.equal((await call(1)).data.room,null);assert.equal(deps.balanceFor(1),20300);
+ const kept=JSON.parse(db.prepare('SELECT state_json FROM card_table_rooms WHERE id=?').get(id).state_json);assert.equal(kept.seats[0].id,1);assert.equal(kept.seats[0].auto,true);assert.equal(kept.seats[0].detached,true);
+ assert.equal(db.prepare('SELECT employee_id FROM card_money_seats WHERE round_id=? AND seat=0').get(round).employee_id,1);
+ assert.equal((await call(1,{action:'solo',size:3})).status,400,'leaving cannot open parallel automated tables');
+});
+
+test('a computer never bids below the current bid',()=>{
+ const g={phase:'bidding',turn:0,bid:2,hands:[[{val:15}]]};assert.equal(botTurn(g).bid,0);
+});
+
+test('pure autoplay has no positive return, one manual play qualifies, and entry never cools down',()=>{
+ const db=new DatabaseSync(':memory:');try{
+  db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT); CREATE TABLE card_auto_limits(employee_id INTEGER PRIMARY KEY,streak INTEGER,cooldown_until INTEGER); INSERT INTO card_auto_limits VALUES(1,99,9999999999999);');
+  let credits=0;const deps={db,balanceFor:()=>100000,recordLedger:(_,delta)=>credits+=delta};let wallet=installCardWallet(deps);
+  function finish(manualPlay,winner='landlord',manualPass=false){
+   const r={id:randomUUID(),size:3,seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}]};wallet.start(r);
+   for(let i=0;i<10;i++)wallet.recordTurn(r,0,'play',true);
+   if(manualPlay)wallet.recordTurn(r,0,'play',false);
+   if(manualPass)wallet.recordTurn(r,0,'pass',false);
+   r.game={phase:'ended',landlord:0,winner,bid:1,multiplier:1};wallet.settle(r);
+   const before=credits;wallet.settle(r);assert.equal(credits,before,'settlement is idempotent');
+   assert.doesNotThrow(()=>wallet.checkEntry(1));return r.money.settlement.players[0];
+  }
+  for(let i=0;i<4;i++){const p=finish(false);assert.equal(p.net,0);assert.equal(p.reward,p.stake);assert.equal(p.bonus,0);assert.equal(p.autoOnly,true);}
+  const manual=finish(true);assert.equal(manual.reward,500);assert.equal(manual.bonus,100);assert.equal(manual.net,300);assert.equal(manual.autoOnly,false);
+  assert.equal(finish(false,'landlord',true).net,0,'passing alone does not qualify');
+  const loss=finish(false,'farmers');assert.equal(loss.reward,0);assert.equal(loss.net,-200);
+  wallet=installCardWallet(deps);assert.doesNotThrow(()=>wallet.checkEntry(1));assert.equal(finish(false).net,0);
+  assert.equal(db.prepare('SELECT count(*) n FROM game_tickets').get().n,8);
+ }finally{db.close();}
+});

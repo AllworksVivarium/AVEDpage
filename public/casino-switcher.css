@@ -89,7 +89,10 @@
 /* Two slim information rows; event messages retain a readable body size. */
 @layer aved-personal {
  #inner-app-view #view-casino :is(.company-play-ticker,.aved-jackpot-strip){box-sizing:border-box!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding-block:0!important}
- #inner-app-view #view-casino .company-play-ticker{display:flex!important;align-items:center!important;margin-top:8px!important;font-size:11px!important;line-height:16px!important}
+ #inner-app-view #view-casino .company-play-ticker{display:flex!important;align-items:center!important;margin-top:8px!important;font-size:10px!important;line-height:14px!important;height:26px!important;min-height:26px!important;max-height:26px!important}
+ #inner-app-view #view-casino .company-play-ticker :is(.ticker-copy,.ticker-copy span,.ticker-copy span *){font-size:10px!important;line-height:14px!important;font-weight:400!important}
+ #inner-app-view #view-casino .company-play-ticker .ticker-copy svg{width:13px!important;height:13px!important}
+ #inner-app-view #view-casino .casino-compact-bar{border:1px solid var(--inner-border)!important;border-top:2px solid var(--inner-accent)!important;box-shadow:inset 0 1px #ffffff38,2px 3px 0 #00000020!important}
  #inner-app-view #view-casino .company-ticker-track{flex:0 0 auto}
  #inner-app-view #view-casino .aved-jackpot-strip{gap:8px!important;margin:8px 0 12px!important;padding-inline:10px!important}
  #inner-app-view #view-casino .aved-jackpot-strip>strong{font-size:14px!important;line-height:22px!important;height:22px!important;padding-right:8px!important}

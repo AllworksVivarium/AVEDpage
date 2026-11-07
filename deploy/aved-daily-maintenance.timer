@@ -1,0 +1,10 @@
+[Unit]
+Description=Run AVED backup and cleanup daily at 04:10 China time
+
+[Timer]
+OnCalendar=*-*-* 04:10:00 Asia/Shanghai
+Persistent=true
+Unit=aved-daily-maintenance.service
+
+[Install]
+WantedBy=timers.target

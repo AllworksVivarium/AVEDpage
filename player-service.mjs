@@ -1,4 +1,5 @@
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
+import {installForumReplies} from './server-forum-replies.mjs';
 import {mediaReference} from './server-media.mjs';
 import {weighted,scratchPrizeMultipliers} from './server-economy.mjs';
 import {spinSlot} from './server-slot.mjs';
@@ -96,6 +97,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const derbyWinnerFromRandom=r=>{let cumulative=0;for(let i=0;i<DERBY_WIN_PROBABILITIES.length;i++){cumulative+=DERBY_WIN_PROBABILITIES[i];if(r<cumulative)return i;}return DERBY_WIN_PROBABILITIES.length-1;};
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS scratch_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='scratch' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
   function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS slot_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='slot' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
   const settle=(id,game,cost,prize,result,proof)=>settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof);
   const bet=n=>{if(!Number.isSafeInteger(n)||n<100||n>1000000)throw new Error('投入应为 100 至 1,000,000 的整数。');return n;};
   // Only replace the exact system-generated starter copy; preserve authored notices.
@@ -217,8 +219,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.status='published' AND f.deleted_at='' AND f.id<? ORDER BY f.id DESC LIMIT 11`).all(viewer,before);
     return {items:rows.slice(0,10).map(row=>({...row,imageData:mediaReference('thread',row.id,row.imageData)})),next:rows.length>10?rows[9].id:null};
   }
-  const replies=(id,viewer=0)=>db.prepare(`SELECT r.id,r.body,r.image_data AS imageData,CASE WHEN r.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=r.employee_id) ELSE p.anonymous_name END AS anonymousName,r.identity_mode AS identityMode,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
-    (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads f ON f.id=r.thread_id JOIN profiles p ON p.employee_id=r.employee_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND f.status='published' AND f.deleted_at='' ORDER BY r.id`).all(viewer,id).map(row=>({...row,imageData:mediaReference('reply',row.id,row.imageData)}));
+  const replies=installForumReplies(db);
   return {log,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
@@ -247,7 +248,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
       if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,id));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,CASE WHEN f.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=f.employee_id) ELSE p.anonymous_name END AS anonymousName,f.identity_mode AS identityMode,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:topic,items:replies(Number(thread[1]),id)});return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,CASE WHEN f.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=f.employee_id) ELSE p.anonymous_name END AS anonymousName,f.identity_mode AS identityMode,f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=f.employee_id) AS balance,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:topic,...replies(Number(thread[1]),id,url.searchParams)});return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
@@ -284,8 +285,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {
+        if(typeof data.requestKey!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(data.requestKey))throw new Error('请刷新页面后重试本次运转。');
+        const previous=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='slot' AND json_extract(result_json,'$.requestKey')=?").get(id,data.requestKey);
+        if(previous){if(previous.cost!==data.bet)throw Error('运转请求金额不一致。');const result=JSON.parse(previous.result_json);send(res,200,{ticketId:previous.id,cost:previous.cost,prize:previous.prize,penalty:result.penalty||0,result,balance:balanceFor(id)});return true;}
+
         const cost=bet(data.bet),proof=random(),{prize,result}=spinSlot(cost,proof.random);
-        send(res,200,settle(id,'slot',cost,prize,result,proof));return true;
+        result.requestKey=data.requestKey;send(res,200,settle(id,'slot',cost,prize,result,proof));return true;
       }
       if(path==='/api/player/games/derby'&&req.method==='POST') {
         const cost=bet(data.bet);if(!Number.isInteger(data.runner)||data.runner<0||data.runner>3)throw new Error('请选择跑道。');
@@ -317,10 +322,18 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
               const stock=db.prepare('SELECT code,price FROM stock_prices WHERE code=?').get(code);
               if(!stock)throw new Error('交易失败：证券代码不存在。');
               const orderType=String(data.orderType??'').toLowerCase()==='limit'?'limit':'market';
-              const side=(String(data.side??'').toLowerCase()==='short'||String(data.action??'').toLowerCase()==='sell')?'short':'long';
+              let side=(String(data.side??'').toLowerCase()==='short'||String(data.action??'').toLowerCase()==='sell')?'short':'long';
+              const intent=data.intent;
+              if(intent!==undefined&&!['open','close'].includes(intent))throw new Error('交易意图无效。');
+              const held=db.prepare('SELECT quantity FROM stock_holdings WHERE employee_id=? AND code=?').get(id,code)?.quantity||0;
+              if(intent==='close'){
+                if(!held||quantity>Math.abs(held))throw new Error('平仓数量不能超过当前持仓。');
+                if(data.orderType==='limit')throw new Error('平仓请使用市价委托。');
+                side=held>0?'short':'long';
+              }else if(intent==='open'&&held&&((held>0)!==(side==='long')))throw new Error('请先平掉反向持仓，再开仓。');
               const leverage=normalizeLeverage(data.leverage??3);
-              const stopLoss=normalizeOptionalPrice(data.stopLoss);
-              const takeProfit=normalizeOptionalPrice(data.takeProfit);
+              const stopLoss=intent==='close'?null:normalizeOptionalPrice(data.stopLoss);
+              const takeProfit=intent==='close'?null:normalizeOptionalPrice(data.takeProfit);
               if(orderType==='limit') {
                 if(db.prepare("SELECT COUNT(*) AS n FROM stock_orders WHERE employee_id=? AND status='open'").get(id).n>=100)throw new Error('未成交委托最多 100 笔，请先撤销部分委托。');
                 const limitPrice=normalizeOptionalPrice(data.limitPrice);
@@ -329,7 +342,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
                 log(id,'stock.limitOrder',stock.code,{side,quantity,leverage,limitPrice,stopLoss,takeProfit});
                 processStockAutomations(id);
               } else {
-                validateStopsAgainstPrice(side,stock.price,stopLoss,takeProfit);
+                if(intent!=='close')validateStopsAgainstPrice(side,stock.price,stopLoss,takeProfit);
                 executeStockTrade(id,{stock,delta:side==='long'?quantity:-quantity,leverage,stopLoss,takeProfit});
                 award(id);
               }

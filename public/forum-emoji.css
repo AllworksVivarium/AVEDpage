@@ -1,0 +1,14 @@
+@layer aved-personal {
+ #inner-app-view #view-forum [data-forum-emoji-target]{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:5px 9px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;font-size:12px!important;line-height:1.4!important;cursor:pointer}
+ #inner-app-view #view-forum [data-forum-emoji-target] svg{width:16px;height:16px;flex:none}
+ body.theme-inner #inner-app-view #view-forum .forum-emoji-dialog{box-sizing:border-box!important;width:min(370px,calc(100vw - 24px))!important;min-width:0!important;height:fit-content!important;min-height:0!important;max-height:calc(100dvh - 40px)!important;padding:0!important;overflow:auto!important;margin:auto!important;position:fixed!important;inset:0!important;border-radius:0!important}
+ #inner-app-view #view-forum .forum-emoji-dialog::backdrop{background:#0008}
+ #inner-app-view #view-forum .forum-emoji-dialog>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:8px 12px!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-bottom:1px solid var(--inner-border)!important}
+ #inner-app-view #view-forum .forum-emoji-dialog h3{font-size:14px!important;line-height:1.5!important;margin:0!important}
+ #inner-app-view #view-forum .forum-emoji-dialog [data-emoji-close]{display:grid!important;place-items:center!important;width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;background:transparent!important;color:inherit!important;border:1px solid currentColor!important;font:20px/1 monospace!important;cursor:pointer}
+ #inner-app-view #view-forum .forum-emoji-content{padding:10px!important}
+ #inner-app-view #view-forum .forum-emoji-content>[role=status]{padding:12px 4px!important;margin:0!important;font-size:13px!important;line-height:1.6!important}
+ #inner-app-view #view-forum .forum-emoji-dialog [hidden]{display:none!important}
+ #inner-app-view #view-forum emoji-picker{display:flex;width:100%;height:min(340px,calc(100dvh - 140px));--num-columns:8;--emoji-size:24px;--emoji-padding:6px;--category-emoji-size:18px;--category-emoji-padding:5px;--background:var(--inner-card-bg);--border-color:var(--inner-border-soft);--category-font-color:var(--inner-text-main);--indicator-color:var(--inner-crimson);--outline-color:var(--inner-crimson);--button-hover-background:var(--inner-card-alt);--button-active-background:var(--brand-red-soft);--border-radius:0;--skintone-border-radius:0}
+ @media(max-width:360px){#inner-app-view #view-forum emoji-picker{--num-columns:7;--emoji-size:22px;--emoji-padding:5px;--category-emoji-size:16px;--category-emoji-padding:4px}}
+}

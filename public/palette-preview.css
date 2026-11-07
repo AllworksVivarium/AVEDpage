@@ -90,8 +90,8 @@
     --study-black:#000000; --study-panel:#0d0b0a; --study-panel-alt:#1c1714;
     --study-sidebar:#0d0b0a; --study-hover:#302721; --study-ink:#e2d5bf; --study-muted:#bdb298;
     --study-line:#bdb298; --study-line-soft:#bdb29840;
-    --study-red:#5e0205; --study-red-hover:#75090d; --study-red-ink:#dda3a3;
-    --study-red-soft:#5e020538; --study-accent:#dda3a3;
+    --study-red:#5e0205; --study-red-hover:#75090d; --study-red-ink:#bdb298;
+    --study-red-soft:#5e020538; --study-accent:#bdb298;
     --study-on-red:#e2d5bf; --study-screen-ink:#e2d5bf;
   }
   /* Existing second-palette preferences migrate to Blue Signal. */
