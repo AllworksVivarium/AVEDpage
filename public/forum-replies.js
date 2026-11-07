@@ -6,7 +6,7 @@ window.AVEDForumReplies=function({api,container,count,renderItem,onThread,enable
    const html=renderItem(item);if(old?.html===html)continue;
    const el=document.createElement('article');el.className='inner-card-alt p-4 space-y-2';el.dataset.replyId=item.id;el.innerHTML=html;
    if(old)old.el.replaceWith(el);else{const next=[...s.nodes].sort((a,b)=>a[0]-b[0]).find(([id])=>id>item.id);if(next)next[1].el.before(el);else container.append(el);}
-   s.nodes.set(item.id,{el,html});
+   s.nodes.set(item.id,{el,html,item});
   }
  }
  function sync(s,total){count.textContent='全部回复 ('+total+')';more.hidden=s.next===null;more.disabled=s.busy;container.querySelector('[data-empty-replies]')?.remove();if(!s.nodes.size){const empty=document.createElement('p');empty.dataset.emptyReplies='';empty.textContent='暂无回复。';container.append(empty);}}
@@ -22,5 +22,5 @@ window.AVEDForumReplies=function({api,container,count,renderItem,onThread,enable
   finally{s.busy=false;if(state===s){more.disabled=false;if(!s.loaded){more.hidden=false;more.textContent='重新加载回复';}else more.textContent='继续加载回复';}}
  }
  more.onclick=()=>request('more');
- return {open(id){if(state?.id!==String(id)){state={id:String(id),nodes:new Map(),next:null,cursor:0,loaded:false,busy:false,total:0};container.replaceChildren();count.textContent='正在加载回复…';more.hidden=true;}return request('refresh');},refresh(){return request('refresh');},async reveal(id){const s=state;if(!s||!enabled())return;const d=await api('/api/player/forum/'+s.id+'?after='+(Number(id)-1));if(state!==s||!enabled())return;merge(s,d.items.filter(item=>item.id===Number(id)),true);onThread(d.thread);sync(s,d.thread.replyCount);},reset(){state=null;more.hidden=true;container.replaceChildren();}};
+ return {get(id){return state?.nodes.get(Number(id))?.item;},open(id){if(state?.id!==String(id)){state={id:String(id),nodes:new Map(),next:null,cursor:0,loaded:false,busy:false,total:0};container.replaceChildren();count.textContent='正在加载回复…';more.hidden=true;}return request('refresh');},refresh(){return request('refresh');},async reveal(id){const s=state;if(!s||!enabled())return;const d=await api('/api/player/forum/'+s.id+'?after='+(Number(id)-1));if(state!==s||!enabled())return;merge(s,d.items.filter(item=>item.id===Number(id)),true);onThread(d.thread);sync(s,d.thread.replyCount);},reset(){state=null;more.hidden=true;container.replaceChildren();}};
 };

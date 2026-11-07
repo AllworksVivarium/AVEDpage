@@ -110,7 +110,7 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","robots"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","robots","forumWorkshop"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
@@ -527,7 +527,8 @@ async function deleteEmployee(id, displayName, username) {
 async function renderTab(tab) {
   setActive(tab);
   try {
-    if(tab === 'robots')await renderCompanyRobots();
+    if(tab === 'forumWorkshop')await renderForumWorkshopAdmin();
+    else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
     else if(tab === 'achievements')await renderAchievements();

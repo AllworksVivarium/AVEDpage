@@ -6,7 +6,7 @@ import {installForumReplies} from '../server-forum-replies.mjs';
 test('reply pages and bounded changes preserve edits, moderation and removals without replaying all replies',()=>{
  const db=new DatabaseSync(':memory:');
  db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,display_name TEXT);INSERT INTO employees VALUES(1,'测试员工');
- CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT);INSERT INTO profiles VALUES(1,'代号');
+ CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT,avatar_url TEXT DEFAULT '');INSERT INTO profiles(employee_id,anonymous_name) VALUES(1,'代号');
  CREATE TABLE balance_ledger(employee_id INTEGER,delta INTEGER);INSERT INTO balance_ledger VALUES(1,100);
  CREATE TABLE forum_replies(id INTEGER PRIMARY KEY,thread_id INTEGER,employee_id INTEGER,body TEXT,image_data TEXT DEFAULT '',identity_mode TEXT DEFAULT 'anonymous',created_at TEXT DEFAULT CURRENT_TIMESTAMP,edited_at TEXT DEFAULT '',status TEXT DEFAULT 'published',deleted_at TEXT DEFAULT '');`);
  const read=installForumReplies(db),q=s=>new URLSearchParams(s),add=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,body) VALUES(?,1,?)');

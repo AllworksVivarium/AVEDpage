@@ -1,7 +1,9 @@
+import {installForumSocialSchema,forumAuthorSQL,forumNameSQL,mapForumAuthor} from './server-forum-social.mjs';
 import {mediaReference} from './server-media.mjs';
 
 // One revision per reply, including tombstones; editing never copies image bytes.
 export function installForumReplies(db){
+ installForumSocialSchema(db);
  db.exec(`CREATE TABLE IF NOT EXISTS forum_reply_clock(id INTEGER PRIMARY KEY CHECK(id=1),revision INTEGER NOT NULL);
  INSERT OR IGNORE INTO forum_reply_clock VALUES(1,0);
  CREATE TABLE IF NOT EXISTS forum_reply_versions(reply_id INTEGER PRIMARY KEY,thread_id INTEGER NOT NULL,revision INTEGER NOT NULL);
@@ -16,10 +18,11 @@ export function installForumReplies(db){
   END;`);
  }
  const number=(q,key)=>{const n=Number(q.get(key)||0);if(!Number.isSafeInteger(n)||n<0)throw Error('无效回复游标。');return n;};
- const select=`SELECT r.id,r.body,r.image_data AS imageData,CASE WHEN r.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=r.employee_id) ELSE p.anonymous_name END AS anonymousName,r.identity_mode AS identityMode,r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
- (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance
- FROM forum_replies r JOIN profiles p ON p.employee_id=r.employee_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at=''`;
- const map=row=>({...row,imageData:mediaReference('reply',row.id,row.imageData)});
+ const select=`SELECT r.id,r.body,r.image_data AS imageData,${forumAuthorSQL('r')},r.created_at AS createdAt,r.edited_at AS editedAt,(r.employee_id=?) AS canEdit,
+ q.id AS replyToId,${forumNameSQL('q')} AS replyToName,substr(q.body,1,120) AS replyToBody
+ FROM forum_replies r JOIN profiles p ON p.employee_id=r.employee_id
+ LEFT JOIN forum_replies q ON q.id=r.reply_to_id AND q.thread_id=r.thread_id AND q.status='published' AND q.deleted_at='' WHERE r.thread_id=? AND r.status='published' AND r.deleted_at=''`;
+ const map=row=>mapForumAuthor({...row,imageData:mediaReference('reply',row.id,row.imageData)});
  return (threadId,viewer,q)=>{
   const revision=db.prepare('SELECT revision FROM forum_reply_clock WHERE id=1').get().revision;
   if(q.has('since')){
