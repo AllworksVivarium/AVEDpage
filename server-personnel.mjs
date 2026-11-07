@@ -9,7 +9,9 @@ export function installPersonnel(db){
         WHEN is_npc=1 THEN 'company_containment' ELSE 'player_employee' END;
       UPDATE employees SET is_leadership=(identity_kind='planning_member');`);
   }
-  db.exec(`UPDATE employees SET department='公司直属' WHERE department IN ('','直属 / 待分配','公司直属领导');`);
+  db.exec(`UPDATE employees SET department='公司直属' WHERE department IN ('','直属 / 待分配','公司直属领导','公司直属部');
+    UPDATE employees SET position_title='成员' WHERE identity_kind='player_employee' AND position_title<>'成员';
+    UPDATE employees SET position_title='收容物' WHERE identity_kind IN ('player_containment','company_containment') AND position_title<>'收容物';`);
 }
 
 // Account permissions and fictional positions are deliberately independent.
@@ -24,10 +26,10 @@ export function personnelAssignment(data,previous={}){
     if(directoryDepartments.includes(department))positionTitle='部长';
     else if(!positionTitle)throw new Error('自定义职位请填写实际职位名称。');
   }else if(kind==='player_employee'){
-    if(/部长|领导|董事|总裁|总监|监察长|顾问|总经理|副总|主席|会长/.test(positionTitle))throw new Error('玩家不能担任领导职务，请选择企划组领导身份。');
-    positionTitle=positionTitle||'成员';
+    if(/部长|领导|董事|总裁|总监|监察长|顾问|总经理|副总|主席|会长/.test(positionTitle))throw new Error('玩家不能担任领导职务，请选择企划组成员身份。');
+    positionTitle='成员';
   }else{
-    department='公司直属';positionTitle=positionTitle||'收容物';
+    department='公司直属';positionTitle='收容物';
   }
   const rawNpc=data.isNpc??(data.identityKind&&data.identityKind!==previous.identityKind?false:previous.isNpc??false);
   if(typeof rawNpc!=='boolean')throw new Error('账号类型无效。');

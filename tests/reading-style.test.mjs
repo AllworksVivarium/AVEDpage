@@ -23,6 +23,13 @@ test('real-name comments expose role separately and escape names and prose',()=>
   assert.ok(html.includes('&lt;员工&gt;'));assert.ok(html.includes('医疗部 值班医师'));assert.ok(html.includes('&lt;img&gt;'));assert.ok(html.includes('relative-clock'));
   assert.equal((html.match(/<p class="whitespace-pre-wrap">/g)||[]).length,2);
 });
+
+test('planning member comments display only the custom title, never the management category',()=>{
+ for(const department of ['公司直属','公司直属部','公司直属领导']){
+  const html=context.AVEDNotices.comments([{displayName:'署名',department,identityKind:'planning_member',positionTitle:'人工智能',createdAt:'今天',body:'正文'}]);
+  assert.ok(html.includes('人工智能'));assert.ok(!html.includes('公司直属'));assert.ok(!html.includes('企划组成员'));
+ }
+});
 test('reading size and leading tokens are paired and reduced motion keeps keys static',()=>{
   const css=source('public/terminal-reading.css');
   for(const [kind,leading] of [['display','1.15'],['heading','1.3'],['small-heading','1.3'],['body','1.65'],['prose','1.7'],['meta','1.4']]){

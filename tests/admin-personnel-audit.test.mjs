@@ -18,11 +18,27 @@ test('legacy positions migrate without changing credentials or admin permissions
  assert.deepEqual(db.prepare('SELECT identity_kind FROM employees ORDER BY id').all().map(x=>x.identity_kind),['planning_member','planning_member','player_employee']);
  assert.equal(db.prepare('SELECT department FROM employees WHERE id=1').get().department,'公司直属');
  assert.equal(db.prepare('SELECT role FROM employees WHERE id=3').get().role,'admin');
+ assert.equal(db.prepare('SELECT position_title FROM employees WHERE id=1').get().position_title,'人工智能');
+ assert.equal(db.prepare('SELECT position_title FROM employees WHERE id=3').get().position_title,'成员');
  assert.throws(()=>personnelAssignment({identityKind:'player_employee',positionTitle:'部长'}),/不能担任领导/);
  assert.throws(()=>auditRange(new URLSearchParams('from=2028-01-01')),/2026/);
  assert.throws(()=>auditRange(new URLSearchParams('from=2026-02-30')),/2026/);
  assert.throws(()=>auditRange(new URLSearchParams('from=2027-01-01&to=2026-01-01')),/晚于/);
  db.close();
+});
+
+test('only planning members have custom titles and can become department ministers',()=>{
+ assert.equal(personnelAssignment({identityKind:'player_employee',positionTitle:'自定义玩家身份'}).positionTitle,'成员');
+ assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false});
+ assert.equal(personnelAssignment({identityKind:'planning_member',department:'公司直属部',positionTitle:'人工智能'}).positionTitle,'人工智能');
+ const minister=personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:'人工智能'});
+ assert.equal(minister.department,'医疗部');assert.equal(minister.positionTitle,'部长');assert.equal(minister.isLeadership,true);
+ assert.throws(()=>personnelAssignment({identityKind:'planning_member',department:'公司直属部',positionTitle:' '}),/实际职位/);
+ const db=new DatabaseSync(':memory:');
+ db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,department TEXT,position_title TEXT,is_npc INTEGER,is_leadership INTEGER,role TEXT,identity_kind TEXT);
+ INSERT INTO employees VALUES(1,'公司直属部','不能保留的身份',0,0,'employee','player_containment'),(2,'公司直属部','人工智能',0,1,'employee','planning_member');`);
+ installPersonnel(db);installPersonnel(db);
+ assert.deepEqual(db.prepare('SELECT department,position_title FROM employees ORDER BY id').all().map(x=>[x.department,x.position_title]),[['公司直属','收容物'],['公司直属','人工智能']]);db.close();
 });
 
 test('persistent identities, editable player containment, and lazy categorized audit',async t=>{
@@ -52,6 +68,8 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(items.find(x=>x.id===leaderId).role,'employee');
  assert.equal(items.find(x=>x.id===companyId).enabled,0);
  assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
+ assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'玩家收容物',identityKind:'player_containment',positionTitle:'伪造身份',enabled:true})).status,200);
+ assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===playerId).positionTitle,'收容物');
  const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
  const robot=await a('/api/admin/company-robots','POST',{codename:'榜单机器人',balance:19277});assert.equal(robot.status,200);
  for(const path of ['/api/admin/employees','/api/admin/employees?roster=personnel'])assert.ok(!(await a(path)).data.items.some(x=>x.id===robot.data.id),'robots must never appear in human employee management');
