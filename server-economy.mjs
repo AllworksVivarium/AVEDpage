@@ -19,7 +19,7 @@ export function returnRatePool(percent,tierId='t1'){
  pool[0].weight+=correction;
  return [{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
 }
-export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:130,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(130,x.id)]))})),sky:{boardingSeconds:20,speed:25,lossFraction:1,ranges:[{min:100,max:199,weight:1800},{min:200,max:340,weight:6500},{min:341,max:600,weight:1300},{min:601,max:1000,weight:300},{min:1001,max:2000,weight:100}]}};}
+export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:130,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(130,x.id)]))})),sky:{boardingSeconds:12,speed:25,breakEvenDepth:207,lossFraction:1,ranges:[{min:150,max:179,weight:50},{min:180,max:299,weight:950},{min:300,max:429,weight:6500},{min:430,max:629,weight:2200},{min:630,max:900,weight:300}]}};}
 function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>24)throw Error('奖池需包含 2 至 24 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
 export function validateEconomy(c){
  if(!c||!Array.isArray(c.scratch)||c.scratch.length!==scratchTiers.length)throw Error('票种配置不完整。');
@@ -92,7 +92,7 @@ export function installEconomy({db,send,readBody,requireAdmin,requireEmployee,ba
  // Persist the agreed rules; stored legacy admin edits are no longer authoritative.
  const fixedConfig=JSON.stringify(defaultEconomy());
  if(db.prepare('SELECT config_json FROM economy_config WHERE id=1').get().config_json!==fixedConfig)db.prepare('UPDATE economy_config SET config_json=?,revision=revision+1 WHERE id=1').run(fixedConfig);
- const publicRules=()=>{const c=get();return {revision:c.revision,tiers:c.scratch.map(x=>({id:x.id,name:x.name,cost:x.cost,topPrizes:Object.fromEntries(Object.entries(x.variants).map(([key,pool])=>[key,Math.floor(x.cost*Math.max(...pool.filter(p=>p.weight>0).map(p=>p.multiplier)))]))})),slot:slotRules,sky:{boardingSeconds:c.sky.boardingSeconds,speed:c.sky.speed,lossFraction:c.sky.lossFraction}};};
+ const publicRules=()=>{const c=get();return {revision:c.revision,tiers:c.scratch.map(x=>({id:x.id,name:x.name,cost:x.cost,topPrizes:Object.fromEntries(Object.entries(x.variants).map(([key,pool])=>[key,Math.floor(x.cost*Math.max(...pool.filter(p=>p.weight>0).map(p=>p.multiplier)))]))})),slot:slotRules,sky:{boardingSeconds:c.sky.boardingSeconds,speed:c.sky.speed,breakEvenDepth:c.sky.breakEvenDepth,lossFraction:c.sky.lossFraction}};};
  return {get,publicRules,async handle(req,res,url){const path=url.pathname;if(path==='/api/admin/economy'||path.startsWith('/api/admin/economy/')){send(res,404,{error:'此功能已移除。'});return true;}if(!['/api/player/economy','/api/player/games/risk'].includes(path))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
   if(path==='/api/player/economy'&&req.method==='GET'){send(res,200,publicRules());return true;}
   if(path==='/api/player/games/risk'){send(res,410,{error:'该设施已撤销。'});return true;}

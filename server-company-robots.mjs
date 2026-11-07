@@ -4,7 +4,7 @@ export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,r
  ensureCompanyRobots(db);
  const list=()=>db.prepare('SELECT r.employee_id AS id,r.codename,r.revision,COALESCE((SELECT SUM(delta) FROM balance_ledger WHERE employee_id=r.employee_id),0) AS balance FROM company_robots r ORDER BY r.employee_id').all();
  const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const v=fn();db.exec('COMMIT');return v;}catch(e){db.exec('ROLLBACK');throw e;}};
- return {async handle(req,res,url){if(!/^\/api\/admin\/company-robots(?:\/\d+)?$/.test(url.pathname))return false;const actor=requireAdmin(req,res);if(!actor)return true;
+ return {list,async handle(req,res,url){if(!/^\/api\/admin\/company-robots(?:\/\d+)?$/.test(url.pathname))return false;const actor=requireAdmin(req,res);if(!actor)return true;
   try{if(req.method==='GET'&&url.pathname==='/api/admin/company-robots'){send(res,200,{items:list()});return true;}
    if(!['POST','PUT'].includes(req.method)){send(res,405,{error:'不支持的操作。'});return true;}
    const data=await readBody(req),codename=typeof data.codename==='string'?data.codename.trim():'';

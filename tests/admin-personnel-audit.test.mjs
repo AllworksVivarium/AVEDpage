@@ -104,7 +104,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  const flight=(await player('/api/player/games/sky/current')).data;
  assert.equal((await player('/api/player/games/sky/start','POST',{round:flight.round,bet:100})).status,200);
  const oldRules=JSON.parse(db.prepare('SELECT rules_json FROM sky_flights WHERE id=?').get(flight.round).rules_json);oldRules.lossFraction=0;
- db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=100,rules_json=? WHERE id=?').run(Date.now()-10000,JSON.stringify(oldRules),flight.round);
+ db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=100,rules_json=? WHERE id=?').run(Date.now()-1000,JSON.stringify(oldRules),flight.round);
  const crashed=await player('/api/player/games/sky/jump','POST',{round:flight.round});assert.equal(crashed.status,200);assert.equal(crashed.data.self.status,'crashed');assert.equal(crashed.data.self.prize,0);assert.equal(crashed.data.lossFraction,1);
  assert.equal(db.prepare('SELECT SUM(delta) AS n FROM balance_ledger WHERE employee_id=?').get(playerId).n,23);
 

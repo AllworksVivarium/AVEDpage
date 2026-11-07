@@ -262,7 +262,7 @@ economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 highlights=installGameHighlights({db,send,requireEmployee});
-const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights});
+const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const originalMusic=installOriginalMusic({db,requireEmployee});
@@ -394,7 +394,11 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/games/history' && req.method === 'GET') {
       const employee=requireEmployee(req,res);if(!employee)return;
-      return send(res,200,{items:db.prepare(`SELECT id,game,cost,prize,seed_hash AS seedHash,result_json AS result,created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30`).all(employee.id)});
+      // An early cashout must not reveal the shared flight's limit to other players.
+      return send(res,200,{items:db.prepare(`SELECT id,game,cost,prize,seed_hash AS seedHash,
+        CASE WHEN game='sky' AND EXISTS(SELECT 1 FROM sky_flights f WHERE f.id=json_extract(game_tickets.result_json,'$.flight') AND f.ended_at=0)
+          THEN json_remove(result_json,'$.safetyLine') ELSE result_json END AS result,
+        created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30`).all(employee.id)});
     }
     if (url.pathname === '/api/forum' && req.method === 'GET') {
       if(!requireEmployee(req,res))return;
