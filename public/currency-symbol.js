@@ -5,7 +5,7 @@
   const parts=node.data.split('¤'),fragment=document.createDocumentFragment();
   parts.forEach((part,i)=>{
    if(i){const coin=document.createElement('span'),source=document.createElement('span');
-    coin.className='aved-currency-mark';coin.setAttribute('data-type-ignore','');coin.setAttribute('role','img');coin.setAttribute('aria-label','积分');
+    coin.className='aved-currency-mark';coin.setAttribute('data-type-ignore','');coin.setAttribute('role','img');coin.setAttribute('aria-label','A 币');
     source.className='aved-currency-source';source.setAttribute('aria-hidden','true');source.textContent='¤';coin.append(source);fragment.append(coin);}
    if(part)fragment.append(document.createTextNode(part));
   });node.replaceWith(fragment);

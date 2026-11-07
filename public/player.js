@@ -1187,6 +1187,7 @@
 
         const totalBet = parseInt(document.getElementById('slot5x3-bet-input')?.value || '500', 10);
         const lineBet = totalBet / 5;
+        document.querySelectorAll('.slot-chip-btn').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.slotChip)===totalBet)));
         document.getElementById('slot5x3-bet-summary').textContent = `押 ${totalBet.toLocaleString()} 每线 ${lineBet.toLocaleString()}`;
         document.getElementById('slot5x3-spin-subtext').textContent = `押 ${totalBet.toLocaleString()} 五线`;
 
@@ -1257,6 +1258,7 @@
           renderSlot5x3Board();
         });
       });
+      document.getElementById('slot5x3-bet-input').addEventListener('input',renderSlot5x3Board);
 
 
 

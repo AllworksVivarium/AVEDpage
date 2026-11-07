@@ -3,7 +3,7 @@ const avedSidebarSymbols={
   departments:['directory-disk-ui-v1.sidebar64.566c01d80579.webp','165% auto'],containment:['containment-folder-ui-v1.sidebar64.dfd0f5350cd7.webp','155% auto'],
   life:['life-newspaper-ui-v1.sidebar64.5e5be33c9061.webp','120% auto'],forum:['forum-computer-ui-v1.sidebar64.1da86dc6c596.webp','155% auto'],casino:['recreation-cards-ui-v1.sidebar64.876aec31d4a1.webp','145% auto']
 };
-window.AVEDCriticalArt=[...Object.values(avedSidebarSymbols).map(([file])=>'/assets/'+file),'/assets/sidebar-binder-clip-icon-v1.cfd1cd0715d2.webp','/assets/medical.ae5509bedeb3.webp'];
+window.AVEDCriticalArt=[...Object.values(avedSidebarSymbols).map(([file])=>'/assets/'+file),'/assets/sidebar-binder-clip-icon-v1.cfd1cd0715d2.webp','/assets/medical.ae5509bedeb3.webp','/assets/currency-coin.svg?v=pixel-a-2'];
 window.AVEDVisualStyle=function({byId}){
  const sidebar=byId('left-sidebar');
  // Authoring launchers enforce their own localhost-only boundary.

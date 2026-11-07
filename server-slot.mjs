@@ -1,6 +1,6 @@
 import {slot5x3Symbols,slot5x3Lines} from './server-content.mjs';
 
-const pay=[[60,120,650],[12,35,120],[6,17,45],[3.5,8,18],[2,4.5,10],[1.5,3,6]];
+const pay=[[60,120,650],[12,35,120],[6,17,45],[3.5,8,18],[3,6,11],[4,6,10]];
 export const slotSymbols=slot5x3Symbols.map((s,i)=>({...s,m3:pay[i][0],m4:pay[i][1],m5:pay[i][2]}));
 const reel=[2,2,3,4,5,6].flatMap((n,i)=>Array(n).fill(slotSymbols[i]));
 // A separate, disclosed partial return only when no line/protocol paid.

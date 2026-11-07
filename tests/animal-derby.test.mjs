@@ -40,6 +40,7 @@ test('two markets settle once across restart; balances, privacy, closed rounds a
  const call=async(id,path,body)=>{const res=new EventEmitter();res.writeHead=()=>{};res.frames=[];res.write=x=>res.frames.push(JSON.parse(x.slice(6)));res.end=()=>res.emit('close');await service.handle({id,method:body?'POST':'GET',body},res,new URL('http://test/api/player/games/derby/'+path));return res;};
  const race=(await call(1,'current')).data,plan=animalPlan(db.prepare('SELECT seed FROM derby_races WHERE id=?').get(race.round).seed);
  assert.equal(race.runners.length,5);assert.deepEqual(race.winProbabilities,[.2,.2,.2,.2,.2]);
+ assert.ok(race.runners.every(r=>r.place===null),'future finish places stay private');
  for(const field of ['seed','winner','last','order','plan'])assert.ok(!(field in race));
  const a=await call(1,'stream'),b=await call(2,'stream');assert.deepEqual(a.frames[0].runners,b.frames[0].runners);
  const first={round:race.round,market:'first',runner:plan.order[0],bet:1000,balance:999999,prize:999999};
@@ -57,6 +58,9 @@ test('two markets settle once across restart; balances, privacy, closed rounds a
  assert.equal((await call(3,'bet',{...first,bet:100})).status,400);assert.equal(deps.balanceFor(3),150);assert.equal(db.prepare('SELECT COUNT(*) n FROM ledger WHERE employee_id=3').get().n,0);db.exec('DROP TRIGGER reject_test');
  db.prepare('UPDATE derby_races SET start_at=?,finish_at=?,next_at=? WHERE id=?').run(Date.now()-5000,Date.now()+20000,Date.now()+26000,race.round);
  const running=(await call(1,'current')).data;assert.equal(running.phase,'RACING');for(const field of ['seed','winner','last','order','plan'])assert.ok(!(field in running));assert.ok(running.frameAt<=running.serverTime+1000);
+ assert.ok(running.runners.every(r=>r.place===null),'lookahead cannot publish a place before the actual finish');
+ db.prepare('UPDATE derby_races SET start_at=?,finish_at=?,next_at=? WHERE id=?').run(Date.now()-21000,Date.now()+4000,Date.now()+10000,race.round);
+ const crossed=(await call(1,'current')).data;assert.equal(crossed.runners.find(r=>r.place===1).id,plan.order[0]);assert.equal(crossed.runners.filter(r=>r.place!==null).length,1);
  assert.equal((await call(3,'bet',{...first,bet:100})).status,400);
  service.close();service=installDerby(deps);
  db.prepare('UPDATE derby_races SET finish_at=?,next_at=? WHERE id=?').run(Date.now()-1,Date.now()+6000,race.round);

@@ -63,13 +63,13 @@ body.effects-off .scratch-bomb-blast{display:none!important}
 #inner-app-view #view-casino .aved-jackpot-strip[hidden]{display:none!important}
 #inner-app-view #view-casino .aved-jackpot-viewport{position:relative;min-width:0;overflow:hidden;padding-inline:4px}
 #inner-app-view #view-casino .aved-jackpot-row.aved-jackpot-message{width:100%!important;overflow:visible!important;text-overflow:clip!important;animation:jackpot-next-row .35s ease-out both!important}
-#inner-app-view #view-casino .aved-jackpot-text{display:inline-block!important;width:max-content!important;max-width:none!important;white-space:nowrap!important;font-size:12px!important;line-height:24px!important;color:#ae2621!important}
+#inner-app-view #view-casino .aved-jackpot-text{display:inline-block!important;flex:none!important;width:max-content!important;max-width:none!important;white-space:nowrap!important;font-size:12px!important;font-weight:700!important;line-height:24px!important;color:#ae2621!important}
 body.dark-mode #inner-app-view #view-casino .aved-jackpot-text{color:#ee8071!important}
 #inner-app-view #view-casino .aved-jackpot-strip[data-outcome="bomb"] .aved-jackpot-viewport{background:#e5dbc7!important}
 #inner-app-view #view-casino .aved-jackpot-strip[data-outcome="bomb"] .aved-jackpot-text{color:#141413!important;text-shadow:none!important}
-#inner-app-view #view-casino .aved-jackpot-text.is-overflowing{animation:jackpot-read-line 7s linear both}
+#inner-app-view #view-casino .aved-jackpot-text.is-overflowing{animation:jackpot-read-line var(--ticker-duration,6s) linear both}
 @keyframes jackpot-next-row{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes jackpot-read-line{0%,10%{transform:translateX(0)}86%,100%{transform:translateX(var(--ticker-end))}}
+@keyframes jackpot-read-line{0%,14%{transform:translateX(0)}84%,100%{transform:translateX(var(--ticker-end))}}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-row,body.effects-off #inner-app-view #view-casino .aved-jackpot-text{animation:none!important}
 body.effects-off #inner-app-view #view-casino .aved-jackpot-viewport{overflow-x:auto}
 @media(prefers-reduced-motion:reduce){#inner-app-view #view-casino .aved-jackpot-row.aved-jackpot-message,#inner-app-view #view-casino .aved-jackpot-text{animation:none!important}#inner-app-view #view-casino .aved-jackpot-viewport{overflow-x:auto}}

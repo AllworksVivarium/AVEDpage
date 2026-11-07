@@ -168,7 +168,7 @@ async function loadPosts(id) {
       ? items
           .map(
             (post) =>
-              `<div class="post"><b>${esc(post.anonymousName)}</b><span>余额 ${Number(post.balance).toLocaleString()}</span><p>${esc(post.body)}</p><small>${AVEDTime.markup(post.createdAt)}</small></div>`,
+              `<div class="post"><b>${esc(post.anonymousName)}</b><span>余额 ¤ ${Number(post.balance).toLocaleString()}</span><p>${esc(post.body)}</p><small>${AVEDTime.markup(post.createdAt)}</small></div>`,
           )
           .join("")
       : '<p class="muted">还没有留言。</p>';
@@ -188,7 +188,7 @@ async function renderProfile() {
     ? `<img class="profile-avatar" src="${esc(profile.avatarUrl)}" alt="员工头像">`
     : '<div class="profile-avatar default-avatar" aria-label="默认员工头像"><span>?</span></div>';
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>个人主页</h3><p>PERSONNEL PROFILE</p></div><div class="profile-layout"><section class="profile-card">${avatar}<h4>${esc(me.employee.displayName)}</h4><p>${esc(me.employee.department || "员工")}</p><p class="balance-large">${Number(me.balance).toLocaleString()} <small>点</small></p><form class="admin-form" id="profileForm"><h4>个人资料</h4><input name="anonymousName" required maxlength="32" value="${esc(profile.anonymousName)}" placeholder="论坛匿名名称"><textarea name="bio" maxlength="500" placeholder="个人简介">${esc(profile.bio)}</textarea><label class="file-label">上传头像（PNG/JPG/WEBP）<input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><input name="avatarUrl" type="url" value="${profile.avatarUrl.startsWith("data:") ? "" : esc(profile.avatarUrl)}" placeholder="或填写头像 HTTPS 图片链接（可留空）"><button class="small-action">保存档案</button></form></section><section><h4>成就记录</h4><div class="achievement-list">${achievements.map((a) => `<div class="achievement ${a.earned ? "earned" : ""}"><span>${a.earned ? "◆" : "◇"}</span><b>${esc(a.title)}</b><small>${a.earned ? "已达成" : "尚未达成"}</small></div>`).join("")}</div><div class="checkin-card"><h4>每日签到</h4><p>${checkin.checkedIn ? `今日已签到，获得 ${checkin.reward} 点。` : "完成签到后领取当日配给。"}</p><button id="checkinButton" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "签到领取 150 点"}</button></div></section></div>`;
+    `<div class="section-heading"><h3>个人主页</h3><p>PERSONNEL PROFILE</p></div><div class="profile-layout"><section class="profile-card">${avatar}<h4>${esc(me.employee.displayName)}</h4><p>${esc(me.employee.department || "员工")}</p><p class="balance-large">¤ ${Number(me.balance).toLocaleString()} <small>点</small></p><form class="admin-form" id="profileForm"><h4>个人资料</h4><input name="anonymousName" required maxlength="32" value="${esc(profile.anonymousName)}" placeholder="论坛匿名名称"><textarea name="bio" maxlength="500" placeholder="个人简介">${esc(profile.bio)}</textarea><label class="file-label">上传头像（PNG/JPG/WEBP）<input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><input name="avatarUrl" type="url" value="${profile.avatarUrl.startsWith("data:") ? "" : esc(profile.avatarUrl)}" placeholder="或填写头像 HTTPS 图片链接（可留空）"><button class="small-action">保存档案</button></form></section><section><h4>成就记录</h4><div class="achievement-list">${achievements.map((a) => `<div class="achievement ${a.earned ? "earned" : ""}"><span>${a.earned ? "◆" : "◇"}</span><b>${esc(a.title)}</b><small>${a.earned ? "已达成" : "尚未达成"}</small></div>`).join("")}</div><div class="checkin-card"><h4>每日签到</h4><p>${checkin.checkedIn ? `今日已签到，获得 ${checkin.reward} 点。` : "完成签到后领取当日配给。"}</p><button id="checkinButton" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "签到领取 150 点"}</button></div></section></div>`;
   $("#profileForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget,
@@ -241,7 +241,7 @@ async function renderGames() {
     api("/api/games/history"),
   ]);
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开奖区。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td></tr>`).join("") || '<tr><td colspan="4">暂无记录</td></tr>'}</tbody></table></div>`;
+    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ¤ ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开奖区。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td></tr>`).join("") || '<tr><td colspan="4">暂无记录</td></tr>'}</tbody></table></div>`;
   $("#gameCheckin").addEventListener("click", async (e) => {
     e.currentTarget.disabled = true;
     try {
@@ -285,7 +285,7 @@ async function renderGames() {
 async function renderForum() {
   const { items } = await api("/api/forum");
   $("#panel").innerHTML =
-    `<div class="section-heading"><h3>匿名论坛</h3><p>匿名通讯 / ${items.length}</p></div><form class="admin-form forum-create" id="forumCreate"><h4>发布新帖</h4><input name="title" required maxlength="120" placeholder="帖子标题"><textarea name="body" required maxlength="3000" placeholder="写下内容"></textarea><button class="small-action">匿名发布</button></form><div class="forum-list">${items.map((item) => `<article class="forum-post"><div class="forum-head"><b>${esc(item.title)}</b><small>${esc(item.anonymousName)} 余额 ${Number(item.balance).toLocaleString()} 点 ${AVEDTime.markup(item.createdAt)}</small></div><p>${esc(item.body)}</p><details data-thread="${item.id}"><summary>回复（${item.replyCount}）</summary><div class="reply-list" id="replies-${item.id}">正在读取…</div><form class="reply-form" data-thread="${item.id}"><textarea name="body" required maxlength="2000" placeholder="匿名回复"></textarea><button class="small-action">发送回复</button></form></details></article>`).join("") || '<p class="muted">还没有帖子。</p>'}</div>`;
+    `<div class="section-heading"><h3>匿名论坛</h3><p>匿名通讯 / ${items.length}</p></div><form class="admin-form forum-create" id="forumCreate"><h4>发布新帖</h4><input name="title" required maxlength="120" placeholder="帖子标题"><textarea name="body" required maxlength="3000" placeholder="写下内容"></textarea><button class="small-action">匿名发布</button></form><div class="forum-list">${items.map((item) => `<article class="forum-post"><div class="forum-head"><b>${esc(item.title)}</b><small>${esc(item.anonymousName)} 余额 ¤ ${Number(item.balance).toLocaleString()} 点 ${AVEDTime.markup(item.createdAt)}</small></div><p>${esc(item.body)}</p><details data-thread="${item.id}"><summary>回复（${item.replyCount}）</summary><div class="reply-list" id="replies-${item.id}">正在读取…</div><form class="reply-form" data-thread="${item.id}"><textarea name="body" required maxlength="2000" placeholder="匿名回复"></textarea><button class="small-action">发送回复</button></form></details></article>`).join("") || '<p class="muted">还没有帖子。</p>'}</div>`;
   $("#forumCreate").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget,
@@ -331,7 +331,7 @@ async function loadReplies(id) {
       items
         .map(
           (x) =>
-            `<div class="reply"><b>${esc(x.anonymousName)}</b><small>余额 ${Number(x.balance).toLocaleString()} 点 ${AVEDTime.markup(x.createdAt)}</small><p>${esc(x.body)}</p></div>`,
+            `<div class="reply"><b>${esc(x.anonymousName)}</b><small>余额 ¤ ${Number(x.balance).toLocaleString()} 点 ${AVEDTime.markup(x.createdAt)}</small><p>${esc(x.body)}</p></div>`,
         )
         .join("") || '<p class="muted">暂无回复。</p>';
   } catch (e) {
@@ -366,7 +366,7 @@ function enhancePersonnelForms(employees){
 }
 function rosterDepartment(value){const text=String(value||'');return /收容/.test(text)?'收容部':/武器|武装|武裝|作战/.test(text)?'武装部':/研究|科研/.test(text)?'科研部':/后勤|後勤/.test(text)?'后勤部':/医疗|醫療|医療/.test(text)?'医疗部':'公司直属';}
 function employeeBalanceControl(employee){
- const value=Number(employee.balance).toLocaleString();
+ const value='¤ '+Number(employee.balance).toLocaleString();
  if(employee.isNpc)return value;
  return value+'<details class="employee-balance-control"><summary>设置余额</summary><form class="employee-balance-form" data-employee-id="'+employee.id+'" data-expected-balance="'+employee.balance+'"><label>目标余额（可为负数）<input name="balance" type="number" min="-100000000" max="100000000" step="1" value="'+employee.balance+'" required></label><label>调整原因<input name="reason" maxlength="200" placeholder="填写本次调整原因" required></label><button type="submit" class="small-action">保存余额</button><span role="status"></span></form></details>';
 }

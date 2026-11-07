@@ -1,9 +1,9 @@
 /* Tiny procedural sprites and one cached backdrop. No images, fonts or game logic. */
-window.AVEDDerbyScene=function(canvas){
+window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
  const W=576,H=360,ctx=canvas.getContext('2d'),back=document.createElement('canvas'),sprites=new Map();
  canvas.width=back.width=W;canvas.height=back.height=H;ctx.imageSmoothingEnabled=false;
  const colors=['#dba46a','#454657','#ece8d9','#f7c9a8','#ded5bd'];
- const starts=65,finish=510,laneY=i=>118+i*43;
+ const starts=65,finish=510,laneY=i=>118+i*43;let finishRound=null,finishEvent=null;
  function rect(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h);}
  function label(c,text,x,y,size=8,color='#e8d6b6',align='left'){c.fillStyle=color;c.font=size+'px monospace';c.textAlign=align;c.fillText(text,x,y);}
  function backdrop(){
@@ -77,7 +77,11 @@ window.AVEDDerbyScene=function(canvas){
  return {
   thumbnail(kind){return sprite(kind,0,'idle').toDataURL();},
   paint(state,now,animated=true,celebratedAt=0){
+   if(state.round!==finishRound){finishRound=state.round;finishEvent=null;}
+   const champion=state.runners.find(r=>r.place===1)||state.runners.find(r=>r.id===state.winner);
+   if(champion&&!finishEvent){finishEvent={id:champion.id,at:now,live:state.phase==='RACING'};if(animated&&finishEvent.live)onFinish(champion.id);}
    ctx.clearRect(0,0,W,H);ctx.drawImage(back,0,0);
+   if(!finishEvent){rect(ctx,finish+2,102,3,216,'#efd49b');for(let y=106;y<318;y+=12)rect(ctx,finish+2,y,3,3,'#bf6757');}
    const elapsed=Math.max(0,now-state.serverTime),fraction=Math.min(1,elapsed/Math.max(1,(state.frameAt??state.serverTime)-state.serverTime));
    for(const r of state.runners){
     const progress=r.progress+((r.nextProgress??r.progress)-r.progress)*fraction,x=starts+(finish-starts)*progress/100,y=laneY(r.id),pose=fraction>=1?(r.nextPose||r.pose):r.pose,frame=animated?Math.floor(now/110+r.id)%4:0;
@@ -95,6 +99,16 @@ window.AVEDDerbyScene=function(canvas){
     const own=(state.bets||[]).filter(b=>b.runner===r.id);
     if(own.length){rect(ctx,x-17,y+18,34,2,'#e4bf82');label(ctx,own.map(b=>b.market==='first'?'1':'5').join('/'),26,y+13,7,'#e4bf82','center');}
     if(state.order){const rank=state.order.indexOf(r.id)+1;label(ctx,String(rank),548,y+2,13,rank===1?'#f3ca7f':'#d8d8bc','center');}
+   }
+   if(finishEvent){
+    const y=laneY(finishEvent.id),age=Math.max(0,now-finishEvent.at),t=Math.min(1,age/2000);
+    // The champion keeps a crown; the ribbon tears only at the actual finish.
+    rect(ctx,finish-10,y-34,17,7,'#e6bd68');rect(ctx,finish-11,y-39,4,6,'#ffe49c');rect(ctx,finish-5,y-42,4,9,'#ffe49c');rect(ctx,finish+2,y-39,4,6,'#ffe49c');
+    if(animated&&finishEvent.live&&age<2000){
+     for(const side of [-1,1])for(let part=0;part<7;part++)rect(ctx,finish+side*(7+t*(35+part*4)),y-18+part*5+t*t*65,5,3,part%2?'#d37d68':'#f2d89e');
+     for(let i=0;i<32;i++){const dx=((i*47)%101-50),lift=35+(i*19%55);rect(ctx,finish+dx*t,y-lift*t+80*t*t-12,2+(i%2),3,['#f5d48a','#b8d7bd','#e1947d'][i%3]);}
+     label(ctx,'FIRST!',finish-42,y-48-t*10,10,'#ffe49c','center');
+    }
    }
    if(celebratedAt&&animated&&now-celebratedAt<2200){const t=(now-celebratedAt)/2200;for(let i=0;i<28;i++){const x=(i*113)%W,y=t*H+(i*37%70)-60;rect(ctx,x,y,2,4,['#e6bd83','#b4cbb0','#d89180'][i%3]);}}
   }

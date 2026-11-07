@@ -38,10 +38,10 @@ test('all-employee leaderboards and employee donations preserve balances and rej
  const ranked=(await request('/api/player/welfare')).data;assert.ok(ranked.lowest.some(x=>x.id===2&&x.identityMode==='anonymous'&&x.name==='代号乙'));
  assert.deepEqual(ranked.lowest.map(x=>x.id),[4,2,3,1]);
  const anonymousGift=await request('/api/player/donate/employee','POST',{recipientId:4,amount:100,requestId:'anonymous-gift-01'});assert.equal(anonymousGift.status,200);assert.equal(balanceFor(4),-8900);assert.equal(total(),before);
- // Every register includes the full roster, including zero-donation accounts.
+ // Rank the full roster, then expose only the top ten for each register.
  for(let id=5;id<=25;id++)db.prepare('INSERT INTO employees(id,display_name) VALUES(?,?)').run(id,'完整榜单-'+id);
  const full=(await request('/api/player/welfare')).data;
- for(const key of ['highest','lowest','donors']){assert.equal(full[key].length,25);assert.equal(new Set(full[key].map(x=>x.id)).size,25);}
- assert.equal(full.highest[0].id,1);assert.equal(full.lowest[0].id,4);assert.equal(full.donors[24].donated,0);
+ for(const key of ['highest','lowest','donors']){assert.equal(full[key].length,10);assert.equal(new Set(full[key].map(x=>x.id)).size,10);}
+ assert.equal(full.highest[0].id,1);assert.equal(full.lowest[0].id,4);assert.equal(full.donors[9].donated,0);
 
 });

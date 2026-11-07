@@ -51,7 +51,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
    const frame=animalFrame(plan,elapsed),next=animalFrame(plan,(lookahead-race.start_at)*25000/(race.finish_at-race.start_at));
    return {round:race.id,version:2,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,frameAt:lookahead,seedHash:race.seed_hash,
     ...(race.settled?{seed:race.seed,winner:plan.order[0],last:plan.order.at(-1),order:plan.order}:{}),partialReturns:false,returnPercent:config.returnPercent||102,winProbabilities:[.2,.2,.2,.2,.2],
-    runners:config.runners.map(({weight,...r})=>({...r,odds:(config.returnPercent||102)/20,...frame[r.id],nextProgress:next[r.id].progress,nextPose:next[r.id].pose,nextBoxProgress:next[r.id].boxProgress})),
+    runners:config.runners.map(({weight,...r})=>({...r,odds:(config.returnPercent||102)/20,...frame[r.id],place:frame[r.id].progress>=100?plan.order.indexOf(r.id)+1:null,nextProgress:next[r.id].progress,nextPose:next[r.id].pose,nextBoxProgress:next[r.id].boxProgress})),
     entrants:db.prepare('SELECT COUNT(DISTINCT employee_id) AS n FROM derby_wagers WHERE race_id=?').get(race.id).n};
   }
   // Deterministic, shared trajectories. Never disclose the seed or future winner while betting/racing.

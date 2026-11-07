@@ -48,7 +48,7 @@ test('slot partial returns do not fake winning lines; payouts stay integer',()=>
 test('slot distribution stays near the intended return with real rare prizes and few zero payouts',()=>{
  const random=rng(),count=300000;let total=0,zero=0,loss=0,rare=0;
  for(let i=0;i<count;i++){const {prize,result}=spinSlot(1000,random);total+=prize-result.penalty;if(!prize)zero++;if(prize<1000)loss++;if(prize>=10000)rare++;}
- assert.ok(total/count/1000>1.20&&total/count/1000<1.25);assert.ok(zero/count>.02&&zero/count<.04);assert.ok(loss/count>.7&&loss/count<.8);assert.ok(rare/count>.003&&rare/count<.005);
+ assert.ok(total/count/1000>1.27&&total/count/1000<1.31);assert.ok(zero/count>.02&&zero/count<.04);assert.ok(loss/count>.7&&loss/count<.8);assert.ok(rare/count>.003&&rare/count<.005);
 });
 
 test('main result shows actual total received, including principal, without claiming net profit',()=>{

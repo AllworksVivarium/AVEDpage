@@ -1,12 +1,27 @@
 (function(root){
   const number=value=>Number(value).toLocaleString('en-US',{maximumFractionDigits:2});
 
+  // Existing candles only: MACD(12,26,9), KDJ(9,3,3). No extra requests.
+  function indicators(rows){
+    if(!rows.length)return [];
+    let fast=rows[0].close,slow=fast,dea=0,k=50,d=50;
+    return rows.map((c,i)=>{
+      fast+=(c.close-fast)*2/13;slow+=(c.close-slow)*2/27;
+      const dif=fast-slow;dea+=(dif-dea)*2/10;
+      const window=rows.slice(Math.max(0,i-8),i+1),low=Math.min(...window.map(x=>x.low)),high=Math.max(...window.map(x=>x.high));
+      const rsv=high===low?50:(c.close-low)/(high-low)*100;
+      k=(2*k+rsv)/3;d=(2*d+k)/3;
+      return {dif,dea,macd:2*(dif-dea),k,d,j:3*k-2*d};
+    });
+  }
+
   function render(container,candles,{isIndex=false}={}) {
     const rows=candles.filter(c=>['open','high','low','close','volume'].every(k=>Number.isFinite(c[k])));
     if(!rows.length){container.innerHTML='<p class="market-empty">等待首笔行情。</p>';return;}
 
     const width=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));
-    const height=width<500?240:300,left=64,right=12,top=16,bottom=height-90,volumeTop=height-65,volumeBottom=height-30;
+    const priceHeight=width<500?240:300,height=priceHeight+230,left=64,right=12,top=16,bottom=priceHeight-90,volumeTop=priceHeight-65,volumeBottom=priceHeight-30;
+    const metrics=indicators(rows),macdTop=priceHeight+28,macdBottom=priceHeight+104,kdjTop=priceHeight+144,kdjBottom=height-16;
     const highest=Math.max(...rows.map(c=>c.high)),lowest=Math.min(...rows.map(c=>c.low));
     const padding=Math.max((highest-lowest)*.12,highest*.001,1),upper=highest+padding,lower=lowest-padding;
     const y=price=>top+(upper-price)/(upper-lower)*(bottom-top);
@@ -21,7 +36,7 @@
       if(target)target.textContent=root.AVEDTime.clock(c.bucket)+'　开 '+price(c.open)+'　高 '+price(c.high)+'　低 '+price(c.low)+'　收 '+price(c.close)+'　量 '+number(c.volume);
     };
 
-    let svg='<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="行情 K 线与成交量，红涨绿跌">';
+    let svg='<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="行情 K 线、成交量、MACD 与 KDJ，红涨绿跌">';
     for(let i=0;i<5;i++){
       const py=top+(bottom-top)*i/4;
       svg+='<line x1="'+left+'" y1="'+py+'" x2="'+(width-right)+'" y2="'+py+'" class="market-grid"/>';
@@ -38,10 +53,22 @@
       svg+='<line x1="'+x+'" y1="'+y(c.high)+'" x2="'+x+'" y2="'+y(c.low)+'" stroke="'+color+'" stroke-width="1.5"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+bodyY+'" width="'+candleWidth+'" height="'+bodyHeight+'" fill="'+color+'"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+(volumeBottom-volumeHeight)+'" width="'+candleWidth+'" height="'+Math.max(1,volumeHeight)+'" fill="'+color+'" opacity=".65"/></g>';
-      if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(height-10)+'" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
+      if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(priceHeight-10)+'" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
     });
 
-    svg+='<text x="'+left+'" y="'+(volumeTop-8)+'" class="market-axis">成交量</text></svg>';
+    svg+='<text x="'+left+'" y="'+(volumeTop-8)+'" class="market-axis">成交量</text>';
+    function panel(top,bottom,label){return '<rect x="'+left+'" y="'+(top-20)+'" width="'+(width-left-right)+'" height="'+(bottom-top+25)+'" class="market-indicator-frame"/><text x="'+(left+7)+'" y="'+(top-7)+'" class="market-axis">'+label+'</text>';}
+    function line(key,scale,color){return '<polyline class="market-indicator-line" fill="none" stroke="var(--market-'+color+')" points="'+metrics.map((m,i)=>xAt(i).toFixed(2)+','+scale(m[key]).toFixed(2)).join(' ')+'"/>';}
+    const magnitude=Math.max(.000001,...metrics.flatMap(m=>[Math.abs(m.dif),Math.abs(m.dea),Math.abs(m.macd)]))*1.15;
+    const my=value=>macdTop+(magnitude-value)/(2*magnitude)*(macdBottom-macdTop);
+    svg+=panel(macdTop,macdBottom,'MACD 12 / 26 / 9 · DIF / DEA');
+    for(const value of [-magnitude,0,magnitude])svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+my(value)+'" y2="'+my(value)+'" class="market-grid"/><text x="'+(left-7)+'" y="'+(my(value)+3)+'" text-anchor="end" class="market-axis">'+price(value)+'</text>';
+    metrics.forEach((m,i)=>{const zero=my(0),value=my(m.macd);svg+='<rect x="'+(xAt(i)-candleWidth/2)+'" y="'+Math.min(zero,value)+'" width="'+candleWidth+'" height="'+Math.max(.5,Math.abs(zero-value))+'" fill="var(--market-'+(m.macd>=0?'up':'down')+')" opacity=".65"/>';});
+    svg+=line('dif',my,'indicator-k')+line('dea',my,'indicator-d');
+    const kMin=Math.min(0,...metrics.map(m=>m.j)),kMax=Math.max(100,...metrics.map(m=>m.j)),ky=value=>kdjTop+(kMax-value)/(kMax-kMin)*(kdjBottom-kdjTop);
+    svg+=panel(kdjTop,kdjBottom,'KDJ 9 / 3 / 3 · K / D / J');
+    for(const value of [20,50,80])svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+ky(value)+'" y2="'+ky(value)+'" class="market-grid"/><text x="'+(left-7)+'" y="'+(ky(value)+3)+'" text-anchor="end" class="market-axis">'+value+'</text>';
+    svg+=line('k',ky,'indicator-k')+line('d',ky,'indicator-d')+line('j',ky,'indicator-j')+'</svg>';
     container.innerHTML=svg;
     container.style.position='relative';
     details(rows.at(-1));
@@ -67,12 +94,12 @@
       const safeIndex=clamp(index,0,rows.length-1);
       const candle=rows[safeIndex];
       const x=xAt(safeIndex);
-      const yPointer=clamp(localY,top,bottom);
+      const yPointer=clamp(localY,top,kdjBottom);
       const change=((candle.close-candle.open)/Math.max(1,Math.abs(candle.open))*100);
       details(candle);
 
       vLine.setAttribute('x1',x);vLine.setAttribute('x2',x);
-      vLine.setAttribute('y1',top);vLine.setAttribute('y2',volumeBottom);
+      vLine.setAttribute('y1',top);vLine.setAttribute('y2',kdjBottom);
       hLine.setAttribute('x1',left);hLine.setAttribute('x2',width-right);
       hLine.setAttribute('y1',yPointer);hLine.setAttribute('y2',yPointer);
       crossLayer.style.display='block';
@@ -82,7 +109,9 @@
         '<div>开 <strong>'+price(candle.open)+'</strong> ｜ 收 <strong>'+price(candle.close)+'</strong></div>'+
         '<div>高 '+price(candle.high)+' ｜ 低 '+price(candle.low)+'</div>'+
         '<div class="'+(change>=0?'market-up':'market-down')+'">变化 '+(change>=0?'+':'')+change.toFixed(2)+'%</div>'+
-        '<div>成交量 '+number(candle.volume)+'</div>';
+        '<div>成交量 '+number(candle.volume)+'</div>'+
+        '<div class="market-indicator-readout"><span>DIF '+price(metrics[safeIndex].dif)+'</span> · <span>DEA '+price(metrics[safeIndex].dea)+'</span></div>'+
+        '<div class="market-indicator-readout">K '+number(metrics[safeIndex].k)+' · D '+number(metrics[safeIndex].d)+' · J '+number(metrics[safeIndex].j)+'</div>';
 
       tooltip.hidden=false;
       const placeTooltip=()=>{
@@ -146,5 +175,5 @@
     }
   }
 
-  root.AVEDMarketChart={render};
+  root.AVEDMarketChart={render,indicators};
 })(globalThis);

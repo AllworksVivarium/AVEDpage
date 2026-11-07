@@ -1,14 +1,13 @@
 .aved-currency-mark {
   display:inline-block!important;position:relative!important;
-  width:.92em!important;height:.92em!important;min-width:.92em!important;
-  vertical-align:-.1em!important;line-height:1!important;
+  width:1.04em!important;height:1.04em!important;min-width:1.04em!important;
+  vertical-align:-.16em!important;line-height:1!important;
   flex-shrink:0;color:inherit;
 }
 .aved-currency-mark::before {
-  content:"";position:absolute;inset:0;background:currentColor;
-  -webkit-mask:url('/assets/currency-coin.svg?v=1') center/contain no-repeat;
-  mask:url('/assets/currency-coin.svg?v=1') center/contain no-repeat;
+  content:"";position:absolute;inset:0;background:url('/assets/currency-coin.svg?v=pixel-a-2') center/contain no-repeat;
 }
+input:is([name=balance],[name=initialBalance]){background-image:url('/assets/currency-coin.svg?v=pixel-a-2')!important;background-position:8px center!important;background-size:16px 16px!important;background-repeat:no-repeat!important;padding-left:30px!important}
 .aved-currency-mark>.aved-currency-source {
   position:absolute!important;width:1px!important;height:1px!important;
   padding:0!important;margin:-1px!important;overflow:hidden!important;

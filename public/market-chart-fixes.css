@@ -1,5 +1,12 @@
 /* Trading colors are semantic and independent of the terminal art palette. */
 @layer aved-site {
+ #game-panel-stocks{--market-indicator-k:#ad7a13;--market-indicator-d:#366daa;--market-indicator-j:#965398}
+ body.dark-mode #game-panel-stocks{--market-indicator-k:#f4cf69;--market-indicator-d:#7ab5f0;--market-indicator-j:#d4a0df}
+ #game-panel-stocks .market-indicator-frame{fill:var(--inner-card-bg);stroke:var(--inner-border-soft);stroke-width:1}
+ #game-panel-stocks .market-indicator-line{stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
+ #game-panel-stocks .market-indicator-readout{font-size:11px!important}
+}
+@layer aved-site {
   #game-panel-stocks, #game-panel-stocks * {
     --market-up:#cb3232 !important;
     --market-down:#228b5b !important;
