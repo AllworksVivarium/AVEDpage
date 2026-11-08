@@ -4,7 +4,7 @@ const welcome = $("#welcome"),
   loginCard = $("#loginCard"),
   dashboard = $("#dashboard");
 const networkSignals = document.querySelectorAll('.signal');
-let currentUser = null,musicItems = [],musicIndex = -1;
+let currentUser = null;
 let networkProbe = null;
 function setNetworkSignalStatus(status) {
  for(const signal of networkSignals){signal.classList.remove('online','offline','checking');signal.classList.add(status);signal.setAttribute('role','status');signal.setAttribute('aria-label',status==='online'?'服务器连接正常':status==='offline'?'服务器忙碌或无法连接':'正在检查服务器');signal.title=signal.getAttribute('aria-label');}
@@ -110,12 +110,12 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","broadcast","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","achievements"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(['dossiers','robots'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
-    else await Promise.all([renderTab("files"), loadMusic()]);
+    if (isAdmin) await renderTab(['dossiers','robots','achievements'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
+    else await renderTab("files");
   } catch(error) {
     if(generation!==portalGeneration)return;
     if(interactive)throw error;
@@ -533,7 +533,6 @@ async function renderTab(tab) {
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();
     else if(tab === 'dossiers')await renderContentAdmin('dossiers');
-    else if(tab === 'broadcast')await renderBroadcastAdmin();
     else if (tab === "files") await renderDossiers();
     else if (tab === "notice") await renderAnnouncements();
     else if (tab === "admin") await renderAdmin();
@@ -557,51 +556,8 @@ $("#sidebarToggle").addEventListener("click", () => {
 });
 
 // ===== 音乐播放控制 =====
-async function loadMusic() {
-  try {
-    const { items } = await api("/api/music");
-    musicItems = items;
-    musicIndex = -1;
-    musicAudio.volume = Number($("#musicVolume").value);
-    if (items.length) {
-      $("#musicTitle").textContent = items[0].title;
-      musicIndex = 0;
-      musicAudio.src = items[0].url;
-    } else $("#musicTitle").textContent = "广播频道暂无曲目";
-  } catch {}
-}
-const musicAudio = $("#musicAudio");
-function selectMusic(index, autoplay = false) {
-  if (!musicItems.length) return;
-  musicIndex = (index + musicItems.length) % musicItems.length;
-  musicAudio.src = musicItems[musicIndex].url;
-  $("#musicTitle").textContent = musicItems[musicIndex].title;
-  if (autoplay) musicAudio.play().catch(() => {});
-}
-$("#musicPrev").addEventListener("click", () =>
-  selectMusic(musicIndex - 1, true),
-);
-$("#musicNext").addEventListener("click", () =>
-  selectMusic(musicIndex + 1, true),
-);
-$("#musicPlay").addEventListener("click", () => {
-  if (musicAudio.paused) {
-    if (musicIndex < 0) selectMusic(0);
-    musicAudio
-      .play()
-      .catch(() => alert("此音频暂时无法播放，请管理员检查链接。"));
-  } else musicAudio.pause();
-});
-musicAudio.addEventListener("ended", () => selectMusic(musicIndex + 1, true));
-musicAudio.addEventListener("play", () => ($("#musicPlay").textContent = "Ⅱ"));
-musicAudio.addEventListener("pause", () => ($("#musicPlay").textContent = "▶"));
-$("#musicVolume").addEventListener(
-  "input",
-  (e) => (musicAudio.volume = Number(e.target.value)),
-);
-
 // 首次进入时：若已有会话则直接加载门户
-loadPortal().catch(()=>{});
+document.addEventListener('DOMContentLoaded',()=>loadPortal().catch(()=>{}),{once:true});
 
 // 启动后先探测一次，再每 5 秒更新一次网络灯
 setNetworkSignalStatus("checking");

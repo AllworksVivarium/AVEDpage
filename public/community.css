@@ -9,13 +9,7 @@ body.theme-inner::before,body.theme-inner::after,#inner-app-view::before{backgro
 #left-sidebar.w-16 #sidebar-toggle-btn{width:36px!important;padding:0}
 #left-sidebar.w-16 .sidebar-expanded{display:none}#left-sidebar.w-52 .sidebar-expanded{display:block}
 .terminal-audio{padding:14px 10px;border-top:1px solid var(--inner-border-soft);margin-top:auto;font:11px/1.6 monospace}
-.terminal-audio h3{display:flex;justify-content:space-between;font-weight:bold;margin-bottom:8px}.terminal-audio small{font-size:9px;opacity:.55}
-#terminal-audio-controls>div{display:flex;flex-wrap:wrap;background:transparent}.terminal-audio label{display:flex;gap:8px;align-items:center;margin-top:12px}.terminal-audio input{min-width:0;width:100%;accent-color:var(--inner-crimson)}
-#left-sidebar .cloud-music{margin-top:0}.terminal-radio{padding:12px!important;box-shadow:inset 0 0 0 4px #0001;font:10px/1.6 monospace}
-.terminal-radio>svg{width:100%;max-height:90px;display:block;margin:8px 0}.radio-heading{display:flex;justify-content:space-between;letter-spacing:.1em;font-size:9px}
-.radio-heading i{width:6px;height:6px;border-radius:50%;background:#6c7456;margin-top:4px}.playing .radio-heading i{background:#b34030;box-shadow:0 0 5px #a32d23}
-.radio-key{font:10px monospace;border:1px solid var(--inner-border-soft);padding:7px 5px;background:var(--inner-card-bg);box-shadow:0 2px 0 #0003;flex:1}
-.terminal-radio.playing .cassette-reels{opacity:.65}.community-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid currentColor;padding:8px 13px;font:12px/1.5 monospace;background:transparent;cursor:pointer;min-height:36px}
+.terminal-audio h3{display:flex;justify-content:space-between;font-weight:bold;margin-bottom:8px}.terminal-audio small{font-size:9px;opacity:.55}.terminal-audio label{display:flex;gap:8px;align-items:center;margin-top:12px}.terminal-audio input{min-width:0;width:100%;accent-color:var(--inner-crimson)}.community-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid currentColor;padding:8px 13px;font:12px/1.5 monospace;background:transparent;cursor:pointer;min-height:36px}
 .community-button:hover,.community-button:focus-visible,.department-filter-btn:hover,.game-selected{background:var(--inner-accent,#242822)!important;color:var(--inner-accent-text,#eee)!important}
 .community-actions,.common-room-links{display:flex;gap:12px;flex-wrap:wrap}.common-room-links{margin-top:24px;padding-top:18px;border-top:1px solid var(--inner-border-soft)}
 .community-filters{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px 0}.community-filters input,.community-filters select{min-width:0;max-width:100%;padding:9px 10px;border:1px solid var(--inner-border-soft,#666);background:var(--inner-card-bg,#eae6dc);color:inherit;font:12px monospace}.community-filters input[name=q],.community-filters input[name=keyword]{flex:1;min-width:min(180px,100%)}

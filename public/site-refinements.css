@@ -150,8 +150,8 @@
     background:var(--brand-red-soft) !important;color:var(--brand-red-ink) !important;
   }
   #left-sidebar.w-16 .nav-tab-btn {justify-content:center !important;padding:8px 0 !important;gap:0 !important}
-  #left-sidebar.w-16 :is(.sidebar-label,.palette-preview,.visual-style-choice,.terminal-audio,.cloud-music) {display:none !important}
-  #left-sidebar :is(.palette-preview,.visual-style-choice,.terminal-audio,.cloud-music,.display-options) {min-width:0;max-width:100%;margin-inline:0}
+  #left-sidebar.w-16 :is(.sidebar-label,.palette-preview,.visual-style-choice,.terminal-audio) {display:none !important}
+  #left-sidebar :is(.palette-preview,.visual-style-choice,.terminal-audio,.display-options) {min-width:0;max-width:100%;margin-inline:0}
   #left-sidebar :is(input,select,button) {max-width:100%;min-width:0}
   #left-sidebar select {width:100%;min-width:0 !important}
   #left-sidebar .terminal-audio label {display:flex;align-items:center;gap:8px;white-space:nowrap}

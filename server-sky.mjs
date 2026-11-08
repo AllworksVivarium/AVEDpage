@@ -101,8 +101,10 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   const next=deadlines.length?Math.ceil(Math.min(...deadlines)):0;
   if(next!==eventDeadline){clearTimeout(eventTimer);eventDeadline=next;if(next){eventTimer=setTimeout(()=>{eventDeadline=0;try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},Math.max(1,next-now));eventTimer.unref();}}
   const passengers=streams.size?passengersFor(f):null;for(const s of streams)write(s,f,passengers);}
+ let broadcastTask=null;
+ function queueBroadcast(){if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;try{broadcast();}catch(e){console.error('Shared flight:',e.message);}});broadcastTask.unref();}
  const timer=setInterval(()=>{try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},1000);timer.unref();
- return {close(){clearInterval(timer);clearTimeout(eventTimer);for(const s of streams)s.res.end();streams.clear();},async handle(req,res,url){if(!url.pathname.startsWith('/api/player/games/sky/'))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
+ return {close(){clearImmediate(broadcastTask);clearInterval(timer);clearTimeout(eventTimer);for(const s of streams)s.res.end();streams.clear();},async handle(req,res,url){if(!url.pathname.startsWith('/api/player/games/sky/'))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
   const path=url.pathname;
   if(path.endsWith('/stream')&&req.method==='GET'){
    for(const old of [...streams].filter(x=>x.id===actor.id).slice(0,-1)){old.res.end();streams.delete(old);}
@@ -111,10 +113,10 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   }
   if(path.endsWith('/current')&&req.method==='GET'){send(res,200,snapshot(actor.id));return true;}
   if(req.method!=='POST'||!['/api/player/games/sky/start','/api/player/games/sky/jump'].includes(path)){send(res,405,{error:'架次指令无效。'});return true;}
-  const data=await readBody(req);let f=current();
-  tx(()=>{const now=Date.now();f=db.prepare('SELECT * FROM sky_flights WHERE id=?').get(f.id);const p=db.prepare('SELECT * FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(f.id,actor.id);
+  const data=await readBody(req),receivedAt=Date.now();let f=current(receivedAt);
+  tx(()=>{const now=receivedAt;f=db.prepare('SELECT * FROM sky_flights WHERE id=?').get(f.id);const p=db.prepare('SELECT * FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(f.id,actor.id);
    if(path.endsWith('/start')){if(f.ended_at||now>=f.depart_at)throw Error('舱门已关闭，请等待下一架次。');if(data.round!=null&&Number(data.round)!==f.id)throw Error('架次已变更，请重新登机。');if(p)return;const cost=data.bet;if(!Number.isSafeInteger(cost)||cost<100||cost>1000000)throw Error('登机投入应为 100 至 1,000,000。');if(balanceFor(actor.id)<cost)throw Error('余额不足。');recordLedger(actor.id,-cost,'共享空投登机 #'+f.id);db.prepare('INSERT INTO sky_passengers(flight_id,employee_id,cost) VALUES(?,?,?)').run(f.id,actor.id,cost);pending=true;
    }else{if(Number(data.round)!==f.id)throw Error('该架次已结束，请调阅结算记录。');if(!p)throw Error('您未登上本架次。');if(p.status!=='aboard')return;if(now<f.depart_at)throw Error('舱门尚未开启。');finish(f,p,depth(f,now),now,!!f.ended_at||now>=revealTime(f));}
-  });broadcast();send(res,200,snapshot(actor.id));return true;
+  });send(res,200,snapshot(actor.id));queueBroadcast();return true;
  }catch(e){send(res,400,{error:e.message});return true;}}};
 }

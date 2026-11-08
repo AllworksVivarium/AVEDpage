@@ -22,7 +22,8 @@
  #casino-switch-window [data-game][aria-pressed=true]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border-color:var(--inner-accent-text)!important}
  #casino-switch-window [data-game][aria-pressed=true]::after{opacity:1;box-shadow:0 0 5px currentColor}
  #casino-switch-window [data-game]:active{transform:translateY(1px);box-shadow:inset 2px 2px 0 #0005!important}
- #casino-switch-window :is(button):focus-visible{outline:2px solid currentColor;outline-offset:2px}
+ #casino-switch-window :is(button,a):focus-visible{outline:2px solid currentColor;outline-offset:2px}
+ #view-casino a[data-game]{text-decoration:none}
  @media(prefers-reduced-motion:reduce){#casino-switch-window [data-game]{transition:none}}
 }
 

@@ -102,13 +102,6 @@ function bindContentForms(render){
  document.querySelectorAll('[data-content-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('确认删除这项内容？前台将同步移除。'))return;b.disabled=true;try{await api('/api/admin/'+b.dataset.contentDelete,{method:'DELETE'});await render();}catch(e){alert(e.message);b.disabled=false;}});
 }
 
-async function renderBroadcastAdmin(){
- const {items}=await api('/api/admin/music'),kinds=['环境音','白噪音','音乐'];
- const fields=m=>`<label>曲目名称<input name="title" required maxlength="100" value="${esc(m?.title||'')}"></label><label>音频地址<input name="url" required maxlength="1000" value="${esc(m?.url||'')}" placeholder="HTTPS 音频地址"></label><label>分类<select name="kind">${kinds.map(k=>`<option ${m?.kind===k?'selected':''}>${k}</option>`).join('')}</select></label><button class="small-action">${m?'保存修改':'添加曲目'}</button>`;
- $('#panel').innerHTML=`<h3>广播</h3><section class="admin-section"><details><summary>添加广播曲目</summary><form class="community-form" data-content-form="music">${fields()}</form></details>${items.map(m=>`<article class="admin-post"><h4>${esc(m.title)}</h4><p>${esc(m.kind)}</p><details><summary>编辑曲目</summary><form class="community-form" data-content-form="music" data-id="${m.id}">${fields(m)}</form></details><button class="small-action danger" data-content-delete="music/${m.id}">删除曲目</button></article>`).join('')||'<p>暂无广播曲目。</p>'}</section>`;
- bindContentForms(renderBroadcastAdmin);
-}
-
 async function renderTerminology(){
  const {items}=await api('/api/admin/terminology');
  const fields=x=>`<label>原词<input name="pattern" required maxlength="80" value="${esc(x?.pattern||'')}"></label><label>替换为<input name="replacement" maxlength="160" value="${esc(x?.replacement||'')}"></label>${x?.isRegex?'<p>此项为旧版表达式规则，保存时保留原有匹配方式。</p>':''}<label><span><input name="enabled" type="checkbox" ${!x||x.enabled?'checked':''}>启用</span></label><button class="small-action">保存词条</button>`;

@@ -3,7 +3,7 @@
   const failure=(message,code,status=0)=>Object.assign(new Error(message),{code,status});
   function create({fetchImpl=(...args)=>fetch(...args),timeoutMs=45000,sleep=ms=>new Promise(r=>setTimeout(r,ms))}={}) {
     const pending=new Map(),cache=new Map();let generation=0;
-    const ttlFor=path=>({'/api/player/economy':30000,'/api/player/directory':30000,'/api/music':300000}[path]||0);
+    const ttlFor=path=>({'/api/player/economy':30000,'/api/player/directory':30000}[path]||0);
     const copy=data=>JSON.parse(JSON.stringify(data));
     async function once(path,options){
       const {timeoutMs:deadline=timeoutMs,...request}=options;

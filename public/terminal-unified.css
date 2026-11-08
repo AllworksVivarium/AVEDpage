@@ -26,16 +26,6 @@
 .audio-primary{display:flex;align-items:center;justify-content:space-between;gap:10px}
 #left-sidebar .audio-primary h3{font-size:12px!important;line-height:1.3!important;margin:0}
 #left-sidebar .audio-primary button{border:1px solid var(--inner-border-soft);border-radius:0;min-height:32px}
-.audio-options{margin-top:10px;font:11px/1.4 var(--terminal-type);color:var(--inner-text-muted)}
-.audio-options summary{cursor:pointer;padding-block:4px}
-#terminal-audio-controls{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-#left-sidebar .terminal-radio{box-shadow:none;padding:12px 10px!important;border-top:1px solid var(--inner-border-soft)}
-#left-sidebar .terminal-radio .radio-heading{font:12px/1.4 var(--terminal-copy);margin:0 0 10px}
-#cloud-music-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:24px;font-size:11px;line-height:1.4;opacity:.7}
-#left-sidebar .terminal-radio>div:last-child{display:flex;gap:6px}
-#left-sidebar .terminal-radio .radio-key{display:grid;place-items:center;flex:1;min-height:34px;padding:6px;border:1px solid var(--inner-border-soft);background:transparent;color:inherit}
-.radio-key svg{width:18px;height:18px;display:block}
-#left-sidebar .terminal-radio.playing #cloud-music-play{border-color:var(--inner-crimson);color:var(--inner-crimson)}
 .donation-form label{flex:1 1 230px;font-size:13px}
 .donation-form input{min-height:46px;font-size:18px;border-color:var(--inner-text-main)}
 .donation-form>div:first-child{flex-basis:100%}

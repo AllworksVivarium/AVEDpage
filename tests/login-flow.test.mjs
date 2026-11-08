@@ -55,7 +55,7 @@ test('thin login state, duplicate cookies, parallel sessions and HTTPS entry',as
  assert.equal((await (await request(player+'; '+newestAdmin,'/api/me')).json()).employee.username,'auth-admin');
  assert.equal((await (await request(newestAdmin+'; '+player,'/api/me')).json()).employee.username,'auth-admin');
  const bootResponse=await request(player,'/api/player/state?bootstrap=1'),boot=await bootResponse.json();assert.equal(bootResponse.status,200);assert.equal(boot.employee.username,'auth-player');assert.ok(boot.profile&&boot.gameRecords);
- for(const key of ['employees','departments','announcements','dossiers','stocks','music'])assert.deepEqual(boot[key],[]);assert.deepEqual(boot.forum.items,[]);assert.equal(boot.market,null);
+ for(const key of ['employees','departments','announcements','dossiers','stocks'])assert.deepEqual(boot[key],[]);assert.deepEqual(boot.forum.items,[]);assert.equal(boot.market,null);assert.equal('music' in boot,false);
  assert.equal((await request('','/api/player/state?bootstrap=1')).status,401);
  const otherBoot=await (await request(first,'/api/player/state?bootstrap=1&employeeId='+boot.employee.id)).json();assert.equal(otherBoot.employee.username,'auth-admin','URL identity must never override session identity');
  const invalid='data:image/png;base64,'+Buffer.alloc(500000,1).toString('base64');

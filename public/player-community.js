@@ -3,40 +3,28 @@ window.AVEDCommunity=function(ctx){
   const {api,esc,byId,showToast,mainViews,switchMainView,getUser,getProfile,departments,renderDepartments,renderScp,refreshForum,getThread,getReply,backForum}=ctx;
   const fileData=file=>new Promise((resolve,reject)=>{if(!file?.size)return resolve('');if(file.size>1500000||!['image/png','image/jpeg','image/webp'].includes(file.type))return reject(new Error('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。'));const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('影像读取失败。'));reader.readAsDataURL(file);});
   const sidebar=byId('left-sidebar');
-  const music=sidebar.querySelector('.cloud-music');
-  const controls=byId('audio-master-btn').parentElement;
+  const controls=byId('audio-sfx-btn').parentElement;
   const audioSection=document.createElement('section');audioSection.className='terminal-audio sidebar-expanded';
-  audioSection.innerHTML='<div class="audio-primary"><h3>声音</h3></div><label>音乐音量 <input id="terminal-music-volume" type="range" min="0" max="1" step="0.01" value="0.35"></label><details class="audio-options"><summary>声道设置</summary><div id="terminal-audio-controls"></div></details>';
-  sidebar.insertBefore(audioSection,music);audioSection.querySelector('.audio-primary').append(byId('audio-master-btn'));audioSection.querySelector('#terminal-audio-controls').append(byId('audio-bgm-btn'),byId('audio-sfx-btn'));controls.remove();
-  music.classList.add('terminal-radio','sidebar-expanded');
-  music.querySelector(':scope > p').classList.add('radio-heading');
-  const playerButtons=music.querySelectorAll('button');
-  const musicIcon=path=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">'+path+'</svg>';
-  const playIcon=musicIcon('<path d="m9 5 10 7-10 7Z"/>'),pauseIcon=musicIcon('<path d="M8 5v14M16 5v14"/>');
-  const icons=[musicIcon('<path d="M5 5v14m14-14L9 12l10 7Z"/>'),playIcon,musicIcon('<path d="M19 5v14M5 5l10 7-10 7Z"/>')];
-  for(const [i,label] of ['上一首','播放','下一首'].entries()){playerButtons[i].innerHTML=icons[i];playerButtons[i].setAttribute('aria-label',label);playerButtons[i].title=label;playerButtons[i].classList.add('radio-key');}
-  const audio=byId('cloud-music-audio');audio.volume=.35;
-  byId('terminal-music-volume').oninput=e=>audio.volume=Number(e.target.value);
-  function syncPlayer(){const playing=!audio.paused;music.classList.toggle('playing',playing);playerButtons[1].innerHTML=playing?pauseIcon:playIcon;playerButtons[1].setAttribute('aria-label',playing?'暂停':'播放');playerButtons[1].title=playing?'暂停':'播放';}
-  audio.addEventListener('play',syncPlayer);audio.addEventListener('pause',syncPlayer);audio.addEventListener('ended',syncPlayer);
+  audioSection.innerHTML='<div class="audio-primary"><h3>音效</h3></div>';
+  sidebar.append(audioSection);audioSection.querySelector('.audio-primary').append(byId('audio-sfx-btn'));controls.remove();
   const games=byId('view-casino'),tabs=games.querySelector('[data-game]').parentElement;
-  const home=document.createElement('button');home.type='button';home.dataset.game='home';home.className='game-tab-btn community-button';home.textContent="公司大厅";tabs.prepend(home);
+  const home=document.createElement('a');home.href=AVEDStartup.gamePath('home');home.dataset.game='home';home.className='game-tab-btn community-button';home.textContent="公司大厅";tabs.prepend(home);
   const homePanel=document.createElement('section');homePanel.id='game-panel-home';homePanel.className='casino-home-sections';homePanel.innerHTML='<nav class="casino-home-shortcuts" aria-label="大厅直达"><button type="button" data-home-section="daily-allocation">签到补给</button><button type="button" data-home-section="card-room-lobby">联机牌室</button><button type="button" data-home-section="company-fund-panel">爱心账户</button><button type="button" data-home-section="company-ranking-panel">余额榜</button></nav><div id="daily-allocation" class="community-actions"></div>';
   homePanel.addEventListener('click',e=>{const key=e.target.closest('[data-home-section]')?.dataset.homeSection;if(!key)return;const target=key==='daily-allocation'?byId(key):homePanel.querySelector('.'+key);if(!target)return;target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:'instant'});});
   games.querySelector('[id^="game-panel-"]').before(homePanel);
   byId('daily-allocation').append(byId('header-quick-checkin-btn'),byId('header-quick-relief-btn'));
   // The older relief button is replaced by the same server-authoritative action.
   byId('claim-relief-btn').hidden=true;
-  function selectGame(name){games.querySelectorAll('[id^="game-panel-"]').forEach(panel=>panel.classList.toggle('hidden',panel.id!=='game-panel-'+name));games.querySelectorAll('[data-game]').forEach(button=>{button.classList.toggle('game-selected',button.dataset.game===name);button.setAttribute('aria-pressed',String(button.dataset.game===name));});}
-  tabs.addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(b)selectGame(b.dataset.game);});
+  function selectGame(name){if(!AVEDStartup.gamePath(name))return;games.querySelectorAll('[id^="game-panel-"]').forEach(panel=>panel.classList.toggle('hidden',panel.id!=='game-panel-'+name));games.querySelectorAll('[data-game]').forEach(button=>{const selected=button.dataset.game===name;button.classList.toggle('game-selected',selected);button.setAttribute('aria-pressed',String(selected));if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});}
+  function navigateGame(name){if(AVEDStartup.gamePath(name))ctx.navigateGame(name);}
+  tabs.addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(!b||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();navigateGame(b.dataset.game);});
   const ticker=document.createElement('div');ticker.className='company-play-ticker';ticker.tabIndex=0;tabs.parentElement.after(ticker);
   const gameHeader=document.createElement('div');gameHeader.className='terminal-game-header';tabs.parentElement.before(gameHeader);gameHeader.append(tabs.parentElement,ticker);
   function renderTicker(){const message='公司温馨提示：请您劳逸结合，适度娱乐，小赌怡情，大赌伤身。股市有风险，入市需谨慎。';ticker.setAttribute('aria-label',message);const copy='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 21H2Z" fill="none" stroke="currentColor"/><path d="M12 8v6m0 3v1" stroke="currentColor"/></svg><span>'+message+'</span>';ticker.innerHTML='<div class="company-ticker-track" aria-hidden="true"><div class="ticker-copy">'+copy+'</div><div class="ticker-copy">'+copy+'</div></div>';}
   renderTicker();
   selectGame('home');
-  const compactGames=window.AVEDCreateCasinoSwitcher?.({games,tabs,gameHeader,getUser,selectGame});
+  const compactGames=window.AVEDCreateCasinoSwitcher?.({games,tabs,gameHeader,getUser,selectGame:navigateGame});
   window.AVEDCasinoSwitcher=compactGames;
-  document.querySelector('[data-nav="casino"]').addEventListener('click',()=>selectGame('home'));
   const nav=document.createElement('button');nav.type='button';nav.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left';nav.dataset.nav='life';nav.setAttribute('aria-label','生活记录');nav.title='生活记录';nav.innerHTML='<span class="sidebar-art-icon" aria-hidden="true"><img src="/assets/life-newspaper-ui-v1.48c24fadce83.webp" alt="" loading="lazy"></span><span class="sidebar-label">生活记录</span>';document.querySelector('[data-nav="forum"]').before(nav);
   const life=document.createElement('section');life.id='view-life';life.className='hidden space-y-5';byId('view-news').parentElement.append(life);mainViews.push('life');
   let next=null,lifeRequest=0,lifeBusy=false;
@@ -65,5 +53,5 @@ window.AVEDCommunity=function(ctx){
   byId('speech-edit-form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;try{const f=new FormData(e.target),d=await api('/api/player/forum/'+editKind+'/'+editId,{method:'PUT',body:{title:f.get('title'),body:f.get('body'),identityMode:f.get('identityMode')}});dialog.close();await refreshForum();showToast(d.pending?'图文修订已送交复核。':'发言已修订。');}catch(err){byId('speech-edit-error').textContent=err.message;}finally{button.disabled=false;}};
   function economyHeader(){const toggle=byId('sidebar-toggle-btn');if(toggle.getAttribute('aria-expanded')==='true')toggle.textContent='◀ 收起';const user=byId('welcome-employee-banner').parentElement,balance=byId('top-balance-val').parentElement;for(const el of [user,balance,byId('intranet-role'),byId('theme-toggle-btn'),byId('logout-btn')])el.classList.add('terminal-header-control');}
   function refresh(){economyHeader();byId('forum-current-balance').textContent='当前余额 ¤ '+Number(getUser()?.balance||0).toLocaleString();window.AVEDTerminology?.refreshRules();}
-  return {refresh,selectGame(name){selectGame(name);compactGames?.sync();}};
+  return {refresh,selectGame:navigateGame,showGame(name){selectGame(name);compactGames?.sync();}};
 };

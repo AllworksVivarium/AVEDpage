@@ -6,6 +6,22 @@ const context={setTimeout,clearTimeout};vm.runInNewContext(readFileSync(new URL(
 test('a stalled font cannot block entry; fast resources retain their result',async()=>{let calls=0;const stalled=new Promise(()=>{});assert.equal(await within(stalled,10,()=>{calls++;return 'fallback';}),'fallback');assert.equal(calls,1);assert.equal(await within(Promise.resolve('font'),10,()=>{calls++;return 'fallback';}),'font');await new Promise(r=>setTimeout(r,20));assert.equal(calls,1);await assert.rejects(within(Promise.reject(Error('network')),10,()=>null),/network/);});
 test('only known pages can be restored; links do not accept account IDs or QQ numbers',()=>{const allowed=['profile','forum','casino'];assert.equal(route('#/forum',allowed),'forum');assert.equal(route('#/casino',allowed),'casino');for(const hash of ['#/123456789','?qq=123456789','#/admin','#/profile?employeeId=2'])assert.equal(route(hash,allowed),'profile');});
 
+test('game deep links survive refresh and invalid children return to the lobby',()=>{
+ const allowed=['profile','forum','casino'],routing=context.AVEDStartup;
+ for(const game of ['skydive','slots','scratch','derby','doudizhu','stocks']){
+  const hash='#/casino/'+game,parsed=routing.resolveRoute(hash,allowed);
+  assert.equal(parsed.page,'casino');assert.equal(parsed.game,game);assert.equal(parsed.hash,hash);
+  assert.equal(routing.gamePath(game),hash);assert.equal(route(hash,allowed),'casino');
+ }
+ for(const hash of ['#/casino','#/casino/home','#/casino/unknown','#/casino/derby?employeeId=2','#/casino/../admin']){
+  const parsed=routing.resolveRoute(hash,allowed);assert.equal(parsed.page,'casino');assert.equal(parsed.game,'home');assert.equal(parsed.hash,'#/casino');
+ }
+ assert.equal(routing.gamePath('__proto__'),null);assert.equal(routing.gamePath('invalid'),null);
+ assert.equal(routing.resolveRoute('#/casino/derby',['profile']).page,'profile');
+ const html=readFileSync(new URL('../public/player-terminal.html',import.meta.url),'utf8');
+ for(const game of ['skydive','slots','scratch','derby','doudizhu','stocks'])assert.ok(html.includes('href="'+routing.gamePath(game)+'" data-game="'+game+'"'),'game links also work when opened in a new tab');
+});
+
 test('critical art is decoded in a bounded queue; cold entry is paced and cached entry skips the delay',async()=>{
  const saved=new Map(),storage={getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)},delays=[],urls=Array.from({length:9},(_,i)=>'/assets/icon-'+i+'.webp');
  let active=0,peak=0,calls=0;

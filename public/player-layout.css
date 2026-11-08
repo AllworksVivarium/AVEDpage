@@ -12,7 +12,6 @@
 .cloud-input{display:block;width:100%;padding:.7rem;margin-top:.4rem;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:inherit}
 .cloud-avatar{width:140px;height:160px;padding:12px;border:2px solid currentColor;overflow:hidden}
 .cloud-avatar img,.cloud-avatar svg{width:100%;height:100%;object-fit:cover}
-.cloud-music{border-top:1px solid var(--inner-border-soft)}
 .cloud-sky-scale{height:180px;border-left:2px solid currentColor;position:relative;margin:1rem}
 #cloud-sky-marker{position:absolute;left:-8px;transition:top 1.5s linear}
 #skydive-chat-messages,#derby-chat-messages{max-height:260px;overflow-y:auto;overflow-wrap:anywhere}
@@ -24,8 +23,6 @@
   #left-sidebar.w-52{position:fixed;top:0;left:0;bottom:0;width:220px;max-height:100dvh;background:var(--inner-card-bg);z-index:40;box-shadow:0 0 0 100vmax #0005}
   #left-sidebar.w-16{width:52px}
   #left-sidebar .nav-tab-btn{padding:.75rem .4rem}
-  #left-sidebar.w-16 .cloud-music{padding:.4rem}
-  #left-sidebar.w-16 .cloud-music>div{flex-direction:column}
   #inner-app-view .grid{min-width:0}
   #inner-app-view .grid-cols-3:not(#slot5x3-grid),#inner-app-view .grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
   #welcome-employee-banner{overflow-wrap:anywhere}
@@ -41,7 +38,6 @@
 #sidebar-toggle-btn{width:36px;height:36px;min-width:36px;min-height:36px;transform:none!important;touch-action:manipulation}
 #sidebar-toggle-btn:focus-visible{outline:2px solid var(--inner-crimson);outline-offset:3px}
 #left-sidebar.w-16 .sidebar-control-row{padding:4px 0 9px;justify-content:center}
-#left-sidebar .cloud-music{margin-top:auto}
 #sidebar-backdrop{position:fixed;inset:0;z-index:35;background:#0007;border:0}
 #sidebar-backdrop[hidden]{display:none}
 #inner-app-view>div>div:last-child{width:0;min-width:0;overflow-wrap:anywhere}

@@ -15,16 +15,9 @@
       // Button motion is shared by both terminals in interaction-motion.js.
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       // ======================================================================
-      // 1. 独立三路音频引擎（总开关 Master / 背景环境音 BGM / 特效音 SFX）
-      // ======================================================================
-      let audioMasterOn = true;
-      let audioBgmOn = false;
-      let audioSfxOn = true;
-      let audioCtx = null;
-      let bgmOsc1 = null;
-      let bgmOsc2 = null;
-      let bgmGain = null;
-
+      // 1. 本机音效开关
+      let audioSfxOn=true;try{audioSfxOn=localStorage.getItem('aved_sfx_v1')!=='off';}catch{}
+      let audioCtx=null;
       function ensureAudioCtx() {
         if (!audioCtx) {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -35,41 +28,8 @@
         }
       }
 
-      function syncBgmDrone() {
-        try {
-          if (audioMasterOn && audioBgmOn) {
-            ensureAudioCtx();
-            if (!audioCtx) return;
-            if (!bgmOsc1) {
-              bgmOsc1 = audioCtx.createOscillator();
-              bgmOsc2 = audioCtx.createOscillator();
-              bgmGain = audioCtx.createGain();
-              bgmOsc1.type = 'sine';
-              bgmOsc2.type = 'triangle';
-              bgmOsc1.frequency.setValueAtTime(55, audioCtx.currentTime);
-              bgmOsc2.frequency.setValueAtTime(82.4, audioCtx.currentTime);
-              bgmGain.gain.setValueAtTime(0.025, audioCtx.currentTime);
-              bgmOsc1.connect(bgmGain);
-              bgmOsc2.connect(bgmGain);
-              bgmGain.connect(audioCtx.destination);
-              bgmOsc1.start();
-              bgmOsc2.start();
-            }
-          } else {
-            if (bgmOsc1) {
-              bgmOsc1.stop();
-              bgmOsc2.stop();
-              bgmOsc1.disconnect();
-              bgmOsc2.disconnect();
-              bgmOsc1 = null;
-              bgmOsc2 = null;
-            }
-          }
-        } catch (e) {}
-      }
-
       function playSfx(type) {
-        if (!audioMasterOn || !audioSfxOn) return;
+        if (!audioSfxOn) return;
         try {
           ensureAudioCtx();
           if (!audioCtx) return;
@@ -143,44 +103,17 @@
         } catch (err) {}
       }
 
-      function updateAudioTrioUI() {
-        const masterBtn = document.getElementById('audio-master-btn');
-        const bgmBtn = document.getElementById('audio-bgm-btn');
-        const sfxBtn = document.getElementById('audio-sfx-btn');
-
-        masterBtn.textContent = audioMasterOn ? '声音开启' : '静音';
-        masterBtn.setAttribute('aria-pressed',String(audioMasterOn));
-        const musicAudio=document.getElementById('cloud-music-audio');if(musicAudio)musicAudio.muted=!audioMasterOn;
-        masterBtn.className = `px-2 py-1 text-[11px] font-bold cursor-pointer ${audioMasterOn ? 'bg-[var(--inner-accent)] text-[var(--inner-accent-text)]' : 'bg-[#9e1b1b] text-white'}`;
-
-        const effectiveBgm = audioMasterOn && audioBgmOn;
-        bgmBtn.textContent = effectiveBgm ? '环境音 开' : '环境音 关';bgmBtn.setAttribute('aria-pressed',String(effectiveBgm));
-        bgmBtn.className = `px-2 py-1 text-[11px] cursor-pointer ${effectiveBgm ? 'bg-black/15 font-bold' : 'opacity-60'}`;
-
-        const effectiveSfx = audioMasterOn && audioSfxOn;
-        sfxBtn.textContent = effectiveSfx ? '按键音 开' : '按键音 关';sfxBtn.setAttribute('aria-pressed',String(effectiveSfx));
-        sfxBtn.className = `px-2 py-1 text-[11px] cursor-pointer ${effectiveSfx ? 'bg-black/15 font-bold' : 'opacity-60'}`;
-
-        syncBgmDrone();
+      function updateSfxUI(){
+        const button=document.getElementById('audio-sfx-btn');
+        button.textContent=audioSfxOn?'音效开启':'音效关闭';button.setAttribute('aria-pressed',String(audioSfxOn));
+        button.setAttribute('aria-label',audioSfxOn?'关闭音效':'开启音效');
       }
-
-      document.getElementById('audio-master-btn').addEventListener('click', () => {
-        audioMasterOn = !audioMasterOn;
-        updateAudioTrioUI();
-        if (audioMasterOn) playSfx('click');
+      document.getElementById('audio-sfx-btn').addEventListener('click',()=>{
+        audioSfxOn=!audioSfxOn;try{localStorage.setItem('aved_sfx_v1',audioSfxOn?'on':'off');}catch{}
+        if(!audioSfxOn&&audioCtx){const previous=audioCtx;audioCtx=null;previous.close().catch(()=>{});}
+        updateSfxUI();if(audioSfxOn)playSfx('click');
       });
-      document.getElementById('audio-bgm-btn').addEventListener('click', () => {
-        if (!audioMasterOn) audioMasterOn = true;
-        audioBgmOn = !audioBgmOn;
-        updateAudioTrioUI();
-      });
-      document.getElementById('audio-sfx-btn').addEventListener('click', () => {
-        if (!audioMasterOn) audioMasterOn = true;
-        audioSfxOn = !audioSfxOn;
-        updateAudioTrioUI();
-        if (audioSfxOn) playSfx('click');
-      });
-      updateAudioTrioUI();
+      updateSfxUI();
 
       // ======================================================================
       // 2. 全局二次确认弹窗
@@ -478,22 +411,35 @@
       // ======================================================================
       const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
 
-      function requestedPlayerView(){return AVEDStartup.route(location.hash,['profile',...mainViews]);}
-      window.addEventListener('hashchange',()=>{if(currentUser)switchMainView(requestedPlayerView());});
+      const playerPageTitle=document.title;
+      let renderedPlayerRoute='';
+      function restorePlayerRoute(initial=false){
+        if(!currentUser)return;
+        const route=AVEDStartup.resolveRoute(location.hash,['profile',...mainViews]);
+        switchMainView(route.page,{game:route.game,navigation:initial?'replace':'none'});
+      }
+      window.addEventListener('hashchange',()=>restorePlayerRoute());
+      window.addEventListener('popstate',()=>restorePlayerRoute());
       let containmentVisit=0;
-      function switchMainView(target) {
+      function switchMainView(target,{game='home',navigation='push'}={}) {
         if(!currentUser)return;
         if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
+        if(target==='welcome'){showProfile().catch(e=>showToast(e.message));return;}
+        const path=target==='casino'?(AVEDStartup.gamePath(game)||AVEDStartup.gamePath('home')):'#/'+target;
+        if(navigation==='none'&&renderedPlayerRoute===path&&location.hash===path)return;
+        if(location.hash!==path){
+          if(navigation==='push')history.pushState(null,'',path);
+          else history.replaceState(null,'',path);
+        }
+        renderedPlayerRoute=path;
         const enteringContainment=target==='containment'&&document.getElementById('view-containment').classList.contains('hidden');
         const visit=++containmentVisit;
-        if(target!=='welcome')history.replaceState(null,'','#/'+target);
         const sectionReady=target!=='profile'&&target!=='welcome'?loadDeferredPlayerData(target):null;
         if(sectionReady)Promise.resolve(sectionReady).then(async()=>{
           if(!enteringContainment||visit!==containmentVisit)return;
           await nextPaint();
           if(visit===containmentVisit&&!document.getElementById('view-containment').classList.contains('hidden'))triggerScpTitleRedactionGlitch();
         }).catch(e=>showToast(e.message,'warn'));
-        if(target==='welcome'&&currentUser){showProfile().catch(e=>showToast(e.message));return;}
         if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
@@ -517,6 +463,9 @@
           else sec.classList.add('hidden');
         });
 
+        if(target==='casino')communityUI.showGame(game||'home');
+        const gameTitle=target==='casino'&&game!=='home'?document.querySelector('[data-game="'+game+'"]')?.getAttribute('aria-label'):'';
+        document.title=gameTitle?gameTitle+' · '+playerPageTitle:playerPageTitle;
         if(target==='profile')renderProfile();
         if (target === 'containment') {
           if(enteringContainment)scpBoardSelection=null;renderScpArchives();
@@ -1488,25 +1437,7 @@
       // ======================================================================
       // 分页 6-4：异常竞速赛马
       // ======================================================================
-      // 娱乐室子导航切换
-      const gamePanels = ['home', 'skydive', 'slots', 'scratch', 'derby', 'doudizhu', 'stocks'];
-      document.querySelectorAll('.game-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = btn.getAttribute('data-game');
-          playSfx('click');
-          document.querySelectorAll('.game-tab-btn').forEach(b => {
-            b.className = 'game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer';
-          });
-          btn.className = 'game-tab-btn px-3.5 py-2 text-xs font-bold bg-[var(--inner-accent)] text-[var(--inner-accent-text)] cursor-pointer';
-
-          gamePanels.forEach(g => {
-            const p = document.getElementById(`game-panel-${g}`);
-            if (!p) return;
-            if (g === target) p.classList.remove('hidden');
-            else p.classList.add('hidden');
-          });
-        });
-      });
+      // Game pages share one route-driven navigator in player-community.js.
 
       // KARMA INDEX 股市
       function applyMarket(data) {
@@ -1615,7 +1546,7 @@
       let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
-      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,playerMusic=[],musicIndex=0,skyRound=null,skyPollBusy=false;
+      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],forumNext=null,forumLoading=false,skyRound=null,skyPollBusy=false;
       function showToast(message,type='info') {
         const el=document.createElement('div');el.className='aved-toast';el.dataset.type=type;el.setAttribute('role','status');
         el.textContent=String(message);byId('toast-container').append(el);setTimeout(()=>el.remove(),5000);
@@ -1626,7 +1557,7 @@
       async function loadPlayerData() {
         forumListPosition=null;forumListMarkup='';
         deferredSections.clear();deferredRequests.clear();
-        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.music)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;window.AVEDAppearance?.setEntitlements(playerProfile.appearance);playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
+        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;window.AVEDAppearance?.setEntitlements(playerProfile.appearance);playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
@@ -1635,7 +1566,7 @@
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumNext=data.forum.next;
-        stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));playerMusic=data.music;
+        stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));
         return currentUser;
       }
       const deferredSections=new Set(),deferredRequests=new Map();
@@ -1689,7 +1620,7 @@
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        renderScratchTiersAndLobby();initSlot5x3Game();switchMainView(requestedPlayerView());
+        renderScratchTiersAndLobby();initSlot5x3Game();restorePlayerRoute(true);
         communityUI.refresh();
         if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
         // Chat streams open only while their game panel is visible.
@@ -1821,7 +1752,7 @@
         if(button.dataset.nav==='welcome'){stop(event);showProfile().catch(e=>showToast(e.message));return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.game==='doudizhu')initDoudizhu();
-        const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open','cloud-music-prev','cloud-music-next','cloud-music-play'];
+        const handled=['forum-load-more','forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open'];
         const trade=button.hasAttribute('data-stock-trade-side');
         if(trade&&stockTradeBusy)return;
         if(!handled.includes(id)&&!trade)return;stop(event);
@@ -1850,7 +1781,7 @@
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
-          else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await api('/api/player/games/sky/jump',{method:'POST',body:{round:skyUI.round()}}));}
+          else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await skyUI.jump());}
           else if(trade){
             stockTradeBusy=true;renderTradeTicket();
             try{
@@ -1889,15 +1820,6 @@
             showToast('委托已成交。');
             }finally{stockTradeBusy=false;renderTradeTicket();}
           }
-          else if(id.startsWith('cloud-music')){
-            if(!playerMusic.length)playerMusic=(await api('/api/music')).items||[];
-            if(!playerMusic.length)throw new Error('广播频道暂无曲目。');const audio=byId('cloud-music-audio');
-            if(id==='cloud-music-prev')musicIndex=(musicIndex-1+playerMusic.length)%playerMusic.length;
-            if(id==='cloud-music-next')musicIndex=(musicIndex+1)%playerMusic.length;
-            const track=playerMusic[musicIndex];byId('cloud-music-title').textContent=track.title;
-            if(audio.getAttribute('src')!==track.url)audio.src=track.url;
-            if(id==='cloud-music-play'&&!audio.paused)audio.pause();else await audio.play();
-          }
         });
       },true);
       let scratchActivating=false;
@@ -1933,12 +1855,11 @@
 
       }
       const nextTicket=document.createElement('button');nextTicket.id='scratch-next-ticket';nextTicket.className='inner-btn-primary px-4 py-2';nextTicket.textContent='刮下一张';nextTicket.disabled=true;byId('scratch-reveal-all-cells-btn').after(nextTicket);
-      byId('left-sidebar').insertAdjacentHTML('beforeend','<section class="cloud-music p-3"><p class="sidebar-label">音乐盒</p><p id="cloud-music-title" class="sidebar-label text-xs">选择曲目播放</p><audio id="cloud-music-audio" preload="none"></audio><div class="flex flex-wrap gap-2"><button id="cloud-music-prev" aria-label="上一首">|◀</button><button id="cloud-music-play" aria-label="播放或暂停">▶ / Ⅱ</button><button id="cloud-music-next" aria-label="下一首">▶|</button></div></section>');
 
       cardTableUI=AVEDCardTableUI({api,esc,getUser:()=>currentUser,playSfx,onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
-      const skyUI=AVEDSkyUI({api,esc,byId,playSfx,getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
+      const skyUI=AVEDSkyUI({api,esc,byId,playSfx,onSettled:()=>{profileFreshAt=0;},getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
-      const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
+      const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,navigateGame:game=>switchMainView('casino',{game}),getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId))});
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       forumSocialUI=AVEDForumSocial({api,esc,getUser:()=>currentUser,getThread:()=>forumThreads.find(t=>String(t.id)===String(currentForumThreadId)),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async id=>{switchMainView('forum');const d=await api('/api/player/forum/'+id);const index=forumThreads.findIndex(t=>t.id===id);if(index<0)forumThreads.push(d.thread);else forumThreads[index]=d.thread;currentForumThreadId=id;renderForumView();}});
@@ -1949,7 +1870,6 @@
       AVEDRewardsUI({api,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast,playSfx});
       AVEDVisualStyle({byId});
-      byId('cloud-music-audio').addEventListener('ended',()=>byId('cloud-music-next').click());
       const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
         currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
         document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');

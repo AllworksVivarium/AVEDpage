@@ -7,7 +7,6 @@ import {installPersonnel,personnelAssignment} from './server-personnel.mjs';
 import {installPersonal} from './server-personal.mjs';
 import {installPlayerDesign} from './server-player-design.mjs';
 import {installDerby} from './server-derby.mjs';
-import {installOriginalMusic} from './server-original-music.mjs';
 import {mediaReference,installMedia} from './server-media.mjs';
 import {normalizeAvatar} from './server-avatar.mjs';
 import {installCardTables} from './server-card-table.mjs';
@@ -127,15 +126,6 @@ CREATE TABLE IF NOT EXISTS game_tickets (
   seed TEXT NOT NULL,
   seed_hash TEXT NOT NULL,
   result_json TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS music_tracks (
-  id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  url TEXT NOT NULL,
-  kind TEXT NOT NULL DEFAULT '音乐',
-  enabled INTEGER NOT NULL DEFAULT 1,
-  created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `);
@@ -274,7 +264,6 @@ highlights=installGameHighlights({db,send,requireEmployee});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots});
-const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
 const media=installMedia({db,send,requireEmployee});
@@ -341,7 +330,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if(await media.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;
-    if(await originalMusic.handle(req,res,url))return;
     if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
@@ -459,14 +447,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(!validText(body,2000)||!profile.anonymousName)return send(res,400,{error:'请设置匿名名称，回复最多 2000 字。'});
       const row=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body) VALUES(?,?,?,?)').run(id,employee.id,profile.anonymousName,body.trim());return send(res,201,{id:Number(row.lastInsertRowid)});
     }
-    if (url.pathname === '/api/music' && req.method === 'GET') {
-      if(!requireEmployee(req,res))return;
-      return send(res,200,{items:db.prepare("SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id").all()});
-    }
-    if (url.pathname === '/api/admin/music' && req.method === 'GET') {
-      if(!requireAdmin(req,res))return;
-      return send(res,200,{items:db.prepare('SELECT id,title,url,kind FROM music_tracks WHERE enabled=1 ORDER BY id').all()});
-    }
     if (url.pathname === '/api/admin/forum' && req.method === 'GET') {
       if(!requireAdmin(req,res))return;
       const items=db.prepare(`SELECT 'thread' AS itemType,f.id,f.title,f.body,f.anonymous_name AS anonymousName,f.status,f.created_at AS createdAt,
@@ -540,26 +520,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname.startsWith('/api/admin/forum/replies/') && req.method === 'DELETE') {
       if(!requireAdmin(req,res))return;const result=db.prepare('DELETE FROM forum_replies WHERE id=?').run(Number(url.pathname.split('/').at(-1)));if(!result.changes)return send(res,404,{error:'回复不存在。'});return send(res,200,{ok:true});
-    }
-    if (url.pathname === '/api/admin/music' && req.method === 'POST') {
-      const admin=requireAdmin(req,res);if(!admin)return;const {title,url:trackUrl,kind}=await readBody(req);
-      if(!validText(title,100)||!validText(trackUrl,1000))return send(res,400,{error:'请填写音乐名称和音频链接。'});
-      try{const parsed=new URL(trackUrl);if(!['https:'].includes(parsed.protocol))return send(res,400,{error:'音乐链接必须使用 HTTPS。'});}catch{return send(res,400,{error:'音乐链接格式无效。'});}
-      if(!['环境音','白噪音','音乐'].includes(kind||'音乐'))return send(res,400,{error:'请选择环境音、白噪音或音乐。'});
-      const row=db.prepare('INSERT INTO music_tracks(title,url,kind,created_by) VALUES(?,?,?,?)').run(title.trim(),trackUrl.trim(),String(kind||'音乐'),admin.id);return send(res,201,{id:Number(row.lastInsertRowid)});
-    }
-    if (/^\/api\/admin\/music\/\d+$/.test(url.pathname) && req.method === 'PUT') {
-      if(!requireAdmin(req,res))return;
-      const id=Number(url.pathname.split('/').at(-1)),old=db.prepare('SELECT url FROM music_tracks WHERE id=? AND enabled=1').get(id);
-      if(!old)return send(res,404,{error:'曲目不存在或已删除。'});
-      const {title,url:trackUrl,kind}=await readBody(req);
-      if(!validText(title,100)||!validText(trackUrl,1000)||!['环境音','白噪音','音乐'].includes(kind))return send(res,400,{error:'请填写曲目名称、音频地址和分类。'});
-      const value=trackUrl.trim();
-      if(!(value===old.url&&/^\/api\/music\/original\/[-a-z]+\.wav$/.test(value))){try{if(new URL(value).protocol!=='https:')throw new Error();}catch{return send(res,400,{error:'音频地址必须使用 HTTPS。'});}}
-      db.prepare('UPDATE music_tracks SET title=?,url=?,kind=? WHERE id=? AND enabled=1').run(title.trim(),value,kind,id);return send(res,200,{ok:true});
-    }
-    if (url.pathname.startsWith('/api/admin/music/') && req.method === 'DELETE') {
-      if(!requireAdmin(req,res))return;if(!db.prepare('UPDATE music_tracks SET enabled=0 WHERE id=? AND enabled=1').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'曲目不存在或已删除。'});return send(res,200,{ok:true});
     }
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;

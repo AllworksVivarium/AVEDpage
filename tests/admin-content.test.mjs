@@ -50,11 +50,7 @@ test('content edits reach players, removals survive restart, and balance rejects
  const doc=await a('/api/admin/dossiers','POST',{code:'TEST-EDIT',title:'原卷宗',department:'科研部',status:'观察中',summary:'原档案'});assert.equal(doc.status,201);
  assert.equal((await a('/api/admin/dossiers/'+doc.data.id,'PUT',{code:'TEST-EDIT',title:'新卷宗',department:'科研部',status:'稳定',summary:'同步后的档案'})).status,200);
  assert.equal((await p('/api/dossiers')).data.items.find(x=>x.id===doc.data.id).summary,'同步后的档案');
- const tracks=(await a('/api/admin/music')).data.items;assert.equal(tracks.length,3);
- assert.equal((await a('/api/admin/music/'+tracks[0].id,'PUT',{title:'曲目改名',url:'https://example.com/new-audio.mp3',kind:'环境音'})).status,200);
- assert.equal((await p('/api/music')).data.items.find(x=>x.id===tracks[0].id).title,'曲目改名');
- assert.equal((await a('/api/admin/music/'+tracks[1].id,'PUT',{title:'内置音乐改名',url:tracks[1].url,kind:'音乐'})).status,200);
- const external=await a('/api/admin/music','POST',{title:'白噪音',url:'https://example.com/noise.mp3',kind:'白噪音'});assert.equal(external.status,201);
+ for(const [path,method] of [['/api/music','GET'],['/api/admin/music','GET'],['/api/admin/music','POST'],['/api/admin/music/1','PUT'],['/api/admin/music/1','DELETE'],['/api/music/original/night-transit.wav','GET']])assert.equal((await a(path,method,method==='POST'||method==='PUT'?{title:'不再支持的曲目',url:'https://example.com/audio.mp3'}:undefined)).status,404,path);
  const imageData='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
  const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
  const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData,tags:[]})).data.id;
@@ -129,12 +125,10 @@ test('content edits reach players, removals survive restart, and balance rejects
  await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
  assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z');timeDb.close();
  // Delete all defaults as well: they must not be re-seeded on restart.
- for(const track of (await a('/api/admin/music')).data.items)assert.equal((await a('/api/admin/music/'+track.id,'DELETE')).status,200);
  for(const item of (await p('/api/dossiers')).data.items)assert.equal((await a('/api/admin/dossiers/'+item.id,'DELETE')).status,200);
  for(const item of (await p('/api/announcements')).data.items)assert.equal((await a('/api/admin/announcements/'+item.id,'DELETE')).status,200);
- assert.equal((await p('/api/music')).data.items.length,0);
  await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
- for(const endpoint of ['/api/music','/api/admin/music','/api/dossiers','/api/announcements'])assert.equal((await a(endpoint)).data.items.length,0,endpoint);
+ for(const endpoint of ['/api/dossiers','/api/announcements'])assert.equal((await a(endpoint)).data.items.length,0,endpoint);
  assert.equal((await p('/api/me')).data.balance,balanceBefore);
  assert.equal((await a('/api/admin/activity?category=ledger')).status,400);
  assert.equal((await a('/api/admin/activity?category=image')).data.items.length,3);

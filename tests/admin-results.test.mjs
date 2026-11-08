@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {installOriginalMusic} from '../server-original-music.mjs';
 test('activity trigger migration keeps only publication and ledger results',()=>{
  const db=new DatabaseSync(':memory:');
  const tables=['employees','profiles','balance_ledger','checkins','game_tickets','forum_threads','forum_replies','posts','dossiers','announcements','dossier_comments','chat_messages','stock_holdings'];
@@ -17,11 +16,4 @@ test('activity trigger migration keeps only publication and ledger results',()=>
  db.exec("UPDATE profiles SET body='changed'");
  const rows=db.prepare('SELECT action,target FROM activity_logs').all();assert.equal(rows.length,6);assert.ok(rows.every(r=>r.action==='insert'));
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='trigger' AND name='audit_profiles_UPDATE'").get().n,0);db.close();
-});
-test('removed original music stays removed across initialization',async()=>{
- const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE music_tracks(id INTEGER PRIMARY KEY,title TEXT,url TEXT,kind TEXT,enabled INTEGER DEFAULT 1)');
- const options={db,requireEmployee:()=>true};installOriginalMusic(options);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM music_tracks').get().n,3);
- db.exec('UPDATE music_tracks SET enabled=0');const service=installOriginalMusic(options);
- assert.equal(db.prepare('SELECT COUNT(*) AS n FROM music_tracks WHERE enabled=1').get().n,0);
- let status;await service.handle({method:'GET',headers:{}},{writeHead:s=>status=s,end:()=>{}},new URL('https://test/api/music/original/night-transit.wav'));assert.equal(status,404);db.close();
 });

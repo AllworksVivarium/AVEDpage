@@ -1,4 +1,4 @@
-/* Local compact game-navigation prototype; reuses the real game buttons. */
+/* Compact navigation links for the routed game pages. */
 window.AVEDCreateCasinoSwitcher=function({games,tabs,gameHeader,getUser,selectGame}){
  const old=tabs.parentElement;old.classList.add('casino-legacy-tabs');
  const bar=document.createElement('div');bar.className='casino-compact-bar';
@@ -6,7 +6,7 @@ window.AVEDCreateCasinoSwitcher=function({games,tabs,gameHeader,getUser,selectGa
  const panel=document.createElement('section');panel.id='casino-switch-window';panel.className='casino-switch-window';panel.setAttribute('popover','auto');panel.setAttribute('role','dialog');panel.setAttribute('aria-labelledby','casino-switch-title');
  panel.innerHTML='<header><div><small>A.V.E.D. / GAME SELECT</small><h3 id="casino-switch-title">切换玩法</h3></div><button type="button" aria-label="关闭玩法选择">×</button></header>';
  const home=tabs.querySelector('[data-game="home"]');
- home.classList.add('casino-lobby-link');home.dataset.typeIgnore='';home.setAttribute('aria-label','公司大厅');home.title='返回公司大厅';home.innerHTML='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 9 10 2l8 7M5 8v10h4v-6h3v6h4V8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';const quick=document.createElement('div');quick.className='casino-quick-actions';bar.append(quick);quick.append(home,bar.querySelector('.casino-switch-toggle'));home.onclick=()=>{selectGame('home');sync();close();};
+ home.classList.add('casino-lobby-link');home.dataset.typeIgnore='';home.setAttribute('aria-label','公司大厅');home.title='返回公司大厅';home.innerHTML='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 9 10 2l8 7M5 8v10h4v-6h3v6h4V8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';const quick=document.createElement('div');quick.className='casino-quick-actions';bar.append(quick);quick.append(home,bar.querySelector('.casino-switch-toggle'));home.onclick=e=>{if(e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();selectGame('home');sync();close();};
  panel.append(tabs);old.hidden=true;gameHeader.prepend(bar);games.append(panel);games.classList.add('casino-compact-demo');
  const toggle=bar.querySelector('.casino-switch-toggle'),title=bar.querySelector('h2');
  function close(){if(panel.matches(':popover-open'))panel.hidePopover();}
@@ -29,7 +29,7 @@ window.AVEDCreateCasinoSwitcher=function({games,tabs,gameHeader,getUser,selectGa
  tabs.querySelectorAll('[data-game]').forEach(button=>{const text=button.dataset.game==='scratch'?'刮刮彩票':button.textContent.trim();button.setAttribute('aria-label',text);button.dataset.typeIgnore='';button.replaceChildren(...(lines[button.dataset.game]||[text]).map(line=>{const span=document.createElement('span');span.textContent=line;return span;}));});
 
  function sync(){home.classList.add('casino-lobby-link');const selected=tabs.querySelector('[aria-pressed="true"]')||(home.getAttribute('aria-pressed')==='true'?home:null);if(selected)title.textContent=selected===home?'公司大厅':selected.getAttribute('aria-label')||selected.textContent.trim();home.hidden=selected===home;const balance=getUser()?.balance;bar.querySelector('[data-casino-balance]').textContent=Number.isFinite(balance)?'¤ '+Number(balance).toLocaleString():'—';}
- tabs.addEventListener('click',e=>{if(!e.target.closest('[data-game]'))return;sync();close();toggle.focus();});
+ tabs.addEventListener('click',e=>{if(!e.defaultPrevented||!e.target.closest('[data-game]'))return;sync();close();toggle.focus();});
  const observer=new MutationObserver(sync);observer.observe(tabs,{attributes:true,subtree:true,attributeFilter:['aria-pressed']});observer.observe(home,{attributes:true,attributeFilter:['aria-pressed']});
  window.addEventListener('resize',()=>{if(panel.matches(':popover-open'))position();});
  window.addEventListener('scroll',()=>{if(panel.matches(':popover-open'))position();},{passive:true,capture:true});

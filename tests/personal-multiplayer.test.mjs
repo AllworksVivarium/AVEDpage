@@ -64,8 +64,6 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(first).balance,115000+result.self.prize);
  assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(second).balance,110000+otherResult.self.prize);
  assert.equal((await p('/api/player/history')).data.items.length,1);
- const music=(await p('/api/music')).data.items.filter(x=>x.url.startsWith('/api/music/original/'));assert.equal(music.length,3);
- const wav=await fetch(base+music[0].url,{headers:{cookie:one,range:'bytes=0-43'}});assert.equal(wav.status,206);assert.equal(Buffer.from(await wav.arrayBuffer()).subarray(0,4).toString(),'RIFF');
  // Legacy database edits must not override the fixed server prize structure.
  const config=JSON.parse(db.prepare('SELECT config_json FROM economy_config WHERE id=1').get().config_json);
  for(const key of Object.keys(config.scratch[0].variants))config.scratch[0].variants[key]=[{multiplier:10,weight:1}];

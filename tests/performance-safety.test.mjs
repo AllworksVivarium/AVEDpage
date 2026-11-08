@@ -81,7 +81,7 @@ test('reference cache expires, isolates callers, clears on mutations, and never 
  await http.request('/api/player/stocks');await http.request('/api/player/stocks');assert.equal(calls,4);
  await http.request('/api/me',{cacheTtlMs:99999});await http.request('/api/me',{cacheTtlMs:99999});assert.equal(calls,6);
  await http.request('/api/profile',{method:'PUT'});await http.request('/api/player/directory');assert.equal(calls,8);
- let release,musicReads=0;const concurrent=ctx.AVEDHttp.create({fetchImpl:async(path)=>{if(path==='/api/music'){musicReads++;await new Promise(r=>release=r);}return {ok:true,status:200,json:async()=>({ok:true})};}});
- const read=concurrent.request('/api/music');await concurrent.request('/api/logout',{method:'POST'});release();await read;
- const fresh=concurrent.request('/api/music');release();await fresh;assert.equal(musicReads,2,'a pre-logout read cannot populate the new session cache');
+ let release,referenceReads=0;const concurrent=ctx.AVEDHttp.create({fetchImpl:async(path)=>{if(path==='/api/player/directory'){referenceReads++;await new Promise(r=>release=r);}return {ok:true,status:200,json:async()=>({ok:true})};}});
+ const read=concurrent.request('/api/player/directory');await concurrent.request('/api/logout',{method:'POST'});release();await read;
+ const fresh=concurrent.request('/api/player/directory');release();await fresh;assert.equal(referenceReads,2,'a pre-logout read cannot populate the new session cache');
 });

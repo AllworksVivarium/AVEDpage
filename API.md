@@ -20,7 +20,6 @@
 | POST | `/api/games/scratch` | 服务器刮刮乐结算 |
 | POST | `/api/games/slot` | 服务器老虎机结算 |
 | GET | `/api/games/history` | 读取当前员工的游戏票据记录 |
-| GET | `/api/music` | 读取管理员启用的音乐曲目 |
 
 头像可以是 PNG/JPG/WEBP 上传图片（最多 1.5 MB，保存在数据库），或 HTTPS 图片链接。上传数据仅通过登录后的个人资料接口提交。
 
@@ -38,7 +37,6 @@
 | GET | `/api/admin/forum` | 查看完整的匿名主题和回复审核队列（含发言员工映射） |
 | GET | `/api/admin/speech-records` | 统一查询发言审计记录，可按员工、来源、日期和关键词筛选 |
 | DELETE | `/api/admin/forum/threads/{id}`、`/api/admin/forum/replies/{id}` | 移除匿名主题或回复并保留原记录；主题移除后回复不再公开 |
-| GET / POST / DELETE | `/api/admin/music`、`/api/admin/music/{id}` | 查看 / 添加 / 删除音乐曲目 |
 
 新增员工字段：`username`（唯一登录用户名）、`password`（至少 6 位）、`displayName`（员工姓名）、`qqNumber`、`department`、可选 `initialBalance`。密码只保存 PBKDF2 哈希。QQ 号仅在管理员名册接口返回。登录时可以填写唯一用户名或员工姓名；如员工姓名重复，则使用唯一用户名登录。
 
@@ -80,7 +78,7 @@
 
 所有 `/api/player/*` 均要求登录，使用与管理员相同的 HttpOnly Cookie。不是 Bearer Token。
 
-- `GET /api/player/state`：当前员工、余额、资料、永久成就、签到、公告、档案、部门、目录、论坛首 10 条、持仓、音乐。
+- `GET /api/player/state`：当前员工、余额、资料、永久成就、签到、公告、档案、部门、目录、论坛首 10 条、持仓。
 - `GET /api/player/forum?before=id`：后续 10 条论坛主题。`POST /api/player/forum`：`{title,body,imageData?}`。
 - `GET/POST /api/player/forum/:id`：查看回复 / 新回复 `{body,imageData?}`。图文整体待审；文本直接发布。GET 默认最早 20 条，`?after=id` 继续读取，返回 `thread`、`items`、`next`、`changesCursor`；`?since=changesCursor` 读取最多 20 条变更，返回 `items`、`removed`、`changesCursor`、`moreChanges`。游标只接受非负安全整数；主帖未公开时拒绝读取。
 - `GET /api/admin/moderation`、`POST /api/admin/moderation/thread/:id` 或 `reply/:id`：完整图文审核；提交 `{action:"approve"|"reject"}`。

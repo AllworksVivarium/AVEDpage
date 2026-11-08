@@ -94,8 +94,7 @@
   body.radix-terminal .display-options {display:grid;gap:10px;padding-top:10px}
   body.radix-terminal .display-options label {display:grid;gap:5px;font-size:var(--ui-small)!important}
   body.radix-terminal .display-options select {font-size:var(--ui-small)!important;min-height:32px;width:100%;padding:6px}
-  body.radix-terminal .terminal-audio,body.radix-terminal .terminal-radio {padding:12px 4px!important}
-  body.radix-terminal .terminal-radio .radio-key {height:32px!important;min-height:32px!important}
+  body.radix-terminal .terminal-audio{padding:12px 4px!important}
   body.radix-terminal .terminal-audio button,body.radix-terminal .personal-toolbar button {font-size:var(--ui-small)!important}
   body.radix-terminal .terminal-content-pane {padding:24px!important}
   @media(max-width:767px) {

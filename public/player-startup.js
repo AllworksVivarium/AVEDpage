@@ -4,7 +4,18 @@
   let done=false;const timer=setTimeout(()=>{if(done)return;done=true;try{resolve(fallback());}catch(e){reject(e);}},ms);
   Promise.resolve(task).then(value=>{if(done)return;done=true;clearTimeout(timer);resolve(value);},error=>{if(done)return;done=true;clearTimeout(timer);reject(error);});
  });}
- function route(hash,allowed){const value=String(hash||'').replace(/^#\/?/,'');return allowed.includes(value)?value:'profile';}
+ const gamePaths=Object.freeze({home:'#/casino',skydive:'#/casino/skydive',slots:'#/casino/slots',scratch:'#/casino/scratch',derby:'#/casino/derby',doudizhu:'#/casino/doudizhu',stocks:'#/casino/stocks'});
+ function gamePath(game){return Object.hasOwn(gamePaths,game)?gamePaths[game]:null;}
+ function resolveRoute(hash,allowed){
+  const value=String(hash||'').replace(/^#\/?/,'');
+  if(allowed.includes('casino')&&(value==='casino'||value.startsWith('casino/'))){
+   const child=value.slice(7),game=gamePath(child)?child:'home';
+   return {page:'casino',game,hash:gamePath(game)};
+  }
+  const page=allowed.includes(value)?value:'profile';
+  return {page,game:null,hash:'#/'+page};
+ }
+ function route(hash,allowed){return resolveRoute(hash,allowed).page;}
  async function restoreSession({load,enter,signedOut,unavailable}){
   try{await enter(await load());return 'ready';}
   catch(error){
@@ -38,5 +49,5 @@
   }
   return {get cached(){return cached();},prepare};
  }
- root.AVEDStartup={within,route,restoreSession,assetCache};
+ root.AVEDStartup={within,route,resolveRoute,gamePath,restoreSession,assetCache};
 })(globalThis);
