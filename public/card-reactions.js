@@ -18,14 +18,16 @@ window.AVEDCardReactionsUI=function({panel,api,esc,portrait,getState}){
  function place(node,state,seat){
   const box=felt.getBoundingClientRect(),anchor=seatNode(state,seat)?.getBoundingClientRect();if(!anchor)return;
   const x=anchor.left-box.left+anchor.width*.85,y=anchor.top-box.top-12;
-  node.style.left=Math.max(23,Math.min(felt.clientWidth-28,x))+'px';node.style.top=Math.max(24,Math.min(felt.clientHeight-24,y))+'px';
+  const half=28;
+  node.style.left=Math.max(half,Math.min(felt.clientWidth-half,x))+'px';node.style.top=Math.max(34,Math.min(felt.clientHeight-24,y))+'px';
  }
  function scatter(id){let n=2166136261;for(const c of id)n=Math.imul(n^c.charCodeAt(0),16777619);n=Math.imul(n^(n>>>16),0x7feb352d);return (n^(n>>>15))>>>0;}
  function show(event,state,age){
   const item=items.get(event.emoji),person=state.seats[event.seat];if(!item||!person)return;
-  const node=document.createElement('span');node.className=event.replyTo?'ddz-reaction-bubble':'ddz-reaction-flight';node.dataset.reactionId=event.id;
-  if(event.replyTo){
-   bubbles.get(event.seat)?.node.remove();bubbles.set(event.seat,{node,event});node.textContent=item.emoji;
+  const node=document.createElement('span');node.className=event.replyTo||event.context?'ddz-reaction-bubble':'ddz-reaction-flight';node.dataset.reactionId=event.id;
+  if(event.replyTo||event.context){
+   bubbles.get(event.seat)?.node.remove();bubbles.set(event.seat,{node,event});
+   node.textContent=item.emoji;
    node.style.animationDelay=-age+'ms';place(node,state,event.seat);
   }else{
    const seed=scatter(event.id);

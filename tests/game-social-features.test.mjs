@@ -90,7 +90,7 @@ test('race support is public without amounts; robot wagers debit once and settle
  }finally{service.close();db.close();}
 });
 
-test('easy opponents do not weaken the human autopilot, and difficulty cannot change mid-round',async()=>{
+test('solo autopilot matches easy opponents, and difficulty cannot change mid-round',async()=>{
  const {db,deps}=fixture();let now=1000000,tick;
  Object.assign(deps,{clock:()=>now,schedule:(fn,ms)=>{if(ms===350)tick=fn;return {unref(){}};},cancel:()=>{}});
  let service=installCardTables(deps);
@@ -107,7 +107,7 @@ test('easy opponents do not weaken the human autopilot, and difficulty cannot ch
    db.prepare('UPDATE card_table_rooms SET state_json=?').run(JSON.stringify(r));
   }
   setTurn(0);service=installCardTables(deps);tick();
-  let room=(await call()).data.room;assert.equal(room.seats[0].last.text.startsWith('顺子'),true,'human autopilot uses smart strategy despite easy opponent setting');
+  let room=(await call()).data.room;assert.equal(room.seats[0].last.text.startsWith('四带二'),true,'human autopilot matches the easy opponent setting');
   service.close();setTurn(1);service=installCardTables(deps);tick();
   room=(await call()).data.room;assert.equal(room.seats[1].last.text.startsWith('四带二'),true,'computer opponent follows easy setting');
  }finally{service.close();db.close();}

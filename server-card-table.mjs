@@ -14,23 +14,23 @@ export function dealTable(size=3,random=()=>randomInt(0x1000000)/0x1000000){
  }
  for(let i=deck.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
  const count=size===4?25:17;
- return {hands:Array.from({length:size},(_,i)=>deck.slice(i*count,(i+1)*count)),bottom:deck.slice(size*count),size,phase:'bidding',turn:0,landlord:-1,bid:0,bidder:-1,bids:0,bidStart:0,last:null,passes:0,multiplier:1,winner:null,plays:Array(size).fill(0),seatPlays:Array(size).fill(null),event:{text:'请叫分',seat:0},revision:0};
+ return {hands:Array.from({length:size},(_,i)=>deck.slice(i*count,(i+1)*count)),bottom:deck.slice(size*count),size,phase:'bidding',turn:0,landlord:-1,bid:0,bidder:-1,bids:0,bidStart:0,last:null,passes:0,multiplier:1,winner:null,plays:Array(size).fill(0),seatPlays:Array(size).fill(null),event:{id:randomUUID(),text:'请叫分',seat:0},revision:0};
 }
 export function tableAction(s,seat,action,body={}){
  if(!['bidding','playing'].includes(s.phase)||seat!==s.turn)throw Error('还没有轮到你。');
  if(s.phase==='bidding'){
   const value=Number(body.bid);if(action!=='bid'||!Number.isInteger(value)||value<0||value>3||(value&&value<=s.bid))throw Error('请叫更高的分数，或选择不叫。');
-  s.bids++;if(value){s.bid=value;s.bidder=seat;}s.event={seat,text:value?value+' 分':'不叫'};
+  s.bids++;if(value){s.bid=value;s.bidder=seat;}s.event={id:randomUUID(),seat,text:value?value+' 分':'不叫'};
   if(value===3||s.bids===s.size){
    // All pass: discard this deal and rotate the starting bidder.
-   if(s.bidder<0){const next=dealTable(s.size);next.turn=((s.bidStart||0)+1)%s.size;next.bidStart=next.turn;Object.assign(s,next);s.event={seat:-1,text:'无人叫分，重新发牌'};return;}
-   s.landlord=s.bidder;s.hands[s.landlord].push(...s.bottom);s.turn=s.landlord;s.phase='playing';s.event={seat:s.landlord,text:'太姥先出'};
+   if(s.bidder<0){const next=dealTable(s.size);next.turn=((s.bidStart||0)+1)%s.size;next.bidStart=next.turn;Object.assign(s,next);s.event={id:randomUUID(),seat:-1,text:'无人叫分，重新发牌'};return;}
+   s.landlord=s.bidder;s.hands[s.landlord].push(...s.bottom);s.turn=s.landlord;s.phase='playing';s.event={id:randomUUID(),seat:s.landlord,text:'太姥先出'};
   }else s.turn=(seat+1)%s.size;
   return;
  }
  if(action==='pass'){
   if(!s.last||s.last.seat===seat)throw Error('本轮由你领出，请选择手牌。');
-  s.passes++;s.seatPlays[seat]={text:'不出'};s.event={seat,text:'不出'};
+  s.passes++;s.seatPlays[seat]={text:'不出'};s.event={id:randomUUID(),seat,text:'不出'};
   s.turn=(seat+1)%s.size;if(s.passes===s.size-1){s.turn=s.last.seat;s.last=null;s.passes=0;s.seatPlays=Array(s.size).fill(null);}return;
  }
  if(action!=='play')throw Error('出牌指令无效。');
@@ -38,17 +38,20 @@ export function tableAction(s,seat,action,body={}){
  const cards=ids.map(id=>s.hands[seat].find(c=>c.id===id));if(cards.some(c=>!c))throw Error('手牌已经变化，请重新选择。');
  const p=R.classify(cards,s.size);if(!p)throw Error('这些牌不能组成有效牌型。');if(!R.beats(p,s.last))throw Error('需要同牌型、同张数并且点数更大，或使用炸弹。');
  s.hands[seat]=s.hands[seat].filter(c=>!ids.includes(c.id));s.last={...p,cards,seat};s.passes=0;s.plays[seat]++;
- s.seatPlays[seat]={text:p.label+' · '+cards.length+' 张',cards};s.event={seat,text:p.label+' · '+cards.length+' 张',type:p.type};
+ s.seatPlays[seat]={text:p.label+' · '+cards.length+' 张',cards};s.event={id:randomUUID(),seat,text:p.label+' · '+cards.length+' 张',type:p.type};
  if(p.type==='bomb'||p.type==='rocket')s.multiplier=Math.min(64,s.multiplier*2);
  if(!s.hands[seat].length){s.phase='ended';s.winner=seat===s.landlord?'landlord':'farmers';s.spring=s.winner==='landlord'?s.plays.every((v,i)=>i===s.landlord||v===0):s.plays[s.landlord]===1;if(s.spring)s.multiplier=Math.min(64,s.multiplier*2);return;}
  s.turn=(seat+1)%s.size;
+}
+export function autoplayLevel(room,seat){
+ return room.seats[seat]?.bot||room.seats.every((p,i)=>i===seat||!p||p.bot)?(room.botLevel||'standard'):'smart';
 }
 export function botTurn(s,level='standard'){
  const seat=s.turn,hand=s.hands[seat];
  if(s.phase==='bidding'){const power=hand.filter(c=>c.val>=15).length+[...new Set(hand.map(c=>c.val))].filter(v=>hand.filter(c=>c.val===v).length>=4).length*2;const wanted=power>=5?3:power>=3?2:power>=1?1:0;return {action:'bid',bid:wanted>s.bid?wanted:0};}
  const teammate=s.last&&seat!==s.landlord&&s.last.seat!==s.landlord;
  const danger=s.hands.some((h,i)=>i!==seat&&(i===s.landlord||seat===s.landlord)&&h.length<=2);
- const move=chooseAuto(hand,s.last,s.size,{teammate,danger,level});return move?{action:'play',cards:move.cards.map(c=>c.id)}:{action:'pass'};
+ const move=chooseAuto(hand,s.last,s.size,{teammate,danger,level,enemyCount:Math.min(...s.hands.map((h,i)=>i!==seat&&(i===s.landlord||seat===s.landlord)?h.length:Infinity)),allyCount:Math.min(...s.hands.map((h,i)=>i!==seat&&i!==s.landlord&&seat!==s.landlord?h.length:Infinity))});return move?{action:'play',cards:move.cards.map(c=>c.id)}:{action:'pass'};
 }
 export function tableView(room,employeeId,spectating=false){
  const seat=room.seats.findIndex(p=>p?.id===employeeId),g=room.game;if(seat<0&&!spectating)throw Error('你不在这张牌桌。');
@@ -83,9 +86,9 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  };
  // All mutations (including automatic turns) persist together with money. Restore memory on rollback.
  function mutate(r,fn){const previous=r?structuredClone(r):null,existed=r&&rooms.has(r.id);db.exec('BEGIN IMMEDIATE');try{
-  const result=fn();if(r){wallet.settle(r);r.revision++;r.deadline=r.mode==='solo'&&!r.seats[r.game?.turn]?.bot&&!r.seats[r.game?.turn]?.auto?0:clock()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?400:30000);
+  const result=fn();if(r){wallet.settle(r);if(r.game?.phase==='ended'&&previous?.game?.phase!=='ended')r.seats.forEach(p=>{if(p)p.ready=!!p.bot||p.id===r.host;});r.revision++;r.deadline=r.mode==='solo'&&!r.seats[r.game?.turn]?.bot&&!r.seats[r.game?.turn]?.auto?0:clock()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?400:30000);
    if(!humans(r).length&&!playing(r)){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}else{save(r);rooms.set(r.id,r);}}
-  db.exec('COMMIT');broadcast(r);return result;
+  db.exec('COMMIT');if(r&&existed)reactions.observe(r,previous);broadcast(r);return result;
  }catch(e){db.exec('ROLLBACK');if(r){for(const k of Object.keys(r))delete r[k];Object.assign(r,previous);if(existed)rooms.set(r.id,r);else rooms.delete(r.id);}throw e;}}
  const person=e=>{const p=profileFor.get(e.id)||{};return {id:e.id,name:p.anonymous_name||e.display_name||e.username,avatar:portraitFor(e),ready:true,bot:false,auto:false};};
  const bots=r=>{const names=['方片 07','梅花 12','红桃 03'];r.seats=r.seats.map((p,i)=>p||{id:-i-1,name:names[(i-1+3)%3],avatar:'',bot:true,ready:true,auto:false});};
@@ -97,7 +100,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  }
  const timer=schedule(()=>{reactions.tick(rooms,broadcastReactions);for(const r of rooms.values()){
   if(!playing(r)||!r.deadline||clock()<r.deadline)continue;
-  try{mutate(r,()=>{const p=r.seats[r.game.turn];if(!p.bot)p.auto=true;const seat=r.game.turn,move=botTurn(r.game,p.bot?(r.botLevel||'standard'):'smart');tableAction(r.game,seat,move.action,move);wallet.recordTurn(r,seat,move.action,true);});}
+  try{mutate(r,()=>{const p=r.seats[r.game.turn];if(!p.bot)p.auto=true;const seat=r.game.turn,move=botTurn(r.game,autoplayLevel(r,seat));tableAction(r.game,seat,move.action,move);wallet.recordTurn(r,seat,move.action,true);});}
   catch(e){console.error('Card table:',e.message);r.deadline=clock()+30000;}
  }},350);timer.unref();
  const cleanup=schedule(()=>{for(const r of rooms.values())if(!playing(r)&&clock()-r.updatedAt>86400000){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}},3600000);cleanup.unref();
@@ -167,6 +170,12 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
      if(d.action==='leave')leave(r,actor.id);
      else if(d.action==='auto')r.seats[i].auto=!r.seats[i].auto;
      else if(d.action==='ready'){if(playing(r))throw Error('本局已经开始。');r.seats[i].ready=!r.seats[i].ready;}
+     else if(d.action==='fillBots'){
+      if(r.host!==actor.id)throw Error('只有房主可以添加电脑。');if(playing(r))throw Error('本局尚未结束，不能更换座位。');
+      r.seats=r.seats.map(p=>p?.detached?null:p);
+      if(r.seats.every(Boolean))throw Error('牌桌已经坐满。');
+      bots(r);
+     }
      else if(d.action==='start'){
       if(r.host!==actor.id)throw Error('请等待房主开局。');if(playing(r))throw Error('本局尚未结束。');
       r.seats=r.seats.map(p=>p?.detached?null:p);if(d.fillBots)bots(r);

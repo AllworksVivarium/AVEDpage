@@ -77,7 +77,7 @@ test('solo humans have no deadline; explicitly enabled autoplay advances promptl
  }
 });
 
-test('pure autoplay has no positive return, one manual play qualifies, and entry never cools down',()=>{
+test('autoplay earns normal winnings and bonuses, settlement stays idempotent and entry never cools down',()=>{
  const db=new DatabaseSync(':memory:');try{
   db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT); CREATE TABLE card_auto_limits(employee_id INTEGER PRIMARY KEY,streak INTEGER,cooldown_until INTEGER); INSERT INTO card_auto_limits VALUES(1,99,9999999999999);');
   let credits=0;const deps={db,balanceFor:()=>100000,recordLedger:(_,delta)=>credits+=delta};let wallet=installCardWallet(deps);
@@ -90,11 +90,23 @@ test('pure autoplay has no positive return, one manual play qualifies, and entry
    const before=credits;wallet.settle(r);assert.equal(credits,before,'settlement is idempotent');
    assert.doesNotThrow(()=>wallet.checkEntry(1));return r.money.settlement.players[0];
   }
-  for(let i=0;i<4;i++){const p=finish(false);assert.equal(p.net,0);assert.equal(p.reward,p.stake);assert.equal(p.bonus,0);assert.equal(p.autoOnly,true);}
+  for(let i=0;i<4;i++){const p=finish(false);assert.equal(p.net,300);assert.equal(p.reward,500);assert.equal(p.bonus,100);assert.equal(p.autoOnly,true);}
   const manual=finish(true);assert.equal(manual.reward,500);assert.equal(manual.bonus,100);assert.equal(manual.net,300);assert.equal(manual.autoOnly,false);
-  assert.equal(finish(false,'landlord',true).net,0,'passing alone does not qualify');
+  assert.equal(finish(false,'landlord',true).net,300,'manual participation is not required for normal winnings');
   const loss=finish(false,'farmers');assert.equal(loss.reward,0);assert.equal(loss.net,-200);
-  wallet=installCardWallet(deps);assert.doesNotThrow(()=>wallet.checkEntry(1));assert.equal(finish(false).net,0);
+  wallet=installCardWallet(deps);assert.doesNotThrow(()=>wallet.checkEntry(1));assert.equal(finish(false).net,300);
   assert.equal(db.prepare('SELECT count(*) n FROM game_tickets').get().n,8);
+ }finally{db.close();}
+});
+
+test('an old in-flight round retains its saved autoplay policy rather than rewriting historical payouts',()=>{
+ const db=new DatabaseSync(':memory:');try{
+  db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);');
+  const wallet=installCardWallet({db,balanceFor:()=>100000,recordLedger(){}}),room={id:randomUUID(),size:3,base:100,seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}]};
+  wallet.start(room);const saved={...room.money.rules,autoProfitPolicy:'manual-play-v1'};
+  db.prepare('UPDATE card_money_rounds SET rules_json=? WHERE id=?').run(JSON.stringify(saved),room.money.round);
+  room.game={phase:'ended',landlord:0,winner:'landlord',bid:1,multiplier:1};wallet.settle(room);
+  assert.equal(room.money.settlement.players[0].net,0,'saved legacy policy is authoritative');
+  assert.equal(room.money.settlement.players[0].bonus,0);
  }finally{db.close();}
 });

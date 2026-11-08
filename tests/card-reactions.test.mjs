@@ -3,10 +3,38 @@ import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
-import {chooseReactionReply,createCardReactions} from '../server-card-reactions.mjs';
+import {chooseReactionReply,chooseTableReaction,createCardReactions} from '../server-card-reactions.mjs';
 import {installCardTables} from '../server-card-table.mjs';
 
 function room(){return {id:'table-a',seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}],game:{phase:'playing',landlord:0,hands:[Array(12),Array(2),Array(8)],last:null}};}
+test('all contextual computer reactions stay within the emoji vocabulary, with varied replies and no speech',()=>{
+ const ids=new Set(globalThis.AVEDCardReactionRules.items.map(e=>e.id)),replies=new Set();
+ for(const value of [0,.5,.99])for(const type of ['bomb','pair']){
+  let now=10000;const r=room();r.game.hands[0]=Array(1);r.game.event={id:'one',seat:0,type};
+  const social=createCardReactions({clock:()=>now,random:()=>value});social.observe(r,{game:{phase:'playing',event:{id:'old'}}});now+=1500;social.tick(new Map([[r.id,r]]),()=>{});
+  const events=social.view(r);assert.equal(events.length,1);
+  for(const event of events){assert.ok(ids.has(event.emoji));assert.ok(!('caption' in event));assert.ok(!('text' in event));replies.add(event.emoji);}
+  social.close();
+ }
+ assert.ok(replies.size>=4,'different valid emoji variants are actually selected');
+});
+test('public move reactions are delayed, bounded, private-hand blind and never replay an old round',()=>{
+ let now=10000;const reactions=createCardReactions({clock:()=>now,random:()=>0}),r=room(),rooms=new Map([[r.id,r]]);
+ r.money={round:'one'};r.game.event={id:'bomb1',seat:0,type:'bomb'};
+ r.game.hands=r.game.hands.map(h=>new Proxy({length:h.length},{get:(o,k)=>{if(k!=='length')throw Error('private card access');return o[k];}}));
+ assert.equal(chooseTableReaction(r,{game:{phase:'playing'}},1).emoji,'sweat');
+ reactions.observe(r,{game:{phase:'playing',event:{id:'previous'}}});
+ assert.deepEqual(reactions.view(r),[]);
+ now+=900;reactions.tick(rooms,()=>{});
+ let events=reactions.view(r);assert.equal(events.length,1);assert.equal(events[0].context,true);assert.ok(!('caption' in events[0]),'computer reactions never contain speech');
+ reactions.observe(r,{game:{phase:'playing',event:r.game.event}});
+ r.game.event={id:'bomb2',seat:0,type:'bomb'};reactions.observe(r,{game:{phase:'playing',event:{id:'bomb1'}}});
+ now+=1000;reactions.tick(rooms,()=>{});assert.equal(reactions.view(r).length,1,'rapid public moves do not create a reaction storm');
+ r.game.phase='ended';r.game.winner='landlord';reactions.observe(r,{game:{phase:'playing',event:{id:'bomb1'}}});
+ r.money.round='two';now+=2500;reactions.tick(rooms,()=>{});
+ assert.ok(!reactions.view(r).some(e=>e.emoji==='cry'),'new round suppresses delayed victory/defeat replies');
+ reactions.close();
+});
 test('bot reactions understand public context and repeated praise without reading card values',()=>{
  const r=room();
  assert.equal(chooseReactionReply(r,0,1,'like',1),'smirk');

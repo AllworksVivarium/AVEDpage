@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import './public/card-stakes.js';
 export const cardStakes=globalThis.AVEDCardStakes;
-export const cardMoneyRules=Object.freeze({base:cardStakes.defaultBase,reserve:10000,bonusPercent:25,baseOptions:cardStakes.presets,autoProfitPolicy:'manual-play-v1'});
+export const cardMoneyRules=Object.freeze({base:cardStakes.defaultBase,reserve:10000,bonusPercent:25,baseOptions:cardStakes.presets,autoProfitPolicy:'normal-v2'});
 export function cardSettlement(size,landlord,winner,bid,multiplier,rules=cardMoneyRules){
  const unit=Math.min(rules.base*bid*multiplier,Math.floor(rules.reserve/(size-1)));
  const pot=2*(size-1)*unit,bonus=Math.floor(pot*rules.bonusPercent/100);
@@ -40,6 +40,7 @@ export function installCardWallet({db,balanceFor,recordLedger}){
   const rules=JSON.parse(saved.rules_json),g=room.game,result=cardSettlement(room.size,g.landlord,g.winner,g.bid,g.multiplier,rules);
   const seats=db.prepare('SELECT * FROM card_money_seats WHERE round_id=? ORDER BY seat').all(saved.id);let humanNet=0;
   for(const p of result.players)p.bonus=p.reward?Math.max(0,p.reward-2*p.stake):0;
+  for(const seat of seats)if(seat.employee_id!=null)result.players[seat.seat].autoOnly=!(room.money.participation?.[seat.seat]?.manualPlays>0);
   if(rules.autoProfitPolicy==='manual-play-v1'){
    for(const seat of seats){
     if(seat.employee_id==null)continue;
