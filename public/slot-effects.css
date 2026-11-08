@@ -27,3 +27,20 @@ body.effects-off .slot-moving-strip{animation:none}.slot-award-layer[hidden]{dis
  #inner-app-view .slot-chip-btn[aria-pressed=true]{background:var(--inner-accent)!important;border:1px solid var(--inner-accent)!important;color:var(--inner-accent-text)!important;box-shadow:inset 0 0 0 1px #ffffff35!important}
  #inner-app-view .slot-chip-btn[aria-pressed=false]{background:var(--inner-card-bg)!important;border:1px solid var(--inner-border-soft)!important;color:var(--inner-text-main)!important}
 }
+
+/* Winning lamps are recessed into the existing reel paper, never a new tile. */
+@layer aved-restored-art {
+ #game-panel-slots #slot5x3-grid .slot-cell{position:relative;isolation:isolate;background:linear-gradient(180deg,#ffffff18,#0000000b),var(--matrix-alt)!important;box-shadow:inset 0 2px 5px #0002,inset 0 -1px #fff2!important;transform:none!important}
+ #game-panel-slots #slot5x3-grid .slot-cell.is-winning{background:linear-gradient(180deg,#ead09b22,#cfa14a14),var(--matrix-alt)!important;color:var(--matrix-ink)!important;border-color:#bda467!important;outline:0!important;transform:none!important;box-shadow:inset 0 0 0 2px #d6b56b99,inset 0 2px 5px #0002!important}
+ #game-panel-slots #slot5x3-grid .slot-cell.is-winning:after{content:'';position:absolute;inset:4px;border-top:1px solid #f5e5ae80;border-bottom:1px solid #977b3e40;pointer-events:none;z-index:-1}
+ #game-panel-slots #slot5x3-grid .slot-cell.is-winning .slot-symbol{filter:drop-shadow(0 1px #f6eac8);transform:none!important}
+ #game-panel-slots .slot-reel-overlay .slot-reel-window,#game-panel-slots .slot-roll-symbol{background:var(--matrix-alt)!important;color:var(--matrix-ink)!important;border-color:var(--matrix-line)!important}
+ #game-panel-slots .slot-award-inline{position:relative!important;inset:auto!important;display:block!important;overflow:visible!important;margin:8px 0 0!important;z-index:auto!important}
+ #game-panel-slots .slot-award-inline .slot-award-card{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:3px 14px!important;align-items:center!important;min-width:0!important;max-width:none!important;width:100%!important;padding:10px 32px 10px 12px!important;text-align:left!important;background:linear-gradient(180deg,#ffffff08,#00000012),var(--matrix-screen)!important;color:var(--matrix-screen-ink)!important;border:1px solid #bda46788!important;box-shadow:inset 0 1px #e9d5a444,inset 3px 0 #bda467!important;animation:none!important}
+ #game-panel-slots .slot-award-inline .slot-award-card small{grid-column:1!important;font-size:8px!important;opacity:.55!important}
+ #game-panel-slots .slot-award-inline .slot-award-card strong{grid-column:1!important;margin:0!important;font-size:14px!important;color:#e4cd93!important}
+ #game-panel-slots .slot-award-inline .slot-award-card b{grid-column:2!important;grid-row:1/3!important;font-size:24px!important;color:#ead7a5!important}
+ #game-panel-slots .slot-award-inline .slot-award-card span{grid-column:1/-1!important;font-size:11px!important;letter-spacing:0!important;color:#e2bd9e!important}
+ #game-panel-slots .slot-award-inline[data-tier=overload] .slot-award-card{border-color:#c1896b88!important;box-shadow:inset 0 1px #ddb8a344,inset 3px 0 #b87958!important}
+ #game-panel-slots .slot-award-inline .slot-award-card button{color:inherit!important;background:transparent!important;box-shadow:none!important;border:0!important}
+}

@@ -41,16 +41,14 @@ window.AVEDSlotEffects=function({panel,grid,playSfx=()=>{}}){
   const {cost,prize,penalty=0}=result,profit=prize>cost+penalty,multiplier=cost?prize/cost:0;
   const tier=penalty?'overload':!profit?'return':multiplier>=50?'supreme':multiplier>=10?'jackpot':multiplier>=5?'big':'profit';
   const titles={overload:'回路过载',return:'本局返还',profit:'回路接通',big:'组合大奖',jackpot:'能量爆发',supreme:'极限大奖'};
-  const layer=document.createElement('section');layer.className='slot-award-layer';layer.dataset.tier=tier;layer.setAttribute('data-type-ignore','');
+  const layer=document.createElement('section');layer.className='slot-award-layer slot-award-inline';layer.dataset.tier=tier;layer.setAttribute('data-type-ignore','');
   layer.innerHTML='<div class="slot-award-card" role="status" aria-live="polite"><small>ANOMALY CIRCUIT / RESULT</small><strong>'+titles[tier]+'</strong><b>¤ '+Number(prize).toLocaleString()+'</b>'+(penalty?'<span>额外维修费 ¤ '+penalty.toLocaleString()+'</span>':'')+'<button type="button" aria-label="关闭回路结果">×</button></div>';
   layer.querySelector('button').onclick=clearAward;
   if(motion()&&(profit||penalty)){
-   const count=penalty?20:multiplier>=50?100:multiplier>=10?76:multiplier>=5?52:28;
-   for(let i=0;i<count;i++){const particle=document.createElement('i');particle.className='slot-energy-pixel';const angle=i/count*Math.PI*2,distance=(70+Math.random()*180)*(multiplier>=10?1.3:1);particle.style.cssText=`--px:${Math.cos(angle)*distance}px;--py:${Math.sin(angle)*distance}px;--delay:${Math.random()*450}ms;--color:${penalty?'#eb8875':['#eec66e','#fff4c8','#8ad5ce'][i%3]}`;layer.append(particle);}
    panel.classList.add(penalty?'slot-overloaded':'slot-power-up');
   }
   if(penalty)playSfx('scratch-bomb-3');else if(profit)playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':'scratch-win');
-  panel.querySelector('.slot-machine').append(layer);award=layer;awardTimer=setTimeout(clearAward,penalty?3400:multiplier>=10?5000:profit?3200:1800);
+  const readout=panel.querySelector('.slot-machine-readout');if(readout)readout.after(layer);else panel.querySelector('.slot-machine').append(layer);award=layer;awardTimer=setTimeout(clearAward,penalty?3400:multiplier>=10?5000:profit?3200:1800);
  }
  function check(){if(!visible()){cancel();clearAward();}else if(!motion())cancel();}
  document.addEventListener('visibilitychange',check);document.addEventListener('aved-effects-change',check);reduced.addEventListener('change',check);

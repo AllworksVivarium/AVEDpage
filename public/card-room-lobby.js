@@ -4,7 +4,7 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
  const casino=document.getElementById('view-casino'),home=document.getElementById('game-panel-home'),table=document.getElementById('game-panel-doudizhu');
  const roots=[home,table].map(parent=>{
   const root=document.createElement('section');root.className='card-room-lobby';root.setAttribute('aria-label','智斗太姥联机牌室');
-  root.innerHTML='<header><h3>联机牌室</h3><small data-room-reserve>入座余额 ≥ 10,000</small><div class="card-room-controls"><select data-room-base aria-label="开桌底注"><option value="1000">底注 1,000</option><option value="10000">底注 10,000</option><option value="50000">底注 50,000</option><option value="custom">自定义底注</option></select><input data-room-custom-base type="number" min="100" max="1000000" step="1" inputmode="numeric" value="1000" aria-label="自定义开桌底注" hidden><button type="button" data-room-size="3">开三人桌</button><button type="button" data-room-size="4">开四人桌</button><button type="button" data-room-action="refresh" aria-label="刷新牌桌">刷新</button></div></header><div data-room-current hidden></div><p data-room-status role="status">正在读取牌室…</p><div class="card-room-list" data-room-list></div>';
+  root.innerHTML='<header><h3>联机牌室</h3><small data-room-reserve>入座余额 ≥ 10,000</small><div class="card-room-controls"><select data-room-base aria-label="开桌底注"><option value="1000">底注 1,000</option><option value="10000">底注 10,000</option><option value="50000">底注 50,000</option><option value="custom">自定义底注</option></select><input data-room-custom-base type="number" min="100" max="1000000" step="1" inputmode="numeric" value="1000" aria-label="自定义开桌底注" hidden><button type="button" data-room-size="3">开三人房</button><button type="button" data-room-size="4">开四人房</button><button type="button" data-room-action="refresh" aria-label="刷新牌桌">刷新</button></div></header><div data-room-current hidden></div><p data-room-status role="status">正在读取牌室…</p><div class="card-room-list" data-room-list></div>';
   if(parent===home)document.getElementById('daily-allocation').after(root);else parent.prepend(root);
   return root;
  });
@@ -27,7 +27,7 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
   inflight=(async()=>{try{const data=await api('/api/player/card-table/rooms');if(getUser()?.id!==id)return;current=data.currentRoom;items=data.items;lastFetch=Date.now();status('');}catch(error){status(error.message);}finally{inflight=null;render();}})();render();return inflight;
  }
  async function enter(action,extra){
-  if(busy)return;busy=true;render();status('正在入座…');
+  if(busy)return;busy=true;render();status(action==='create'?'正在创建联机房…':'正在入座…');
   try{if(await cardTable.enter(action,extra)){openTable();status('');}}
   catch(error){status(error.message);}
   finally{busy=false;render();}

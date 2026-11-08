@@ -1,7 +1,18 @@
 const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
-      export function generateSealedTicket(tier, gameTypeObj, seed, random, configuredPayout) {
+export function generateOutcomeTicket(tier,game,seed,random,outcome){
+ const seal=outcome.sealMultiplier||1,base=outcome.baseMultiplier??outcome.multiplier;
+ // Round decimal representation noise before flooring integer currency, then
+ // apply the stamp once. Every printed base amount remains an integer.
+ const payout=Math.floor(tier.cost*base+1e-7)*seal;
+ const ticket=generateSealedTicket(tier,game,seed,random,payout,seal);
+ if(outcome.penaltyMultiplier)applyScratchBomb(ticket,outcome.penaltyMultiplier,random);
+ return ticket;
+}
+      export function generateSealedTicket(tier, gameTypeObj, seed, random, configuredPayout, sealMultiplier=1) {
         const cost = tier.cost;
-        const targetPayout = configuredPayout ?? 0;
+        if(![1,2,3,5].includes(sealMultiplier)||gameTypeObj.type!=='lucky_num'&&sealMultiplier!==1)throw Error('核准倍率无效。');
+        const basePayout=Math.floor((configuredPayout??0)/sealMultiplier);
+        const targetPayout=basePayout*sealMultiplier;
 
         const cells = [];
 
@@ -39,11 +50,11 @@ const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
             if (!luckyNums.includes(n)) luckyNums.push(n);
           }
           luckyNums.forEach(n => cells.push({ role: 'LUCKY', label: `领赏号 #${n}`, sub: '公司核准', isWinPart: false }));
-          cells.push({ role: 'MULT', label: '×1 倍', sub: '核准印', isWinPart: false });
+          cells.push({ role: 'MULT', label: '×'+sealMultiplier+' 倍', sub: '核准印', isWinPart: false });
 
           const playerCells = [];
           if (targetPayout > 0) {
-            playerCells.push({ role: 'PLAYER', label: `#${luckyNums[0]}`, sub: fmtMoney(targetPayout), isWinPart: true });
+            playerCells.push({ role: 'PLAYER', label: `#${luckyNums[0]}`, sub: fmtMoney(basePayout), baseAmount:basePayout, isWinPart: true });
           }
           while (playerCells.length < 9) {
             let n = 11 + Math.floor(random() * 78);
@@ -77,6 +88,7 @@ const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
           tier,
           gameType: gameTypeObj,
           totalPayout: targetPayout,
+          sealMultiplier,basePayout,
           settled: false,
           cells
         };
@@ -88,9 +100,11 @@ export function applyScratchBomb(ticket,penaltyMultiplier,random){
  if(![1,2,4].includes(penaltyMultiplier)||ticket.totalPayout!==0)throw Error('炸弹票据无效。');
  const candidates=ticket.cells.filter(c=>!c.role||['PLAYER','STEP_RIGHT'].includes(c.role));
  const cell=candidates[Math.floor(random()*candidates.length)];
- ticket.penalty=ticket.tier.cost*penaltyMultiplier;
- ticket.bomb={extraMultiplier:penaltyMultiplier,totalLossMultiplier:penaltyMultiplier+1};
- Object.assign(cell,{isBomb:true,label:'💣',sub:'追加扣款 '+fmtMoney(ticket.penalty),isWinPart:false});
+ const seal=ticket.gameType?.type==='lucky_num'?(ticket.sealMultiplier||1):1;
+ if(![1,2,3,5].includes(seal))throw Error('核准倍率无效。');
+ ticket.penalty=ticket.tier.cost*penaltyMultiplier*seal;
+ ticket.bomb={baseMultiplier:penaltyMultiplier,sealMultiplier:seal,extraMultiplier:penaltyMultiplier*seal,totalLossMultiplier:penaltyMultiplier*seal+1};
+ Object.assign(cell,{isBomb:true,label:'💣',sub:'基础扣款 '+fmtMoney(ticket.tier.cost*penaltyMultiplier),baseAmount:ticket.tier.cost*penaltyMultiplier,isWinPart:false});
  return ticket;
 }
 
@@ -99,7 +113,9 @@ export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,g
  return transaction(()=>{
   if(balanceFor(id)<cost)throw new Error('余额不足。');
   const penalty=['scratch','slot'].includes(game)?(result.penalty||0):0;
-  if(!Number.isSafeInteger(penalty)||penalty<0||(penalty&&(game==='slot'?penalty!==cost*2||result.penaltyKind!=='overload':![cost,cost*2,cost*4].includes(penalty)||prize!==0)))throw new Error('炸弹扣款无效。');
+  const seal=result.gameType?.type==='lucky_num'?(result.sealMultiplier||1):1,baseBomb=result.bomb?.baseMultiplier??result.bomb?.extraMultiplier??penalty/(cost*seal);
+  const validScratchBomb=[1,2,3,5].includes(seal)&&[1,2,4].includes(baseBomb)&&penalty===cost*baseBomb*seal;
+  if(!Number.isSafeInteger(penalty)||penalty<0||(penalty&&(game==='slot'?penalty!==cost*2||result.penaltyKind!=='overload':!validScratchBomb||prize!==0)))throw new Error('炸弹扣款无效。');
   if(cost)recordLedger(id,-cost,game+'投入');
   if(penalty)recordLedger(id,-penalty,game==='slot'?'异常回路过载维修费':'刮刮乐炸弹追加扣款');
   if(prize)recordLedger(id,prize,game+'奖金');

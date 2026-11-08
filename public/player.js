@@ -1173,7 +1173,7 @@
             const sym = slot5x3State.board[r][c];
             const isWin = slot5x3State.winningCells.has(`${r}_${c}`);
             html += `
-              <div class="slot-cell h-16 sm:h-18 bg-[#e8e3d5] border-2 ${isWin ? 'is-winning border-[#9e1b1b] ring-2 ring-white scale-[1.02]' : 'border-black'} text-[#141413] flex flex-col items-center justify-center shadow-inner transition">
+              <div class="slot-cell h-16 sm:h-18 bg-[#e8e3d5] border-2 ${isWin ? 'is-winning' : 'border-black'} text-[#141413] flex flex-col items-center justify-center shadow-inner transition">
                 <span class="slot-symbol text-xl sm:text-2xl" aria-hidden="true">${AVEDPixelIcons.render(sym.id)}</span>
                 <span class="slot-symbol-name text-[10px] font-mono-tech font-bold opacity-80 mt-0.5">${sym.name}</span>
               </div>
@@ -1370,43 +1370,7 @@
         if (lobbyView) {
           lobbyView.innerHTML = ['lucky_num','three_match','step_climb'].map(type=>scratchGameTypes.find(g=>g.type===type)).map(g => {
             const topPrize = selectedTier.topPrizes?.[g.type];
-            return `
-              <div class="scratch-ticket-card ${g.cardBg} text-[#141413] border-2 border-[#141413] shadow-md flex flex-col justify-between overflow-hidden" data-ticket-kind="${g.type}">
-                <div>
-                  <div class="scratch-ticket-band h-12 ${g.bgBand} border-b border-[#141413] flex items-center justify-between px-4 font-mono-tech text-xs">
-                    <span>A.V.E.D. RATION</span>
-                    <span class="text-base">${AVEDScratchSymbols.render(g.type)}</span>
-                  </div>
-                  <div class="p-5 space-y-3">
-                    <div>
-                      <div class="scratch-kind-label text-xs font-mono-tech font-bold">${g.sub}</div>
-                      <h4 class="text-xl font-bold font-serif-sc">${g.title}</h4>
-                      <p class="text-xs text-[#57534a]">${g.tagline}</p>
-                    </div>
-
-                    <div class="scratch-ticket-preview" data-preview-kind="${g.type}" aria-hidden="true"><div class="scratch-mini-ticket">${scratchPreview(g)}</div></div>
-
-                    <div class="scratch-ticket-summary flex items-center justify-between text-xs font-mono-tech pt-2 border-t border-[#141413]/20">
-                      <div>
-                        <div class="text-[#57534a]">最高津贴</div>
-                        <div class="scratch-top-prize text-sm font-bold">${Number.isFinite(topPrize)?fmtMoney(topPrize):'待调阅'}</div>
-                      </div>
-                      <div class="text-right">
-                        <div class="text-[#57534a]">刮奖格</div>
-                        <div class="text-sm font-bold">${g.cellsCount} 格</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="p-4 pt-0">
-                  <button type="button" data-pick-game="${g.type}"
-                    class="pick-scratch-game-btn terminal-key w-full py-2.5 border border-[#141413] bg-[#141413] text-white hover:opacity-90 font-mono-tech font-bold text-xs transition cursor-pointer">
-                    申领此票 ${fmtMoney(selectedTier.cost)}
-                  </button>
-                </div>
-              </div>
-            `;
+            return AVEDScratchTicketArt.lobby(g,selectedTier.cost,topPrize);
           }).join('');
 
           lobbyView.querySelectorAll('.pick-scratch-game-btn').forEach(btn => {
@@ -1418,7 +1382,7 @@
         }
       }
 
-      function scratchRulesMarkup(game){return [...game.rules,'四、小概率刮出高危炸弹，请呼叫医疗部支援。'].map(rule=>`<p>${esc(rule)}</p>`).join('');}
+      function scratchRulesMarkup(game){return [...game.rules,'四、0.2% 概率出现炸弹，额外扣除票价的 1 / 2 / 4 倍，可产生负余额。',...(game.type==='lucky_num'?['五、核准印 ×1 / ×2 / ×3 / ×5 概率为 70% / 20% / 8% / 2%；奖金与炸弹追加扣款均乘倍率，票价只计一次。']:[])].map(rule=>`<p>${esc(rule)}</p>`).join('');}
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
         const g = scratchGameTypes.find(x => x.type === gType);
@@ -1462,30 +1426,29 @@
         const ruleGame=scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType;
         document.getElementById('scratch-play-rules-body').innerHTML=scratchRulesMarkup(ruleGame);
         const board = document.getElementById('active-ticket-board-container');
-        const colsClass = tk.gameType.type === 'step_climb' ? 'scratch-step-grid' : tk.gameType.type==='lucky_num'?'scratch-reference-grid':'scratch-match-grid';
+        const colsClass = tk.gameType.type === 'step_climb' ? 'scratch-step-grid sp-step-grid' : tk.gameType.type==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
 
-        board.innerHTML = `
+        board.innerHTML = AVEDScratchTicketArt.board(tk, `
           <div class="grid ${colsClass} gap-3">
             ${tk.cells.map(c => {
-              const groupBreak=tk.gameType.type==='lucky_num'&&c.idx===4?'</div><div class="grid scratch-prize-grid">':'';
+              const groupBreak=tk.gameType.type==='lucky_num'&&c.idx===4?'</div><div class="grid scratch-prize-grid sp-nums">':'';
               if (!c.revealed) {
                 return `
                   ${groupBreak}<button type="button" data-scratch-cell="${c.idx}"
-                    class="scratch-cell-foil h-20 flex flex-col items-center justify-center p-2 text-center">
-                    <span class="text-xs font-mono-tech font-bold text-[#141413]">待揭晓 ${c.idx + 1}</span>
-                    <span class="text-[10px] text-[#141413]/70 mt-0.5">点击刮开</span>
+                    class="scratch-cell-foil sp-cell sp-covered ${tk.gameType.type==='lucky_num'&&c.idx===3?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center">
+                    <span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${tk.gameType.type==='lucky_num'&&c.idx===3?'核准倍率':'刮开好运'}</b></span>
                   </button>
                 `;
               }
               return `
-                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell ${c.isBomb ? 'is-bomb' : ''} h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
+                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${tk.gameType.type==='lucky_num'&&c.idx===3?'sp-seal':''} ${c.isBomb ? 'is-bomb' : ''} h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
                   <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div>
                   <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div>
                 </div>
               `;
             }).join('')}
           </div>
-        `;
+        `);
 
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){

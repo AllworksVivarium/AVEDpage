@@ -6,7 +6,7 @@ const reel=[2,2,3,4,5,6].flatMap((n,i)=>Array(n).fill(slotSymbols[i]));
 // A separate, disclosed partial return only when no line/protocol paid.
 // No stake-dependent or account-dependent probability adjustments.
 export const slotPartialReturns=[.05,.1,.15,.2,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75];
-export const slotRules={symbols:slotSymbols,partialReturnMin:.05,partialReturnMax:.75,emptyReturnChance:.05,overloadChance:.005,overloadMultiplier:2};
+export const slotRules={symbols:slotSymbols,partialReturnMin:.05,partialReturnMax:.75,emptyReturnChance:.05,overloadChance:.0075,overloadMultiplier:2};
 
 export function spinSlot(cost,random){
  const board=Array.from({length:3},()=>Array.from({length:5},()=>reel[Math.floor(random()*reel.length)]));

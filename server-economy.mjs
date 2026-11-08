@@ -5,29 +5,38 @@ import {slotRules} from './server-slot.mjs';
 
 export function proofRandom(){const seed=randomBytes(32).toString('hex');let counter=0;return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296};}
 export function weighted(items,random){const sum=items.reduce((s,x)=>s+x.weight,0);let n=random()*sum;for(const item of items){n-=item.weight;if(n<0)return item;}return items.at(-1);}
-export const expectedReturn=items=>items.reduce((s,x)=>s+x.weight*(x.multiplier-(x.penaltyMultiplier||0)),0)/items.reduce((s,x)=>s+x.weight,0);
+export const expectedReturn=items=>items.reduce((s,x)=>s+x.weight*(x.multiplier-(x.penaltyMultiplier||0)*(x.sealMultiplier||1)),0)/items.reduce((s,x)=>s+x.weight,0);
 export const scratchPrizeMultipliers=Object.fromEntries(scratchTiers.map(t=>[t.id,[5,10,20,30,50,100]]));
 export const MAX_RETURN_PERCENT=150;
-// Independent draws: 60% profit, 0.1% bombs, effective RTP 120% after extra deductions.
+// Independent draws: 0.2% bombs; lucky seals multiply both payouts and extra deductions, effective RTP 120% after extra deductions.
 // Bomb multiplier is the EXTRA deduction; total loss also includes the paid stake.
-export function returnRatePool(percent,tierId='t1'){
- if(!Number.isFinite(percent)||percent<0||percent>MAX_RETURN_PERCENT)throw Error('返还率应为 0% 至 150%。');
+export function returnRatePool(percent,tierId='t1',type='three_match'){
+ const sealMean=1.44,nominal=percent;
+ if(type==='lucky_num')percent/=sealMean;
+ if(!Number.isFinite(nominal)||nominal<0||nominal>MAX_RETURN_PERCENT)throw Error('返还率应为 0% 至 150%。');
  if(!scratchPrizeMultipliers[tierId])throw Error('票种编号无效。');
  const rows=[[.03,3],[.05,3],[.08,3],[.14,3],[.26,5],[.38,5],[.55,5],[.72,5],[.9,4.9],[1.05,15.76],[1.12,15],[1.2,7.54],[1.68,10],[2.2,5],[2.8,3],[4,1],[5,1.8],[10,.6],[20,.2],[30,.08],[50,.015],[100,.005]];
  const scale=Math.min(percent/120,1);
  const pool=rows.map(([multiplier,p])=>({multiplier,weight:Math.round(p*1000000*scale)}));
  if(percent>120)pool.at(-1).weight+=Math.round((percent-120)/100/100*1e8);
- pool.push(...[[1,.095],[2,.0045],[4,.0005]].map(([penaltyMultiplier,p])=>({multiplier:0,penaltyMultiplier,weight:Math.round(p*1000000*scale)})));
+ pool.push(...[[1,.19],[2,.009],[4,.001]].map(([penaltyMultiplier,p])=>({multiplier:0,penaltyMultiplier,weight:Math.round(p*1000000*(nominal>0?1:0))})));
  if(percent<.01){for(const x of pool)x.weight=0;pool[0].weight=Math.round(percent/100*1e8/.03);}
- const correction=Math.round((percent/100*1e8-pool.reduce((s,x)=>s+(x.multiplier-(x.penaltyMultiplier||0))*x.weight,0))/.03);
- pool[0].weight+=correction;
- return [{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
+ // Make room for the extra bombs, then transfer probability between two
+ // ordinary awards. Total probability stays fixed; the net RTP includes fees.
+ const overflow=Math.max(0,pool.reduce((n,x)=>n+x.weight,0)-1e8);pool[0].weight-=overflow;
+ const missing=percent/100*1e8-pool.reduce((n,x)=>n+(x.multiplier-(x.penaltyMultiplier||0))*x.weight,0);
+ const lowCorrection=Math.round(missing/.03),available=1e8-pool.reduce((n,x)=>n+x.weight,0);
+ if(lowCorrection<=available&&pool[0].weight+lowCorrection>=0)pool[0].weight+=lowCorrection;
+ else{const correction=Math.round(missing/(1.05-.03));pool[0].weight-=correction;pool.find(x=>x.multiplier===1.05).weight+=correction;}
+ const base=[{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
+ if(type!=='lucky_num')return base;
+ return base.flatMap(x=>[[1,70],[2,20],[3,8],[5,2]].map(([sealMultiplier,weight])=>({...x,baseMultiplier:x.multiplier,multiplier:x.multiplier*sealMultiplier,sealMultiplier,weight:x.weight*weight})));
 }
-export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id)]))})),sky:skyRules()};}
-function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>32)throw Error('奖池需包含 2 至 32 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(![1,2,4].includes(x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
+export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id,g.type)]))})),sky:skyRules()};}
+function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>128)throw Error('奖池需包含 2 至 128 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>10000000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(![1,2,4].includes(x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
 export function validateEconomy(c){
  if(!c||!Array.isArray(c.scratch)||c.scratch.length!==scratchTiers.length)throw Error('票种配置不完整。');
- for(const tier of c.scratch){tier.name='刮刮乐';if(tier.returnPercent===undefined){for(const g of scratchGameTypes)checkPool(tier.variants?.[g.type]);tier.returnPercent=Object.values(tier.variants).reduce((sum,p)=>sum+expectedReturn(p),0)/Object.keys(tier.variants).length*100;}const p=returnRatePool(tier.returnPercent,tier.id);tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,p.map(x=>({...x}))]));}
+ for(const tier of c.scratch){tier.name='刮刮乐';if(tier.returnPercent===undefined){for(const g of scratchGameTypes)checkPool(tier.variants?.[g.type]);tier.returnPercent=Object.values(tier.variants).reduce((sum,p)=>sum+expectedReturn(p),0)/Object.keys(tier.variants).length*100;}tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(tier.returnPercent,tier.id,g.type)]));}
  for(const t of scratchTiers){const matches=c.scratch.filter(x=>x.id===t.id);if(matches.length!==1)throw Error('票种编号无效。');const x=matches[0];if(!Number.isSafeInteger(x.cost)||x.cost<100||x.cost>1000000||typeof x.name!=='string'||!x.name.trim()||x.name.length>32)throw Error('票价应为 100 至 1,000,000，名称最多 32 字。');for(const g of scratchGameTypes)checkPool(x.variants?.[g.type]);}
  if(c.scratch.some(t=>t.returnPercent!==c.scratch[0].returnPercent))throw Error('所有票价档必须使用同一返还率。');
  const s=c.sky;if(s&&s.lossFraction!==1)throw Error('越过安全线固定损失全部本金，不能修改。');if(!s||!Number.isInteger(s.boardingSeconds)||s.boardingSeconds<10||s.boardingSeconds>120||!Number.isFinite(s.speed)||s.speed<10||s.speed>100||!Array.isArray(s.ranges)||s.ranges.length<1||s.ranges.length>20)throw Error('空投参数无效。');let sum=0;for(const x of s.ranges){if(!Number.isInteger(x.min)||!Number.isInteger(x.max)||x.min<100||x.max>x.min+2000||x.max>2000||x.max<x.min||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>100000000)throw Error('安全线须在 100 至 2,000 米，权重为非负整数。');sum+=x.weight;}if(!sum)throw Error('安全线总权重必须大于零。');
@@ -55,7 +64,7 @@ export function installEconomy({db,send,readBody,requireAdmin,requireEmployee,ba
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='tiered-scratch-prizes-v2'").get()){
   db.exec('BEGIN IMMEDIATE');try{
    const c=JSON.parse(db.prepare('SELECT config_json FROM economy_config WHERE id=1').get().config_json);
-   for(const tier of c.scratch){const p=returnRatePool(tier.returnPercent,tier.id);tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,p.map(x=>({...x}))]));}
+   for(const tier of c.scratch){tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(tier.returnPercent,tier.id,g.type)]));}
    db.prepare('UPDATE economy_config SET config_json=?,revision=revision+1 WHERE id=1').run(JSON.stringify(c));
    db.prepare("INSERT INTO economy_migrations VALUES('tiered-scratch-prizes-v2')").run();db.exec('COMMIT');
   }catch(e){db.exec('ROLLBACK');throw e;}

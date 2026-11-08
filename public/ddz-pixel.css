@@ -271,3 +271,8 @@ body.effects-off #game-panel-doudizhu *{animation:none!important;transition:none
 @keyframes ddz-smoke-drift{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}20%{opacity:.6}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(2)}}
 #game-panel-doudizhu[data-feedback-motion=off] .ddz-blast{display:none!important}
 @media(prefers-reduced-motion:reduce){#game-panel-doudizhu .ddz-blast{display:none!important}}
+
+#game-panel-doudizhu:not([data-card-phase=idle]) .ddz-entry{display:none}
+#game-panel-doudizhu:not([data-card-phase=idle]) .ddz-menu{grid-template-columns:repeat(3,minmax(0,1fr))}
+#game-panel-doudizhu .ddz-ready-clock{display:block;color:#efc66e;font:700 11px/1.6 monospace!important;margin-top:3px}
+#game-panel-doudizhu .ddz-ready-clock.is-urgent{color:#ffb28a}

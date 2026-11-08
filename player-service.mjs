@@ -10,7 +10,7 @@ import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './server-content.mjs';
-import { generateSealedTicket, applyScratchBomb, settleGameTicket } from './server-ticket.mjs';
+import { generateOutcomeTicket, settleGameTicket } from './server-ticket.mjs';
 
 export const DERBY_ODDS=derbyRules.map(r=>r.odds);
 export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
@@ -297,7 +297,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         if(data.requestKey){const previous=settledScratch(id,data.requestKey);if(previous){if(previous.result.tier.id!==data.tier||previous.result.gameType.type!==data.type||previous.cost!==data.cost)throw new Error('票据请求不匹配。');send(res,200,previous);return true;}}
 
         const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
-        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateSealedTicket(tier,game,proof.seed,proof.random,Math.floor(tier.cost*outcome.multiplier));if(outcome.penaltyMultiplier)applyScratchBomb(ticket,outcome.penaltyMultiplier,proof.random);if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=scratchPrizeMultipliers[rule.id].includes(outcome.multiplier);
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateOutcomeTicket(tier,game,proof.seed,proof.random,outcome);if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=outcome.multiplier>=5;
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {

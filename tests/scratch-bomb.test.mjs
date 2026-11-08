@@ -7,15 +7,14 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {DatabaseSync} from 'node:sqlite';
 const rng=()=>{let seed=1234567;return()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return(seed>>>0)/4294967296;};};
-test('agreed distribution is exactly 60% profit, 0.1% bombs, 120% effective RTP across every tier and variant',()=>{
- for(const tier of defaultEconomy().scratch)for(const pool of Object.values(tier.variants)){
-  assert.equal(pool.reduce((s,x)=>s+x.weight,0),1e8);
-  assert.equal(pool.filter(x=>x.multiplier>1).reduce((s,x)=>s+x.weight,0),60000000);
-  assert.equal(pool[0].weight,3000000);
-  assert.ok(Math.abs(expectedReturn(pool)-1.2)<1e-12);
-  assert.deepEqual(pool.filter(x=>x.penaltyMultiplier).map(x=>[x.penaltyMultiplier,x.weight]),[[1,95000],[2,4500],[4,500]]);
-  assert.ok(Math.abs(pool.reduce((s,x)=>s+x.multiplier*x.weight,0)/1e8-1.20106)<1e-12);
-  let cumulative=0;for(const item of pool){assert.equal(weighted(pool,()=> (cumulative+item.weight/2)/1e8),item);cumulative+=item.weight;}
+test('all tiers keep 0.2% bombs and 120% effective RTP including lucky seal deductions',()=>{
+ for(const tier of defaultEconomy().scratch)for(const [type,pool] of Object.entries(tier.variants)){
+  const total=pool.reduce((s,x)=>s+x.weight,0);assert.ok(pool.every(x=>x.weight>=0&&Number.isSafeInteger(x.weight)));
+  assert.ok(Math.abs(expectedReturn(pool)-1.2)<1e-8);
+  assert.equal(pool.filter(x=>x.penaltyMultiplier).reduce((s,x)=>s+x.weight,0)/total,.002);
+  for(const [mult,chance] of [[1,.0019],[2,.00009],[4,.00001]])assert.ok(Math.abs(pool.filter(x=>x.penaltyMultiplier===mult).reduce((s,x)=>s+x.weight,0)/total-chance)<1e-12);
+  if(type==='lucky_num')for(const [m,p] of [[1,.7],[2,.2],[3,.08],[5,.02]])assert.equal(pool.filter(x=>x.sealMultiplier===m).reduce((s,x)=>s+x.weight,0)/total,p);
+  let cumulative=0;for(const item of pool){if(item.weight)assert.equal(weighted(pool,()=> (cumulative+item.weight/2)/total),item);cumulative+=item.weight;}
  }
 });
 test('all three ticket types display one bomb in an actionable cell, zero prize, and total loss capped at five stakes',()=>{

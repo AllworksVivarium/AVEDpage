@@ -45,7 +45,8 @@ test('online players confirm readiness again after settlement; only the host sta
   Object.assign(saved.game,{phase:'playing',turn:0,landlord:0,bid:1,multiplier:1,last:null});saved.game.hands[0]=[{id:999,val:3,label:'3',suit:'♠'}];saved.game.plays[1]=1;
   db.prepare('UPDATE card_table_rooms SET state_json=?').run(JSON.stringify(saved));service=installCardTables(deps);
   const ended=await act(1,'play',{cards:[999]});assert.equal(ended.status,200);r=ended.data.room;
-  assert.equal(r.phase,'ended');assert.deepEqual(r.seats.map(p=>p.ready),[true,false,false]);
+  assert.equal(r.phase,'ended');assert.deepEqual(r.seats.map(p=>p.ready),[false,false,false]);
+  assert.equal((await act(1,'ready')).status,200);
   assert.equal((await act(1,'start')).status,400);assert.equal((await act(2,'ready')).status,200);assert.equal((await act(1,'start')).status,400);
   assert.equal((await act(3,'ready')).status,200);assert.equal((await act(2,'start')).status,400);
   assert.equal((await call(1)).data.room.phase,'ended','readiness never auto-starts');
