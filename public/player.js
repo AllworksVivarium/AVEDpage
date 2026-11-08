@@ -592,10 +592,7 @@
               <div class="grid grid-cols-2 gap-3 items-center pt-1">
                 <div class="border border-[var(--inner-border)] p-2 bg-black/5 flex flex-col items-center">
                   <div data-emp-photo-slot="${emp.id}" class="w-20 h-24 bg-[#9e1b1b] flex flex-col items-center justify-end relative overflow-hidden border border-black">
-                    ${emp.avatarUrl?`<img src="${esc(emp.avatarUrl)}" alt="员工证件照" class="w-full h-full object-cover">`:`<svg viewBox="0 0 100 120" class="w-full h-full">
-                      <circle cx="50" cy="42" r="20" fill="#181715" />
-                      <path d="M16,120 C16,82 84,82 84,120 Z" fill="#181715" />
-                    </svg>`}
+                    ${emp.avatarUrl?`<img src="${esc(emp.avatarUrl)}" alt="员工证件照" class="w-full h-full object-cover">`:'<span class="avatar-noinfo">NOINFO</span>'}
                     <span class="absolute bottom-1 text-[10px] font-mono-tech text-white/90 tracking-widest bg-black/60 px-1.5">员工档案</span>
                   </div>
                   <div class="text-sm font-bold mt-2 font-serif-sc">${emp.name}</div>
@@ -1794,7 +1791,7 @@
         renderForumMain(th);forumReplies.open(th.id);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
-      function forumAuthor(item){const name=item.anonymousName||'未登记代号',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author">${real?`<span class="forum-author-avatar">${item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:esc(Array.from(name)[0])}</span>`:''}<b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}</span>`;}
+      function forumAuthor(item){const name=item.anonymousName||'未登记代号',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author">${real?`<span class="forum-author-avatar">${item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}</span>`:''}<b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}</span>`;}
 
       async function refreshForum(){
         const selected=currentForumThreadId,d=await api('/api/player/forum');
@@ -1846,9 +1843,9 @@
           }else if(id.endsWith('chat-form')){
             const room=id==='skydive-chat-form'?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
           }else if(id==='cloud-profile-form'){
-            const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');
-            if(file?.size){if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
-            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});showToast('个人资料已保存。');renderProfile();
+            const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
+            if(file?.size){avatarPreset='';if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
+            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});showToast('个人资料已保存。');renderProfile();
           }
         });
       },true);

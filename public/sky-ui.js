@@ -4,7 +4,6 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
  // HUD has fixed pixel metrics; exclude it from the prose typography classifier.
  panel.dataset.typeIgnore='';
  panel.innerHTML=`
- <header class="flight-masthead"><div><span class="section-kicker">AVED / AIRBORNE OPERATIONS</span><h2>直升机速降 <small>FREEFALL</small></h2></div><span id="flight-link" role="status">正在接通</span></header>
  <div class="flight-layout"><section class="flight-console">
  <div class="flight-topline"><span id="skydive-flight-no-label">FLIGHT / —</span><span id="flight-phase">BOARDING</span></div>
  <div class="flight-scene" id="flight-scene"><canvas id="flight-pixel-canvas" aria-label="共享架次的直升机、乘员与降落场景"></canvas><div id="flight-nameplates" aria-hidden="true"></div>
@@ -29,7 +28,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
  function feedback(value){const el=byId('flight-feedback');controlText(el,value);el.hidden=false;clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{el.hidden=true;},1400);}
  const money=n=>'¤ '+Number(n).toLocaleString(),motion=()=>window.AVEDEffectsEnabled?.()!==false&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
  const visible=()=>!!getUser()&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!panel.classList.contains('hidden');
- const avatar=p=>p.avatar?`<img src="${esc(p.avatar)}" alt="" loading="lazy">`:`<span>${esc((p.alias||'员').slice(0,1))}</span>`;
+ const avatar=p=>p.avatar?`<img src="${esc(p.avatar)}" alt="" loading="lazy">`:'<small class="avatar-noinfo">NOINFO</small>';
  const resultText=p=>window.AVEDGameResults?AVEDGameResults.text({...p,cancelled:p.status==='cancelled'}):'返还 '+money(p.prize);
  const scene=window.AVEDSkyScene(byId('flight-pixel-canvas'),byId('flight-nameplates'));
  const ticks=Array.from({length:11},()=>{const el=document.createElement('span');byId('flight-ticks').append(el);return el;});
@@ -45,7 +44,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
   if(!getUser()||state&&(next.round<state.round||next.round===state.round&&next.serverTime<state.serverTime))return;
   if(state?.round!==next.round){lastSignature='';scene.reset();}sounds(next);state=next;receivedAt=performance.now();if(getUser()?.balance!==next.balance)onBalance(next.balance);
   setText(byId('skydive-flight-no-label'),'FLIGHT / '+String(next.round).padStart(5,'0'));setText(byId('flight-phase'),({BOARDING:'登机中 / BOARDING',DROPPING:'自由落体 / FREEFALL',LANDING:'安全线已揭晓 / REVEALED'})[next.phase]);
-  setText(byId('flight-current-wait'),next.boardingSeconds);setText(byId('flight-current-speed'),next.speed);setText(byId('flight-curve-description'),next.payoutRules?.curve==='bell-v1'?'前段允许亏本开伞，约 215 米回本；越往后奖金增长越快，最高返还 50 倍。安全线每场独立抽取，少量架次会很早结束。':'本架次按旧规则结算：返还＝投入 × 深度 ÷ '+(next.breakEvenDepth||200)+'，含本金。');
+  setText(byId('flight-current-wait'),next.boardingSeconds);setText(byId('flight-current-speed'),next.speed);setText(byId('flight-curve-description'),next.payoutRules?.curve==='bell-v2'?'前段允许亏本开伞，约 215 米回本；风险越高返还倍率越高，不设倍率上限。安全线每场独立抽取，少量架次会很早结束。':next.payoutRules?.curve==='bell-v1'?'本架次按旧规则结算，返还最高 50 倍；下一架次使用新的无上限曲线。':'本架次按旧规则结算：返还＝投入 × 深度 ÷ '+(next.breakEvenDepth||200)+'，含本金。');
   const sig=JSON.stringify([next.phase,next.passengers]);if(sig!==lastSignature){lastSignature=sig;setText(byId('skydive-passenger-stats'),`本班 ${next.passengers.length} 人 · ${next.passengers.filter(p=>p.status==='landed').length} 人开伞`);
    byId('skydive-passengers-list').innerHTML=next.passengers.map(p=>`<article class="flight-passenger ${p.id===Number(getUser()?.id)?'is-self':''}" data-passenger="${p.id}" data-status="${p.status}"><div class="flight-avatar">${avatar(p)}</div><div><b>${esc(p.alias||'员工')}${p.id===Number(getUser()?.id)?' <em>你</em>':''}</b><small>${statusText(p)}</small></div><strong>${p.status==='aboard'?money(p.cost):esc(resultText(p))}</strong></article>`).join('')||'<p class="flight-empty">机舱还很安静。<br>登机后，你的头像会出现在座位上。</p>';
   }
@@ -56,7 +55,8 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
  function paint(){raf=0;if(!active||!visible())return;const t=performance.now();if(motion()&&t-lastFrame<32){schedule();return;}lastFrame=t;if(!state){scene.preview();return;}const age=t-receivedAt,fresh=age<3000;
   const now=Math.min(clockOffset==null?state.serverTime+age:t+clockOffset,state.serverTime+2500),d=state.phase==='DROPPING'?Math.min(2000,100+Math.max(0,now-state.departAt)*state.speed/1000):state.depth,boarding=state.phase==='BOARDING',self=state.self;
   setText(byId('skydive-center-main-num'),boarding?Math.max(0,(state.departAt-now)/1000).toFixed(1)+' s':Math.floor(d)+' m');setText(byId('flight-depth-small'),Math.floor(d));ticks.forEach((el,i)=>{const value=(Math.floor(d/50)-5+i)*50;el.hidden=value<100;setText(el,value);el.style.top=(50+(value-d)*.25)+'%';});
-  setText(byId('flight-multiplier'),boarding?'等待舱门开启':self?.status==='landed'?'已锁定 '+window.AVEDSkyRules.multiplier(self.depth,state.payoutRules||state).toFixed(2)+' ×':'返还 '+window.AVEDSkyRules.multiplier(d,state.payoutRules||state).toFixed(2)+' ×');
+  const currentMultiplier=window.AVEDSkyRules.multiplier(self?.status==='landed'?self.depth:d,state.payoutRules||state);
+  setText(byId('flight-multiplier'),boarding?'等待舱门开启':self?.status==='landed'?'已锁定 '+currentMultiplier.toFixed(2)+' ×':state.phase==='LANDING'?'安全线已揭晓':currentMultiplier>0?'返还 '+currentMultiplier.toFixed(2)+' ×':'等待结算');
   setText(byId('skydive-center-subtitle'),boarding?'舱门关闭倒计时':state.phase==='LANDING'?'本班安全线已揭晓':'共同下降深度 / DESCENT');setText(byId('skydive-center-subinfo'),state.phase==='LANDING'?'':'随机安全线 · 尚未揭晓');
   const board=byId('skydive-board-btn'),jump=byId('skydive-open-chute-btn');board.hidden=!boarding;jump.hidden=boarding;board.disabled=!fresh||!!self||!!board.dataset.busy;controlText(board,!fresh?'同步中':self?'已登机':board.dataset.busy?'登机中':'登机');
   jump.disabled=!fresh||state.phase!=='DROPPING'||self?.status!=='aboard'||!!jump.dataset.busy;controlText(jump,!fresh?'同步中':jump.dataset.busy?'开伞中':!self?'旁观中':self.status==='landed'?'已开伞':self.status==='crashed'?'已坠落':'开伞');byId('skydive-bet-input').disabled=!!board.dataset.busy;for(const id of ['flight-double','flight-quintuple'])byId(id).disabled=byId('skydive-bet-input').disabled;
@@ -66,8 +66,8 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
   scene.paint(state,now,d,motion(),Number(getUser()?.id));paintRadio(t);schedule();
  }
  function schedule(){if(active&&!raf)raf=motion()?requestAnimationFrame(paint):setTimeout(paint,100);}
- async function poll(){if(!visible()||polling)return;polling=true;lastPoll=performance.now();try{const sent=performance.now(),next=await api('/api/player/games/sky/current'),arrived=performance.now(),rtt=arrived-sent;if(rtt<=bestRtt*1.5+20){bestRtt=Math.min(bestRtt,rtt);clockOffset=next.serverTime+rtt/2-arrived;}render(next);setText(byId('flight-link'),'● 联机 '+Math.round(rtt)+' ms');}catch(e){setText(byId('flight-link'),'正在重接');}finally{polling=false;}}
- function ensure(){active=visible();if(!active){source?.close();source=null;connected=false;queue=[];for(const b of bullets)b.remove();bullets.clear();return;}schedule();if(!source){source=new EventSource('/api/player/games/sky/stream');source.onopen=()=>{connected=true;setText(byId('flight-link'),'● 实时联机');};source.onmessage=e=>{lastPoll=performance.now();try{render(JSON.parse(e.data));}catch(error){console.warn('Flight update:',error);}};source.onerror=()=>{connected=false;setText(byId('flight-link'),'正在重接');};}if(clockOffset==null||performance.now()-lastPoll>(connected?15000:5000))poll();}
+ async function poll(){if(!visible()||polling)return;polling=true;lastPoll=performance.now();try{const sent=performance.now(),next=await api('/api/player/games/sky/current'),arrived=performance.now(),rtt=arrived-sent;if(rtt<=bestRtt*1.5+20){bestRtt=Math.min(bestRtt,rtt);clockOffset=next.serverTime+rtt/2-arrived;}render(next);}catch{}finally{polling=false;}}
+ function ensure(){active=visible();if(!active){source?.close();source=null;connected=false;queue=[];for(const b of bullets)b.remove();bullets.clear();return;}schedule();if(!source){source=new EventSource('/api/player/games/sky/stream');source.onopen=()=>{connected=true;};source.onmessage=e=>{lastPoll=performance.now();try{render(JSON.parse(e.data));}catch(error){console.warn('Flight update:',error);}};source.onerror=()=>{connected=false;};}if(clockOffset==null||performance.now()-lastPoll>(connected?15000:5000))poll();}
  for(const [id,factor] of [['flight-double',2],['flight-quintuple',5]])byId(id).onclick=()=>{const input=byId('skydive-bet-input');if(input.disabled)return;try{const result=window.AVEDSkyUI.scaleBet(input.value,factor);input.value=String(result.value);input.dispatchEvent(new Event('input',{bubbles:true}));if(result.capped)showToast('登机投入上限为 1,000,000');}catch(error){showToast(error.message);}};
  byId('flight-danmaku-toggle').onclick=e=>{danmakuOn=!danmakuOn;e.currentTarget.textContent='弹幕 '+(danmakuOn?'开':'关');e.currentTarget.setAttribute('aria-pressed',String(danmakuOn));if(!danmakuOn){queue=[];for(const b of bullets)b.remove();bullets.clear();}};
  // React immediately when the existing panel becomes visible; no polling delay before first paint.

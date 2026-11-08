@@ -1,6 +1,7 @@
-import {mediaReference} from './server-media.mjs';
+import {storedAvatar,installAvatarPresets} from './server-default-avatar.mjs';
 
 export function installForumSocialSchema(db){
+ installAvatarPresets(db);
  db.exec(`CREATE TABLE IF NOT EXISTS forum_personas(id INTEGER PRIMARY KEY,name TEXT NOT NULL UNIQUE COLLATE NOCASE,created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
  CREATE TABLE IF NOT EXISTS forum_notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,reply_id INTEGER NOT NULL REFERENCES forum_replies(id) ON DELETE CASCADE,thread_id INTEGER NOT NULL,UNIQUE(employee_id,reply_id));
  CREATE INDEX IF NOT EXISTS forum_notifications_inbox ON forum_notifications(employee_id,thread_id,id);
@@ -24,9 +25,9 @@ export function installForumSocialSchema(db){
 export const forumNameSQL=a=>`CASE WHEN ${a}.persona_id IS NOT NULL THEN (SELECT name FROM forum_personas WHERE id=${a}.persona_id) WHEN ${a}.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=${a}.employee_id) ELSE (SELECT anonymous_name FROM profiles WHERE employee_id=${a}.employee_id) END`;
 export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_url FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarData,
- CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN ${a}.employee_id ELSE NULL END AS avatarId,
+ CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN ${a}.employee_id ELSE NULL END AS avatarId,CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_preset FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarPreset,
  CASE WHEN ${a}.persona_id IS NULL THEN (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=${a}.employee_id) ELSE NULL END AS balance`;
-export function mapForumAuthor(row){const {avatarData,avatarId,...rest}=row;return {...rest,avatarUrl:avatarId?mediaReference('avatar',avatarId,avatarData,64):''};}
+export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,...rest}=row;return {...rest,avatarUrl:avatarId?storedAvatar(avatarId,avatarData,avatarPreset,64):''};}
 
 export function installForumSocial(db){
  installForumSocialSchema(db);

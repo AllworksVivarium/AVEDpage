@@ -1,6 +1,8 @@
 import {proofRandom} from './server-economy.mjs';
-import {createHmac} from 'node:crypto';
-import {animalRules,animalPlan,animalFrame,animalReturn} from './server-animal-race.mjs';
+import {createHmac,randomInt} from 'node:crypto';
+import {mediaReference} from './server-media.mjs';
+import {robotAvatar} from './server-default-avatar.mjs';
+import {animalRules,animalPlan,animalFrame,animalMotion,animalReturn} from './server-animal-race.mjs';
 
 const legacyRunners=[{id:0,name:'铁蹄',odds:2.2,weight:.44},{id:1,name:'夜行',odds:3.5,weight:.28},{id:2,name:'白噪',odds:5,weight:.17},{id:3,name:'红移',odds:8.5,weight:.11}];
 export const runners=legacyRunners.map((r,i)=>({...r,odds:[2.2,3.4,5.54,8.5][i]}));
@@ -11,12 +13,32 @@ export function derbyReturn(cost,runner,winner,random,config={runners,partialRet
  return Math.floor(cost*[5,10,15][Math.min(2,Math.floor((roll-.05)/.95*3))]/100);
 }
 const raceRules=race=>race.rules_json?JSON.parse(race.rules_json):{runners:legacyRunners,partialReturns:false};
-export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights}) {
+export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots}) {
  db.exec(`CREATE TABLE IF NOT EXISTS derby_races(id INTEGER PRIMARY KEY,start_at INTEGER NOT NULL,finish_at INTEGER NOT NULL,next_at INTEGER NOT NULL,winner INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,settled INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS derby_bets(race_id INTEGER REFERENCES derby_races(id),employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,runner INTEGER NOT NULL,cost INTEGER NOT NULL,prize INTEGER NOT NULL DEFAULT 0,settled INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(race_id,employee_id));`);
  if(!db.prepare('PRAGMA table_info(derby_races)').all().some(c=>c.name==='rules_json'))db.exec("ALTER TABLE derby_races ADD COLUMN rules_json TEXT NOT NULL DEFAULT ''");
  db.exec(`CREATE TABLE IF NOT EXISTS derby_wagers(race_id INTEGER NOT NULL REFERENCES derby_races(id),employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,market TEXT NOT NULL CHECK(market IN ('first','last')),runner INTEGER NOT NULL CHECK(runner BETWEEN 0 AND 4),cost INTEGER NOT NULL,prize INTEGER NOT NULL DEFAULT 0,settled INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(race_id,employee_id,market));
  CREATE INDEX IF NOT EXISTS derby_wagers_pending ON derby_wagers(race_id) WHERE settled=0;`);
+ const hasProfiles=!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='profiles'").get();
+ db.exec('CREATE TABLE IF NOT EXISTS derby_robot_checks(race_id INTEGER PRIMARY KEY)');
+ function robotBets(race){
+  if(!companyRobots||Date.now()>=race.start_at||raceRules(race).version!==2||db.prepare('SELECT 1 FROM derby_robot_checks WHERE race_id=?').get(race.id))return;
+  tx(()=>{
+   if(db.prepare('SELECT 1 FROM derby_robot_checks WHERE race_id=?').get(race.id))return;
+   db.prepare('INSERT INTO derby_robot_checks VALUES(?)').run(race.id);
+   const candidates=companyRobots.list().filter(p=>p.balance>=100),count=Math.min(candidates.length,randomInt(2,5));
+   for(let i=0;i<count;i++){
+    const [robot]=candidates.splice(randomInt(candidates.length),1),market=randomInt(2)?'first':'last',runner=randomInt(5),cost=100;
+    if(balanceFor(robot.id)<cost)continue;
+    recordLedger(robot.id,-cost,'下班竞速投入 #'+race.id+' 机器人陪玩');
+    db.prepare('INSERT INTO derby_wagers(race_id,employee_id,market,runner,cost) VALUES(?,?,?,?,?)').run(race.id,robot.id,market,runner,cost);
+   }
+  });
+ }
+ function supporters(race){
+  if(!hasProfiles||raceRules(race).version!==2)return [];
+  return db.prepare("SELECT w.employee_id AS id,w.market,w.runner,p.anonymous_name AS name,p.avatar_url AS avatar FROM derby_wagers w LEFT JOIN profiles p ON p.employee_id=w.employee_id WHERE w.race_id=? ORDER BY w.employee_id,w.market").all(race.id).map(p=>({...p,name:p.name||'员工 '+p.id,avatar:p.avatar?mediaReference('avatar',p.id,p.avatar,64):robotAvatar(p.id)}));
+ }
  let cachedSeed,cachedPlan;
  const planFor=race=>{if(cachedSeed!==race.seed){cachedSeed=race.seed;cachedPlan=animalPlan(race.seed);}return cachedPlan;};
  const wagersTable=race=>raceRules(race).version===2?'derby_wagers':'derby_bets';
@@ -45,13 +67,15 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
  }
  const streams=new Set();
  function sharedSnapshot(race) {
+  if(streams.size)robotBets(race);
   const now=Date.now(),phase=now<race.start_at?'BETTING':now<race.finish_at?'RACING':'RESULT',t=Math.max(0,Math.min(1,(now-race.start_at)/(race.finish_at-race.start_at))),config=raceRules(race);
   if(config.version===2){
    const plan=planFor(race),elapsed=(now-race.start_at)*25000/(race.finish_at-race.start_at),lookahead=phase==='RACING'?Math.min(now+1000,race.finish_at):now;
+   const motion=animalMotion(plan,elapsed,(lookahead-race.start_at)*25000/(race.finish_at-race.start_at));
    const frame=animalFrame(plan,elapsed),next=animalFrame(plan,(lookahead-race.start_at)*25000/(race.finish_at-race.start_at));
-   return {round:race.id,version:2,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,frameAt:lookahead,seedHash:race.seed_hash,
+   return {supporters:supporters(race),round:race.id,version:2,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,frameAt:lookahead,seedHash:race.seed_hash,
     ...(race.settled?{seed:race.seed,winner:plan.order[0],last:plan.order.at(-1),order:plan.order}:{}),partialReturns:false,returnPercent:config.returnPercent||102,winProbabilities:[.2,.2,.2,.2,.2],
-    runners:config.runners.map(({weight,...r})=>({...r,odds:(config.returnPercent||102)/20,...frame[r.id],place:frame[r.id].progress>=100?plan.order.indexOf(r.id)+1:null,nextProgress:next[r.id].progress,nextPose:next[r.id].pose,nextBoxProgress:next[r.id].boxProgress})),
+    runners:config.runners.map(({weight,...r})=>({...r,odds:(config.returnPercent||102)/20,...frame[r.id],motion:motion[r.id].map(p=>({...p,at:race.start_at+p.at*(race.finish_at-race.start_at)/25000})),place:frame[r.id].progress>=100?plan.order.indexOf(r.id)+1:null,nextProgress:next[r.id].progress,nextPose:next[r.id].pose,nextBoxProgress:next[r.id].boxProgress})),
     entrants:db.prepare('SELECT COUNT(DISTINCT employee_id) AS n FROM derby_wagers WHERE race_id=?').get(race.id).n};
   }
   // Deterministic, shared trajectories. Never disclose the seed or future winner while betting/racing.
@@ -59,7 +83,8 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
   const history=db.prepare('SELECT id,winner,seed,seed_hash AS seedHash FROM derby_races WHERE settled=1 ORDER BY id DESC LIMIT 6').all();
   return {round:race.id,phase,serverTime:now,startAt:race.start_at,finishAt:race.finish_at,nextAt:race.next_at,seedHash:race.seed_hash,...(race.settled?{seed:race.seed,winner:race.winner}:{}),partialReturns:config.partialReturns,winProbabilities:config.runners.map(x=>x.weight),runners:config.runners.map(({weight,...x})=>({...x,progress:progress[x.id]})),entrants:db.prepare('SELECT COUNT(*) AS n FROM derby_bets WHERE race_id=?').get(race.id).n,history};
  }
- function snapshot(id,race=current(),shared=sharedSnapshot(race)){
+ function snapshot(id,race=current(),shared=null){
+  if(!shared){robotBets(race);shared=sharedSnapshot(race);shared.supporters=supporters(race);}
   const modern=shared.version===2,bets=modern?db.prepare('SELECT market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? AND employee_id=? ORDER BY market').all(race.id,id):[];
   const self=modern?(bets.find(b=>b.market==='first')||bets[0]||null):db.prepare('SELECT runner,cost,prize,settled FROM derby_bets WHERE race_id=? AND employee_id=?').get(race.id,id)||null;
   return {...shared,self,bets:modern?bets:self?[{...self,market:'first'}]:[],balance:balanceFor(id),gameHighlight:highlights.roundEvent(id,'derby',race.id)};

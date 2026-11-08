@@ -7,15 +7,17 @@ window.AVEDSkyScene=function(canvas,labelLayer){
  let displayWidth=1,displayHeight=1;
  new ResizeObserver(entries=>{const box=entries[0].contentRect;displayWidth=Math.max(1,box.width);displayHeight=Math.max(1,box.height);}).observe(canvas);
  const ease=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
- function nameplate(p,x,y){visibleLabels.add(p.id);let el=labels.get(p.id);if(!el){el=document.createElement('span');el.className='flight-nameplate';labels.set(p.id,el);labelLayer.append(el);}if(el.textContent!==p.alias)el.textContent=p.alias||'员工';if(el.hidden)el.hidden=false;el.style.transform='translate3d('+(x*displayWidth/w)+'px,'+(y*displayHeight/h)+'px,0) translateX(-50%)';}
+ // Functional labels use normal DOM text, independent of the enlarged pixel art.
+ function label(key,value,x,y,className='flight-nameplate'){visibleLabels.add(key);let el=labels.get(key);if(!el){el=document.createElement('span');el.className=className;labels.set(key,el);labelLayer.append(el);}if(el.textContent!==value)el.textContent=value;if(el.hidden)el.hidden=false;el.style.transform='translate3d('+(x*displayWidth/w)+'px,'+(y*displayHeight/h)+'px,0) translateX(-50%)';}
+ function nameplate(p,x,y){label(p.id,p.alias||'员工',x,y+13);}
  const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t;
  const colors=['#f4c88a','#a5d8c3','#cca8e5','#91c7e0','#f2a094','#c8d78b'];
  function rect(x,y,ww,hh,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.ceil(ww),Math.ceil(hh));}
  function text(s,x,y,color='#fff0d2',size=7,align='center'){c.font=`${size}px monospace`;c.textAlign=align;c.fillStyle=color;c.fillText(s,Math.round(x),Math.round(y));}
  function avatar(p,x,y,size){
   rect(x-1,y-1,size+2,size+2,'#172d3d');const color=colors[p.id%colors.length];rect(x,y,size,size,color);
-  if(p.avatar){let im=images.get(p.avatar);if(!im){im=new Image();im.src=p.avatar;images.set(p.avatar,im);}if(im.complete&&im.naturalWidth)c.drawImage(im,Math.round(x),Math.round(y),size,size);else text((p.alias||'员').slice(0,1),x+size/2,y+size*.78,'#243645',size*.7);}
-  else{text((p.alias||'员').slice(0,1),x+size/2,y+size*.78,'#243645',size*.7);}
+  if(p.avatar){let im=images.get(p.avatar);if(!im){im=new Image();im.src=p.avatar;images.set(p.avatar,im);}if(im.complete&&im.naturalWidth)c.drawImage(im,Math.round(x),Math.round(y),size,size);else text('NOINFO',x+size/2,y+size*.62,'#243645',Math.max(2,size*.19));}
+  else{text('NOINFO',x+size/2,y+size*.62,'#243645',Math.max(2,size*.19));}
  }
  function cloud(x,y,size,alpha){c.save();c.globalAlpha=alpha;rect(x,y+4,size,6,'#fff0df');rect(x+size*.2,y,size*.35,13,'#fff0df');rect(x+size*.58,y+2,size*.22,9,'#fff0df');rect(x+4,y+10,size-8,3,'#dac9d6');c.restore();}
  function helicopter(x,y,scale,passengers,time,animated){
@@ -41,8 +43,8 @@ window.AVEDSkyScene=function(canvas,labelLayer){
    c.strokeStyle='#e9ddc6';c.lineWidth=1;c.beginPath();c.moveTo(-17,-25);c.lineTo(-3,-7);c.moveTo(17,-25);c.lineTo(3,-7);c.moveTo(-7,-25);c.lineTo(-1,-7);c.moveTo(7,-25);c.lineTo(1,-7);c.stroke();c.restore();
   }
   avatar(p,-8,-8,16);
-  if(self){c.strokeStyle='#ffcd7f';c.strokeRect(-10,-10,20,20);text('▼ YOU',0,chute&&!grounded?-48:-17,'#ffdc8a',6);}
-  nameplate(p,x,y+13);
+  if(self){c.strokeStyle='#ffcd7f';c.strokeRect(-10,-10,20,20);label('ui:self','▼ YOU',x,y+(chute&&!grounded?-56:-25),'flight-scene-label flight-scene-label-self');}
+  nameplate(p,x,y);
   c.restore();
  }
  function ground(t){
@@ -108,7 +110,7 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   const selected=[...state.passengers];if(selected.length>24){const own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];}
   if(board){
    const s=Math.min(1.1,(w-38)/220),x=(w-220*s)/2+14,y=h*.52-50*s+(animated?Math.sin(t/700)*2:0);helicopter(x,y,s,state.passengers.slice(0,8),t,animated);
-   text(selected.length+' PASSENGERS / 8 VISIBLE SEATS',w*.56,h*.89,'#e9ddcf',5);
+   label('ui:passengers',selected.length+' PASSENGERS / 8 VISIBLE SEATS',w*.56,h*.89-7,'flight-scene-label flight-scene-label-manifest');
   }else{
    const departElapsed=now-state.departAt;
    const heliScale=Math.min(1.1,(w-38)/220),heliX=(w-220*heliScale)/2+14,heliY=h*.52-50*heliScale;
@@ -123,10 +125,10 @@ window.AVEDSkyScene=function(canvas,labelLayer){
     }else if(p.status==='crashed'){
      const age=now-p.settledAt,k=clamp(age/650);y=mix(startY,h-36,k*k);
      if(k<1){rect(x-1,y-34,2,18,'#edab7e');person(p,x,y,false,p.id===selfId,t,animated);}
-     else if(age<1750){for(let n=0;n<7;n++){const spread=Math.max(0,(age-650)/1000);rect(x+(n-3)*spread*7,h-30-Math.sin(n+1)*spread*10,3,3,n%2?'#dfae87':'#a08170');}text('LOST',x,h-38,'#f2a48e',6);}
+     else if(age<1750){for(let n=0;n<7;n++){const spread=Math.max(0,(age-650)/1000);rect(x+(n-3)*spread*7,h-30-Math.sin(n+1)*spread*10,3,3,n%2?'#dfae87':'#a08170');}label('ui:lost:'+p.id,'LOST',x,h-45,'flight-scene-label flight-scene-label-lost');}
     }else if(p.status==='aboard'){const entering=ease((departElapsed-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale;person(p,mix(seatX,x,entering),mix(seatY,startY,entering)+bob*entering,false,p.id===selfId,t,animated);}
    }
-   if(selected.length>24)text('+'+(selected.length-24)+' / SEE MANIFEST',w*.6,h-9,'#d6dcce',6);
+   if(selected.length>24)label('ui:more','+'+(selected.length-24)+' / SEE MANIFEST',w*.6,h-16,'flight-scene-label');
   }
  }
  return {preview(){paint({phase:'BOARDING',departAt:Date.now(),passengers:[]},Date.now(),100,false,0);},paint:(...args)=>{paint(...args);for(const [id,el] of labels){const hidden=!visibleLabels.has(id);if(el.hidden!==hidden)el.hidden=hidden;}},reset(){if(images.size>128)images.clear();for(const el of labels.values())el.remove();labels.clear();}};

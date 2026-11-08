@@ -25,7 +25,7 @@
     },
     comments(items) {
       return items.map(item => `<article class="notice-comment inner-card-alt">
-        <header class="notice-comment-heading"><div class="notice-comment-identity"><span class="notice-comment-author">${escape(item.displayName)}</span><span class="notice-comment-department">${escape([...new Set([/^公司直属(?:部|领导)?$/.test(item.department||'')&&item.positionTitle?'':item.department,item.positionTitle].filter(Boolean))].join(' '))}</span></div>${time(item.createdAt, 'relative-clock')}</header>
+        <header class="notice-comment-heading"><span class="notice-comment-avatar">${item.avatarUrl?`<img src="${escape(item.avatarUrl)}" width="32" height="32" loading="lazy" decoding="async" alt="">`:'<small class="avatar-noinfo">NOINFO</small>'}</span><div class="notice-comment-identity"><span class="notice-comment-author">${escape(item.displayName)}</span><span class="notice-real-badge">实名</span><span class="notice-comment-department">${escape([...new Set([/^公司直属(?:部|领导)?$/.test(item.department||'')&&item.positionTitle?'':item.department,item.positionTitle].filter(Boolean))].join(' '))}</span></div>${time(item.createdAt, 'relative-clock')}</header>
         <div class="notice-comment-body terminal-prose">${paragraphs(escape(item.body))}</div>
       </article>`).join('') || '<p class="notice-empty">暂无留言。</p>';
     }

@@ -8,6 +8,8 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
  const notice='暂无好彩消息';
  text.textContent=notice;strip.dataset.outcome='notice';
  const names={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'下班竞速',cards:'智斗太姥'};
+ const isBomb=x=>x.game==='scratch'&&Number(x.penalty)>0;
+ const eligible=x=>x.game!=='derby'&&Object.hasOwn(names,x.game)&&(isBomb(x)||Number(x.cost)>0&&Number(x.prize)>=Number(x.cost)*5);
  let items=[],pending=[],cursor=0,busy=false,shownUntil=0,offset=0,lastFetch=-Infinity,loopIndex=0,geometry='';
  const timestamp=x=>Date.parse(x.createdAt.includes('T')?x.createdAt:x.createdAt.replace(' ','T')+'Z');
  function fit(restart=false){
@@ -21,7 +23,7 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
  }
  function paint(){
   const now=Date.now()+offset;fit();if(now<shownUntil)return;
-  items=items.filter(x=>now-timestamp(x)<1800000);pending=pending.filter(x=>items.some(item=>item.ticketId===x.ticketId));
+  items=items.filter(x=>eligible(x)&&now-timestamp(x)<1800000);pending=pending.filter(x=>items.some(item=>item.ticketId===x.ticketId));
   let item=pending.shift();
   if(item)loopIndex=items.findIndex(x=>x.ticketId===item.ticketId)+1;
   else if(items.length){item=items[loopIndex%items.length];loopIndex=(loopIndex+1)%items.length;}
@@ -29,9 +31,9 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
   if(text.textContent){const outgoing=document.createElement('div');outgoing.className='aved-jackpot-outgoing';outgoing.dataset.outcome=strip.dataset.outcome;const copy=document.createElement('span');copy.textContent=text.textContent;copy.style.transform='translateX('+(text.style.getPropertyValue('--ticker-end')||'0px')+')';outgoing.append(copy);viewport.append(outgoing);setTimeout(()=>outgoing.remove(),350);}
   strip.hidden=false;
   if(item){
-   const bomb=item.penalty>0;
+   const bomb=isBomb(item),event=bomb?'开出炸弹':Number((item.prize/item.cost).toFixed(2))+'倍大奖';
    strip.dataset.outcome=bomb?'bomb':'award';
-   text.textContent=`${item.alias} · ${names[item.game]||'游戏'} · ${bomb?'−':'+'}¤ ${Number(bomb?item.penalty:item.prize).toLocaleString()}`;
+   text.textContent=`${item.alias} · ${names[item.game]||'游戏'} · ${event} · ${bomb?'−':'+'}¤ ${Number(bomb?item.penalty:item.prize).toLocaleString()}`;
   }else{strip.dataset.outcome='notice';text.textContent=notice;}
   text.title=text.textContent;row.classList.remove('aved-jackpot-message');text.classList.remove('is-overflowing');viewport.scrollLeft=0;void row.offsetWidth;fit(true);row.classList.add('aved-jackpot-message');
  }
@@ -39,7 +41,7 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
   if(busy||document.hidden||!enabled()||Date.now()-lastFetch<29000)return;
   busy=true;lastFetch=Date.now();
   try{const data=await api('/api/player/game-highlights?after='+cursor);offset=(data.serverTime||Date.now())-Date.now();const merged=new Map(items.map(x=>[x.ticketId,x]));
-   for(const x of data.items){if(!merged.has(x.ticketId))pending.push(x);merged.set(x.ticketId,x);cursor=Math.max(cursor,x.ticketId);}
+   for(const x of data.items){cursor=Math.max(cursor,x.ticketId);if(!eligible(x))continue;if(!merged.has(x.ticketId))pending.push(x);merged.set(x.ticketId,x);}
    items=[...merged.values()];paint();
   }catch{}finally{busy=false;}
  }

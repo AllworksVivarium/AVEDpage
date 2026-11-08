@@ -26,7 +26,7 @@ test('four real sessions, SSE privacy, duplicate/stale actions, reconnect and ca
  let created=await action(cookies[0],{action:'create',size:4});assert.equal(created.status,200);const roomId=created.data.room.id;
  let directory=(await req(cookies[1],'/api/player/card-table/rooms')).data;
  assert.equal(directory.currentRoom,null);assert.equal(directory.items.length,1);
- assert.deepEqual(directory.items[0],{id:roomId,size:4,players:1,hostName:'匿名员工-2',phase:'waiting',canJoin:true,updatedAt:directory.items[0].updatedAt});
+ assert.deepEqual(directory.items[0],{id:roomId,size:4,players:1,hostName:'匿名员工-2',phase:'waiting',base:1000,spectators:0,canWatch:true,canJoin:true,updatedAt:directory.items[0].updatedAt});
  assert.equal((await action(cookies[1],{action:'join',code:roomId})).status,400,'manual room-code matching is retired');
  assert.equal((await action(cookies[1],{action:'join',roomId:'not-a-listed-table'})).status,400);
  db=new DatabaseSync(join(folder,'wanyehui.db'));db.prepare("INSERT INTO balance_ledger(employee_id,delta,reason) SELECT id,20000,'test card funds' FROM employees WHERE username='card-admin'").run();

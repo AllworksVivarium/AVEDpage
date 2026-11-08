@@ -1,3 +1,5 @@
+import {installAvatarPresets,storedAvatar,avatarPresets} from './server-default-avatar.mjs';
+import {installRadioRetention} from './server-radio-retention.mjs';
 import {installCompanyRobots} from './server-company-robots.mjs';
 import {announcementPublicationTime} from './server-announcement-time.mjs';
 import {installGameHighlights} from './server-game-highlights.mjs';
@@ -249,8 +251,8 @@ const secureRoll = (seedHex, range) => {
   throw new Error('random generation failed');
 };
 const publicProfile = employeeId => {
-  const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:mediaReference('avatar',employeeId,profile.avatarUrl),...prefs,appearance:appearance.snapshot(employeeId) };
+  const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl,avatar_preset AS avatarPreset FROM profiles WHERE employee_id=?').get(employeeId) || {};
+  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:storedAvatar(employeeId,profile.avatarUrl,profile.avatarPreset,256),avatarPreset:profile.avatarUrl?'':profile.avatarPreset||'',...prefs,appearance:appearance.snapshot(employeeId) };
 };
 const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
 const appearance=installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger});
@@ -262,6 +264,7 @@ const adminMutation = (req, res) => {
   }
   return true;
 };
+installAvatarPresets(db);
 let economy,personal,highlights;
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
@@ -270,9 +273,10 @@ const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,record
 highlights=installGameHighlights({db,send,requireEmployee});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
-const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
+const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots});
 const originalMusic=installOriginalMusic({db,requireEmployee});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
+const radioRetention=installRadioRetention(db);
 const media=installMedia({db,send,requireEmployee});
 const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
@@ -359,18 +363,21 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/profile' && req.method === 'PUT') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const {anonymousName,bio,avatarUrl}=await readBody(req,2500000);
+      const {anonymousName,bio,avatarUrl,avatarPreset}=await readBody(req,2500000);
       if(typeof anonymousName!=='string'||anonymousName.trim().length<1||anonymousName.trim().length>32||typeof bio!=='string'||bio.length>500) return send(res,400,{error:'请填写匿名名称（最多 32 字），简介最多 500 字。'});
-      const previousAvatar=db.prepare('SELECT avatar_url FROM profiles WHERE employee_id=?').get(employee.id)?.avatar_url||'';
-      let avatar=avatarUrl===undefined?previousAvatar:'';
+      if(avatarUrl!==undefined&&typeof avatarUrl!=='string')return send(res,400,{error:'头像资料无效。'});
+      const previous=db.prepare('SELECT avatar_url,avatar_preset FROM profiles WHERE employee_id=?').get(employee.id)||{};
+      if(avatarPreset!==undefined&&avatarPreset!==''&&!avatarPresets.includes(avatarPreset))return send(res,400,{error:'请选择有效的默认头像底色。'});
+      const previousAvatar=previous.avatar_url||'';let preset=avatarPreset===undefined?previous.avatar_preset||'':avatarPreset,avatar=avatarUrl===undefined?previousAvatar:'';if(avatarPreset)preset=avatarPreset,avatar='';
       if(typeof avatarUrl==='string'&&avatarUrl.trim()) {
-        if(avatarUrl===mediaReference('avatar',employee.id,previousAvatar))avatar=previousAvatar;
-        else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) {try{avatar=await normalizeAvatar(avatarUrl);}catch{return send(res,400,{error:'头像无法读取，请使用 1.5 MB 以内的有效图片。'});}}
-        else { try { const parsed=new URL(avatarUrl); if(parsed.protocol!=='https:'||parsed.href.length>1000) throw new Error(); avatar=parsed.href; } catch { return send(res,400,{error:'头像请使用 PNG/JPG/WEBP 图片，或填写有效的 HTTPS 图片链接。'}); } }
+        if(avatarUrl===storedAvatar(employee.id,previousAvatar,previous.avatar_preset,256))avatar=avatarPreset? '':previousAvatar;
+        else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarUrl)&&avatarUrl.length<=2200000) {try{avatar=await normalizeAvatar(avatarUrl);preset='';}catch{return send(res,400,{error:'头像无法读取，请使用 1.5 MB 以内的有效图片。'});}}
+        else { try { const parsed=new URL(avatarUrl); if(parsed.protocol!=='https:'||parsed.href.length>1000) throw new Error(); avatar=parsed.href;preset=''; } catch { return send(res,400,{error:'头像请使用 PNG/JPG/WEBP 图片，或填写有效的 HTTPS 图片链接。'}); } }
       }
-      db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)
-        ON CONFLICT(employee_id) DO UPDATE SET anonymous_name=excluded.anonymous_name,bio=excluded.bio,avatar_url=excluded.avatar_url,updated_at=CURRENT_TIMESTAMP`)
-        .run(employee.id,anonymousName.trim(),bio.trim(),avatar);
+      if(avatarUrl===''&&avatarPreset===undefined)preset='';
+      db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,avatar_preset,updated_at) VALUES(?,?,?,?,?,CURRENT_TIMESTAMP)
+        ON CONFLICT(employee_id) DO UPDATE SET anonymous_name=excluded.anonymous_name,bio=excluded.bio,avatar_url=excluded.avatar_url,avatar_preset=excluded.avatar_preset,updated_at=CURRENT_TIMESTAMP`)
+        .run(employee.id,anonymousName.trim(),bio.trim(),avatar,preset);
       return send(res,200,{profile:publicProfile(employee.id)});
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
@@ -740,6 +747,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   }
 });
 
+server.on('close',()=>radioRetention.close());
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 server.listen(port,host,() => console.log(`万业携生收容公司服务已启动：${host}:${port}`));

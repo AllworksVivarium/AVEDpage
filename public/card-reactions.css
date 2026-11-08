@@ -1,0 +1,25 @@
+@layer aved-personal {
+ #game-panel-doudizhu .ddz-reaction-bar{display:flex;align-items:center;gap:8px;margin:9px 0 4px;min-width:0}
+ #game-panel-doudizhu .ddz-reaction-bar[hidden]{display:none!important}
+ #game-panel-doudizhu .ddz-reaction-bar>[role=group]{display:flex;gap:5px;flex:none}
+ #game-panel-doudizhu .ddz-reaction-bar button{display:grid;place-items:center;box-sizing:border-box;width:34px!important;height:32px!important;min-height:32px!important;padding:2px!important;border:1px solid var(--ddz-rim)!important;border-radius:2px!important;background:var(--ddz-dark)!important;color:var(--ddz-ink)!important;font:22px/1 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif!important;box-shadow:0 2px 0 #071c17!important;cursor:pointer;touch-action:manipulation}
+ #game-panel-doudizhu .ddz-reaction-bar button:hover{filter:brightness(1.2)}
+ #game-panel-doudizhu .ddz-reaction-bar button:active{transform:translateY(2px);box-shadow:none!important}
+ #game-panel-doudizhu .ddz-reaction-bar button:focus-visible{outline:2px solid var(--ddz-ink);outline-offset:2px}
+ #game-panel-doudizhu .ddz-reaction-bar button:disabled{opacity:.65;cursor:default}
+ #game-panel-doudizhu .ddz-reaction-status{min-width:0;font-size:10px!important;line-height:1.4!important;color:var(--ddz-ink)}
+ #game-panel-doudizhu .ddz-reaction-layer{position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden}
+ #game-panel-doudizhu :is(.ddz-reaction-flight,.ddz-reaction-bubble){position:absolute;display:flex;align-items:center;justify-content:center;gap:5px;pointer-events:none;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif!important;will-change:transform,opacity}
+ #game-panel-doudizhu .ddz-reaction-flight{width:40px;height:42px;padding:0;border:0;background:none;box-shadow:none;animation:ddz-reaction-toss 4.4s both}
+ #game-panel-doudizhu .ddz-reaction-flight .ddz-avatar{position:absolute;right:-1px;bottom:0;width:14px!important;height:14px!important;min-width:14px!important;border:1px solid #e9dfbf!important;border-radius:50%!important;overflow:hidden;box-shadow:0 1px 3px #071c1788}
+ #game-panel-doudizhu .ddz-reaction-flight .ddz-avatar>b{font-size:9px!important;line-height:1!important}
+ #game-panel-doudizhu .ddz-reaction-glyph{font-size:32px!important;line-height:1!important;font-weight:400!important;filter:drop-shadow(0 2px 2px #071c1755)}
+ #game-panel-doudizhu .ddz-reaction-bubble{width:39px;height:34px;border:2px solid #304d3e;border-radius:8px;background:#f0e6c6;color:#172d24;box-shadow:2px 3px 0 #071c1744;font-size:25px!important;line-height:1!important;animation:ddz-reaction-answer 4.4s both}
+ #game-panel-doudizhu .ddz-reaction-bubble::after{content:'';position:absolute;bottom:-6px;left:8px;width:7px;height:7px;background:#f0e6c6;border-right:2px solid #304d3e;border-bottom:2px solid #304d3e;transform:skewY(35deg)}
+ @keyframes ddz-reaction-toss{0%{opacity:0;transform:translate(-50%,18px) scale(.45)}9%{opacity:1;transform:translate(-50%,-32px) scale(1.12) rotate(-9deg)}28%{opacity:1;transform:translate(calc(-50% + var(--reaction-drift)),var(--reaction-rise)) scale(1) rotate(7deg)}47%{opacity:1;transform:translate(calc(-50% - var(--reaction-drift)),calc(var(--reaction-rise) + 12px)) rotate(-5deg)}72%{opacity:1;transform:translate(calc(-50% + var(--reaction-drift)),calc(var(--reaction-rise) - 8px)) rotate(3deg)}100%{opacity:0;transform:translate(-50%,calc(var(--reaction-rise) - 45px)) scale(.85)}}
+ @keyframes ddz-reaction-answer{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}10%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}18%,82%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-65%) scale(.9)}}
+ #game-panel-doudizhu .ddz-reaction-layer[data-motion=off] :is(.ddz-reaction-flight,.ddz-reaction-bubble){animation-name:ddz-reaction-still}
+ @keyframes ddz-reaction-still{0%,85%{opacity:1;transform:translate(-50%,-100%)}100%{opacity:0;transform:translate(-50%,-100%)}}
+ @media(prefers-reduced-motion:reduce){#game-panel-doudizhu .ddz-reaction-flight{animation-name:ddz-reaction-still}#game-panel-doudizhu .ddz-reaction-bubble{animation-name:ddz-reaction-still}}
+ @media(max-width:360px){#game-panel-doudizhu .ddz-reaction-bar{flex-wrap:wrap}#game-panel-doudizhu .ddz-reaction-bar>[role=group]{gap:4px}#game-panel-doudizhu .ddz-reaction-bar button{width:31px!important}}
+}

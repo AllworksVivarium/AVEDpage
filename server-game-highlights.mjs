@@ -49,7 +49,7 @@ export function installGameHighlights({db,send,requireEmployee}) {
    INSERT INTO economy_migrations VALUES('highlights-five-times-v2');COMMIT;`);
  }
  const best="NEW.prize>COALESCE((SELECT MAX(prize) FROM game_personal_records WHERE employee_id=NEW.employee_id AND game=NEW.game),0)";
- const rare='NEW.cost>0 AND NEW.prize>=NEW.cost*5';
+ const rare="NEW.game<>'derby' AND NEW.cost>0 AND NEW.prize>=NEW.cost*5";
  db.exec('DROP TRIGGER IF EXISTS game_highlights_settled');
  db.exec(`CREATE TRIGGER IF NOT EXISTS game_highlights_settled AFTER INSERT ON game_tickets
   WHEN NEW.game IN ('scratch','slot','sky','derby','cards') AND NEW.prize>0
@@ -74,7 +74,7 @@ export function installGameHighlights({db,send,requireEmployee}) {
   const game=url.searchParams.get('game');
   if(game&&!['scratch','slot','sky','derby','cards'].includes(game)){send(res,400,{error:'无效玩法。'});return true;}
   const after=Number(url.searchParams.get('after')||0);if(!Number.isSafeInteger(after)||after<0){send(res,400,{error:'无效记录游标。'});return true;}
-  const rows=db.prepare(`SELECT ${columns} FROM game_highlights WHERE broadcast=1 AND cost>0 AND (prize>=cost*5 OR penalty>0) AND created_at>=datetime('now','-30 minutes') AND ticket_id>? ${game?'AND game=?':''} ORDER BY ticket_id ASC`).all(...(game?[after,game]:[after]));
+  const rows=db.prepare(`SELECT ${columns} FROM game_highlights WHERE broadcast=1 AND game<>'derby' AND ((cost>0 AND prize>=cost*5) OR (game='scratch' AND penalty>0)) AND created_at>=datetime('now','-30 minutes') AND ticket_id>? ${game?'AND game=?':''} ORDER BY ticket_id ASC`).all(...(game?[after,game]:[after]));
   send(res,200,{serverTime:Date.now(),items:rows.map(({employeeId,personalBest,...row})=>row)});return true;
  }};
 }

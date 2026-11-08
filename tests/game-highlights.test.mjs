@@ -22,6 +22,8 @@ test('records and announcements follow committed settlements, exclude refunds, a
  const sky=insert(1,'sky',10000,60000,{flight:7});assert.equal(service.roundEvent(1,'sky',7).ticketId,sky);assert.equal(service.roundEvent(2,'sky',7),null);
  const firstRace=insert(1,'derby',1000,8500,{round:8});insert(1,'derby',1000,6250,{round:8});assert.equal(service.roundEvent(1,'derby',8).ticketId,firstRace,'a smaller second bet must not hide the record');insert(1,'cards',0,20000,{round:9});
  const overload=insert(2,'slot',1000,2000,{penalty:2000});assert.equal(service.event(2,overload).penalty,2000);
+ // Even an old, incorrectly flagged repair fee must not leak into the ticker.
+ db.prepare('UPDATE game_highlights SET broadcast=1 WHERE ticket_id=?').run(overload);
  insert(1,'sky',999999,999999,{cancelled:true});insert(1,'unknown',0,999999);
  assert.equal(service.records(1).highest.prize,60000);assert.equal(service.records(1).byGame.length,5);
  db.exec('BEGIN');insert(1,'slot',1000,900000);db.exec('ROLLBACK');assert.equal(service.records(1).highest.prize,60000);
@@ -29,6 +31,9 @@ test('records and announcements follow committed settlements, exclude refunds, a
  await service.handle({method:'GET',user:{id:2}},null,new URL('http://local/api/player/game-highlights'));
  assert.ok(reply.data.items.every(x=>x.cost>0&&x.prize>=x.cost*5));
  assert.equal(reply.status,200);assert.ok(reply.data.items.some(x=>x.ticketId===win));assert.ok(reply.data.items.every(x=>!('employeeId' in x)&&!('personalBest' in x)&&x.prize>x.cost));
+ assert.ok(!reply.data.items.some(x=>x.ticketId===overload));
+ assert.ok(!reply.data.items.some(x=>x.game==='derby'),'race awards stay personal and are never broadcast');
+ assert.equal(service.event(1,firstRace).broadcast,0);assert.equal(service.event(1,firstRace).personalBest,1);
  db.prepare("UPDATE game_highlights SET created_at=datetime('now','-31 minutes') WHERE ticket_id=?").run(win);
  await service.handle({method:'GET',user:{id:2}},null,new URL('http://local/api/player/game-highlights'));
  assert.ok(!reply.data.items.some(x=>x.ticketId===win));

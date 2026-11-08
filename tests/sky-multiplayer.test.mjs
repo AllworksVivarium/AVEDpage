@@ -15,8 +15,16 @@ test('broad bell-shaped safety distribution and accelerating payouts with 125% a
  assert.equal(total,1000000);assert.equal(r.ranges[0].weight/total,.005);assert.equal(r.boardingSeconds,12);
  assert.ok(skyMultiplier(100,r)<1);assert.ok(skyMultiplier(200,r)<1);
  assert.ok(skySurvival(215,r.ranges)<1&&skySurvival(215,r.ranges)>.97);
- for(let d=280;d<=850;d++){const value=skyMultiplier(d,r)*skySurvival(d,r.ranges);assert.ok(Math.abs(value-1.25)<1e-10);}
- let previous=0;for(let d=100;d<=1120;d++){const m=skyMultiplier(d,r);assert.ok(m>=previous&&m<=50);previous=m;}
+ assert.equal(r.curve,'bell-v2');
+ for(let d=280;d<1119;d++){
+  const value=skyMultiplier(d,r)*skySurvival(d,r.ranges);assert.ok(Math.abs(value-1.25)<1e-10);
+  const prize=Math.floor(1000000*skyMultiplier(d,r));assert.ok(Number.isSafeInteger(prize));
+ }
+ let previous=0;for(let d=100;d<1119;d++){const m=skyMultiplier(d,r);assert.ok(m>=previous);previous=m;}
+ assert.ok(Math.abs(skyMultiplier(875,r)-30)<.01);
+ assert.ok(skyMultiplier(950,r)>50&&skyMultiplier(1000,r)>skyMultiplier(950,r));
+ assert.equal(skyMultiplier(1119,r),0,'zero-survival depths are not payable');
+ assert.equal(skyMultiplier(950,{...r,curve:'bell-v1'}),50,'saved old flights keep their original ceiling');
  assert.ok(skyMultiplier(850,r)-skyMultiplier(700,r)>skyMultiplier(550,r)-skyMultiplier(400,r));
  assert.equal(skyMultiplier(300,{breakEvenDepth:207}),300/207,'old flights retain linear payouts');
 });
@@ -88,7 +96,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  const takeoff=Date.now()-1000;db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(takeoff,next.round);
  db.prepare('UPDATE sky_robot_plans SET jump_at=? WHERE flight_id=?').run(Math.round(takeoff+(originalPlan.jump_depth-100)/boarding.speed*1000),next.round);
  const allOpened=(await call(a,'jump','POST',{round:next.round})).data;assert.equal(allOpened.self.status,'landed');assert.equal(allOpened.phase,'DROPPING');assert.ok(!('safetyLine' in allOpened),'all cashouts must not reveal line early');
- const bot=allOpened.passengers.find(p=>p.isRobot);assert.equal(bot.id,robot.id);assert.equal(bot.alias,'陪玩测试员');assert.equal(bot.cost,1000);assert.ok(!('jump_depth' in bot));assert.ok(!('jump_at' in bot));
+ const bot=allOpened.passengers.find(p=>p.isRobot);assert.equal(bot.id,robot.id);assert.equal(bot.alias,'陪玩测试员');assert.equal(bot.cost,1000);assert.ok(!('jump_depth' in bot));assert.ok(!('jump_at' in bot));assert.match(bot.avatar,/^\/assets\/avatar-pixel-/);assert.equal((await fetch(base+bot.avatar)).status,200);
  const planned=db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round);assert.ok(Number.isSafeInteger(planned.jump_at));assert.equal(planned.jump_at,Math.round(allOpened.departAt+(planned.jump_depth-100)/allOpened.speed*1000));
  assert.equal((await req(admin,'/api/admin/company-robots')).data.items[0].balance,9000);
  await call(a,'current');assert.deepEqual(db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round),planned);assert.equal(db.prepare('SELECT COUNT(*) n FROM sky_robot_plans WHERE flight_id=?').get(next.round).n,1);

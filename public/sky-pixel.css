@@ -1,11 +1,7 @@
 /* Flight-specific palette remains legible in every AVED theme. */
 #game-panel-skydive{--sky-ink:#122b36;--sky-paper:#f2ead7;--sky-muted:#a8b9b4;--sky-border:#50645f;--sky-coral:#e6a27d;min-width:0}
 #game-panel-skydive [hidden]{display:none!important}
-#game-panel-skydive .flight-masthead{align-items:center;padding:12px 0 16px;gap:10px}
-#game-panel-skydive .flight-masthead h2{font:800 clamp(23px,3vw,34px)/1.5 sans-serif;letter-spacing:.03em;margin:3px 0}
-#game-panel-skydive .flight-masthead h2 small{font:11px monospace;letter-spacing:.17em;margin-left:12px;opacity:.65}
-#game-panel-skydive #flight-link{font:11px monospace;white-space:nowrap}
-#game-panel-skydive .flight-layout{grid-template-columns:minmax(0,1.8fr) minmax(260px,1fr);gap:18px;margin-top:18px;align-items:start}
+#game-panel-skydive .flight-layout{grid-template-columns:minmax(0,1.8fr) minmax(260px,1fr);gap:18px;margin-top:0;align-items:start}
 #game-panel-skydive .flight-console{background:#172f39;color:var(--sky-paper);border:1px solid #51665f;box-shadow:5px 5px 0 #172f391c;min-width:0}
 #game-panel-skydive .flight-topline{padding:13px 14px;background:#172f39;color:#e7ddc7;font:10px monospace;letter-spacing:.06em;gap:10px;align-items:center;border-color:#52675e!important}
 #game-panel-skydive .flight-scene{height:510px;background:#586f9c!important;isolation:isolate;position:relative;overflow:hidden}
@@ -74,8 +70,6 @@
 @keyframes skyRadioTravel{to{transform:translateX(calc(-100% - 720px))}}
 @media(max-width:760px){
  #game-panel-skydive .flight-layout{grid-template-columns:minmax(0,1fr);gap:16px;margin-top:12px}
- #game-panel-skydive .flight-masthead{flex-wrap:wrap;padding:8px 0 10px;gap:3px}
- #game-panel-skydive .flight-masthead h2 small{display:none}
  #game-panel-skydive .flight-scene{height:470px}
  #game-panel-skydive .flight-topline{font-size:9px;padding:11px 9px;letter-spacing:0}
  #game-panel-skydive .flight-action{padding:12px;bottom:0}
@@ -152,3 +146,9 @@
 
 /* Nameplates move on the compositor, without changing layout coordinates. */
 #game-panel-skydive .flight-nameplate{left:0;top:0}
+
+/* Keep explanatory copy sharp at native screen resolution. */
+#game-panel-skydive .flight-scene-label{position:absolute;left:0;top:0;max-width:calc(100% - 64px);font:500 11px/1.5 Arial,"Microsoft YaHei",sans-serif!important;letter-spacing:0!important;color:#e9ddcf;text-align:center;white-space:nowrap;text-shadow:0 1px 2px #122d3d;pointer-events:none}
+#game-panel-skydive .flight-scene-label-self{font-weight:700!important;color:#ffdc8a}
+#game-panel-skydive .flight-scene-label-lost{font-weight:700!important;color:#f2a48e}
+#game-panel-skydive .flight-scene-label-manifest{width:max-content;white-space:normal}

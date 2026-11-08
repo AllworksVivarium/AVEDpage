@@ -1,10 +1,6 @@
 /* Shared animal race: low-resolution art, readable controls, no downloaded art. */
 #game-panel-derby{--race-ink:#e6dcc4;--race-paper:#263e43;--race-gold:#e1bc85;padding:0;border:0;background:transparent}
 #game-panel-derby .animal-race{color:var(--inner-text-main);font:13px/1.5 Arial,"Microsoft YaHei",sans-serif}
-#game-panel-derby .race-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px}
-#game-panel-derby .race-heading h2{font-size:24px;margin:3px 0;font-weight:700}
-#game-panel-derby .race-heading small{font:10px monospace;letter-spacing:.12em;opacity:.6}
-#game-panel-derby .race-connection{font:10px monospace;opacity:.75;white-space:nowrap}
 #game-panel-derby .animal-race-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px;align-items:start}
 #game-panel-derby .animal-stage{border:2px solid #263e43;background:var(--race-paper);color:var(--race-ink);box-shadow:3px 3px 0 #182e3640}
 #game-panel-derby .animal-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;border-bottom:1px solid #8d9b7c55;font:11px monospace}
@@ -46,6 +42,24 @@
 
 
 @media(max-width:1100px){#game-panel-derby .animal-race-layout{grid-template-columns:minmax(0,1fr)}#game-panel-derby .race-slip{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:16px}#game-panel-derby .race-slip h3,#game-panel-derby .race-rule-note{grid-column:1/-1}#game-panel-derby .race-select{grid-row:2/5}#game-panel-derby .race-market-tabs{grid-column:2}#game-panel-derby .race-stake{grid-column:2}#game-panel-derby .race-tickets{grid-column:1/-1}}
-@media(max-width:520px){#game-panel-derby .race-heading h2{font-size:21px}#game-panel-derby .race-heading{margin-bottom:10px}#game-panel-derby .race-slip{padding:11px;column-gap:10px}#game-panel-derby .animal-options label{padding:2px 5px;gap:3px}#game-panel-derby .animal-options small{display:none}#game-panel-derby .animal-options img{width:30px;height:27px}#game-panel-derby .animal-options span{font-size:12px}#game-panel-derby .animal-topline{font-size:10px;padding:9px}#game-panel-derby .animal-names span{font-size:10px}#game-panel-derby .animal-names b{margin-right:2px}}
+@media(max-width:520px){#game-panel-derby .race-slip{padding:11px;column-gap:10px}#game-panel-derby .animal-options label{padding:2px 5px;gap:3px}#game-panel-derby .animal-options small{display:none}#game-panel-derby .animal-options img{width:30px;height:27px}#game-panel-derby .animal-options span{font-size:12px}#game-panel-derby .animal-topline{font-size:10px;padding:9px}#game-panel-derby .animal-names span{font-size:10px}#game-panel-derby .animal-names b{margin-right:2px}}
 
 #game-panel-derby .animal-radio{grid-column:1/-1;margin-top:0}
+
+#game-panel-derby .animal-stage{position:relative}
+#game-panel-derby .animal-options .animal-code{display:block;margin:1px 0 0;font:8px/1.1 monospace;white-space:nowrap;opacity:.75}
+#game-panel-derby .race-topline-tools{display:flex;align-items:center;gap:8px}
+#game-panel-derby #race-supporter-toggle{padding:3px 6px;min-height:24px;border:1px solid #9baf9470;background:transparent;color:var(--race-ink);font-size:10px;cursor:pointer;white-space:nowrap}
+#game-panel-derby .race-supporter-board{position:absolute;top:42px;right:6px;width:min(300px,calc(100% - 12px));box-sizing:border-box;z-index:6;background:var(--system-window-face,var(--inner-bg));color:var(--inner-text-main);border:1px solid var(--inner-text-main);box-shadow:3px 3px 0 #0005;font-family:var(--system-window-font,monospace)}
+#game-panel-derby .race-supporter-board[hidden]{display:none!important}
+#game-panel-derby .race-supporter-board>header{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--inner-accent);color:var(--inner-accent-text);padding:3px 6px;border-bottom:3px double currentColor;font-size:11px}
+#game-panel-derby #race-supporter-close{border:1px solid currentColor;background:transparent;color:inherit;padding:0;width:22px;height:22px;line-height:20px;cursor:pointer}
+.race-supporter-content{padding:6px 7px 9px}
+.race-supporter-labels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:6px;text-align:center;font-size:10px}
+.race-supporter-legend{margin:0 0 6px!important;text-align:right;font-size:9px!important;line-height:1.4!important;opacity:.7}
+.race-supporters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.race-supporter-faces{display:flex;align-items:flex-start;justify-content:center;gap:2px;min-width:0;min-height:22px}
+.race-supporter-avatar{position:relative;display:block;flex:0 1 22px;min-width:12px;max-width:22px;aspect-ratio:1}
+.race-supporter-avatar img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;border:1px solid var(--inner-border-soft);box-sizing:border-box}
+.race-supporter-avatar b{position:absolute;right:-1px;bottom:-3px;min-width:8px;padding:0 1px;background:#172a2c;color:#f4e8cb;border:1px solid #8b9988;font:8px/10px monospace!important;text-align:center;box-sizing:border-box}
+.race-supporter-overflow{flex:none;align-self:center;font:9px/1.2 monospace!important;opacity:.75}

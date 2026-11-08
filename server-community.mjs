@@ -1,3 +1,4 @@
+import {storedAvatar} from './server-default-avatar.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installAudit,auditRange} from './server-audit.mjs';
 import {mediaReference} from './server-media.mjs';
@@ -63,11 +64,24 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     const adminDelete=path.match(/^\/api\/admin\/(?:forum\/(threads|replies)|(?:speech\/)?(posts|dossier_comments|chat_messages|life_records))\/(\d+)$/);
     const dossierEdit=path.match(/^\/api\/admin\/dossiers\/(\d+)$/);
     const review=path.match(/^\/api\/admin\/moderation\/life\/(\d+)$/);
-    const handles=/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||path==='/api/player/life'||path==='/api/admin/life'||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
+    const forumAdmin=path.match(/^\/api\/admin\/forum(?:\/(\d+))?$/);
+    const handles=(forumAdmin&&method==='GET')||/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||path==='/api/player/life'||path==='/api/admin/life'||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
     if(!handles)return false;
     const user=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!user)return true;
     try {
       if(/^\/api\/admin\/image-archive\/\d+$/.test(path)){if(method!=='GET'){send(res,405,{error:'指令无效。'});return true;}audit.image(Number(path.split('/').at(-1)),res);return true;}
+      if(forumAdmin&&method==='GET'){
+        const tid=Number(forumAdmin[1]),before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;
+        if(tid){
+          const thread=db.prepare("SELECT id,title FROM forum_threads WHERE id=? AND deleted_at=''").get(tid);if(!thread)throw Error('主题不存在。');
+          const rows=db.prepare("SELECT r.id,r.body,r.status,r.moderation,r.created_at AS createdAt,e.display_name AS operatorName,COALESCE((SELECT name FROM forum_personas WHERE id=r.persona_id),r.anonymous_name) AS authorName FROM forum_replies r LEFT JOIN employees e ON e.id=r.employee_id WHERE r.thread_id=? AND r.deleted_at='' AND r.id>? ORDER BY r.id LIMIT 21").all(tid,Math.max(0,Number(url.searchParams.get('after'))||0));
+          send(res,200,{thread,items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});
+        }else{
+          const keyword=(url.searchParams.get('keyword')||'').slice(0,120);
+          const rows=db.prepare("SELECT f.id,f.title,substr(f.body,1,180) AS excerpt,f.status,f.moderation,f.created_at AS createdAt,e.display_name AS operatorName,COALESCE((SELECT name FROM forum_personas WHERE id=f.persona_id),f.anonymous_name) AS authorName,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND deleted_at='') AS replyCount FROM forum_threads f LEFT JOIN employees e ON e.id=f.employee_id WHERE f.deleted_at='' AND f.id<? AND (?='' OR f.title LIKE ? OR f.body LIKE ?) ORDER BY f.id DESC LIMIT 21").all(before,keyword,'%'+keyword+'%','%'+keyword+'%');
+          send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});
+        }return true;
+      }
       if(path==='/api/terminology'&&method==='GET'){send(res,200,{items:db.prepare('SELECT id,pattern,replacement,is_regex AS isRegex FROM terminology_rules WHERE enabled=1 ORDER BY id').all()});return true;}
       if(path.startsWith('/api/admin/terminology')) {
         const rid=Number(path.split('/')[4]);
@@ -78,7 +92,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
       if(path==='/api/admin/speech-records'&&method==='GET'){send(res,200,{items:speechRecords(url)});return true;}
       if(path==='/api/admin/activity'&&method==='GET'){send(res,200,audit.query(url));return true;}
       if(path==='/api/posts') {
-        if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department,e.position_title AS positionTitle FROM posts s JOIN employees e ON e.id=s.employee_id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY julianday(s.created_at) ASC,s.id ASC").all(Number(url.searchParams.get('announcementId')))});return true;}
+        if(method==='GET'){send(res,200,{items:db.prepare("SELECT s.id,s.body,s.created_at AS createdAt,e.display_name AS displayName,e.department,e.position_title AS positionTitle,e.id AS avatarId,p.avatar_url AS avatarData,p.avatar_preset AS avatarPreset FROM posts s JOIN employees e ON e.id=s.employee_id LEFT JOIN profiles p ON p.employee_id=e.id WHERE announcement_id=? AND status='published' AND deleted_at='' ORDER BY julianday(s.created_at) ASC,s.id ASC").all(Number(url.searchParams.get('announcementId'))).map(({avatarId,avatarData,avatarPreset,...item})=>({...item,avatarUrl:storedAvatar(avatarId,avatarData,avatarPreset,64)}))});return true;}
         if(method==='POST'){const d=await readBody(req);if(!db.prepare('SELECT id FROM announcements WHERE id=?').get(Number(d.announcementId))||!valid(d.body,2000))throw new Error('请选择有效通告并填写留言。');const r=db.prepare('INSERT INTO posts(announcement_id,employee_id,anonymous_name,body) VALUES(?,?,?,?)').run(Number(d.announcementId),user.id,user.displayName,d.body.trim());send(res,201,{id:Number(r.lastInsertRowid)});return true;}
       }
       if(edit&&method==='PUT') {

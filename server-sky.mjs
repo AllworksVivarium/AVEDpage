@@ -1,12 +1,13 @@
+import {storedAvatar,robotAvatar,installAvatarPresets} from './server-default-avatar.mjs';
 import {skyMultiplier} from './server-sky-rules.mjs';
 import {randomInt} from 'node:crypto';
 import {proofRandom,weighted} from './server-economy.mjs';
-import {mediaReference} from './server-media.mjs';
 
 // All clients reconstruct the same landing animation from server timestamps.
 export const SKY_LANDING_MS=14000;
 
 export function installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots}){
+ installAvatarPresets(db);
  db.exec(`CREATE TABLE IF NOT EXISTS sky_flights(id INTEGER PRIMARY KEY,depart_at INTEGER NOT NULL,ended_at INTEGER NOT NULL DEFAULT 0,safety_line INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,rules_json TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sky_passengers(flight_id INTEGER NOT NULL REFERENCES sky_flights(id),employee_id INTEGER NOT NULL REFERENCES employees(id),cost INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'aboard',depth INTEGER NOT NULL DEFAULT 0,prize INTEGER NOT NULL DEFAULT 0,settled_at INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(flight_id,employee_id));`);
  db.exec(`CREATE TABLE IF NOT EXISTS sky_robot_plans(flight_id INTEGER NOT NULL,employee_id INTEGER NOT NULL,jump_depth INTEGER NOT NULL,PRIMARY KEY(flight_id,employee_id));
@@ -85,7 +86,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   const reveal=f.ended_at?{safetyLine:f.safety_line,revealedAt:revealTime(f),seed:f.seed}:{};
   return {round:f.id,gameHighlight:highlights.roundEvent(id,'sky',f.id),phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:f.ended_at?f.safety_line:depth(f,now),speed:rules(f).speed,payoutRules:{curve:rules(f).curve,ranges:rules(f).ranges,breakEvenDepth:rules(f).breakEvenDepth},breakEvenDepth:rules(f).breakEvenDepth,boardingSeconds:rules(f).boardingSeconds,landingMs:SKY_LANDING_MS,...reveal,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
  }
- function passengersFor(f){return db.prepare(`SELECT s.employee_id AS id,COALESCE(r.codename,p.anonymous_name,'员工') AS alias,p.avatar_url AS avatar,r.employee_id IS NOT NULL AS isRobot,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s LEFT JOIN profiles p ON p.employee_id=s.employee_id LEFT JOIN company_robots r ON r.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...p,avatar:mediaReference('avatar',p.id,p.avatar,64)}));}
+ function passengersFor(f){return db.prepare(`SELECT s.employee_id AS id,COALESCE(r.codename,p.anonymous_name,'员工') AS alias,p.avatar_url AS avatar,p.avatar_preset AS avatarPreset,r.employee_id IS NOT NULL AS isRobot,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s LEFT JOIN profiles p ON p.employee_id=s.employee_id LEFT JOIN company_robots r ON r.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...p,avatar:p.isRobot?robotAvatar(p.id):storedAvatar(p.id,p.avatar,p.avatarPreset,64)}));}
  function write(stream,f,passengers){if(stream.res.destroyed||stream.res.writableLength>262144){stream.res.destroy();streams.delete(stream);return;}stream.res.write('data: '+JSON.stringify(snapshot(stream.id,f,passengers))+'\n\n');}
  function broadcast(){const f=current();
   // One shared wake-up for the next arrival/departure/reveal, never a timer per client.

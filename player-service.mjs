@@ -1,3 +1,4 @@
+import {radioVisibleSQL} from './server-radio-retention.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installForumSocial,forumAuthorSQL,mapForumAuthor} from './server-forum-social.mjs';
 import {installForumReplies} from './server-forum-replies.mjs';
@@ -16,7 +17,7 @@ export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
 
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
   const chatStreams=new Map();
-  const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
+  const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[]){if(response.destroyed||response.writableLength>262144){response.destroy();chatStreams.get(room).delete(response);}else response.write(payload);}}
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
@@ -379,7 +380,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/chat') {
         const room=req.method==='POST'?data.room:url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');
         if(req.method==='POST'){if(!valid(data.body,500))throw new Error('消息最多 500 字。');db.prepare('INSERT INTO chat_messages(employee_id,room,alias,body) VALUES(?,?,?,?)').run(id,room,publicProfile(id).anonymousName,data.body.trim());emitChat(room);}
-        send(res,200,{items:db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' ORDER BY c.id DESC LIMIT 80`).all(room).reverse()});return true;
+        send(res,200,{items:chatItems(room)});return true;
       }
       send(res,404,{error:'接口不存在。'});return true;
     }catch(error){send(res,error.status===403?403:400,{error:error.message,...(error.code?{code:error.code}:{})});return true;}

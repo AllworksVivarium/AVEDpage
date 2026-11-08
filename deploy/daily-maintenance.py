@@ -46,9 +46,13 @@ def clean(database, now_ms):
         for table in ("sky_robot_plans", "sky_companion_checks"):
             result[table] = db.execute("DELETE FROM " + table + " WHERE flight_id IN (SELECT id FROM empty_sky)").rowcount
         result["sky_flights"] = db.execute("DELETE FROM sky_flights WHERE id IN (SELECT id FROM empty_sky)").rowcount
+        db.execute('CREATE TEMP TABLE protected_derby(id INTEGER PRIMARY KEY)')
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='derby_wagers'").fetchone():
+            db.execute('INSERT OR IGNORE INTO protected_derby SELECT race_id FROM derby_wagers')
         # Empty historical results are disposable; keep only the current round.
         result["derby_races"] = db.execute("""DELETE FROM derby_races WHERE settled=1 AND next_at<?
           AND id<>(SELECT MAX(id) FROM derby_races)
+          AND id NOT IN(SELECT id FROM protected_derby)
           AND NOT EXISTS(SELECT 1 FROM derby_bets b WHERE b.race_id=derby_races.id)
           AND id NOT IN(SELECT CAST(json_extract(t.result_json,'$.race') AS INTEGER)
             FROM game_tickets t WHERE t.game='derby' AND json_valid(t.result_json)

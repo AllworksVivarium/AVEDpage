@@ -1,5 +1,7 @@
 import {randomUUID} from 'node:crypto';
-export const cardMoneyRules=Object.freeze({base:100,reserve:10000,bonusPercent:25,autoProfitPolicy:'manual-play-v1'});
+import './public/card-stakes.js';
+export const cardStakes=globalThis.AVEDCardStakes;
+export const cardMoneyRules=Object.freeze({base:cardStakes.defaultBase,reserve:10000,bonusPercent:25,baseOptions:cardStakes.presets,autoProfitPolicy:'manual-play-v1'});
 export function cardSettlement(size,landlord,winner,bid,multiplier,rules=cardMoneyRules){
  const unit=Math.min(rules.base*bid*multiplier,Math.floor(rules.reserve/(size-1)));
  const pot=2*(size-1)*unit,bonus=Math.floor(pot*rules.bonusPercent/100);
@@ -25,10 +27,11 @@ export function installCardWallet({db,balanceFor,recordLedger}){
  }
  // Called inside the room transaction: debit, deal and persistence commit together.
  function start(room){
-  for(const p of room.seats)if(!p.bot){checkEntry(p.id);if(balanceFor(p.id)<cardMoneyRules.reserve)throw Error('开局需有 10,000 可用余额，用于锁定本局筹码。');}
-  const id=randomUUID();db.prepare('INSERT INTO card_money_rounds(id,room_id,rules_json) VALUES(?,?,?)').run(id,room.id,JSON.stringify(cardMoneyRules));
-  room.money={round:id,rules:{...cardMoneyRules},participation:{},settlement:null};
-  room.seats.forEach((p,i)=>{db.prepare('INSERT INTO card_money_seats VALUES(?,?,?,?)').run(id,i,p.bot?null:p.id,cardMoneyRules.reserve);if(!p.bot)recordLedger(p.id,-cardMoneyRules.reserve,'斗太姥锁定筹码 #'+id);});
+  const base=cardStakes.validate(room.base??100),rules={...cardMoneyRules,base,reserve:cardStakes.reserve(base)};
+  for(const p of room.seats)if(!p.bot){checkEntry(p.id);if(balanceFor(p.id)<rules.reserve)throw Error('开局需有 '+rules.reserve.toLocaleString('en-US')+' 可用余额，用于锁定本局筹码。');}
+  const id=randomUUID();db.prepare('INSERT INTO card_money_rounds(id,room_id,rules_json) VALUES(?,?,?)').run(id,room.id,JSON.stringify(rules));
+  room.money={round:id,rules,participation:{},settlement:null};
+  room.seats.forEach((p,i)=>{db.prepare('INSERT INTO card_money_seats VALUES(?,?,?,?)').run(id,i,p.bot?null:p.id,rules.reserve);if(!p.bot)recordLedger(p.id,-rules.reserve,'斗太姥锁定筹码 #'+id);});
  }
  function settle(room){
   if(!room.money||room.game?.phase!=='ended')return;

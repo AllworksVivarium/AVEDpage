@@ -5,7 +5,7 @@ export const animalRunners=[
  {id:1,name:'墨墨',kind:'black',odds:6.25,weight:.2},
  {id:2,name:'奶盖',kind:'cow',odds:6.25,weight:.2},
  {id:3,name:'小猪',kind:'pig',odds:6.25,weight:.2},
- {id:4,name:'法棍',kind:'frenchie',odds:6.25,weight:.2}
+ {id:4,name:'法棍',kind:'frenchie',code:'AVED-007',odds:6.25,weight:.2}
 ];
 export const animalRules={version:2,runners:animalRunners,partialReturns:false,returnPercent:125,bettingMs:15000,racingMs:25000,resultMs:6000};
 
@@ -17,12 +17,17 @@ export function animalPlan(seed){
  const order=animalRunners.map(x=>x.id);
  for(let i=order.length-1;i>0;i--){const j=integer(i+1);[order[i],order[j]]=[order[j],order[i]];}
  const actors=animalRunners.map(r=>{
-  const rank=order.indexOf(r.id),boxProgress=38+r.id*5,type=integer(4);
-  const action=type===0?'run':type===1?'sleep':'box';
-  const pause=action==='run'?0:1000+integer(1800),finish=20500+rank*1125;
-  const stopProgress=action==='sleep'?boxProgress+12:boxProgress-(r.id>=3?5:0);
-  const pauseAt=(finish-pause)*stopProgress/100;
-  return {id:r.id,rank,action,pause,pauseAt,finish,boxProgress};
+  const rank=order.indexOf(r.id),finish=20500+rank*1125;
+  // Every animal has its own box interaction, independent of the finish draw.
+  const boxAction=['jump','box','peek','nudge','carry'][r.id];
+  const habits=[['groom','stretch'],['sleep'],['stretch','groom'],['roll','sleep'],['sniff','stretch']][r.id];
+  const habit=habits[integer(habits.length)];
+  const actions=integer(2)?[boxAction,habit]:[habit,boxAction];
+  const events=actions.map((pose,i)=>({pose,progress:(i?63:28)+integer(9),duration:pose==='jump'?1700:1200+integer(1100),box:pose===boxAction}));
+  const pause=events.reduce((sum,e)=>sum+(e.pose==='jump'?0:e.duration),0),runTime=finish-pause;
+  let spent=0;for(const e of events){e.at=runTime*e.progress/100+spent;if(e.pose!=='jump')spent+=e.duration;}
+  const boxEvent=events.find(e=>e.box),boxProgress=boxEvent.progress+(boxAction==='jump'?850/runTime*100:boxAction==='box'?0:5);
+  return {id:r.id,rank,finish,pause,events,boxProgress};
  });
  return {order,actors};
 }
@@ -31,17 +36,26 @@ export function animalPlan(seed){
 // leaves the server. The full plan, seed and future order remain private.
 export function animalFrame(plan,elapsed){
  return plan.actors.map(a=>{
-  const progressAt=t=>Math.max(0,Math.min(100,(t-Math.max(0,Math.min(a.pause,t-a.pauseAt)))/(a.finish-a.pause)*100));
+  const progressAt=t=>{
+   const stopped=a.events.find(e=>e.pose!=='jump'&&t>=e.at&&t<=e.at+e.duration);
+   if(stopped)return stopped.progress;
+   return Math.max(0,Math.min(100,(t-a.events.reduce((sum,e)=>sum+(e.pose==='jump'?0:Math.max(0,Math.min(e.duration,t-e.at))),0))/(a.finish-a.pause)*100));
+  };
   const progress=progressAt(elapsed);
-  const paused=elapsed>=a.pauseAt&&elapsed<a.pauseAt+a.pause;
-  const movesBox=a.id>=3&&a.action==='box',moving=movesBox&&elapsed>=a.pauseAt+a.pause&&elapsed<a.pauseAt+a.pause+1400;
-  const pose=elapsed<=0?'idle':elapsed>=a.finish?'finished':paused?(movesBox?(a.id===3?'nudge':'sniff'):a.action):moving?(a.id===3?'push':'carry'):'run';
+  const event=a.events.find(e=>elapsed>=e.at&&elapsed<e.at+e.duration),boxEvent=a.events.find(e=>e.box);
+  const movesBox=['nudge','carry'].includes(boxEvent.pose),moveAt=boxEvent.at+boxEvent.duration,moving=movesBox&&elapsed>=moveAt&&elapsed<moveAt+1400;
+  const pose=elapsed<=0?'idle':elapsed>=a.finish?'finished':event?.pose|| (moving?(a.id===3?'push':'carry'):'run');
   // Leave the box where the animal dropped it; it must not snap back afterwards.
-  const boxProgress=movesBox&&elapsed>=a.pauseAt+a.pause?progressAt(Math.min(elapsed,a.pauseAt+a.pause+1400))+5:a.boxProgress;
-  return {id:a.id,progress,pose,boxProgress};
+  const boxProgress=movesBox&&elapsed>=moveAt?progressAt(Math.min(elapsed,moveAt+1400))+5:a.boxProgress;
+  return {id:a.id,progress,pose,boxProgress,actionPhase:event?(elapsed-event.at)/event.duration:moving?1:0};
  });
 }
 
 export function animalReturn(cost,runner,market,order,returnPercent=125){
  return runner===order[market==='last'?order.length-1:0]?Math.floor(cost*returnPercent/20):0;
+}
+
+// Publish only breakpoints inside the already public one-second frame window.
+export function animalMotion(plan,from,to){
+ return plan.actors.map(a=>[...new Set([from,...[...a.events.flatMap(e=>[e.at,e.at+e.duration,...(['nudge','carry'].includes(e.pose)?[e.at+e.duration+1400]:[])]),a.finish].filter(t=>t>from&&t<to),to])].sort((x,y)=>x-y).map(at=>({at,...animalFrame(plan,at)[a.id]})));
 }

@@ -27,7 +27,7 @@ test('card money survives restart, settles once, rolls back errors and follows d
  db.exec("CREATE TRIGGER reject_money BEFORE INSERT ON ledger BEGIN SELECT RAISE(ABORT,'test failure'); END");
  assert.equal((await call(1,{action:'solo',size:3})).status,400);assert.equal(deps.balanceFor(1),30000);assert.equal(db.prepare('SELECT count(*) n FROM card_money_rounds').get().n,0);
  db.exec('DROP TRIGGER reject_money');
- const started=await call(1,{action:'solo',size:3});assert.equal(started.status,200);assert.equal(deps.balanceFor(1),20000);
+ const started=await call(1,{action:'solo',size:3,base:100});assert.equal(started.status,200);assert.equal(deps.balanceFor(1),20000);
  const id=started.data.room.id;service.close();
  const r=JSON.parse(db.prepare('SELECT state_json FROM card_table_rooms WHERE id=?').get(id).state_json);
  Object.assign(r.game,{phase:'playing',turn:0,landlord:0,bid:1,multiplier:1,last:null});r.game.hands[0]=[{id:999,val:3,label:'3',suit:'♠'}];r.game.plays[1]=1;
@@ -56,7 +56,7 @@ test('a computer never bids below the current bid',()=>{
  const g={phase:'bidding',turn:0,bid:2,hands:[[{val:15}]]};assert.equal(botTurn(g).bid,0);
 });
 
-test('solo tables take over at 30 seconds in bidding and play without SSE or a client timer',async()=>{
+test('solo humans have no deadline; explicitly enabled autoplay advances promptly across restart',async()=>{
  for(const size of [3,4])for(const phase of ['bidding','playing']){
   const db=new DatabaseSync(':memory:');db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,balance INTEGER);INSERT INTO employees VALUES(1,100000);
    CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT,avatar_url TEXT);
@@ -68,13 +68,11 @@ test('solo tables take over at 30 seconds in bidding and play without SSE or a c
   try{
    let room=await call({action:'solo',size});
    if(phase==='playing')room=await call({action:'bid',bid:3,room:room.id,revision:room.revision,requestId:randomUUID()});
-   const deadline=room.deadline,revision=room.revision,handCount=room.hand.length;
-   assert.equal(deadline-now,30000);now=deadline-1;advance();assert.equal((await call()).seats[0].auto,false);
-   now=deadline;advance();room=await call();assert.equal(room.seats[0].auto,true);assert.equal(room.revision,revision+1);assert.equal(room.serverTime,now);assert.equal(room.deadline-now,1100);
-   if(phase==='playing')assert.ok(room.hand.length<handCount);
-   now+=1099;advance();assert.equal((await call()).revision,room.revision);now++;advance();assert.equal((await call()).revision,room.revision+1);
-   // Restart cannot grant another 30 seconds to an already expired turn.
-   service.close();now+=40000;service=installCardTables(deps);room=await call();assert.ok(room.deadline<now);advance();assert.equal((await call()).revision,room.revision+1);
+   assert.equal(room.deadline,0);const revision=room.revision;now+=90000;advance();
+   assert.equal((await call()).revision,revision);assert.equal((await call()).seats[0].auto,false);
+   service.close();service=installCardTables(deps);assert.equal((await call()).deadline,0);
+   room=await call({action:'auto',room:room.id,revision:room.revision,requestId:randomUUID()});
+   assert.equal(room.deadline-now,400);now=room.deadline;advance();assert.equal((await call()).revision,room.revision+1);
   }finally{service.close();db.close();}
  }
 });

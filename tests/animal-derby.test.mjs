@@ -20,12 +20,32 @@ test('five equal lanes, first/last 125% return, reproducible monotonic finishes 
  }
  assert.equal(permutations.size,120);
  for(const count of [...first,...last])assert.ok(Math.abs(count/10000-.2)<.02);
- for(const pose of ['box','sleep','nudge','push','sniff','carry','run','finished'])assert.ok(poses.has(pose),pose);
+ for(const pose of ['box','peek','sleep','nudge','push','sniff','carry','run','finished','jump','groom','stretch','roll'])assert.ok(poses.has(pose),pose);
  assert.equal(animalRules.bettingMs,15000);assert.equal(animalRules.racingMs,25000);assert.equal(animalRules.resultMs,6000);
  assert.equal(animalReturn(1000,0,'first',[0,1,2,3,4])*.2/1000,1.25);
  assert.equal(animalReturn(1000,0,'first',[0,1,2,3,4],102),5100,'old accepted race tickets retain their return');
  assert.equal(animalReturn(101,4,'last',[0,1,2,3,4]),631);
  assert.equal(animalReturn(1000,0,'last',[0,1,2,3,4]),0);
+});
+
+test('distinct box interactions and stationary habits preserve all five finish times',()=>{
+ const seen=Array.from({length:5},()=>new Set());
+ for(let i=0;i<100;i++){
+  const plan=animalPlan(createHash('sha256').update('habits-'+i).digest('hex'));
+  for(const actor of plan.actors){
+   assert.equal(actor.events.length,2);
+   assert.equal(actor.events.find(e=>e.box).pose,['jump','box','peek','nudge','carry'][actor.id]);
+   for(const event of actor.events){
+    seen[actor.id].add(event.pose);
+    const a=animalFrame(plan,event.at+100)[actor.id],b=animalFrame(plan,event.at+event.duration-100)[actor.id];
+    if(event.pose==='jump')assert.ok(b.progress>a.progress,'jumping advances across the box');
+    else assert.equal(a.progress,b.progress,'resting does not slide forward');
+   }
+   assert.equal(animalFrame(plan,actor.finish)[actor.id].progress,100);
+  }
+ }
+ for(const [id,pose] of ['jump','box','peek','nudge','carry'].entries())assert.ok(seen[id].has(pose));
+ assert.ok(seen[1].has('sleep'));assert.ok(seen[2].has('stretch'));assert.ok(seen[3].has('roll'));assert.ok(seen[4].has('sniff'));
 });
 
 test('two markets settle once across restart; balances, privacy, closed rounds and atomic rollback',async t=>{
@@ -42,7 +62,10 @@ test('two markets settle once across restart; balances, privacy, closed rounds a
  assert.equal(race.runners.length,5);assert.deepEqual(race.winProbabilities,[.2,.2,.2,.2,.2]);
  assert.ok(race.runners.every(r=>r.place===null),'future finish places stay private');
  for(const field of ['seed','winner','last','order','plan'])assert.ok(!(field in race));
- const a=await call(1,'stream'),b=await call(2,'stream');assert.deepEqual(a.frames[0].runners,b.frames[0].runners);
+ const a=await call(1,'stream'),b=await call(2,'stream');
+ // Separate connections get their own wall-clock instant, but the same public state.
+ const withoutTime=runners=>runners.map(r=>({...r,motion:r.motion.map(({at,...point})=>point)}));
+ assert.deepEqual(withoutTime(a.frames[0].runners),withoutTime(b.frames[0].runners));
  const first={round:race.round,market:'first',runner:plan.order[0],bet:1000,balance:999999,prize:999999};
  const end={...first,market:'last',runner:plan.order[4],bet:2000};
  const replies=await Promise.all([call(1,'bet',first),call(1,'bet',first),call(1,'bet',end),call(2,'bet',{...first,runner:plan.order[4]})]);
