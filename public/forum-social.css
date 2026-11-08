@@ -47,7 +47,8 @@
 .forum-unread-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;background:var(--inner-accent);border:1px solid var(--inner-text-main);border-radius:50%}
 [data-nav=forum]{position:relative}
 .forum-workshop{padding:16px;--workshop-border:var(--inner-border-soft,var(--line,#aaa));--workshop-bg:var(--inner-card-bg,var(--panel,#eee));--workshop-text:var(--inner-text-main,var(--ink,#222))}
-.forum-workshop [data-persona-create]{display:flex;align-items:end;gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--workshop-border)}
+.forum-workshop .forum-workshop-identity{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--workshop-border)}
+.forum-workshop-identity p{flex:1;min-width:180px;font-size:12px;line-height:1.6;margin:0}
 .forum-workshop label{display:grid;gap:5px;flex:1;min-width:0;font-size:12px}
 .forum-workshop :is(input,select,textarea){box-sizing:border-box;min-width:0;width:100%;border:1px solid var(--workshop-border);padding:7px;background:var(--workshop-bg);color:var(--workshop-text);font:inherit}
 .forum-workshop :is(form,[data-script-lines]){display:grid;gap:12px}

@@ -68,7 +68,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(items.find(x=>x.id===leaderId).role,'employee');
  assert.equal(items.find(x=>x.id===companyId).enabled,0);
  assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
- assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'玩家收容物',identityKind:'player_containment',positionTitle:'伪造身份',enabled:true})).status,200);
+ assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'玩家收容物',identityKind:'player_containment',positionTitle:'伪造身份'})).status,200);
  assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===playerId).positionTitle,'收容物');
  const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
  const robot=await a('/api/admin/company-robots','POST',{codename:'榜单机器人',balance:19277});assert.equal(robot.status,200);
@@ -85,7 +85,9 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(directory.find(x=>x.id===leaderId).positionTitle,'人工智能');
  assert.equal((await player('/api/admin/employees/'+companyId,'PUT',{displayName:'篡改'})).status,403);
  assert.equal((await player('/api/admin/activity?category=image')).status,403);
- assert.equal((await a('/api/admin/employees/'+employeeId,'PUT',{displayName:'员工',department:'科研部',identityKind:'player_employee',positionTitle:'成员',enabled:true})).status,200);
+ assert.equal((await a('/api/admin/employees/'+employeeId,'PUT',{displayName:'员工',department:'科研部',identityKind:'player_employee',positionTitle:'成员'})).status,200);
+ assert.equal((await a('/api/admin/employees/'+employeeId,'PUT',{displayName:'员工',department:'科研部',identityKind:'player_employee',enabled:false})).status,200);
+ assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===employeeId).enabled,1,'employee editing no longer toggles account activation');
  const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
  assert.equal((await player('/api/player/forum','POST',{title:'图文',body:'图片记录',imageData:img})).status,201);
  assert.equal((await player('/api/player/life','POST',{title:'作品',body:'画作',kind:'art',tags:[],imageData:img})).status,201);

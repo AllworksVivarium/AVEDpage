@@ -358,7 +358,6 @@ function enhancePersonnelForms(employees){
    wasMinister=minister;position.closest('label').hidden=!leader;position.disabled=!leader;position.readOnly=minister;position.required=leader;position.placeholder='例如：人工智能、监察长、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
-   const enabled=form.querySelector('[name=enabled]');if(enabled){enabled.disabled=noLogin;if(noLogin)enabled.checked=false;}
    note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，不设置自定义身份。':leader?'选择公司直属部可填写自定义职位；选择具体部门即担任部长。玩家终端仅展示实际职位，不展示企划组成员分类。此身份不自动授予后台管理权限。':'玩家为部门成员，不设置自定义身份。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
@@ -387,9 +386,7 @@ async function renderAdmin() {
     e.id + '"><input name="displayName" required maxlength="80" value="' +
     esc(e.displayName) + '" placeholder="姓名 / 收容物名称"><input name="qqNumber" maxlength="30" value="' +
     esc(e.qqNumber || "") + '" placeholder="QQ 号"><input name="department" maxlength="80" value="' +
-    esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><label><input name="enabled" type="checkbox" ' +
-    (e.enabled ? "checked" : "") +
-    '> 账号启用</label><button class="small-action">保存修改</button></form></details></td><td><button class="small-action danger" data-delete-employee-id="' +
+    esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><button class="small-action">保存修改</button></form></details></td><td><button class="small-action danger" data-delete-employee-id="' +
     e.id + '" data-delete-employee-name="' + esc(e.displayName) +
     '" data-delete-employee-username="' + esc(e.username) + '">删除员工</button></td></tr>',
   ).join("");
@@ -435,7 +432,6 @@ async function renderAdmin() {
         displayName: v.get("displayName"),
         qqNumber: v.get("qqNumber"),
         department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
-        enabled: v.get("enabled") === "on",
       };
       if (v.get("password")) payload.password = v.get("password");
       try {

@@ -617,21 +617,21 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if (url.pathname.startsWith('/api/admin/employees/') && !url.pathname.endsWith('/balance') && req.method === 'PUT') {
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
-      const data=await readBody(req),{displayName,qqNumber,enabled,password}=data;
+      const data=await readBody(req),{displayName,qqNumber,password}=data;
       const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,department,position_title AS positionTitle FROM employees WHERE id=?').get(employeeId);
       if(!previous)return send(res,404,{error:'员工档案不存在。'});
       previous.isNpc=!!previous.isNpc;
       let assignment;try{assignment=personnelAssignment(data,previous);}catch(e){return send(res,400,{error:e.message});}
       const {identityKind,department,positionTitle,isNpc,isLeadership}=assignment;
       if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
-      if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80||typeof enabled!=='boolean')return send(res,400,{error:'员工姓名、部门或启用状态无效。'});
+      if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80)return send(res,400,{error:'员工姓名或部门无效。'});
       const qq=qqNumber==null||qqNumber===''?null:(validText(qqNumber,30)?qqNumber.trim():undefined);
       if(qq===undefined)return send(res,400,{error:'QQ 号最多 30 个字符。'});
-      if(previous.isNpc&&!isNpc&&enabled&&(!password||password.length<6))return send(res,400,{error:'启用员工账号前请设置登录密码。'});
+      if(previous.isNpc&&!isNpc&&(!password||password.length<6))return send(res,400,{error:'开通玩家登录前请设置登录密码。'});
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       const passwordHash=typeof password==='string'&&password?await hashPasswordAsync(password):null;
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:enabled?1:0,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:1,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(data.archiveBio!==undefined)db.prepare('UPDATE profiles SET bio=? WHERE employee_id=?').run(data.archiveBio.trim(),employeeId);
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(passwordHash,employeeId);
