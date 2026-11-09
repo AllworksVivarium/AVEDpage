@@ -11,7 +11,7 @@
  <section><h4>05 · K 线与成交量</h4><p>一根 K 线记录一个周期的开盘、最高、最低和收盘价。实体表示开盘到收盘的距离，上下细线表示该周期的最高与最低。点选图中的 K 线可查看具体数字。</p><p>下方的成交量记录这一周期实际交易的份数。成交量大，表示交投更活跃；它本身不说明价格下一步会涨还是跌。</p></section>
  <section><h4>06 · MACD 怎么看</h4><p>MACD 用两条快慢不同的均线观察趋势。DIF 与 DEA 两线靠近或交叉，表示短期走势正在变化；柱状图表示两线之间的差。柱子放大说明差距扩大，缩小说明差距收窄。</p><p>它根据已经发生的价格计算，会慢于突发变化。交叉只能作参考，不能当作必涨或必跌的信号。</p></section>
  <section><h4>07 · KDJ 怎么看</h4><p>KDJ 用最近一段价格的高低范围，观察当前价格靠近区间的哪一侧。K、D 是较平滑的两条线，J 更敏感，起伏通常更大。</p><p>接近高位或低位时，可以留意走势是否转弱或反弹；强势行情中也可能长期停留在高位或低位。结合 K 线与成交量看，别只凭一个指标下单。</p></section>
- <section><h4>08 · 公司内线与刷新</h4><p>公司内线约每 5 分钟发布一则快讯，有些消息会短暂影响相关部门的行情，也有些只是普通消息。页面不标明哪条会产生影响。</p><p>“刷新行情”会立即更新屏幕上的报价，不会让市场价格提前跳到下一刻。首次操作可按“选证券 → 选方向、数量、1 倍 → 核对开仓 → 查看持仓 → 平仓”的顺序尝试。</p></section></div>`;
+ <section><h4>08 · 公司内线与刷新</h4><p>公司内线每 3 分钟从全公司文案池随机发布一则快讯，有些消息会短暂影响相关部门的行情，也有些只是普通消息。页面不标明哪条会产生影响。</p><p>“刷新行情”会立即更新屏幕上的报价，不会让市场价格提前跳到下一刻。首次操作可按“选证券 → 选方向、数量、1 倍 → 核对开仓 → 查看持仓 → 平仓”的顺序尝试。</p></section></div>`;
  document.body.append(dialog);trigger.setAttribute('aria-controls',dialog.id);trigger.setAttribute('aria-expanded','false');
  const isOpen=()=>dialog.matches(':popover-open');const close=()=>{if(isOpen())dialog.hidePopover();trigger.setAttribute('aria-expanded','false');};
  trigger.addEventListener('click',()=>{if(isOpen())return close();dialog.showPopover();trigger.setAttribute('aria-expanded','true');const r=trigger.getBoundingClientRect();dialog.style.left=Math.max(16,Math.min(r.right-dialog.offsetWidth,innerWidth-dialog.offsetWidth-16))+'px';dialog.style.top=Math.max(16,Math.min(r.bottom+7,innerHeight-dialog.offsetHeight-16))+'px';});

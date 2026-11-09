@@ -1,4 +1,5 @@
 import {randomInt} from 'node:crypto';
+import {companyDispatches} from './server-company-dispatches.mjs';
 
 const dispatches={
  'AVED.VIV':[['收容预算追加申请获批，封条采购量上调。',1],['新一批安保门完成验收，收容区将分批更新。',1],['夜班巡查增设岗位，值守合同进入续签。',1],['例行盘点多出一间收容室，维护费用待核。',-1],['旧区封条消耗超出预估，采购计划待复核。',-1],['一份卷宗比值班员先到岗，暂不计入考勤。',0],['收容区走廊编号重新排列，导航仍称自己正常。',0]],
@@ -8,25 +9,24 @@ const dispatches={
  'AVED.MED':[['新诊疗方案通过内部评估，服务额度增加。',1],['员工体检预约量上升，新增夜间门诊班次。',1],['新一批医疗设备完成标定，诊疗室扩容。',1],['医疗耗材供应延迟，临时采购价格上涨。',-1],['医务室扩建延期，临时诊室继续使用。',-1],['医务室提醒：心跳与行情同频不属于工伤。',0],['候诊屏显示下一位患者是候诊屏本身。',0]]
 };
 
+export const marketDispatches=[...Object.entries(dispatches).flatMap(([code,items])=>items.map(([headline,direction])=>({code,headline,direction}))),...companyDispatches];
+
 export function installMarketBulletins(db,{random=()=>randomInt(0,1000000)/1000000}={}){
  db.exec(`CREATE TABLE IF NOT EXISTS market_bulletins(id INTEGER PRIMARY KEY,code TEXT NOT NULL,headline TEXT NOT NULL,published_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,impulse REAL NOT NULL);
  CREATE TABLE IF NOT EXISTS market_bulletin_clock(id INTEGER PRIMARY KEY CHECK(id=1),next_at INTEGER NOT NULL);
  INSERT OR IGNORE INTO market_bulletin_clock VALUES(1,0);`);
  const latest=db.prepare('SELECT published_at FROM market_bulletins ORDER BY id DESC LIMIT 1').get();
- if(latest)db.prepare('UPDATE market_bulletin_clock SET next_at=MAX(next_at,?) WHERE id=1').run(latest.published_at+300000);
+ if(latest)db.prepare('UPDATE market_bulletin_clock SET next_at=? WHERE id=1').run(latest.published_at+180000);
  function advance(at){
   if(db.prepare('SELECT next_at FROM market_bulletin_clock WHERE id=1').get().next_at>at)return;
-  const stocks=db.prepare("SELECT code,name FROM stock_prices WHERE code<>'KARMA' ORDER BY code").all();if(!stocks.length)return;
-  const stock=stocks[Math.floor(random()*stocks.length)];
-  const options=dispatches[stock.code]||[[stock.name+'获得新增预算，项目扩展提案流转中。',1],[stock.name+'成本复核启动，部分采购计划延后。',-1],[stock.name+'提交例行简报，附件暂未找到。',0]];
   const recentHeadlines=new Set(db.prepare('SELECT headline FROM market_bulletins ORDER BY id DESC LIMIT 12').all().map(row=>row.headline));
-  const unused=options.filter(([headline])=>!recentHeadlines.has(headline));
-  const choices=unused.length?unused:options;
-  const [headline,direction]=choices[Math.floor(random()*choices.length)];
+  const unused=marketDispatches.filter(({headline})=>!recentHeadlines.has(headline));
+  const choices=unused.length?unused:marketDispatches;
+  const {code,headline,direction}=choices[Math.floor(random()*choices.length)];
   // Truth/impact stays server-side. Public headlines never promise a direction.
   const impulse=random()<.45?direction*.00018:0;
-  db.prepare('INSERT INTO market_bulletins(code,headline,published_at,expires_at,impulse) VALUES(?,?,?,?,?)').run(stock.code,headline,at,at+600000,impulse);
-  db.prepare('UPDATE market_bulletin_clock SET next_at=? WHERE id=1').run(at+300000);
+  db.prepare('INSERT INTO market_bulletins(code,headline,published_at,expires_at,impulse) VALUES(?,?,?,?,?)').run(code,headline,at,at+600000,impulse);
+  db.prepare('UPDATE market_bulletin_clock SET next_at=? WHERE id=1').run(at+180000);
   db.prepare('DELETE FROM market_bulletins WHERE id NOT IN (SELECT id FROM market_bulletins ORDER BY id DESC LIMIT 200)').run();
  }
  function drift(code,at){

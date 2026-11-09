@@ -3,11 +3,11 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
  const panel=document.getElementById('game-panel-doudizhu'),R=window.AVEDDdzRules,Stakes=window.AVEDCardStakes;
  panel.dataset.typeIgnore='';panel.classList.add('ddz-panel');
  panel.innerHTML=`<div class="ddz-shell">
-  <header class="ddz-heading"><div><small>AVED / AFTER HOURS</small><h3>员工牌桌 <span>智斗太姥</span></h3></div><div class="ddz-heading-actions"><button type="button" data-ddz="rules" class="ddz-small">规则 ?</button></div></header>
+  <header class="ddz-heading"><div><small>AVED / AFTER HOURS</small><h3>员工牌桌 <span>斗太姥</span></h3></div><div class="ddz-heading-actions"><button type="button" data-ddz="rules" class="ddz-small">规则 ?</button></div></header>
   <div class="ddz-menu"><div class="ddz-mode" role="group" aria-label="牌桌人数"><button data-size="3" aria-pressed="true">三人经典</button><button data-size="4" aria-pressed="false">四人双牌</button></div><div class="ddz-entry"><button data-ddz="create">开联机房</button><button data-ddz="soloRoom" class="ddz-gold">开电脑房</button></div><button type="button" data-ddz="leave" hidden>退出牌桌</button></div>
   <label class="ddz-stakes">底注 <select data-ddz-base aria-label="牌桌底注"><option value="1000">1,000</option><option value="5000">5,000</option><option value="10000">10,000</option><option value="custom">自定义</option></select><input data-ddz-custom-base type="number" min="100" max="10000" step="1" inputmode="numeric" value="1000" aria-label="自定义牌桌底注" hidden></label><label class="ddz-stakes">电脑难度 <select data-ddz-ai aria-label="电脑对手难度"><option value="easy">轻松</option><option value="standard" selected>标准</option><option value="smart">认真</option></select></label><div class="ddz-spectators" data-ddz-spectators></div><div class="ddz-roomline"><span data-ddz-room>CHOOSE YOUR TABLE</span><span data-ddz-reserve>开局锁定 10,000</span></div>
    <div class="ddz-turn"><i></i><span data-ddz-turn>等待入座</span><b data-ddz-clock></b></div>
-  <section class="ddz-felt" aria-label="智斗太姥牌桌"><div class="ddz-grain" aria-hidden="true"></div>
+  <section class="ddz-felt" aria-label="斗太姥牌桌"><div class="ddz-grain" aria-hidden="true"></div>
    <div class="ddz-seat ddz-seat-top" data-seat="top"></div><div class="ddz-seat ddz-seat-left" data-seat="left"></div><div class="ddz-seat ddz-seat-right" data-seat="right"></div>
    <div class="ddz-table-center"><div class="ddz-watermark" aria-hidden="true">A.V.E.D.<small>EMPLOYEE CARD CLUB</small><span>♠　♥　♣　♦</span></div><div class="ddz-bottom" data-ddz-bottom></div><div class="ddz-trick" data-ddz-trick role="group" hidden></div><div class="ddz-table-label" data-ddz-table-label>入座，开始一局。</div></div>
    <div class="ddz-score"><span>叫分 <b data-ddz-bid>—</b></span><span>倍率 <b data-ddz-mult>×1</b></span></div>

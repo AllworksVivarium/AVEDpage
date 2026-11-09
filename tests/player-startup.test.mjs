@@ -9,11 +9,11 @@ test('only known pages can be restored; links do not accept account IDs or QQ nu
 test('game deep links survive refresh and invalid children return to the lobby',()=>{
  const allowed=['profile','forum','casino'],routing=context.AVEDStartup;
  for(const game of ['skydive','slots','scratch','derby','doudizhu','stocks']){
-  const hash='#/casino/'+game,parsed=routing.resolveRoute(hash,allowed);
+  const hash='#/casino/'+(game==='doudizhu'?'doutailao':game),parsed=routing.resolveRoute(hash,allowed);
   assert.equal(parsed.page,'casino');assert.equal(parsed.game,game);assert.equal(parsed.hash,hash);
   assert.equal(routing.gamePath(game),hash);assert.equal(route(hash,allowed),'casino');
  }
- for(const hash of ['#/casino','#/casino/home','#/casino/unknown','#/casino/derby?employeeId=2','#/casino/../admin']){
+ for(const hash of ['#/casino/doudizhu','#/casino','#/casino/home','#/casino/unknown','#/casino/derby?employeeId=2','#/casino/../admin']){
   const parsed=routing.resolveRoute(hash,allowed);assert.equal(parsed.page,'casino');assert.equal(parsed.game,'home');assert.equal(parsed.hash,'#/casino');
  }
  assert.equal(routing.gamePath('__proto__'),null);assert.equal(routing.gamePath('invalid'),null);

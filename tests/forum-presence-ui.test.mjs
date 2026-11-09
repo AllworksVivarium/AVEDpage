@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 test('one visible-author batch paints activity, expires offline and stops publishing hidden activity',()=>{
  let now=10000;const key='a'.repeat(24),dot={hidden:true},text={hidden:true,textContent:''};
  const author={dataset:{forumPresence:key},closest:()=>null,querySelector:s=>s==='.forum-online-dot'?dot:text};
- const document={hidden:false,addEventListener(){}},location={hash:'#/casino/doudizhu'};
+ const document={hidden:false,addEventListener(){}},location={hash:'#/casino/doutailao'};
  const context={window:{addEventListener(){}},document,location,crypto:{randomUUID:()=> 'test-tab-id'},Date:{now:()=>now},MutationObserver:class{observe(){}}};
  vm.runInNewContext(fs.readFileSync(new URL('../public/forum-presence.js',import.meta.url),'utf8'),context);
  const ui=context.window.AVEDForumPresence({view:{querySelectorAll:()=>[author,author]},onChange(){}});

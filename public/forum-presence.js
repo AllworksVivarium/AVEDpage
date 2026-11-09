@@ -2,7 +2,7 @@
 window.AVEDForumPresence=function({view,onChange}){
  const tab=crypto.randomUUID(),states=new Map();let requestedAuthors='';
  const labels={forum:'茶水间潜水中',cards:'正在打牌',sky:'正在直升机速降',derby:'正在看下班竞速',stocks:'研究财务报表中',slot:'正在异常回路',scratch:'正在刮刮乐',profile:'整理员工档案中',news:'正在查阅通告',departments:'正在翻员工名录',containment:'正在查阅收容档案',life:'正在看生活记录',home:'公司大厅摸鱼中'};
- function activity(){const parts=location.hash.replace(/^#\/?/,'').split('/'),page=parts[0];if(page==='casino')return ({doudizhu:'cards',skydive:'sky',derby:'derby',stocks:'stocks',slots:'slot',scratch:'scratch'})[parts[1]]||'home';return Object.hasOwn(labels,page)?page:'home';}
+ function activity(){const parts=location.hash.replace(/^#\/?/,'').split('/'),page=parts[0];if(page==='casino')return ({doutailao:'cards',skydive:'sky',derby:'derby',stocks:'stocks',slots:'slot',scratch:'scratch'})[parts[1]]||'home';return Object.hasOwn(labels,page)?page:'home';}
  function authors(){return [...new Set([...view.querySelectorAll('[data-forum-presence]')].filter(el=>!el.closest('.hidden,[hidden]')).map(el=>el.dataset.forumPresence).filter(Boolean))].slice(0,64);}
  function paint(){const now=Date.now();for(const el of view.querySelectorAll('[data-forum-presence]')){
   const state=states.get(el.dataset.forumPresence),online=!!state&&state.until>now,label=online?labels[state.activity]||'公司内网在线':'';

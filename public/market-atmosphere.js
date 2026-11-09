@@ -13,7 +13,7 @@
   let panel=document.getElementById('market-bulletins');
   if(!panel){panel=document.createElement('details');panel.id='market-bulletins';panel.open=true;panel.innerHTML='<summary>公司内线 <small lang="en">INTERNAL WIRE</small></summary><div class="market-wire-items"></div>';(document.getElementById('market-trade-readout')||document.getElementById('stock-candles')).after(panel);}
   const rows=panel.querySelector('.market-wire-items'),stamp=(view.bulletins||[]).map(b=>b.id).join(',');if(panel.dataset.stamp===stamp)return;panel.dataset.stamp=stamp;rows.replaceChildren();
-  for(const item of view.bulletins||[]){const article=document.createElement('article'),time=document.createElement('time'),text=document.createElement('p'),tag=document.createElement('b');time.dateTime=new Date(item.publishedAt).toISOString();time.textContent=AVEDTime.clock(item.publishedAt);tag.textContent=stocks.find(s=>s.code===item.code)?.name||item.code;text.textContent=item.headline;article.append(time,tag,text);rows.append(article);}
+  for(const item of view.bulletins||[]){const article=document.createElement('article'),time=document.createElement('time'),text=document.createElement('p'),tag=document.createElement('b');time.dateTime=new Date(item.publishedAt).toISOString();time.textContent=AVEDTime.clock(item.publishedAt);tag.textContent=stocks.find(s=>s.code===item.code)?.name||(item.code==='COMPANY'?'公司播报':item.code);text.textContent=item.headline;article.append(time,tag,text);rows.append(article);}
   if(!rows.childElementCount)rows.textContent='内线静默，等待下一份简报。';
  }
  window.AVEDMarketAtmosphere={render};
