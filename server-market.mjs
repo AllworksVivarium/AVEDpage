@@ -33,8 +33,11 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       db.exec("INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA'");
       const before=indexValue(),seed=randomBytes(32).toString('hex');
       for(const s of db.prepare("SELECT code,price FROM stock_prices WHERE code<>'KARMA'").all()) {
-        const roll=createHmac('sha256',Buffer.from(seed,'hex')).update(s.code).digest().readUInt32BE(0)/4294967296;
-        const price=Math.max(30,Math.round(s.price*(1+(roll-.5)*.012)));
+        const entropy=createHmac('sha256',Buffer.from(seed,'hex')).update(s.code).digest();
+        const roll=entropy.readUInt32BE(0)/4294967296;
+        const raw=s.price*(1+(roll-.5)*.012),whole=Math.floor(raw);
+        // Unbiased integer rounding keeps low-priced securities from freezing below 84.
+        const price=Math.max(30,whole+Number(entropy.readUInt32BE(4)/4294967296<raw-whole));
         candle(s.code,s.price,price,seed,at);
         db.prepare('UPDATE stock_prices SET price=?,tick=? WHERE code=?').run(price,Math.floor(at/60000),s.code);
       }

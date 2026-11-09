@@ -1,0 +1,71 @@
+/* Each game keeps its own controls; desktop radios share a right-hand rail. */
+.terminal-next #game-panel-slots>.grid{grid-template-columns:minmax(0,1fr)}
+#game-panel-slots .slot-main{display:contents}
+#game-panel-slots .slot-machine{order:0}
+#game-panel-slots .slot-controls{order:1;display:flex;flex-direction:column;gap:16px;min-width:0}
+#game-panel-slots .slot-controls>div{width:100%}
+#game-panel-slots .game-rule-card{order:2}
+#game-panel-slots .slot-controls>div{margin-top:0}
+#game-panel-skydive .flight-main{min-width:0}
+#game-panel-skydive .flight-protocol{margin:18px 0 0;padding:18px 20px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-skydive .flight-protocol h4{font:600 13px/1.6 var(--terminal-copy);color:var(--inner-accent);margin:0 0 12px}
+#game-panel-skydive .flight-rule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:0}
+#game-panel-skydive .flight-rule-grid>div{display:grid;grid-template-columns:42px minmax(0,1fr);gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid var(--inner-border-soft)}
+#game-panel-skydive .flight-rule-grid dt{font-size:12px;font-weight:700;color:var(--inner-accent)}
+#game-panel-skydive .flight-rule-grid dd{margin:0;font:12px/1.8 Arial,"Microsoft YaHei",sans-serif;overflow-wrap:anywhere}
+#game-panel-derby .race-main,#game-panel-derby .race-sidebar{min-width:0}
+#game-panel-derby .animal-race-layout{max-width:1040px;margin-inline:0;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px}
+#game-panel-derby .animal-topline{padding:8px 12px}
+#game-panel-derby .animal-status{min-height:0;padding:9px 12px}
+#game-panel-derby .animal-names span{padding:6px 2px}
+#game-panel-derby .race-sidebar .race-slip{display:block;padding:14px;margin:0}
+#game-panel-derby .race-sidebar .race-slip h3{font-size:14px;margin:0 0 10px}
+#game-panel-derby .race-sidebar .animal-radio{margin-top:16px;grid-column:auto;grid-row:auto}
+#game-panel-derby .race-rules{margin-top:20px;padding:18px 20px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-derby .race-rules h3{margin:0 0 12px;font:600 13px/1.6 var(--terminal-copy);color:var(--inner-accent)}
+#game-panel-derby .race-rule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;margin:0}
+#game-panel-derby .race-rule-grid>div{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;border-bottom:1px solid var(--inner-border-soft);padding:11px 0;align-items:start}
+#game-panel-derby .race-rule-grid dt{font-size:12px;font-weight:700;color:var(--inner-accent)}
+#game-panel-derby .race-rule-grid dd{margin:0;font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+/* Shared desktop proportions; the game canvas occupies less than two thirds. */
+@media(min-width:1000px){
+ .terminal-next #game-panel-slots>.grid,
+ #game-panel-derby .animal-race-layout,
+ .terminal-next #game-panel-skydive .flight-layout{width:100%;max-width:1040px;margin:0;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px;align-items:start}
+ #game-panel-slots .slot-main{display:block;min-width:0}
+ #game-panel-slots .slot-machine{box-sizing:border-box;height:420px;display:flex;flex-direction:column;gap:12px;padding:16px}
+ #game-panel-slots .slot-machine>*{margin-top:0}
+ #game-panel-slots .slot-reel-frame{flex:1;min-height:0}
+ #game-panel-slots #slot5x3-grid{height:100%}
+ #game-panel-slots .slot-line-rail{height:100%}
+ #game-panel-slots .slot-machine-readout{flex-shrink:0}
+ #game-panel-slots .game-rule-card{margin-top:18px;padding:18px 20px}
+ #game-panel-derby .animal-stage{box-sizing:border-box;height:420px;display:flex;flex-direction:column}
+ #game-panel-derby .animal-track{flex:1;min-height:0}
+ #game-panel-derby .animal-track canvas{width:100%;height:100%;object-fit:contain}
+ #game-panel-derby .animal-topline,#game-panel-derby .animal-names,#game-panel-derby .animal-status{flex-shrink:0}
+ #game-panel-skydive .flight-console{box-sizing:border-box;height:420px;display:flex;flex-direction:column}
+ #game-panel-skydive .flight-topline{padding:9px 12px;flex-shrink:0}
+ .terminal-next #game-panel-skydive .flight-scene{min-height:0;height:auto;flex:1}
+ #game-panel-skydive .flight-last-result{flex-shrink:0}
+}
+#game-panel-skydive .flight-stake-panel{padding:14px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-skydive .flight-stake-panel h3{margin:0 0 10px;font:700 14px/1.6 var(--terminal-copy)}
+#game-panel-skydive .flight-stake-panel .flight-action{position:static;padding:0;border:0;box-shadow:none;background:transparent;color:var(--inner-text-main)}
+#game-panel-skydive .flight-stake-panel .flight-action-meta{color:inherit;opacity:.7}
+#game-panel-skydive .flight-stake-panel .flight-bet>label{display:none}
+@media(max-width:999px){#game-panel-derby .animal-race-layout{grid-template-columns:minmax(0,1fr)}#game-panel-derby .race-sidebar .race-slip{display:grid;grid-template-columns:1fr 1fr;column-gap:14px}#game-panel-derby .race-sidebar .race-market-tabs{grid-column:2}#game-panel-derby .race-sidebar .race-select{grid-column:1;grid-row:2/5}#game-panel-derby .race-sidebar .race-stake{grid-column:2}}
+@media(max-width:600px){#game-panel-slots .slot-controls{grid-template-columns:minmax(0,1fr)}#game-panel-derby .race-rules{padding:14px}#game-panel-derby .race-rule-grid{grid-template-columns:1fr}}
+
+@media(max-width:600px){#game-panel-skydive .flight-protocol{padding:14px}#game-panel-skydive .flight-rule-grid{grid-template-columns:1fr}}
+
+/* Narrow screens keep the stake directly after the game before longer reference content. */
+@media(max-width:999px){
+ #game-panel-skydive .flight-layout{display:flex;flex-direction:column}
+ #game-panel-skydive .flight-main,#game-panel-skydive .flight-sidebar{display:contents}
+ #game-panel-skydive .flight-console{order:0;width:100%}
+ #game-panel-skydive .flight-stake-panel{order:1;width:100%;box-sizing:border-box}
+ #game-panel-skydive .flight-manifest{order:2;width:100%;box-sizing:border-box}
+ #game-panel-skydive .flight-radio{order:3;width:100%;box-sizing:border-box}
+ #game-panel-skydive .flight-protocol{order:4;width:100%;box-sizing:border-box}
+}

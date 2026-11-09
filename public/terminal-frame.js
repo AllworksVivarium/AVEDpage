@@ -5,7 +5,6 @@
   header.classList.add('compact-terminal-header');bar.classList.add('terminal-topbar');
   bar.children[0].classList.add('terminal-brand');bar.children[1].classList.add('terminal-identities');bar.children[2].classList.add('terminal-actions');
   app.querySelector(':scope > div > div:last-child').classList.add('terminal-content-pane');
-  const matrixRules=app.querySelector('#game-panel-slots .game-rule-card');if(matrixRules)document.getElementById('game-panel-slots').append(matrixRules);
   const brand=bar.children[0].firstElementChild.firstElementChild;
   brand.classList.add('terminal-brand-mark');
   brand.dataset.typeIgnore='';

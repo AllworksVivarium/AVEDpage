@@ -227,3 +227,16 @@ test('index mirrors equally weighted constituent returns and accepts future list
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM stock_market_bases WHERE code='KARMA'").get().n,0);
  market.close();db.close();
 });
+
+
+test('low-priced shares continue generating real varying candles below the rounding threshold',()=>{
+  const db=new DatabaseSync(':memory:');
+  db.exec("CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER); CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER); INSERT INTO stock_prices VALUES('LOW','Low price',83,0,0);");
+  let at=Date.parse('2026-11-09T12:00:00Z');
+  const market=installMarket(db,{clock:()=>at,automatic:false});
+  for(let i=0;i<1200;i++){at+=5000;market.advance();}
+  const bars=market.history('LOW').candles;
+  assert.ok(bars.some(c=>c.high!==c.low),'integer rounding must not permanently freeze a low-priced share');
+  assert.ok(bars.every(c=>Number.isInteger(c.close)&&c.low>=30));
+  market.close();db.close();
+});

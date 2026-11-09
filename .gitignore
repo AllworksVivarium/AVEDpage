@@ -16,3 +16,5 @@ UPDATE-NOTES-*.md
 node_modules/
 public/typography-preview.local.html
 
+
+/public/desktop-preview.local.html

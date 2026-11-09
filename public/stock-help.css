@@ -1,0 +1,10 @@
+.stock-help-dialog{box-sizing:border-box;width:min(580px,calc(100vw - 36px));max-height:82dvh;padding:0;border:1px solid var(--inner-border);background:var(--inner-bg);color:var(--inner-text-main);font-family:var(--terminal-copy,sans-serif)}
+.stock-help-dialog::backdrop{background:#0009}
+.stock-help-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 12px;background:var(--inner-accent);color:var(--inner-accent-text)}
+.stock-help-dialog>header h3{margin:0;font:600 13px/1.5 var(--terminal-copy,sans-serif)}
+.stock-help-dialog>header button{width:24px;height:24px;padding:0;border:1px solid currentColor;background:transparent;color:inherit;font:16px/1 sans-serif;cursor:pointer}
+.stock-help-body{padding:16px 18px;overflow-wrap:anywhere}
+.stock-help-body section+section{margin-top:18px;padding-top:14px;border-top:1px solid var(--inner-border-soft)}
+.stock-help-body h4{font-size:14px;line-height:1.6;font-weight:700;margin:0 0 8px}
+.stock-help-body p{font-size:12px;line-height:1.9;margin:7px 0}
+.stock-help-body .stock-help-intro{padding:10px;border-left:2px solid var(--inner-accent);background:var(--inner-card-bg);margin:0 0 18px}
