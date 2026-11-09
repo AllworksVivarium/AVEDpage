@@ -19,6 +19,19 @@ test('identical positive headlines can have zero influence and missed periods do
  news.advance(at);assert.match(news.recent()[0].headline,/恢复/);assert.equal(news.drift('AVED.MEM',at),0);
  news.advance(at+86400000);assert.equal(news.recent().length,2);db.close();
 });
+test('wire sends one update every five minutes and avoids recently used copy',()=>{
+ const db=fixture();let n=0;const news=installMarketBulletins(db,{random:()=>[0,0,.99][n++%3]}),at=1800000000000;
+ news.advance(at);const first=news.recent()[0].headline;
+ news.advance(at+299999);assert.equal(news.recent().length,1);
+ news.advance(at+300000);assert.equal(news.recent().length,2);
+ assert.notEqual(news.recent()[0].headline,first);
+ assert.equal(db.prepare('SELECT next_at FROM market_bulletin_clock WHERE id=1').get().next_at,at+600000);
+ db.prepare('UPDATE market_bulletin_clock SET next_at=? WHERE id=1').run(at+420000);
+ const migrated=installMarketBulletins(db,{random:()=>0});
+ assert.equal(db.prepare('SELECT next_at FROM market_bulletin_clock WHERE id=1').get().next_at,at+600000);
+ migrated.advance(at+599999);assert.equal(migrated.recent().length,2);
+ db.close();
+});
 test('trade markers are filtered by owner, symbol and visible time window',()=>{
  const db=fixture(),at=1800000000000;db.exec(`CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER,cost_basis INTEGER);CREATE TABLE stock_trades(id INTEGER PRIMARY KEY,employee_id INTEGER,code TEXT,action TEXT,quantity INTEGER,price INTEGER,holding_before INTEGER,holding_after INTEGER,created_at TEXT);`);
  const insert=db.prepare("INSERT INTO stock_trades VALUES(?,?,?,'buy',10,2000,0,10,datetime(?/1000,'unixepoch'))");

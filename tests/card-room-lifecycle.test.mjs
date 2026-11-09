@@ -37,6 +37,33 @@ test('creating a computer room fills bots without dealing or debiting until an e
   r=(await f.act(1,'start')).data.room;assert.equal(r.phase,'bidding');assert.equal(f.balance()[0].balance,90000);
  }finally{f.close();}
 });
+test('unoccupied online room expires after thirty minutes without touching balances',async()=>{
+ const f=fixture();try{
+  await f.call(1,{action:'create',size:3,base:100});const before=f.balance();
+  f.advance(30*60*1000-1);assert.ok(await f.room(1));
+  f.advance(1);assert.equal(await f.room(1),null);
+  assert.deepEqual(f.balance(),before);assert.equal(f.db.prepare('SELECT count(*) n FROM card_table_rooms').get().n,0);
+ }finally{f.close();}
+});
+
+test('pre-game host disconnect or delegated play closes an online room for all seats',async()=>{
+ const f=fixture();try{
+  await f.call(1,{action:'create',size:3,base:100});await f.call(2,{action:'join',roomId:(await f.room(1)).id});
+  const host=await f.stream(1);host.emit('close');f.advance(1);assert.ok(await f.room(2));f.advance(30000);
+  assert.equal(await f.room(1),null);assert.equal(await f.room(2),null);
+  const created=(await f.call(1,{action:'create',size:3,base:100})).data.room;
+  await f.act(1,'auto');f.advance(1);assert.equal(await f.room(1),null);
+  assert.ok(created.id);
+ }finally{f.close();}
+});
+test('an ended online table closes when its host goes offline',async()=>{
+ const f=fixture();try{
+  await f.ended();const stream=await f.stream(1);stream.emit('close');
+  f.advance(1);f.advance(30000);
+  assert.equal(await f.room(1),null);assert.equal(await f.room(2),null);
+  assert.equal(f.db.prepare('SELECT count(*) n FROM card_money_rounds').get().n,1);
+ }finally{f.close();}
+});
 
 test('unready players including the host expire at a persisted deadline; ready humans inherit host and SSE clears departed seats',async()=>{
  const f=fixture();try{

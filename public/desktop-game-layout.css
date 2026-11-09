@@ -92,3 +92,6 @@
 
 body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:after{display:none!important}
 @media(prefers-reduced-motion:reduce){#game-panel-skydive[data-instant-crash=true] .flight-scene:after{display:none!important}}
+
+/* Keep restored flight instructions below the mobile controls and radio. */
+@media(max-width:999px){#game-panel-skydive .flight-protocol{order:5}}

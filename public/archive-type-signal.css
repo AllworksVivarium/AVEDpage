@@ -1,0 +1,14 @@
+/* Gentle print displacement on archival text, without touching controls or comments. */
+@layer aved-typography{
+ body.signal-preview:not(.effects-off) #inner-app-view #view-news :is(.notice-title,.notice-title-secondary,.notice-detail-title,.notice-summary,.notice-body>p),
+ body.signal-preview:not(.effects-off) #inner-app-view #view-life .life-record :is(h3,p.whitespace-pre-wrap),
+ body.signal-preview:not(.effects-off) #inner-app-view #view-containment :is(.scp-entry-title,.scp-document-body>p,.scp-detail-content,.scp-entry-body,#scp-detail-container>div.space-y-4 p){
+  filter:url('#aved-print-type')!important;
+  text-shadow:.35px 0 color-mix(in srgb,var(--inner-crimson) 14%,transparent)!important;
+ }
+}
+@media print{
+ body.signal-preview #inner-app-view #view-news :is(.notice-title,.notice-title-secondary,.notice-detail-title,.notice-summary,.notice-body>p),
+ body.signal-preview #inner-app-view #view-life .life-record :is(h3,p.whitespace-pre-wrap),
+ body.signal-preview #inner-app-view #view-containment :is(.scp-entry-title,.scp-document-body>p,.scp-detail-content,.scp-entry-body,#scp-detail-container>div.space-y-4 p){filter:none!important;text-shadow:none!important}
+}

@@ -47,6 +47,7 @@
  #view-forum .forum-identity-choice{font-weight:400!important}
  #view-forum .forum-identity-choice span{font-size:inherit!important}
  #view-forum .forum-browse-tools :is(input,select){box-sizing:border-box;min-height:36px!important;padding:5px 8px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important}
+ #view-forum .forum-browse-actions select{font-size:12px!important;line-height:1.5!important}
  #view-forum .forum-search input::placeholder{color:var(--inner-text-muted)!important;opacity:1}
  #view-forum #forum-detail-reply-form .forum-reply-actions{gap:6px!important}
 

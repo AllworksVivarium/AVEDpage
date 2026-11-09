@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-entry-state="checking">
 <head>
-  <link rel="stylesheet" href="/typography.css?v=integrated-ui-20261109">
+  <link rel="stylesheet" href="/typography.css?v=forum-sort-size-20261110">
   <script src="/popup-ui.js?v=window-system-2" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
@@ -1258,6 +1258,50 @@
                   </div>
                 </div>
 
+                <!-- 赔付簿与三处隐藏收容协议 -->
+                <div class="retro-corner-box game-rule-card p-5 space-y-4">
+                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 五线同押 · 从最左一轮连起</div>
+                  <h4 class="text-lg font-bold font-serif-sc">异常回路赔付簿</h4>
+
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    <div class="slot-paytable-wrap md:col-span-7">
+                      <table class="w-full text-xs font-mono-tech border-collapse">
+                        <thead>
+                          <tr class="border-b border-[var(--inner-border-soft)] opacity-70">
+                            <th class="py-1.5 text-left">收容信标符号</th>
+                            <th class="py-1.5 text-right">三连</th>
+                            <th class="py-1.5 text-right">四连</th>
+                            <th class="py-1.5 text-right">五连</th>
+                          </tr>
+                        </thead>
+                        <tbody id="slot5x3-paytable-body" class="divide-y divide-[var(--inner-border-soft)]"></tbody>
+                      </table>
+                      <p class="text-[11px] opacity-70 mt-2">选择投入后启动回路。沿任一轨迹从最左轮连中相同信标，即可获奖；奖金包含本金。</p>
+                    </div>
+
+                    <div class="md:col-span-5 space-y-4">
+                      <div>
+                        <div class="text-xs font-bold mb-2">五条连线轨迹</div>
+                        <div class="slot-line-paths grid grid-cols-5 gap-1.5 text-[10px] font-mono-tech text-center">
+                          <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">━━━</div><div class="mt-1">①中线</div></div>
+                          <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">▀▀▀</div><div class="mt-1">②上线</div></div>
+                          <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">▄▄▄</div><div class="mt-1">③下线</div></div>
+                          <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">╲╱</div><div class="mt-1">④谷线</div></div>
+                          <div class="p-1.5 inner-card-alt"><div class="text-[#9e1b1b] font-bold">╱╲</div><div class="mt-1">⑤山线</div></div>
+                        </div>
+                      </div>
+
+                      <div class="space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="font-bold">隐藏收容协议录</span>
+                          <span id="slot5x3-mechanisms-count" class="font-mono-tech opacity-75">已解锁 0/3</span>
+                        </div>
+                        <p class="text-[11px] opacity-75">矩阵内暗藏三项特殊协议，触发后将自动解密协议内容并拨付额外津贴。</p>
+                        <div id="slot5x3-mechanisms-list" class="space-y-1.5 text-xs font-mono-tech"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="slot-controls space-y-4 font-mono-tech text-xs">
@@ -1345,9 +1389,8 @@
                ================================================================ -->
           <div id="game-panel-stocks" class="retro-corner-box hidden">
             <header class="stock-index-bar">
-              <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX</small><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></button>
-              <button type="button" id="stock-help-btn" class="terminal-help-trigger" aria-haspopup="dialog" aria-label="股市与指数玩法说明" title="股市与指数玩法说明">?</button>
-              <button id="next-market-tick-btn" type="button">刷新行情</button>
+              <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX · 指数</small><span class="stock-index-value"><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></span></button>
+              <div class="stock-index-actions"><button type="button" id="stock-help-btn" class="terminal-help-trigger" aria-haspopup="dialog" aria-label="股市与指数玩法说明" title="股市与指数玩法说明">玩法说明</button><button id="next-market-tick-btn" type="button">刷新行情</button></div>
             </header>
             <section class="stock-watchlist" aria-label="股票行情列表">
               <div class="stock-list-heading"><span>名称 / 代码</span><span>最新价</span><span>涨跌幅</span></div>
@@ -1398,7 +1441,7 @@
   <script src="/notices-ui.js?v=real-comments-4" defer></script>
   <script src="/market-chart.js?v=personal-trades-1" defer></script>
   <script src="/market-atmosphere.js?v=1" defer></script>
-  <link rel="stylesheet" href="/market-atmosphere.css?v=1">
+  <link rel="stylesheet" href="/market-atmosphere.css?v=wire-5min-small-1">
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/player-community.js?v=directory-focus-20261110" defer></script>
   <script src="/game-results.js?v=seal-formula-2" defer></script>
@@ -1406,7 +1449,7 @@
   <script src="/forum-browser.js?v=paged-4" defer></script>
   <script src="/forum-presence.js?v=presence-1" defer></script>
   <script src="/forum-social.js?v=presence-sync-6" defer></script>
-  <link rel="stylesheet" href="/forum-social.css?v=flight-polish-20261110">
+<link rel="stylesheet" href="/forum-social.css?v=forum-sort-size-20261110">
   <script src="/personal-record.js?v=1" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
   <script src="/jackpot-ticker.js?v=no-derby-5" defer></script>
@@ -1421,7 +1464,7 @@
   <script src="/currency-symbol.js?v=linear-batch-3" defer></script>
   <script src="/sky-scene.js?v=flight-polish-20261110" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=flight-polish-20261110" defer></script>
+<script src="/sky-ui.js?v=restored-rules-20261110" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
   <script src="/welfare-ui.js?v=sidebar-copy-12" defer></script>
@@ -1457,8 +1500,10 @@
   <script src="/landing-sphere.js?v=ascii-only-2" defer></script>
 <script src="/gateway-effects.js?v=fixed-access-8" defer></script>
 <link rel="stylesheet" href="/gateway-effects.css?v=fixed-access-8">
-<script src="/stock-help.js?v=flight-polish-20261110" defer></script>
-<link rel="stylesheet" href="/stock-help.css?v=flight-polish-20261110">
-<link rel="stylesheet" href="/desktop-game-layout.css?v=flight-polish-20261110">
+<script src="/stock-help.js?v=market-guide-expanded-20261110" defer></script>
+<link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
+<link rel="stylesheet" href="/market-header-layout.css?v=1">
+<link rel="stylesheet" href="/archive-type-signal.css?v=1">
+<link rel="stylesheet" href="/desktop-game-layout.css?v=restored-rules-20261110">
 </body>
 </html>

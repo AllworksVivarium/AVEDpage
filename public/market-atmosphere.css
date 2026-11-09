@@ -2,6 +2,6 @@
 #game-panel-stocks #market-bulletins{border-block:1px solid color-mix(in srgb,currentColor 22%,transparent);margin:12px 0;padding:10px 0;font-size:12px}
 #market-bulletins summary{cursor:pointer;font-weight:600}#market-bulletins summary small{font-size:10px;opacity:.55;letter-spacing:.1em;margin-left:8px}
 #market-bulletins article{display:grid;grid-template-columns:42px 1fr;gap:3px 8px;padding:8px 0;border-top:1px dotted color-mix(in srgb,currentColor 18%,transparent)}
-#market-bulletins article:first-child{margin-top:8px}#market-bulletins article time{opacity:.55}#market-bulletins article p{grid-column:2;margin:0;line-height:1.6;opacity:.8}
+#market-bulletins article:first-child{margin-top:8px}#market-bulletins article time{opacity:.55}#market-bulletins article p{grid-column:2;margin:0;opacity:.8}#inner-app-view #game-panel-stocks #market-bulletins article p{font-size:11px!important;line-height:1.65!important}#market-bulletins article b{font-size:11px}
 #game-panel-stocks .market-trade-marker{cursor:pointer;stroke:var(--bg-color,#111);stroke-width:1.5}#game-panel-stocks .market-trade-marker text{fill:#fff;font: bold 9px sans-serif;stroke:none}
 #game-panel-stocks .market-trade-readout{font-size:12px;line-height:1.6;border-left:2px solid currentColor;padding-left:8px;margin-top:6px;white-space:pre-line}
