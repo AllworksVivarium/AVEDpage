@@ -1,0 +1,23 @@
+/* Static, palette-tinted textures. Original artwork is reused without baked-in page colors. */
+body[data-terminal-pattern=halftone]{--surface-texture:url('/assets/texture-halftone.png');--surface-texture-size:600px 900px;--surface-texture-opacity:.13}
+body[data-terminal-pattern=fade]{--surface-texture:url('/assets/texture-fade.png');--surface-texture-size:540px 1080px;--surface-texture-opacity:.18}
+body[data-terminal-pattern=grain]{--surface-texture:url('/assets/texture-grain.png');--surface-texture-size:683px 1024px;--surface-texture-opacity:.25}
+body.theme-inner:is([data-terminal-pattern=halftone],[data-terminal-pattern=fade],[data-terminal-pattern=grain]) .terminal-content-pane::before{
+ display:block!important;content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:var(--study-ink,var(--inner-text-main));opacity:var(--surface-texture-opacity);
+ mask-image:var(--surface-texture);mask-mode:luminance;mask-size:var(--surface-texture-size);mask-repeat:repeat;mask-position:top center;animation:none!important;
+}
+body.theme-inner[data-terminal-pattern=plain] .terminal-content-pane::before{display:none!important}
+#view-profile.personal-hud .hud-pattern-sample{position:relative;background:var(--inner-bg);width:64px;height:36px;overflow:hidden}
+#view-profile.personal-hud .hud-pattern-sample::after{content:'';position:absolute;inset:0;background:currentColor;mask-mode:luminance;mask-size:cover;opacity:.65}
+#view-profile.personal-hud .hud-pattern-halftone::after{mask-image:url('/assets/texture-halftone.png')}
+#view-profile.personal-hud .hud-pattern-fade::after{mask-image:url('/assets/texture-fade.png')}
+#view-profile.personal-hud .hud-pattern-grain::after{mask-image:url('/assets/texture-grain.png');opacity:1}
+#view-profile.personal-hud .hud-pattern-plain::after{display:none}
+@media(max-width:600px){body.theme-inner .terminal-content-pane::before{mask-size:var(--surface-texture-size)}}
+@media print{body.theme-inner .terminal-content-pane::before{display:none!important}}
+/* Fade ends naturally instead of restarting halfway down long pages. */
+body.theme-inner[data-terminal-pattern=fade] .terminal-content-pane::before{mask-repeat:repeat-x}
+@layer aved-device-effects {
+ body.theme-inner.effects-off:is([data-terminal-pattern=halftone],[data-terminal-pattern=fade],[data-terminal-pattern=grain]) .terminal-content-pane::before{display:block!important}
+}

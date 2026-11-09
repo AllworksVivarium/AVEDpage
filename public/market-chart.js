@@ -15,14 +15,18 @@
     });
   }
 
-  function render(container,candles,{isIndex=false}={}) {
+  function tradeGroups(rows,trades,period=1){
+    const width=period*60000;
+    return rows.map(c=>trades.filter(t=>Number.isFinite(t.tradedAt)&&t.tradedAt>=c.bucket&&t.tradedAt<c.bucket+width));
+  }
+  function render(container,candles,{isIndex=false,trades=[],period=1}={}) {
     const rows=candles.filter(c=>['open','high','low','close','volume'].every(k=>Number.isFinite(c[k])));
     if(!rows.length){container.innerHTML='<p class="market-empty">等待首笔行情。</p>';return;}
 
     const width=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));
     const priceHeight=width<500?240:300,left=64,right=12,top=16,bottom=priceHeight-90,volumeTop=priceHeight-65,volumeBottom=priceHeight-30;
     const indicatorHeight=44,macdTop=priceHeight+20,macdBottom=macdTop+indicatorHeight,kdjTop=macdBottom+28,kdjBottom=kdjTop+indicatorHeight,height=kdjBottom+10;
-    const metrics=indicators(rows);
+    const metrics=indicators(rows),groups=tradeGroups(rows,trades,period);
     const highest=Math.max(...rows.map(c=>c.high)),lowest=Math.min(...rows.map(c=>c.low));
     const padding=Math.max((highest-lowest)*.12,highest*.001,1),upper=highest+padding,lower=lowest-padding;
     const y=price=>top+(upper-price)/(upper-lower)*(bottom-top);
@@ -57,6 +61,13 @@
       if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(priceHeight-10)+'" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
     });
 
+    groups.forEach((list,i)=>{
+      for(const [side,letter,offset,color] of [['buy','B',-8,'up'],['sell','S',8,'down']]){
+        if(!list.some(t=>t.action===side))continue;
+        const x=clamp(xAt(i)+offset,left+9,width-right-9),py=clamp(y(side==='buy'?rows[i].low:rows[i].high)+(side==='buy'?12:-12),top+10,bottom-10);
+        svg+='<g class="market-trade-marker" data-trade-index="'+i+'" tabindex="0" role="button" aria-label="查看我的'+(side==='buy'?'买入':'卖出')+'成交"><circle cx="'+x+'" cy="'+py+'" r="9" fill="var(--market-'+color+')"/><text x="'+x+'" y="'+(py+3)+'" text-anchor="middle">'+letter+'</text></g>';
+      }
+    });
     svg+='<text x="'+left+'" y="'+(volumeTop-8)+'" class="market-axis">成交量</text>';
     function panel(top,bottom,label){return '<rect x="'+left+'" y="'+(top-16)+'" width="'+(width-left-right)+'" height="'+(bottom-top+20)+'" class="market-indicator-frame"/><text x="'+(left+7)+'" y="'+(top-5)+'" class="market-axis">'+label+'</text>';}
     function line(key,scale,color){return '<polyline class="market-indicator-line" fill="none" stroke="var(--market-'+color+')" points="'+metrics.map((m,i)=>xAt(i).toFixed(2)+','+scale(m[key]).toFixed(2)).join(' ')+'"/>';}
@@ -72,6 +83,10 @@
     svg+=line('k',ky,'indicator-k')+line('d',ky,'indicator-d')+line('j',ky,'indicator-j')+'</svg>';
     container.innerHTML=svg;
     container.style.position='relative';
+    const readout=root.document.getElementById('market-trade-readout')||root.document.createElement('p');readout.id='market-trade-readout';readout.className='market-trade-readout';readout.setAttribute('role','status');
+    readout.textContent=trades.length?'我的近期成交 · B 买入 / S 卖出 · 点标记查阅（最多 300 笔）':'当前图中暂无我的成交';container.after(readout);
+    const showTrades=index=>{const list=groups[index]||[];if(!list.length)return;container._selectedTradeBucket=rows[index].bucket;readout.textContent=list.slice(0,20).sort((a,b)=>a.tradedAt-b.tradedAt).map(t=>root.AVEDTime.clock(t.tradedAt)+' '+(t.action==='buy'?'买入':'卖出')+' '+number(t.quantity)+' 股 @ '+number(t.price)+' A 币').join('\n')+(list.length>20?'\n该时段另有 '+(list.length-20)+' 笔成交。':'');};
+    const selectedIndex=rows.findIndex(c=>c.bucket===container._selectedTradeBucket);if(selectedIndex>=0)showTrades(selectedIndex);
     details(rows.at(-1));
 
     const svgEl=container.querySelector('svg');
@@ -144,6 +159,7 @@
     };
 
     const focusSelect=event=>{
+      const marker=event.target.closest('[data-trade-index]');if(marker){showTrades(Number(marker.dataset.tradeIndex));return;}
       const el=event.target.closest('[data-candle-index]');
       if(!el)return;
       const index=Number(el.dataset.candleIndex);
@@ -152,6 +168,7 @@
     };
 
     const clickSelect=event=>{
+      const marker=event.target.closest('[data-trade-index]');if(marker){showTrades(Number(marker.dataset.tradeIndex));return;}
       const el=event.target.closest('[data-candle-index]');
       if(!el)return;
       const index=Number(el.dataset.candleIndex);
@@ -162,10 +179,11 @@
     container.onpointermove=pointerSelect;
     container.onfocusin=focusSelect;
     container.onclick=clickSelect;
+    container.onkeydown=event=>{if((event.key==='Enter'||event.key===' ')&&event.target.closest('[data-trade-index]')){event.preventDefault();clickSelect(event);}};
     container.onpointerleave=hideCross;
     container.onblur=hideCross;
 
-    container._chartRender={candles,options:{isIndex},width};
+    container._chartRender={candles,options:{isIndex,trades,period},width};
     if(!container._chartObserver&&root.ResizeObserver){
       container._chartObserver=new ResizeObserver(()=>{
         const nextWidth=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));
@@ -176,5 +194,5 @@
     }
   }
 
-  root.AVEDMarketChart={render,indicators};
+  root.AVEDMarketChart={render,indicators,tradeGroups};
 })(globalThis);

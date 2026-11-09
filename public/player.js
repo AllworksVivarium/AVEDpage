@@ -1142,7 +1142,7 @@
         }
 
         const discCount = slot5x3Mechanisms.filter(m => m.discovered).length;
-        document.getElementById('slot5x3-mechanisms-count').textContent = `已解锁 ${discCount}/3`;
+        const count=document.getElementById('slot5x3-mechanisms-count');if(count)count.textContent = `已解锁 ${discCount}/3`;
         const mechList = document.getElementById('slot5x3-mechanisms-list');
         if (mechList) {
           setSlotMarkup(mechList,slot5x3Mechanisms.map(m => `
@@ -1450,7 +1450,8 @@
           document.getElementById('market-selected-price').textContent=quote.code==='KARMA'?(quote.price/100).toFixed(2):fmtMoney(quote.price);
           const selectedTick=document.getElementById('market-selected-tick');if(selectedTick){selectedTick.textContent=quoteMove.arrow;selectedTick.className='market-tick-indicator '+quoteMove.className;}
           const change=document.getElementById('market-selected-change');change.textContent=(quote.change>=0?'+':'')+quote.change.toFixed(2)+'%';change.className=quote.change>=0?'market-up':'market-down';
-          AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA'});
+          AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA',trades:marketView.trades||[],period:marketPeriod});
+          AVEDMarketAtmosphere.render(marketView,stocksData);
         }
         const container=byId('stocks-table-body');
         const orderedStocks=[...stocksData].sort((a,b)=>Number(b.code==='KARMA')-Number(a.code==='KARMA'));
@@ -1690,7 +1691,7 @@
       async function action(button,task){if(button?.dataset.busy)return;if(button){button.dataset.busy='1';button.disabled=true;}try{await task();}catch(e){if(e.code==='RULES_CHANGED'){try{applyEconomyRules(await api('/api/player/economy'));byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');renderScratchTiersAndLobby();}catch{}}showToast(e.message,'warn');}finally{if(button){delete button.dataset.busy;if(button.hasAttribute('data-stock-trade-side'))renderTradeTicket();else button.disabled=false;}}}
       document.addEventListener('submit',event=>{
         const form=event.target;const id=form.id;
-        const handled=['new-forum-topic-form','forum-detail-reply-form','news-detail-comment-form','scp-realname-comment-form','skydive-chat-form','derby-chat-form','cloud-profile-form'];
+        const handled=['new-forum-topic-form','forum-detail-reply-form','news-detail-comment-form','scp-realname-comment-form','skydive-chat-form','skydive-quick-chat-form','derby-chat-form','cloud-profile-form'];
         if(!handled.includes(id))return;stop(event);
         action(form.querySelector('[type=submit]')||form.querySelector('button'),async()=>{
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
@@ -1703,7 +1704,7 @@
             const dossier=scpItemsData.find(s=>s.id===selectedScpId);if(!dossier)throw new Error('请先选择档案。');
             const input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/dossiers/'+dossier.dbId+'/comments',{method:'POST',body:{body:input?.value||''}});form.reset();await loadDossierComments(dossier);
           }else if(id.endsWith('chat-form')){
-            const room=id==='skydive-chat-form'?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
+            const room=id.startsWith('skydive-')?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
           }else if(id==='cloud-profile-form'){
             const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
             if(file?.size){avatarPreset='';if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
@@ -1758,7 +1759,7 @@
             const quantityInput=byId('stock-trade-quantity');
             if(!quantityInput)throw new Error('未找到委托输入框，请刷新后重试。');
             const quantity=Number(quantityInput.value);
-            if(!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)throw new Error('委托数量应为 1 至 10,000 的整数。');
+            if(!Number.isSafeInteger(quantity)||quantity<1)throw new Error('委托数量应为可精确计量的正整数。');
             if(!code)throw new Error('证券代码缺失，请刷新后重试。');
             const leverageInput=byId('stock-trade-leverage');
             if(!leverageInput)throw new Error('未找到杠杆设置，请刷新后重试。');

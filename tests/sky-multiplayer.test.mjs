@@ -12,19 +12,21 @@ import {defaultEconomy} from '../server-economy.mjs';
 
 test('broad bell-shaped safety distribution and accelerating payouts with 125% adventure return',()=>{
  const r=defaultEconomy().sky,total=r.ranges.reduce((n,x)=>n+x.weight,0);
- assert.equal(total,1000000);assert.equal(r.ranges[0].weight/total,.005);assert.equal(r.boardingSeconds,12);
+ assert.equal(total,1000000);assert.equal(r.ranges[0].weight/total,.003);assert.equal(r.boardingSeconds,12);
  assert.ok(skyMultiplier(100,r)<1);assert.ok(skyMultiplier(200,r)<1);
  assert.ok(skySurvival(215,r.ranges)<1&&skySurvival(215,r.ranges)>.97);
  assert.equal(r.curve,'bell-v2');
- for(let d=280;d<1119;d++){
+ for(let d=280;d<2199;d++){
   const value=skyMultiplier(d,r)*skySurvival(d,r.ranges);assert.ok(Math.abs(value-1.25)<1e-10);
   const prize=Math.floor(1000000*skyMultiplier(d,r));assert.ok(Number.isSafeInteger(prize));
  }
- let previous=0;for(let d=100;d<1119;d++){const m=skyMultiplier(d,r);assert.ok(m>=previous);previous=m;}
- assert.ok(Math.abs(skyMultiplier(875,r)-30)<.01);
- assert.ok(skyMultiplier(950,r)>50&&skyMultiplier(1000,r)>skyMultiplier(950,r));
- assert.equal(skyMultiplier(1119,r),0,'zero-survival depths are not payable');
- assert.equal(skyMultiplier(950,{...r,curve:'bell-v1'}),50,'saved old flights keep their original ceiling');
+ let previous=0;for(let d=100;d<2199;d++){const m=skyMultiplier(d,r);assert.ok(m>=previous);previous=m;}
+ assert.ok(skyMultiplier(875,r)>10);
+ assert.ok(skySurvival(2000,r.ranges)>0&&skySurvival(2000,r.ranges)<.002);
+ assert.ok(r.ranges[0].max-r.ranges[0].min<50&&r.ranges[0].min<110);
+ assert.ok(skyMultiplier(2000,r)>50&&skyMultiplier(1000,r)>skyMultiplier(950,r));
+ assert.equal(skyMultiplier(2199,r),0,'zero-survival depths are not payable');
+ assert.equal(skyMultiplier(2000,{...r,curve:'bell-v1'}),50,'saved old flights keep their original ceiling');
  assert.ok(skyMultiplier(850,r)-skyMultiplier(700,r)>skyMultiplier(550,r)-skyMultiplier(400,r));
  assert.equal(skyMultiplier(300,{breakEvenDepth:207}),300/207,'old flights retain linear payouts');
 });

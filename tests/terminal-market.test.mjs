@@ -208,6 +208,16 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(trades[1].before,3);
   assert.equal(trades[1].after,1);
   assert.ok(snapshot.prepare('SELECT COUNT(*) AS n FROM stock_candles').get().n>=4);snapshot.close();
+  const funded=await api('/api/admin/employees',{username:'large-order-player',displayName:'大额委托核验',password:'player123',initialBalance:100000000});assert.equal(funded.status,201);
+  const fundedLogin=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:'large-order-player',password:'player123'})});const fundedCookie=fundedLogin.headers.get('set-cookie').split(';')[0];
+  async function large(body){const r=await fetch(base+'/api/player/stocks',{method:'POST',headers:{cookie:fundedCookie,origin:base,'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};}
+  const cheap=[...state.stocks].filter(s=>s.code!=='KARMA').sort((a,b)=>a.price-b.price)[0].code;
+  const openedLarge=await large({code:cheap,intent:'open',side:'long',quantity:1000001,leverage:10});assert.equal(openedLarge.status,200,JSON.stringify(openedLarge.data));assert.equal(openedLarge.data.items.find(s=>s.code===cheap).holding,1000001);
+  const closedLarge=await large({code:cheap,intent:'close',quantity:1000001});assert.equal(closedLarge.status,200);assert.equal(closedLarge.data.items.find(s=>s.code===cheap).holding,0);
+  assert.equal((await large({code:cheap,quantity:1.5})).status,400);
+  assert.equal((await large({code:cheap,quantity:Number.MAX_SAFE_INTEGER})).status,400);
+  const pendingLarge=await large({code:cheap,orderType:'limit',side:'long',quantity:10001,limitPrice:1});assert.equal(pendingLarge.status,200);assert.ok(pendingLarge.data.orders.some(o=>o.quantity===10001));
+
 });
 
 test('index mirrors equally weighted constituent returns and accepts future listings without self-weighting',()=>{

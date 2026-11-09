@@ -1,4 +1,5 @@
 import { randomBytes, createHmac } from 'node:crypto';
+import {installMarketBulletins} from './server-market-bulletins.mjs';
 
 // Every candle is built from recorded server quotes; the browser never invents OHLC data.
 export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
@@ -10,6 +11,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     CREATE TABLE IF NOT EXISTS stock_quote_clock(id INTEGER PRIMARY KEY CHECK(id=1),quoted_at INTEGER NOT NULL);
     INSERT OR IGNORE INTO stock_quote_clock VALUES(1,0);
     INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA';`);
+  const bulletins=installMarketBulletins(db);
   const upsert=db.prepare(`INSERT INTO stock_candles(code,bucket,open,high,low,close,quote_seed) VALUES(?,?,?,?,?,?,?)
     ON CONFLICT(code,bucket) DO UPDATE SET high=MAX(high,excluded.high),low=MIN(low,excluded.low),close=excluded.close,quote_seed=excluded.quote_seed`);
   const bucketFor=t=>Math.floor(t/60000)*60000;
@@ -31,11 +33,12 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     if(owned)db.exec('BEGIN IMMEDIATE');
     try {
       db.exec("INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA'");
+      bulletins.advance(at);
       const before=indexValue(),seed=randomBytes(32).toString('hex');
       for(const s of db.prepare("SELECT code,price FROM stock_prices WHERE code<>'KARMA'").all()) {
         const entropy=createHmac('sha256',Buffer.from(seed,'hex')).update(s.code).digest();
         const roll=entropy.readUInt32BE(0)/4294967296;
-        const raw=s.price*(1+(roll-.5)*.012),whole=Math.floor(raw);
+        const raw=s.price*(1+(roll-.5)*.012+bulletins.drift(s.code,at)),whole=Math.floor(raw);
         // Unbiased integer rounding keeps low-priced securities from freezing below 84.
         const price=Math.max(30,whole+Number(entropy.readUInt32BE(4)/4294967296<raw-whole));
         candle(s.code,s.price,price,seed,at);
@@ -116,7 +119,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
         return {...s,positionNotional,marginUsed,side,avgCost,marketValue,unrealizedPnl,effectiveLeverage,totalPnl:unrealizedPnl+s.realizedPnl,change:quote(s.code).change};
       });
   }
-  function history(code='KARMA',period=1) {
+  function history(code='KARMA',period=1,employeeId=null) {
     if(![1,5,15].includes(period))throw new Error('行情周期无效。');
     advance();const q=quote(code),width=period*60000;
     const rows=db.prepare('SELECT bucket,open,high,low,close,volume,turnover FROM stock_candles WHERE code=? ORDER BY bucket DESC LIMIT ?').all(code,period*120).reverse();
@@ -126,7 +129,9 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       if(last&&last.bucket===bucket){last.high=Math.max(last.high,row.high);last.low=Math.min(last.low,row.low);last.close=row.close;last.volume+=row.volume;last.turnover+=row.turnover;}
       else grouped.push({...row,bucket});
     }
-    return {code,period,index:quote('KARMA'),quote:q,candles:grouped.slice(-60)};
+    const candles=grouped.slice(-60);
+    const trades=employeeId==null||!candles.length?[]:db.prepare(`SELECT id,action,quantity,price,holding_before AS holdingBefore,holding_after AS holdingAfter,CAST(strftime('%s',created_at) AS INTEGER)*1000 AS tradedAt FROM stock_trades WHERE employee_id=? AND code=? AND created_at>=datetime(?/1000,'unixepoch') ORDER BY created_at DESC,id DESC LIMIT 300`).all(employeeId,code,candles[0].bucket);
+    return {code,period,index:quote('KARMA'),quote:q,candles,trades,bulletins:bulletins.recent()};
   }
   function trade(code,quantity,price) {
     const volume=Math.abs(quantity),bucket=bucketFor(clock());

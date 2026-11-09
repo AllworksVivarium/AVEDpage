@@ -69,3 +69,26 @@
  #game-panel-skydive .flight-radio{order:3;width:100%;box-sizing:border-box}
  #game-panel-skydive .flight-protocol{order:4;width:100%;box-sizing:border-box}
 }
+
+/* Put the betting controls before reference text on phones and narrow tablets. */
+@media(max-width:999px){
+ #game-panel-derby .animal-race-layout{display:flex;flex-direction:column}
+ #game-panel-derby .race-main,#game-panel-derby .race-sidebar{display:contents}
+ #game-panel-derby .animal-stage{order:0;width:100%}
+ #game-panel-derby .race-slip{order:1;width:100%;box-sizing:border-box}
+ #game-panel-derby .race-rules{order:2;width:100%;box-sizing:border-box}
+ #game-panel-derby .animal-radio{order:3;width:100%;box-sizing:border-box}
+ #game-panel-skydive .flight-quick-chat{order:1;width:100%}
+ #game-panel-skydive .flight-stake-panel{order:2}
+ #game-panel-skydive .flight-manifest{order:3}
+ #game-panel-skydive .flight-radio{order:4}
+}
+#game-panel-skydive .flight-quick-chat{display:flex;gap:6px;box-sizing:border-box;padding:8px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-skydive .flight-quick-chat input{min-width:0;flex:1;padding:6px 8px;border:1px solid var(--inner-border-soft);background:var(--inner-bg);color:var(--inner-text-main);font:12px/1.5 var(--terminal-copy,sans-serif)}
+#game-panel-skydive .flight-quick-chat button{flex:none;padding:5px 10px;border:1px solid var(--inner-accent);background:var(--inner-accent);color:var(--inner-accent-text);font:12px/1.5 var(--terminal-copy,sans-serif)}
+#game-panel-skydive[data-instant-crash=true] .flight-scene:after{display:block!important;content:'';position:absolute;inset:0;pointer-events:none;z-index:6;border:3px solid #d38e6a;animation:flight-instant-impact .65s ease-out both}
+@keyframes flight-instant-impact{from{background:#b4413455;box-shadow:inset 0 0 40px #b4413477}to{background:transparent;border-color:transparent;box-shadow:none}}
+@media(prefers-reduced-motion:reduce){#game-panel-skydive[data-instant-crash=true] .flight-scene:after{animation:none;border-color:transparent}}
+
+body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:after{display:none!important}
+@media(prefers-reduced-motion:reduce){#game-panel-skydive[data-instant-crash=true] .flight-scene:after{display:none!important}}

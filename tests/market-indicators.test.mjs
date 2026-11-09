@@ -16,3 +16,8 @@ test('MACD EMA and KDJ smoothing match independently calculated early values wit
  near(m[1].k,55.55555555555556);near(m[1].d,51.85185185185185);near(m[1].j,62.96296296296296);
  assert.equal(JSON.stringify(rows),before);
 });
+
+test('personal trades group into exact visible 1/5/15 minute candle intervals',()=>{
+ const group=context.AVEDMarketChart.tradeGroups;
+ for(const period of [1,5,15]){const width=period*60000,rows=[{bucket:0},{bucket:width}];const trades=[{tradedAt:0,id:1},{tradedAt:width-1,id:2},{tradedAt:width,id:3},{tradedAt:-1,id:4},{tradedAt:width*2,id:5}];assert.equal(JSON.stringify(group(rows,trades,period).map(a=>a.map(t=>t.id))),'[[1,2],[3]]');}
+});

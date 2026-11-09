@@ -113,8 +113,8 @@
 @layer aved-personal {
  body.theme-inner #inner-app-view #view-forum .forum-floating-actions{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:65;display:flex;gap:6px;align-items:center}
  body.theme-inner #inner-app-view #view-forum .forum-floating-actions #forum-global-back{position:static!important;inset:auto!important}
- body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back){min-height:32px!important;padding:6px 10px!important;margin:0!important;border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;font-family:inherit!important;font-size:11px!important;font-weight:600!important;line-height:1.4!important;white-space:nowrap;box-shadow:var(--system-key-shadow)!important;border-radius:0!important}
- body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back):hover{background:var(--inner-card-alt)!important}
+ body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back,.forum-inbox-button){min-height:32px!important;padding:6px 10px!important;margin:0!important;border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;font-family:inherit!important;font-size:11px!important;font-weight:600!important;line-height:1.4!important;white-space:nowrap;box-shadow:var(--system-key-shadow)!important;border-radius:0!important}
+ body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back,.forum-inbox-button):hover{background:var(--inner-card-alt)!important}
  body.theme-inner #inner-app-view #view-forum #forum-floating-refresh:disabled{opacity:.55;cursor:wait}
  body.theme-inner #inner-app-view #view-forum{padding-bottom:70px}
 }

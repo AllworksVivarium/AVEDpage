@@ -34,7 +34,7 @@ window.AVEDVisualStyle=function({byId}){
  document.body.classList.add('signal-preview','red-topbar','crt-unified');document.body.classList.remove('paper-texture');
  try{localStorage.setItem('aved_visual_style_v1','signal');localStorage.removeItem('aved_paper_texture_v1');localStorage.setItem('aved_header_layout_v1','red');}catch{}
  try{localStorage.removeItem('aved_presentation_v1');}catch{}
- function applyPattern(value){const selected=['grid','dots','ascii','plain'].includes(value)?value:'grid';document.body.dataset.terminalPattern=selected;try{localStorage.setItem('aved_terminal_pattern_v1',selected);}catch{}}
+ function applyPattern(value){const migrated=({grid:'halftone',dots:'fade',ascii:'grain'})[value]||value;const selected=['halftone','fade','grain','plain'].includes(migrated)?migrated:'halftone';document.body.dataset.terminalPattern=selected;try{localStorage.setItem('aved_terminal_pattern_v1',selected);}catch{}}
  let savedPattern='grid';try{savedPattern=localStorage.getItem('aved_terminal_pattern_v1')||'grid';}catch{}
  applyPattern(savedPattern);
  window.AVEDAppearance={palettes,setPalette:applyPalette,setPattern:applyPattern,get entitlements(){return entitlements;},setEntitlements(value){entitlements=value||{owned:['oxblood'],prices:{oxblood:0,mineral:20000,darkroom:20000}};applyPalette(document.documentElement.dataset.palettePreview);}};

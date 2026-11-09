@@ -7,7 +7,7 @@ import {join,resolve,sep} from 'node:path';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:net';
 import {DatabaseSync} from 'node:sqlite';
-import {MAX_GAME_STAKE,MAX_SHARED_GAME_STAKE,validateGameStake} from '../game-stake-limits.mjs';
+import {MAX_GAME_STAKE,MAX_SHARED_GAME_STAKE,MAX_SKY_STAKE,validateGameStake} from '../game-stake-limits.mjs';
 import {cardStakes} from '../server-card-wallet.mjs';
 import {defaultEconomy} from '../server-economy.mjs';
 
@@ -15,6 +15,7 @@ test('all fixed tickets and card reserves fit the common maximum',()=>{
  assert.equal(validateGameStake(100000),MAX_GAME_STAKE);
  assert.equal(validateGameStake(500000,MAX_SHARED_GAME_STAKE),500000);
  assert.throws(()=>validateGameStake(500001,MAX_SHARED_GAME_STAKE));
+ assert.equal(validateGameStake(300000,MAX_SKY_STAKE),300000);assert.throws(()=>validateGameStake(300001,MAX_SKY_STAKE));
  for(const value of [100001,99,100.5,'100000',Infinity])assert.throws(()=>validateGameStake(value));
  assert.ok(defaultEconomy().scratch.every(t=>t.cost<=MAX_GAME_STAKE));
  assert.equal(cardStakes.reserve(cardStakes.max),MAX_GAME_STAKE);
@@ -43,8 +44,8 @@ test('HTTP rejects excess game stakes atomically, combines race markets, and all
  const spinKey=randomUUID();const spin=await call('/api/player/games/slot',{bet:100000,requestKey:spinKey});assert.equal(spin.status,200);
  const afterSpin=balance();assert.equal((await call('/api/player/games/slot',{bet:100000,requestKey:spinKey})).status,200);assert.equal(balance(),afterSpin);
  const flight=(await call('/api/player/games/sky/current')).data;
- assert.equal((await call('/api/player/games/sky/start',{round:flight.round,bet:500001})).status,400);assert.equal(balance(),afterSpin);
- assert.equal((await call('/api/player/games/sky/start',{round:flight.round,bet:500000})).status,200);assert.equal(balance(),afterSpin-500000);
+ assert.equal((await call('/api/player/games/sky/start',{round:flight.round,bet:300001})).status,400);assert.equal(balance(),afterSpin);
+ assert.equal((await call('/api/player/games/sky/start',{round:flight.round,bet:300000})).status,200);assert.equal(balance(),afterSpin-300000);
  const race=(await call('/api/player/games/derby/current')).data;
  const bet={round:race.round,runner:0,market:'first',bet:300000};
  assert.equal((await call('/api/player/games/derby/bet',bet)).status,200);const afterFirst=balance();

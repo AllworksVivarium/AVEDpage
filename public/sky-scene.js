@@ -35,9 +35,9 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   c.restore();
  }
  function person(p,x,y,chute,self,time,animated,grounded=false){
-  c.save();c.translate(Math.round(x),Math.round(y));const color=colors[p.id%colors.length];
+  c.save();c.translate(Math.round(x),y);const color=colors[p.id%colors.length];
   if(chute&&!grounded){
-   const sway=animated?Math.sin(time/700+p.id)*1.5:0;c.translate(sway,0);c.save();const opening=animated?ease((time-p.settledAt)/450):1;c.translate(0,-7);c.scale(.25+.75*opening,.18+.82*opening);c.translate(0,7);
+   c.save();const opening=animated?ease((time-p.settledAt)/450):1;c.translate(0,-7);c.scale(.25+.75*opening,.18+.82*opening);c.translate(0,7);
    rect(-19,-32,38,7,'#18333e');rect(-15,-38,30,7,'#18333e');rect(-9,-42,18,5,'#18333e');
    rect(-17,-32,34,5,color);rect(-13,-37,26,6,color);rect(-8,-40,16,5,color);rect(-4,-39,8,12,'#f7e8bb');rect(-16,-26,8,2,'#e7ddc5');rect(8,-26,8,2,'#e7ddc5');
    c.strokeStyle='#e9ddc6';c.lineWidth=1;c.beginPath();c.moveTo(-17,-25);c.lineTo(-3,-7);c.moveTo(17,-25);c.lineTo(3,-7);c.moveTo(-7,-25);c.lineTo(-1,-7);c.moveTo(7,-25);c.lineTo(1,-7);c.stroke();c.restore();
@@ -105,7 +105,7 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   const mean=Math.max(240,state.expectedSafety||400),approach=ease((cameraDepth-140)/(mean-140));
   const offset=board?90:90*(1-approach),opacity=board?0:ease((cameraDepth-140)/140)*.9;
   terrain.style.transform='translate3d(0,'+(offset*displayHeight/h)+'px,0)';terrain.style.opacity=String(opacity);
-  runway.style.transform='translate3d(0,'+((landing?32*(1-ease(elapsed/420)):32)*displayHeight/h)+'px,0)';runway.style.opacity=landing?'1':'0';
+  runway.style.transform='translate3d(0,0,0)';runway.style.opacity=landing||state.passengers.some(p=>p.status==='landed')?'1':'0';
   c=actorContext;
   const selected=[...state.passengers];if(selected.length>24){const own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];}
   if(board){
@@ -118,15 +118,15 @@ window.AVEDSkyScene=function(canvas,labelLayer){
    const shown=selected.slice(0,24),columns=Math.min(4,Math.max(2,shown.length)),rows=Math.ceil(shown.length/columns);
    for(let i=0;i<shown.length;i++){
     const p=shown[i],x=48+(i%columns+.5)*(w-53)/columns,row=Math.floor(i/columns),startY=h*.57+row*Math.min(43,(h*.33)/Math.max(1,rows));
-    const bob=animated?Math.sin(t/360+p.id)*2:0;let y=startY,actorX=x,chute=p.status==='landed',grounded=false;
-    if(chute){const age=Math.max(0,now-p.settledAt),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=mix(seatY,startY,entry);actorX=mix(mix(seatX,x,entry),x,ease(age/1000));
+    let y=startY,actorX=x,chute=p.status==='landed',grounded=false;
+    if(chute){const entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(seatY,startY,entry),h).y;actorX=mix(seatX,x,entry);
      const descent=window.AVEDSkyScene.passengerMotion(state,p,now,openY,h);y=descent.y;grounded=descent.grounded;
-     person(p,actorX+(animated&&!grounded?Math.sin(t/850+p.id)*3:0),y+bob*(grounded?0:1),true,p.id===selfId,t,animated,grounded);
+     person(p,actorX,y,true,p.id===selfId,t,animated,grounded);
     }else if(p.status==='crashed'){
-     const age=now-p.settledAt,k=clamp(age/650);y=mix(startY,h-36,k*k);
-     if(k<1){rect(x-1,y-34,2,18,'#edab7e');person(p,x,y,false,p.id===selfId,t,animated);}
-     else if(age<1750){for(let n=0;n<7;n++){const spread=Math.max(0,(age-650)/1000);rect(x+(n-3)*spread*7,h-30-Math.sin(n+1)*spread*10,3,3,n%2?'#dfae87':'#a08170');}label('ui:lost:'+p.id,'LOST',x,h-45,'flight-scene-label flight-scene-label-lost');}
-    }else if(p.status==='aboard'){const entering=ease((departElapsed-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale;person(p,mix(seatX,x,entering),mix(seatY,startY,entering)+bob*entering,false,p.id===selfId,t,animated);}
+     const age=now-p.settledAt,k=clamp(age/650),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,from=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(seatY,startY,entry),h).y;actorX=mix(seatX,x,entry);y=mix(from,h-36,k*k);
+     if(k<1){rect(actorX-1,y-34,2,18,'#edab7e');person(p,actorX,y,false,p.id===selfId,t,animated);}
+     else if(age<1750){for(let n=0;n<7;n++){const spread=Math.max(0,(age-650)/1000);rect(actorX+(n-3)*spread*7,h-30-Math.sin(n+1)*spread*10,3,3,n%2?'#dfae87':'#a08170');}label('ui:lost:'+p.id,'LOST',actorX,h-45,'flight-scene-label flight-scene-label-lost');}
+    }else if(p.status==='aboard'){const entering=ease((departElapsed-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale;const falling=window.AVEDSkyScene.freefallMotion(state,now,mix(seatY,startY,entering),h);if(animated){const seconds=Math.max(0,departElapsed/1000),rate=24+seconds*12;for(let n=0;n<3;n++)rect(x-11+n*11,falling.y-12-((t/1000*rate+n*13)%38),1,7+Math.min(18,seconds),'#f4d4a488');}person(p,mix(seatX,x,entering),falling.y,false,p.id===selfId,t,animated);}
    }
    if(selected.length>24)label('ui:more','+'+(selected.length-24)+' / SEE MANIFEST',w*.6,h-16,'flight-scene-label');
   }
@@ -134,29 +134,16 @@ window.AVEDSkyScene=function(canvas,labelLayer){
  return {preview(){paint({phase:'BOARDING',departAt:Date.now(),passengers:[]},Date.now(),100,false,0);},paint:(...args)=>{paint(...args);for(const [id,el] of labels){const hidden=!visibleLabels.has(id);if(el.hidden!==hidden)el.hidden=hidden;}},reset(){if(images.size>128)images.clear();for(const el of labels.values())el.remove();labels.clear();}};
 };
 
-// Presentation only: follow the freefall camera until opening, then keep only 22%
-// of freefall speed. Depth differences stay visible, even beyond the upper edge.
-// The sealed safety line is used only AFTER the server has revealed it.
+// An opened canopy follows one constant-speed trajectory through every server phase.
+// These screen coordinates never generate a depth, payout or safety decision.
 window.AVEDSkyScene.passengerMotion=function(state,p,now,originY,height){
- const speed=state.speed,scale=height/500,ratio=.22,tau=.3;
- const travel=at=>{const seconds=Math.max(0,(at-p.settledAt)/1000);return speed*(ratio*seconds+(1-ratio)*tau*(1-Math.exp(-seconds/tau)));};
- const gap=at=>Math.max(0,100+Math.max(0,at-state.departAt)*speed/1000-p.depth-travel(at));
- if(state.phase!=='LANDING')return {y:originY-gap(now)*scale,grounded:false};
- const difference=gap(state.revealedAt),duration=window.AVEDSkyScene.landingDelay(state,p);
- const k=Math.max(0,Math.min(1,(now-state.revealedAt)/duration));
- // Accelerate toward the ground instead of easing to a hover before contact.
- // A later, deeper opening keeps a faster descent through the final approach.
- const power=2+2*Math.max(0,Math.min(1,(p.depth-100)/Math.max(1,state.safetyLine-100)));
- const from=originY-difference*scale,target=height-37;
- // Ease the camera to a stop without snapping employees back into the frame.
- const age=Math.max(0,(state.revealedAt-p.settledAt)/1000);
- const velocity=-speed*(1-ratio)*(1-Math.exp(-age/tau))*scale;
- const y=from+(target-from)*Math.pow(k,power)+velocity*(duration/1000)*k*(1-k)*(1-k);
- return {y,grounded:k>=1};
+ const k=Math.max(0,Math.min(1,(now-p.settledAt)/10000));
+ return {y:originY+Math.max(0,height-37-originY)*k,grounded:k>=1};
+};
+window.AVEDSkyScene.freefallMotion=function(state,now,originY,height){
+ const seconds=Math.max(0,(now-state.departAt-1780)/1000);
+ return {y:originY+Math.max(0,height-37-originY)*Math.pow(seconds/70,2)};
 };
 window.AVEDSkyScene.landingDelay=function(state,p){
- const seconds=Math.max(0,(state.revealedAt-p.settledAt)/1000);
- const travel=state.speed*(.22*seconds+.78*.3*(1-Math.exp(-seconds/.3)));
- const difference=Math.max(0,state.safetyLine-p.depth-travel);
- return Math.ceil(Math.min(Math.max(1000,(state.landingMs||14000)-1500),5000+Math.min(7000,difference/Math.max(1,state.speed)*550)));
+ return Math.max(0,Math.ceil(p.settledAt+10000-state.revealedAt));
 };

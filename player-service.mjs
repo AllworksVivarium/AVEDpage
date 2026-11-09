@@ -50,6 +50,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     CREATE TABLE IF NOT EXISTS stock_prices(code TEXT PRIMARY KEY,name TEXT NOT NULL,price INTEGER NOT NULL,change REAL NOT NULL DEFAULT 0,tick INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS stock_holdings(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,code TEXT REFERENCES stock_prices(code),quantity INTEGER NOT NULL DEFAULT 0,cost_basis INTEGER NOT NULL DEFAULT 0,position_notional INTEGER NOT NULL DEFAULT 0,margin_used INTEGER NOT NULL DEFAULT 0,realized_pnl INTEGER NOT NULL DEFAULT 0,leverage INTEGER NOT NULL DEFAULT 0,stop_loss INTEGER,take_profit INTEGER,PRIMARY KEY(employee_id,code));
     CREATE TABLE IF NOT EXISTS stock_trades(id INTEGER PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,code TEXT NOT NULL REFERENCES stock_prices(code),action TEXT NOT NULL CHECK (action IN ('buy','sell')),quantity INTEGER NOT NULL,price INTEGER NOT NULL,amount INTEGER NOT NULL,leverage INTEGER NOT NULL DEFAULT 1,holding_before INTEGER NOT NULL,holding_after INTEGER NOT NULL,cost_before INTEGER NOT NULL,cost_after INTEGER NOT NULL,realized_pnl_change INTEGER NOT NULL DEFAULT 0,balance_after INTEGER NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE INDEX IF NOT EXISTS stock_trades_personal_chart ON stock_trades(employee_id,code,created_at DESC,id DESC);
     CREATE TABLE IF NOT EXISTS stock_orders(id INTEGER PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,code TEXT NOT NULL REFERENCES stock_prices(code),side TEXT NOT NULL CHECK (side IN ('long','short')),quantity INTEGER NOT NULL,leverage INTEGER NOT NULL DEFAULT 3,limit_price INTEGER NOT NULL,stop_loss INTEGER,take_profit INTEGER,status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','filled','cancelled')),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,filled_at TEXT NOT NULL DEFAULT '',filled_price INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS company_departments(code TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,motto TEXT NOT NULL);
   `);
@@ -146,7 +147,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     const marginUsed=position?.marginUsed||((held!==0&&costBasis>0)?costBasis:0);
     const realizedPnl=position?.realizedPnl||0;
     const next=held+delta;
-    if(!Number.isSafeInteger(next)||Math.abs(next)>1000000)throw new Error('持仓超出限额。');
+    if(!Number.isSafeInteger(next))throw new Error('持仓数量超出可精确计量范围。');
     const closing=Math.sign(held)!==0&&Math.sign(held)!==Math.sign(delta);
     const closeQuantity=closing?Math.min(Math.abs(held),Math.abs(delta)):0;
     const openQuantity=closing?Math.max(0,Math.abs(delta)-Math.abs(held)):Math.abs(delta);
@@ -234,7 +235,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const include=name=>!bootstrap&&(!section||section===name);
         if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history(),
+        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
@@ -336,10 +337,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
             } else {
               const code=String(data.code??'').trim();
               const quantityRaw=String(data.quantity??'').trim();
-              const quantity=Math.round(Number(quantityRaw.replaceAll(',','')));
+              const quantity=Number(quantityRaw.replaceAll(',',''));
               if(!code)throw new Error('交易失败：缺少证券代码。');
               if(!Number.isFinite(quantity)||!Number.isSafeInteger(quantity))throw new Error('交易失败：数量格式无效。');
-              if(quantity<1||quantity>10000)throw new Error('交易失败：数量需在 1~10,000。');
+              if(quantity<1)throw new Error('交易失败：数量需为正整数。');
               const stock=db.prepare('SELECT code,price FROM stock_prices WHERE code=?').get(code);
               if(!stock)throw new Error('交易失败：证券代码不存在。');
               const orderType=String(data.orderType??'').toLowerCase()==='limit'?'limit':'market';
@@ -359,6 +360,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
                 if(db.prepare("SELECT COUNT(*) AS n FROM stock_orders WHERE employee_id=? AND status='open'").get(id).n>=100)throw new Error('未成交委托最多 100 笔，请先撤销部分委托。');
                 const limitPrice=normalizeOptionalPrice(data.limitPrice);
                 if(limitPrice===null)throw new Error('限价单需填写触发价格。');
+                if(!Number.isSafeInteger(quantity*limitPrice))throw new Error('委托金额超出可精确计量范围。');
                 db.prepare("INSERT INTO stock_orders(employee_id,code,side,quantity,leverage,limit_price,stop_loss,take_profit,status) VALUES(?,?,?,?,?,?,?,?,'open')").run(id,stock.code,side,quantity,leverage,limitPrice,stopLoss,takeProfit);
                 log(id,'stock.limitOrder',stock.code,{side,quantity,leverage,limitPrice,stopLoss,takeProfit});
                 processStockAutomations(id);
@@ -370,7 +372,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
             }
           }
         });
-        send(res,200,{items:market(id),orders:pendingOrders(id),balance:balanceFor(id),market:marketService.history(code,period),serverTime:Date.now()});return true;
+        send(res,200,{items:market(id),orders:pendingOrders(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');
