@@ -32,7 +32,7 @@
     const count = landing()?Math.min(260,Math.max(100,Math.round(width*height/5000))):Math.min(34, Math.max(12, Math.round(width * height / 40000)));
     motes = Array.from({length:count}, () => ({x:Math.random()*width,y:Math.random()*height,r:.35+Math.random()*.5,phase:Math.random()*Math.PI*2,speed:.05+Math.random()*.08}));
   }
-  function active() { return context && !document.body.classList.contains('effects-off') && !document.hidden && !reduced.matches && (landing() || document.body.classList.contains('theme-inner') && document.body.classList.contains('signal-preview')); }
+  function active() { return context && !document.body.classList.contains('effects-off') && !document.hidden && !reduced.matches && (landing()&&!document.body.classList.contains('landing-sphere') || document.body.classList.contains('theme-inner') && document.body.classList.contains('signal-preview')); }
   function draw(now) {
     frame = 0;
     if (!active()) return;

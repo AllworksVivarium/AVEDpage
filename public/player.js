@@ -1100,6 +1100,8 @@
 
 
 
+      const slotMarkupCache=new WeakMap();
+      function setSlotMarkup(el,html){if(el&&slotMarkupCache.get(el)!==html){el.innerHTML=html;slotMarkupCache.set(el,html);}}
       function renderSlot5x3Board() {
         const grid = document.getElementById('slot5x3-grid');
         if (!grid) return;
@@ -1117,7 +1119,7 @@
             `;
           }
         }
-        grid.innerHTML = html;
+        setSlotMarkup(grid,html);
 
         const totalBet = parseInt(document.getElementById('slot5x3-bet-input')?.value || '500', 10);
         const lineBet = totalBet / 5;
@@ -1127,38 +1129,38 @@
 
         const payBody = document.getElementById('slot5x3-paytable-body');
         if (payBody) {
-          payBody.innerHTML = slot5x3Symbols.map(s => `
+          setSlotMarkup(payBody,slot5x3Symbols.map(s => `
             <tr>
               <td class="py-1.5 font-bold">${AVEDPixelIcons.render(s.id)} ${s.name}</td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m3}×</div><div class="font-bold">${(s.m3 * lineBet).toLocaleString()}</div></td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m4}×</div><div class="font-bold">${(s.m4 * lineBet).toLocaleString()}</div></td>
               <td class="py-1.5 text-right"><div class="text-[10px] opacity-60">${s.m5}×</div><div class="font-bold text-[#9e1b1b]">${(s.m5 * lineBet).toLocaleString()}</div></td>
             </tr>
-          `).join('');
+          `).join(''));
         }
 
         const discCount = slot5x3Mechanisms.filter(m => m.discovered).length;
         document.getElementById('slot5x3-mechanisms-count').textContent = `已解锁 ${discCount}/3`;
         const mechList = document.getElementById('slot5x3-mechanisms-list');
         if (mechList) {
-          mechList.innerHTML = slot5x3Mechanisms.map(m => `
+          setSlotMarkup(mechList,slot5x3Mechanisms.map(m => `
             <div class="p-2.5 border border-dashed border-[var(--inner-border-soft)] ${m.discovered ? 'bg-black/10' : 'opacity-65'}">
               <div class="font-bold ${m.discovered ? 'text-[#9e1b1b]' : ''}">${m.discovered ? `✓ ${m.title}` : '？ ？ ？ [机密未触发]'}</div>
               <div class="text-[11px] mt-0.5">${m.discovered ? m.desc : '尚未触发该项隐藏收容协议'}</div>
             </div>
-          `).join('');
+          `).join(''));
         }
       }
 
       function renderSlot5x3History() {
-        document.getElementById('slot5x3-history-header').textContent = `— 运转记录 共 ${slot5x3State.history.length} 转`;
+        document.getElementById('slot5x3-history-header').textContent = `— 运转记录 共 ${slot5x3State.history.length} 转${slot5x3State.history.length>20?' · 展示最近 20 转':''}`;
         const listEl = document.getElementById('slot5x3-history-list');
         if (!listEl) return;
         if (slot5x3State.history.length === 0) {
           listEl.innerHTML = `<div class="py-4 text-center opacity-60">尚无运转记录。</div>`;
           return;
         }
-        listEl.innerHTML = slot5x3State.history.map((h, i) => `
+        listEl.innerHTML = slot5x3State.history.slice(0,20).map((h, i) => `
           <div class="p-2 inner-card-alt flex justify-between items-center">
             <span>#${i + 1} 转 | 投入 ${h.bet.toLocaleString()}</span>
             <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind})}</strong>
@@ -1353,54 +1355,35 @@
 
       document.getElementById('ticket-modal-close').addEventListener('click',()=>document.getElementById('ticket-modal-cancel-btn').click());
       const scratchFeedback=AVEDScratchFeedback({playSfx,isActive:()=>!byId('view-casino').classList.contains('hidden')&&!byId('scratch-play-table-view').classList.contains('hidden')});
+      let lastScratchRules='';
+      function scratchCellMarkup(c,tk){
+        const seal=tk.gameType.type==='lucky_num'&&c.idx===3;
+        if(!c.revealed)return `<button type="button" data-scratch-cell="${c.idx}" class="scratch-cell-foil sp-cell sp-covered ${seal?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center"><span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${seal?'核准倍率':'刮开好运'}</b></span></button>`;
+        return `<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${seal?'sp-seal':''} ${c.isBomb?'is-bomb':''} h-20 border-2 ${c.isWinPart?'is-winning border-[#9e1b1b] bg-[#fff5f5]':'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center"><div class="text-sm font-bold ${c.isWinPart?'text-[#9e1b1b]':''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div><div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div></div>`;
+      }
+      const scratchBoard=AVEDScratchBoard({host:byId('active-ticket-board-container'),cell:scratchCellMarkup,frame(tk,cells){
+        const kind=tk.gameType.type,cols=kind==='step_climb'?'scratch-step-grid sp-step-grid':kind==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
+        return AVEDScratchTicketArt.board(tk,`<div class="grid ${cols} gap-3">${cells.map((html,i)=>(kind==='lucky_num'&&i===4?'</div><div class="grid scratch-prize-grid sp-nums">':'')+html).join('')}</div>`);
+      }});
       function renderActiveScratchTicketBoard(revealedIndices=[],feedbackOptions={}) {
-        if (!activeIssuedTicket) return;
-        const tk = activeIssuedTicket;
-        const ruleGame=scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType;
-        document.getElementById('scratch-play-rules-body').innerHTML=scratchRulesMarkup(ruleGame);
-        const board = document.getElementById('active-ticket-board-container');
-        const colsClass = tk.gameType.type === 'step_climb' ? 'scratch-step-grid sp-step-grid' : tk.gameType.type==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
-
-        board.innerHTML = AVEDScratchTicketArt.board(tk, `
-          <div class="grid ${colsClass} gap-3">
-            ${tk.cells.map(c => {
-              const groupBreak=tk.gameType.type==='lucky_num'&&c.idx===4?'</div><div class="grid scratch-prize-grid sp-nums">':'';
-              if (!c.revealed) {
-                return `
-                  ${groupBreak}<button type="button" data-scratch-cell="${c.idx}"
-                    class="scratch-cell-foil sp-cell sp-covered ${tk.gameType.type==='lucky_num'&&c.idx===3?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center">
-                    <span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${tk.gameType.type==='lucky_num'&&c.idx===3?'核准倍率':'刮开好运'}</b></span>
-                  </button>
-                `;
-              }
-              return `
-                ${groupBreak}<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${tk.gameType.type==='lucky_num'&&c.idx===3?'sp-seal':''} ${c.isBomb ? 'is-bomb' : ''} h-20 border-2 ${c.isWinPart ? 'is-winning border-[#9e1b1b] bg-[#fff5f5]' : 'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center">
-                  <div class="text-sm font-bold ${c.isWinPart ? 'text-[#9e1b1b]' : ''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div>
-                  <div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `);
-
+        if(!activeIssuedTicket)return;const tk=activeIssuedTicket;
+        const rules=scratchRulesMarkup(scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType);
+        if(rules!==lastScratchRules){byId('scratch-play-rules-body').innerHTML=rules;lastScratchRules=rules;}
+        const board=byId('active-ticket-board-container');scratchBoard.render(tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
           tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').textContent=(tk.demo?'测试 · ':'')+AVEDGameResults.text(tk);
           scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
         }
-        board.querySelectorAll('[data-scratch-cell]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const idx = parseInt(btn.getAttribute('data-scratch-cell'), 10);
-            if(!await activateScratchTicket())return;
-            const tk=activeIssuedTicket;if(tk.cells[idx].revealed)return;tk.cells[idx].revealed = true;
-            playSfx('scratch');
-            renderActiveScratchTicketBoard([idx],{profit:tk.prize>tk.cost,winning:tk.cells[idx].isWinPart&&!tk.cells.every(c=>c.revealed)});
-            checkAndSettleScratchTicket('manual');
-          });
-        });
       }
-
-
+      byId('active-ticket-board-container').addEventListener('click',async event=>{
+        const button=event.target.closest('[data-scratch-cell]');if(!button||!event.currentTarget.contains(button))return;
+        const idx=Number(button.dataset.scratchCell);if(!await activateScratchTicket())return;
+        const tk=activeIssuedTicket;if(!tk?.cells[idx]||tk.cells[idx].revealed)return;
+        tk.cells[idx].revealed=true;playSfx('scratch');
+        renderActiveScratchTicketBoard([idx],{profit:tk.prize>tk.cost,winning:tk.cells[idx].isWinPart&&!tk.cells.every(c=>c.revealed)});
+        checkAndSettleScratchTicket('manual');
+      });
 
       document.getElementById('scratch-reveal-all-cells-btn').addEventListener('click', async () => {
         if (!activeIssuedTicket) return;
@@ -1759,7 +1742,7 @@
             let d,showSlotAward=false;try{d=await api('/api/player/games/slot',{method:'POST',body:pendingSlotRequest});pendingSlotRequest=null;showSlotAward=await slotEffects.finish(d);}catch(error){if(error.status>=400&&error.status<500)pendingSlotRequest=null;throw error;}finally{slotEffects.cancel();}
             slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize,penalty:d.penalty,penaltyKind:d.result.penaltyKind});
             d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);
-            byId('slot5x3-win-summary').textContent=AVEDGameResults.text(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
+            byId('slot5x3-win-summary').textContent='本局获得 ¤ '+Number(d.prize).toLocaleString();currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
@@ -1807,8 +1790,9 @@
       let scratchActivating=false;
       async function activateScratchTicket(){
         if(scratchActivating||!activeIssuedTicket)return false;if(!activeIssuedTicket.draft)return true;
-        const draft=activeIssuedTicket;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
+        const draft=activeIssuedTicket,owner=currentUser?.id;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
         try{const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:draft.tier.id,type:draft.gameType.type,cost:draft.cost,revision:draft.revision,requestKey:draft.requestKey}});
+          if(currentUser?.id!==owner||activeIssuedTicket!==draft)return false;
           activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 · 刮开查看结果。';byId('scratch-next-ticket').textContent='下一张';return true;
         }catch(e){showToast(e.message);byId('scratch-next-ticket').disabled=false;return false;}finally{scratchActivating=false;}
       }

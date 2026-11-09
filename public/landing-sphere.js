@@ -5,12 +5,8 @@
   const controls=document.createElement('div');controls.className='landing-variant-switch';controls.setAttribute('role','group');controls.setAttribute('aria-label','开屏版本');
   controls.innerHTML='<button type="button" data-landing-scene="image">建筑影像</button><button type="button" data-landing-scene="sphere">信号球体</button>';
   landing.querySelector('.landing-edge-line').after(controls);
-  const backdrop=document.createElement('label');backdrop.className='sphere-backdrop-choice';backdrop.innerHTML='<span>信号底纹</span><select aria-label="信号球体背景纹样"><option value="grid">坐标网格</option><option value="dots">点阵网点</option><option value="ascii">ASCII 字符</option><option value="plain">纯黑</option></select>';
-  controls.after(backdrop);
-  const pattern=backdrop.querySelector('select');
-  function choosePattern(value){const selected=['grid','dots','ascii','plain'].includes(value)?value:'grid';landing.dataset.spherePattern=selected;pattern.value=selected;}
-  let savedPattern='grid';try{savedPattern=localStorage.getItem('aved_sphere_pattern_v1')||'grid';}catch{}
-  choosePattern(savedPattern);pattern.addEventListener('change',()=>{choosePattern(pattern.value);try{localStorage.setItem('aved_sphere_pattern_v1',pattern.value);}catch{}});
+  landing.dataset.spherePattern='ascii';
+  try{localStorage.removeItem('aved_sphere_pattern_v1');}catch{}
   const canvas=document.createElement('canvas');canvas.id='landing-sphere-canvas';canvas.setAttribute('aria-hidden','true');landing.prepend(canvas);
   const ctx=canvas.getContext('2d',{alpha:true}),reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const count=8000,x=new Float32Array(count),y=new Float32Array(count),vx=new Float32Array(count),vy=new Float32Array(count),sine=new Float32Array(count),cosine=new Float32Array(count),latitude=new Float32Array(count),height=new Float32Array(count);
@@ -51,7 +47,6 @@
   }
   function choose(value){
     variant=value==='sphere'?'sphere':'image';document.body.classList.toggle('landing-sphere',variant==='sphere');
-    backdrop.hidden=variant!=='sphere';
     controls.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.landingScene===variant)));
     resize();sync();try{localStorage.setItem('aved_landing_scene_v1',variant);}catch{}
   }

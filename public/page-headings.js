@@ -41,5 +41,10 @@
       if(old!==heading){const legacy=document.createElement('div');legacy.hidden=true;legacy.dataset.typeIgnore='';for(const node of [...old.querySelectorAll('[id]')])if(old.contains(node))legacy.append(node);if(legacy.childNodes.length)page.append(legacy);old.remove();}page.prepend(head);if(id==='view-casino')window.AVEDCasinoSwitcher?.mountHome(head);if(tools.childNodes.length)head.after(tools);measure.observe(head);
     }
   }
-  update();new MutationObserver(update).observe(app,{childList:true,subtree:true});
+  let queued=false;
+  update();new MutationObserver(records=>{
+    // Games update cards and counters frequently; none of those alter page mastheads.
+    if(queued||!records.some(({target})=>target===app||target.closest?.('#left-sidebar,.player-section-masthead')||pages.some(([id])=>target.id===id)))return;
+    queued=true;requestAnimationFrame(()=>{queued=false;update();});
+  }).observe(app,{childList:true,subtree:true});
 })();

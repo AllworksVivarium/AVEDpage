@@ -4,24 +4,26 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const animated=()=>isActive()&&!document.hidden&&!reduced.matches&&window.AVEDEffectsEnabled?.()!==false;
  function clear(){window.AVEDScratchBomb?.clear();for(const layer of layers){clearTimeout(layer.cleanupTimer);layer.remove();}layers.clear();}
+ function makeRoom(kind){const same=[...layers].filter(layer=>layer.effectKind===kind);if(same.length>=2){const oldest=same[0];clearTimeout(oldest.cleanupTimer);oldest.remove();layers.delete(oldest);}}
  function burst(intensity=1){
   if(!animated())return;
-  const layer=document.createElement('div');layer.className='scratch-electronic-confetti';layer.setAttribute('aria-hidden','true');layer.setAttribute('data-type-ignore','');
-  for(const side of [-1,1])for(let i=0;i<22*intensity;i++){
+  makeRoom('burst');const layer=document.createElement('div');layer.effectKind='burst';layer.className='scratch-electronic-confetti';layer.setAttribute('aria-hidden','true');layer.setAttribute('data-type-ignore','');
+  const perSide=Math.min(22*intensity,innerWidth<768?10+4*intensity:8+10*intensity);
+  for(const side of [-1,1])for(let i=0;i<perSide;i++){
    const p=document.createElement('i'),distance=Math.min(innerWidth*.48,540)*(0.25+Math.random()*.75);
    p.className='scratch-electronic-particle';p.style.cssText=`${side<0?'left':'right'}:-8px;--dx:${-side*distance}px;--lift:${-90-Math.random()*180}px;--drop:${innerHeight*.8}px;--spin:${side*(180+Math.random()*540)}deg;--duration:${1200+Math.random()*550}ms;--delay:${Math.random()*90}ms;width:${3+Math.floor(Math.random()*5)}px;height:${3+Math.floor(Math.random()*9)}px;--particle-color:${paperColors[i%paperColors.length]}`;
-   p.addEventListener('animationend',()=>p.remove(),{once:true});layer.append(p);
+   layer.append(p);
   }
   document.body.append(layer);layers.add(layer);layer.cleanupTimer=setTimeout(()=>{layer.remove();layers.delete(layer);},1950);
  }
  function rain(multiplier){
   if(!animated())return;
-  const layer=document.createElement('div');layer.className='scratch-electronic-confetti scratch-rain';layer.setAttribute('aria-hidden','true');layer.setAttribute('data-type-ignore','');
-  const count=multiplier>=100?168:multiplier>=50?128:multiplier>=20?96:72;
+  makeRoom('rain');const layer=document.createElement('div');layer.effectKind='rain';layer.className='scratch-electronic-confetti scratch-rain';layer.setAttribute('aria-hidden','true');layer.setAttribute('data-type-ignore','');
+  const count=innerWidth<768?(multiplier>=100?72:multiplier>=50?56:multiplier>=20?44:32):(multiplier>=100?168:multiplier>=50?128:multiplier>=20?96:72);
   for(let i=0;i<count;i++){
    const p=document.createElement('i');p.className='scratch-rain-ribbon';
    p.style.cssText=`left:${Math.random()*100}%;--drift:${-90+Math.random()*180}px;--spin:${180+Math.random()*720}deg;--duration:${2600+Math.random()*900}ms;--delay:${i/count*1700}ms;--particle-color:${paperColors[i%paperColors.length]};width:${3+Math.random()*4}px;height:${12+Math.random()*18}px`;
-   p.addEventListener('animationend',()=>p.remove(),{once:true});layer.append(p);
+   layer.append(p);
   }
   document.body.append(layer);layers.add(layer);layer.cleanupTimer=setTimeout(()=>{layer.remove();layers.delete(layer);},5400);
  }
@@ -57,7 +59,8 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   positionToast(state);
   state.label.textContent=!special?'本局收入 ¤ '+Number(prize).toLocaleString():penalty>0?'刮出'+(penalty>=cost*4?'超大炸弹':penalty>=cost*2?'大炸弹':'炸弹')+'了！':category;
   state.amount.textContent=penalty>0?'本局扣除医疗费 ¤ '+Number(penalty).toLocaleString():'本局收入 ¤ '+Number(prize).toLocaleString();state.amount.hidden=!special;state.el.hidden=false;
-  state.el.classList.remove('scratch-award-enter');if(animated()){void state.el.offsetWidth;state.el.classList.add('scratch-award-enter');}
+  state.el.classList.remove('scratch-award-enter');state.motion?.cancel();
+  if(animated()){if(state.el.animate)state.motion=state.el.animate([{opacity:.25,translate:'0 -6px'},{opacity:1,translate:'0 0'}],{duration:240,easing:'ease-out'});else state.el.classList.add('scratch-award-enter');}
   state.timer=setTimeout(()=>{state.el.hidden=true;},penalty>0?3500:multiplier>=10?4000:multiplier>=5?2500:1500);
  }
  function settle(banner,{cost,prize,penalty=0,cells,gameHighlight},mode='manual'){

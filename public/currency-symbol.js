@@ -1,5 +1,5 @@
 (function(){
- const skip='script,style,textarea,input,select,option,code,pre,[contenteditable]:not([contenteditable="false"]),.aved-currency-mark,svg';
+ const skip='script,style,textarea,input,select,option,code,pre,[contenteditable]:not([contenteditable="false"]),.aved-currency-mark,svg,.scratch-electronic-confetti,.scratch-bomb-blast,.slot-reel-overlay';
  function replaceText(node){
   if(!node.data.includes('¤')||node.parentElement?.closest(skip))return;
   const parts=node.data.split('¤'),fragment=document.createDocumentFragment();
@@ -22,7 +22,7 @@
  new MutationObserver(records=>{
   for(const record of records){if(record.type==='characterData')pending.add(record.target);else for(const node of record.addedNodes)pending.add(node);}
   if(scheduled||!pending.size)return;scheduled=true;
-  queueMicrotask(()=>{scheduled=false;const roots=[...pending];pending.clear();for(const root of roots)if(!roots.some(other=>other!==root&&other.contains(root)))render(root);});
+  queueMicrotask(()=>{scheduled=false;const roots=new Set(pending);pending.clear();for(const root of roots){let ancestor=root.parentNode;while(ancestor&&!roots.has(ancestor))ancestor=ancestor.parentNode;if(!ancestor)render(root);}});
  }).observe(document.body,{childList:true,subtree:true,characterData:true});
  render(document.body);
 })();

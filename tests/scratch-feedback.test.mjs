@@ -50,3 +50,12 @@ test('next ticket preserves running fireworks but clears the previous toast and 
  timers.find(t=>t.ms===1950).fn();assert.ok(layers[0].removed);assert.ok(!layers[1].removed);
  timers.find(t=>t.ms===5400).fn();assert.ok(layers[1].removed);
 });
+
+test('rapid mobile awards bound overlapping particles without clearing them on next ticket',()=>{
+ const layers=[];const element=()=>({dataset:{},children:[],style:{},classList:{add(){},remove(){}},setAttribute(){},addEventListener(){},append(el){this.children.push(el);},remove(){this.removed=true;}});
+ const ctx={window:{},document:{hidden:false,addEventListener(){},createElement:element,body:{append(el){if(el.className.includes('scratch-electronic-confetti'))layers.push(el);}}},matchMedia:()=>({matches:false,addEventListener(){}}),innerWidth:390,innerHeight:844,clearTimeout(){},setTimeout(){}};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);const fx=ctx.window.AVEDScratchFeedback();
+ for(let i=0;i<30;i++)fx.settle(element(),{cost:1000,prize:100000});
+ const active=layers.filter(layer=>!layer.removed);assert.ok(active.length<=4);assert.ok(active.reduce((n,l)=>n+l.children.length,0)<=300);
+ fx.nextTicket();assert.ok(active.every(layer=>!layer.removed));
+});
