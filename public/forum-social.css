@@ -45,6 +45,13 @@
  @media(prefers-reduced-motion:reduce){body.theme-inner #inner-app-view #view-forum .forum-reply-highlight{animation:none;outline:1px solid var(--inner-accent)}}
 }
 .forum-unread-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;background:var(--inner-accent);border:1px solid var(--inner-text-main);border-radius:50%}
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-author{flex-wrap:wrap;row-gap:3px;max-width:100%}
+ body.theme-inner #inner-app-view #view-forum .forum-author-avatar{position:relative}
+ body.theme-inner #inner-app-view #view-forum .forum-online-dot{position:absolute;left:1px;bottom:1px;width:7px;height:7px;border:1px solid var(--inner-card-bg);background:#368b52;box-shadow:0 0 0 1px #173e25;pointer-events:none}
+ body.theme-inner #inner-app-view #view-forum .forum-author-activity{font:400 10px/1.5 var(--type-ui,'Microsoft YaHei',sans-serif)!important;color:var(--inner-text-muted)!important;overflow-wrap:anywhere}
+ body.theme-inner #inner-app-view #view-forum .forum-mine-badge{padding:1px 4px;border:1px solid var(--inner-border-soft);font:400 10px/1.4 var(--type-ui,'Microsoft YaHei',sans-serif)!important;color:var(--inner-accent)!important;white-space:nowrap}
+}
 [data-nav=forum]{position:relative}
 .forum-workshop{padding:16px;--workshop-border:var(--inner-border-soft,var(--line,#aaa));--workshop-bg:var(--inner-card-bg,var(--panel,#eee));--workshop-text:var(--inner-text-main,var(--ink,#222))}
 .forum-workshop .forum-workshop-identity{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--workshop-border)}
@@ -84,4 +91,29 @@
  body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-card-title{font-size:16px!important;line-height:1.5!important}
  body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-card-excerpt{font-size:13px!important;line-height:1.65!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
  body.theme-inner #inner-app-view #view-forum .forum-inbox-list strong{font-size:12px;font-weight:700}
+}
+
+/* Compact desktop shortcut; the floating control remains available on handhelds. */
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum #forum-toolbar-back{font-size:11px!important;min-height:28px!important;padding:4px 9px!important;white-space:nowrap}
+ body.theme-inner #inner-app-view #view-forum #forum-toolbar-back[hidden]{display:none!important}
+ @media(max-width:767px){body.theme-inner #inner-app-view #view-forum #forum-toolbar-back{display:none!important}}
+}
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-action-toolbar{justify-content:flex-start!important;gap:8px!important}
+ body.theme-inner #inner-app-view #view-forum #forum-toolbar-back{margin-left:0!important}
+}
+
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum #forum-refresh-skeleton-btn{margin-left:0!important;font-size:11px!important;min-height:28px!important;padding:4px 9px!important}
+}
+
+/* Both toolbars use the same compact keys; the mobile pair respects safe areas. */
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-floating-actions{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:65;display:flex;gap:6px;align-items:center}
+ body.theme-inner #inner-app-view #view-forum .forum-floating-actions #forum-global-back{position:static!important;inset:auto!important}
+ body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back){min-height:32px!important;padding:6px 10px!important;margin:0!important;border:1px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;font-family:inherit!important;font-size:11px!important;font-weight:600!important;line-height:1.4!important;white-space:nowrap;box-shadow:var(--system-key-shadow)!important;border-radius:0!important}
+ body.theme-inner #inner-app-view #view-forum :is(#forum-toolbar-back,#forum-refresh-skeleton-btn,#forum-floating-refresh,#forum-global-back):hover{background:var(--inner-card-alt)!important}
+ body.theme-inner #inner-app-view #view-forum #forum-floating-refresh:disabled{opacity:.55;cursor:wait}
+ body.theme-inner #inner-app-view #view-forum{padding-bottom:70px}
 }

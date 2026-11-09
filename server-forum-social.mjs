@@ -1,6 +1,7 @@
 import {storedAvatar,installAvatarPresets,avatarPresets} from './server-default-avatar.mjs';
 import {ensureCompanyRobots} from './server-company-robots.mjs';
 import {randomBytes} from 'node:crypto';
+import {presenceKey} from './server-forum-presence.mjs';
 
 function migrateLegacyPersonaOwner(db){
  const columns=db.prepare('PRAGMA table_info(forum_personas)').all();
@@ -86,11 +87,12 @@ export function installForumSocialSchema(db){
 export const forumPersonaNameSQL=id=>`(SELECT COALESCE((SELECT codename FROM company_robots WHERE employee_id=p.robot_employee_id),NULLIF(p.robot_name,''),p.name) FROM forum_personas p WHERE p.id=${id})`;
 export const forumNameSQL=a=>`CASE WHEN ${a}.persona_id IS NOT NULL THEN ${forumPersonaNameSQL(a+'.persona_id')} WHEN ${a}.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=${a}.employee_id) ELSE (SELECT anonymous_name FROM profiles WHERE employee_id=${a}.employee_id) END`;
 export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
+ CASE WHEN ${a}.persona_id IS NULL THEN ${a}.employee_id ELSE (SELECT robot_employee_id FROM forum_personas WHERE id=${a}.persona_id) END AS presenceEmployeeId,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_url FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarData,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN ${a}.employee_id ELSE NULL END AS avatarId,CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_preset FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarPreset,
  CASE WHEN ${a}.persona_id IS NULL THEN (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=${a}.employee_id)
  ELSE (SELECT (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=p.robot_employee_id) FROM forum_personas p WHERE p.id=${a}.persona_id AND p.robot_employee_id IS NOT NULL) END AS balance`;
-export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,...rest}=row;return {...rest,avatarUrl:avatarId?storedAvatar(avatarId,avatarData,avatarPreset,64):''};}
+export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,presenceEmployeeId,...rest}=row;return {...rest,presenceKey:presenceKey(presenceEmployeeId,!row.personaId&&row.identityMode==='real'?'real':'anonymous'),avatarUrl:avatarId?storedAvatar(avatarId,avatarData,avatarPreset,64):''};}
 
 export function installForumSocial(db){
  installForumSocialSchema(db);

@@ -398,6 +398,11 @@
         if(!currentUser)return;
         const route=AVEDStartup.resolveRoute(location.hash,['profile',...mainViews]);
         switchMainView(route.page,{game:route.game,navigation:initial?'replace':'none'});
+        if(route.page==='forum'){
+          const entry=history.state?.avedForum;
+          if(entry?.owner===currentUser.id&&entry.thread)openForumThread(entry.thread,entry.reply,{navigation:false}).catch(e=>showToast(e.message,'warn'));
+          else if(currentForumThreadId)returnForumList(false);
+        }
       }
       window.addEventListener('hashchange',()=>restorePlayerRoute());
       window.addEventListener('popstate',()=>restorePlayerRoute());
@@ -1642,7 +1647,8 @@
         return document.scrollingElement;
       }
       function rememberForumPosition(button){const card=button.closest('article');forumListPosition={id:button.dataset.cloudThread,offset:card.getBoundingClientRect().top,top:forumScrollRoot().scrollTop};}
-      function returnForumList(){
+      function returnForumList(navigate=true){
+        if(navigate!==false&&history.state?.avedForum?.owner===currentUser?.id&&history.state.avedForum.thread){history.back();return;}
         const root=forumScrollRoot(),anchoring=root.style.overflowAnchor;root.style.overflowAnchor='none';
         currentForumThreadId=null;forumDetail=null;forumRestoring=true;renderForumView();
         const restore=()=>{
@@ -1654,7 +1660,7 @@
       function renderForumView(replyId){
         const th=currentForumThreadId?(forumDetail||forumThreads.find(t=>String(t.id)===String(currentForumThreadId))):null;
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
-        byId('forum-skeleton-container')?.classList.add('hidden');if(byId('forum-global-back'))byId('forum-global-back').hidden=!th;byId('forum-refresh-skeleton-btn').hidden=!!th;
+        byId('forum-skeleton-container')?.classList.add('hidden');for(const id of ['forum-global-back','forum-toolbar-back'])if(byId(id))byId(id).hidden=!th;byId('forum-refresh-skeleton-btn').hidden=false;
         if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box p-5 space-y-2"><div class="forum-post-meta"><span>${forumAuthor(t)}${forumBalance(t)}</span>${AVEDTime.markup(t.createdAt)}</div><h3 class="font-bold text-lg forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt whitespace-pre-wrap">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>');
           if(markup!==forumListMarkup){forumListMarkup=markup;byId('forum-threads-list-container').innerHTML=markup;}
           return;}
@@ -1662,10 +1668,14 @@
         if(th.preview){byId('forum-detail-main-post').textContent='正在加载主题…';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
-      function forumAuthor(item){const name=item.anonymousName||'未登记代号',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author">${real?`<span class="forum-author-avatar">${item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}</span>`:''}<b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}</span>`;}
+      function forumAuthor(item){const name=item.anonymousName||'未登记代号',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false"><span class="forum-author-avatar">${real&&item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}<i class="forum-online-dot" aria-label="在线" hidden></i></span><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
 
       async function refreshForum(){if(currentForumThreadId)return forumReplies.refresh();return forumBrowser.load();}
-      async function openForumThread(id,replyId){
+      async function openForumThread(id,replyId,{navigation=true}={}){
+        if(navigation&&String(history.state?.avedForum?.thread)!==String(id)){
+          if(!currentForumThreadId)history.replaceState({...history.state,avedForum:{owner:currentUser.id,thread:null}},'',location.href);
+          history.pushState({...history.state,avedForum:{owner:currentUser.id,thread:String(id),reply:replyId||null}},'',location.href);
+        }
         currentForumThreadId=String(id);forumDetail=forumThreads.find(t=>String(t.id)===String(id))||{id,preview:true};
         return renderForumView(replyId);
       }
@@ -1730,7 +1740,7 @@
         if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','无论余额为正数还是负数，重置后都会回到零。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
-          if(id==='forum-refresh-skeleton-btn'){currentForumThreadId=null;forumListPosition=null;await refreshForum();byId('view-forum').scrollIntoView({block:'start'});return;}
+          if(id==='forum-refresh-skeleton-btn'){await refreshForum();return;}
           if(id==='ticket-modal-confirm-btn'||id==='scratch-next-ticket'){
             const type=id==='scratch-next-ticket'?activeIssuedTicket?.gameType:pendingTicketType;if(!type)throw new Error('请先选择票种。');
             if(scratchActivating)return;
@@ -1830,7 +1840,7 @@
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,navigateGame:game=>switchMainView('casino',{game}),getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumDetail});
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
-      forumSocialUI=AVEDForumSocial({api,esc,getUser:()=>currentUser,getThread:()=>forumDetail,getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
+      forumSocialUI=AVEDForumSocial({api,esc,getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});
@@ -1875,7 +1885,7 @@
       document.addEventListener('visibilitychange',()=>{if(marketVisible())refreshMarket().catch(()=>{});});
       setInterval(()=>{if(marketVisible())refreshMarket().catch(()=>{});},5000);
 
-      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-forum').classList.contains('hidden')&&currentForumThreadId)forumReplies.refresh();if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
+      setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
 
 
     })();

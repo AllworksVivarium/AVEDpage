@@ -5,7 +5,7 @@ window.AVEDCardReactionsUI=function({panel,api,esc,portrait,getState}){
  layer.className='ddz-reaction-layer';layer.setAttribute('aria-hidden','true');felt.append(layer);
  bar.className='ddz-reaction-bar';bar.hidden=true;
  bar.innerHTML=`<div role="group" aria-label="牌桌快捷表情">${rules.quick.map(x=>`<button type="button" data-card-reaction="${x.id}" aria-label="${esc(x.label)}" title="${esc(x.label)}">${x.emoji}</button>`).join('')}</div><span class="ddz-reaction-status" role="status" aria-live="polite"></span>`;
- felt.after(bar);
+ panel.querySelector('[data-ddz-actions]').after(bar);
  const status=bar.querySelector('[role=status]'),seen=new Set(),bubbles=new Map(),expiries=new Set();let roomId=null,pending=false,lastSent=-Infinity,cooldownTimer,statusTimer;
  function buttonState(){for(const b of bar.querySelectorAll('button'))b.disabled=pending||performance.now()-lastSent<850;}
  function clear(){layer.replaceChildren();seen.clear();bubbles.clear();for(const timer of expiries)clearTimeout(timer);expiries.clear();clearTimeout(cooldownTimer);clearTimeout(statusTimer);status.textContent='';}

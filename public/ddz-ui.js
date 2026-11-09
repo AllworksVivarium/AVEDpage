@@ -9,13 +9,13 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
    <div class="ddz-turn"><i></i><span data-ddz-turn>等待入座</span><b data-ddz-clock></b></div>
   <section class="ddz-felt" aria-label="智斗太姥牌桌"><div class="ddz-grain" aria-hidden="true"></div>
    <div class="ddz-seat ddz-seat-top" data-seat="top"></div><div class="ddz-seat ddz-seat-left" data-seat="left"></div><div class="ddz-seat ddz-seat-right" data-seat="right"></div>
-   <div class="ddz-table-center"><div class="ddz-watermark" aria-hidden="true">A.V.E.D.<small>EMPLOYEE CARD CLUB</small><span>♠　♥　♣　♦</span></div><div class="ddz-bottom" data-ddz-bottom></div><div class="ddz-trick" data-ddz-trick></div><div class="ddz-table-label" data-ddz-table-label>入座，开始一局。</div></div>
+   <div class="ddz-table-center"><div class="ddz-watermark" aria-hidden="true">A.V.E.D.<small>EMPLOYEE CARD CLUB</small><span>♠　♥　♣　♦</span></div><div class="ddz-bottom" data-ddz-bottom></div><div class="ddz-trick-owner" data-ddz-owner role="status" aria-label="当前桌面出牌人" hidden></div><div class="ddz-trick" data-ddz-trick></div><div class="ddz-table-label" data-ddz-table-label>入座，开始一局。</div></div>
    <div class="ddz-score"><span>叫分 <b data-ddz-bid>—</b></span><span>倍率 <b data-ddz-mult>×1</b></span></div>
    <div class="ddz-hand" data-ddz-hand aria-label="我的手牌"></div>
    <div class="ddz-self"><div data-ddz-self></div><button data-ddz="auto" hidden>托管</button></div>
   </section>
-  <div class="ddz-selection" role="status" aria-live="polite"><div><small>当前选择</small><strong data-ddz-selected>未选牌</strong></div><span data-ddz-preview></span><button data-ddz="clear" disabled>取消全选</button></div>
-  <div class="ddz-money" data-ddz-money role="status">每局最多损失锁定筹码。电脑输赢由系统承担。</div><div class="ddz-actions" data-ddz-actions></div><p class="ddz-message" role="status" data-ddz-message></p>
+  <div class="ddz-selection" role="status" aria-live="polite"><div><small>当前选择 · 可滑动连选</small><strong data-ddz-selected>未选牌</strong></div><span data-ddz-preview></span><button data-ddz="clear" disabled>取消全选</button></div>
+  <div class="ddz-actions" data-ddz-actions></div><div class="ddz-money" data-ddz-money role="status">选择房间后显示本局结算规则。</div><p class="ddz-message" role="status" data-ddz-message></p>
   <footer class="ddz-foot"><span>SELECT · PLAY · PASS</span><span data-ddz-link>LOCAL CARD CLUB</span></footer>
  </div><dialog class="ddz-dialog"><header><b data-dialog-title></b><button data-dialog-close aria-label="关闭窗口">×</button></header><div data-dialog-body></div></dialog>`;
  const $=s=>panel.querySelector(s),dialog=$('dialog');let state=null,size=3,selected=new Set(),busy=false,stream=null,loaded=false,lastEvent='',hintIndex=0,lastHand='',uid=null,clockBase=null,lastRecovery=-Infinity,refreshPending=null;
@@ -25,8 +25,34 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   return `<${interactive?'button':'span'} aria-label="${joker?label:esc(c.label+' '+c.suit)}" ${interactive?`type="button" data-card="${c.id}" aria-pressed="${selected.has(c.id)}"`:''} class="ddz-card ${c.red?'ddz-red':''} ${joker?'ddz-joker':''} ${selected.has(c.id)&&interactive?'is-selected':''}">${interactive?'<span class="ddz-card-face" aria-hidden="true">':''}<span class="ddz-card-rank">${joker?'<span class="ddz-joker-name">'+label+'</span>':label+suit(c)}</span><span class="ddz-card-pip">${emblem}</span><span class="ddz-card-corner">${label}</span>${interactive?'<i class="ddz-card-check" aria-hidden="true">✓</i></span>':''}</${interactive?'button':'span'}>`;
  }
  function portrait(p){return `<span class="ddz-avatar" style="--avatar-tone:${['#739b90','#b99070','#9d83a3','#829bb0'][Math.abs(p.id||0)%4]}"><img src="${esc(p.avatar||'/assets/avatar-pixel-slate.debac0c8de54.svg')}" width="64" height="64" decoding="async" alt="${esc(p.name)}的头像"></span>`;}
+ function seatDirection(seat){
+  if(!state.spectating&&seat===state.seat)return {position:'self',label:'你',arrow:'↓'};
+  if(state.spectating&&seat===3)return {position:'self',label:'下方',arrow:'↓'};
+  const positions=state.size===4||state.spectating?['right','top','left']:['right','left'];
+  const position=positions[state.spectating?seat:(seat-state.seat-1+state.size)%state.size];
+  return {position,label:{left:'左侧',right:'右侧',top:'上方'}[position],arrow:{left:'←',right:'→',top:'↑'}[position]};
+ }
+ function renderLastPlay(){
+  const last=state?.last,owner=$('[data-ddz-owner]'),person=state?.seats[last?.seat];
+  $('[data-ddz-trick]').innerHTML=last?last.cards.map(c=>card(c)).join(''):'';
+  owner.hidden=!last||!person;if(owner.hidden){owner.dataset.key='';return;}
+  const key=[state.id,last.seat,person.name,...last.cards.map(c=>c.id)].join(':');if(owner.dataset.key===key)return;
+  owner.dataset.key=key;const direction=seatDirection(last.seat);owner.dataset.position=direction.position;
+  owner.innerHTML=portrait(person)+`<span><small>${direction.label}出牌 · ${last.seat===state.landlord?'太姥':'少姥'}</small><strong>${esc(person.name)}</strong></span><b aria-hidden="true">${direction.arrow}</b>`;
+ }
  panel.addEventListener('error',e=>{const img=e.target,fallback='/assets/avatar-pixel-slate.debac0c8de54.svg';if(img.matches?.('.ddz-avatar img')&&img.getAttribute('src')!==fallback)img.src=fallback;},true);
  function stakeDraft(){const custom=$('[data-ddz-custom-base]');custom.hidden=$('[data-ddz-base]').value!=='custom';let reserve;try{reserve=state?.money?.rules.reserve??state?.reserve??Stakes.reserve(Stakes.read($('[data-ddz-base]').value,custom.value));}catch{}$('[data-ddz-reserve]').textContent=reserve?'开局锁定 '+reserve.toLocaleString():'请输入有效底注';}
+ function moneyText(current){
+  if(!current)return '选择房间后显示本局结算规则。';
+  if(current.spectating)return '旁观不参与下注与结算';
+  const rules=current.money?.rules??current.moneyRules;
+  if(!rules)return '正在读取本局结算规则…';
+  const returns=rules.computerReturns;
+  const note=returns?`全人机局：赢时净赚结算投入的 ${returns.winPercent-100}%，输时扣除 ${100-returns.lossPercent}%`:`普通联机局：胜方获得结算投入的 2 倍，另分全桌结算投入的 ${rules.bonusPercent}% 奖金；输时扣除本局结算投入`;
+  const receipt=current.money?.settlement;
+  if(receipt)return `本局结算投入 ¤ ${receipt.stake.toLocaleString()} · 获得 ¤ ${receipt.reward.toLocaleString()} · 未使用筹码已释放 · ${note}`;
+  return `${current.money?'本局锁定':'开局锁定'} ¤ ${rules.reserve.toLocaleString()} · 底注 ${rules.base} × 叫分 × 倍率 · 本局结束自动释放剩余筹码 · ${note}`;
+ }
  $('[data-ddz-base]').onchange=stakeDraft;$('[data-ddz-custom-base]').oninput=stakeDraft;
  const feedback=window.AVEDCardFeedbackUI({panel,esc,getUser});
  const reactions=window.AVEDCardReactionsUI({panel,api,esc,portrait,getState:()=>state});
@@ -46,6 +72,41 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   if(cards.length&&p&&!R.beats(p,state?.last))$('[data-ddz-preview]').textContent+=' · 无法压过上手';
   panel.querySelectorAll('[data-card]').forEach(b=>{const on=selected.has(Number(b.dataset.card));b.classList.toggle('is-selected',on);b.setAttribute('aria-pressed',String(on));});
  }
+ function bindHandSelection(hand,{canSelect,getSelection,setSelection,onStart}){
+  let drag=null;
+  const cardAt=target=>{const card=target?.closest?.('[data-card]');return card&&hand.contains(card)?card:null;};
+  function apply(card){
+   const index=drag.cards.indexOf(card);if(index<0||index===drag.end)return;drag.end=index;
+   const next=new Set(drag.original),lo=Math.min(index,drag.start),hi=Math.max(index,drag.start);
+   for(let i=lo;i<=hi;i++){const id=Number(drag.cards[i].dataset.card);drag.select?next.add(id):next.delete(id);}setSelection(next);
+  }
+  function finish(cancel=false){
+   if(!drag)return;const current=drag;drag=null;
+   if(cancel)setSelection(new Set(current.original));
+   try{if(hand.hasPointerCapture(current.pointer))hand.releasePointerCapture(current.pointer);}catch{}
+  }
+  hand.addEventListener('pointerdown',event=>{
+   if(drag||!canSelect()||event.isPrimary===false||event.button!==0)return;
+   const card=cardAt(event.target);if(!card)return;
+   const cards=[...hand.querySelectorAll('[data-card]')],start=cards.indexOf(card);if(start<0)return;
+   event.preventDefault();const original=new Set(getSelection());
+   drag={pointer:event.pointerId,cards,start,end:-1,original,select:!original.has(Number(card.dataset.card))};
+   try{hand.setPointerCapture(event.pointerId);}catch{}
+   apply(card);onStart?.();
+  });
+  hand.addEventListener('pointermove',event=>{
+   if(!drag||event.pointerId!==drag.pointer)return;if(!canSelect()){finish(true);return;}
+   event.preventDefault();const card=cardAt(document.elementFromPoint(event.clientX,event.clientY));if(card)apply(card);
+  });
+  hand.addEventListener('pointerup',event=>{if(drag&&event.pointerId===drag.pointer){event.preventDefault();if(!canSelect()){finish(true);return;}const card=cardAt(document.elementFromPoint(event.clientX,event.clientY));if(card)apply(card);finish();}});
+  hand.addEventListener('pointercancel',event=>{if(drag&&event.pointerId===drag.pointer)finish(true);});
+  hand.addEventListener('lostpointercapture',()=>finish(true));
+  // Pointer taps already toggle on pointerdown. Keyboard activation still uses click.
+  hand.addEventListener('click',event=>{if(event.detail>0&&cardAt(event.target)){event.preventDefault();event.stopPropagation();}},true);
+  return {cancel:()=>finish(true)};
+ }
+ const canSelectHand=()=>!!state&&!state.spectating&&!busy&&['bidding','playing'].includes(state.phase)&&!state.seats[state.seat]?.auto;
+ const handSelection=bindHandSelection($('[data-ddz-hand]'),{canSelect:canSelectHand,getSelection:()=>selected,setSelection:next=>{selected=next;selection();},onStart:()=>playSfx('click')});
  function actions(){let html='';if(!state)html='<span class="ddz-idle-note">选好人数，单人开桌或邀请同事。</span>';
   else if(state.spectating)html='<span>旁观中 · 仅展示公开出牌</span>';
   else if(state.phase==='waiting'||state.phase==='ended'){
@@ -57,7 +118,9 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   else html=`<button data-ddz="pass" ${state.turn!==state.seat||!state.last||state.seats[state.seat].auto?'disabled':''}>不出</button><button data-ddz="hint" ${state.turn!==state.seat||state.seats[state.seat].auto?'disabled':''}>提示</button><button data-ddz="play" class="ddz-gold" disabled>出牌</button>`;
   $('[data-ddz-actions]').innerHTML=html;if(busy)panel.querySelectorAll('[data-ddz-actions] button').forEach(b=>b.disabled=true);selection();
  }
- function render(next){if(state&&next?.id===state.id&&next.revision<state.revision)return;const previous=state;state=next;if(previous?.id!==state?.id)message(previous&&!state?'已离开牌桌，可重新开房或入座。':'');clockBase=state?{server:Number.isFinite(state.serverTime)?state.serverTime:Date.now(),local:performance.now()}:null;if(Number.isSafeInteger(next?.balance))onBalance(next.balance);if(state){size=state.size;uid=getUser()?.id;}const valid=new Set(state?.hand.map(c=>c.id)||[]);selected=new Set([...selected].filter(id=>valid.has(id)));if(previous?.id!==state?.id)selected.clear();
+ function render(next){if(state&&next?.id===state.id&&next.revision<state.revision)return;const previous=state;
+  if(previous?.id!==next?.id||previous?.hand.map(c=>c.id).join(',')!==next?.hand.map(c=>c.id).join(',')||!next||next.spectating||next.seats[next.seat]?.auto)handSelection.cancel();
+  state=next;if(previous?.id!==state?.id)message(previous&&!state?'已离开牌桌，可重新开房或入座。':'');clockBase=state?{server:Number.isFinite(state.serverTime)?state.serverTime:Date.now(),local:performance.now()}:null;if(Number.isSafeInteger(next?.balance))onBalance(next.balance);if(state){size=state.size;uid=getUser()?.id;}const valid=new Set(state?.hand.map(c=>c.id)||[]);selected=new Set([...selected].filter(id=>valid.has(id)));if(previous?.id!==state?.id)selected.clear();
   panel.dataset.cardPlayers=size;panel.dataset.spectating=String(!!state?.spectating);
   const ai=$('[data-ddz-ai]');if(state?.botLevel)ai.value=state.botLevel;ai.disabled=!!state&&(state.spectating||state.host!==getUser()?.id||['bidding','playing'].includes(state.phase));
   const stake=$('[data-ddz-base]'),custom=$('[data-ddz-custom-base]');stake.disabled=custom.disabled=!!state;if(state){const base=state.base||100;stake.value=Stakes.presets.includes(base)?String(base):'custom';custom.value=String(base);}stakeDraft();
@@ -66,12 +129,12 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   $('[data-ddz="leave"]').hidden=!state;$('[data-ddz="leave"]').textContent=state?.spectating?'退出旁观':'退出牌桌';panel.querySelectorAll('[data-size]').forEach(b=>{b.disabled=!!state;b.setAttribute('aria-pressed',String(Number(b.dataset.size)===size));});
   panel.querySelectorAll('.ddz-entry button').forEach(b=>b.disabled=!!state||busy);
   $('[data-ddz-bid]').textContent=state?.bid||'—';$('[data-ddz-mult]').textContent='×'+(state?.multiplier||1);
-  const receipt=state?.money?.settlement;$('[data-ddz-money]').textContent=receipt?`本局结算投入 ¤ ${receipt.stake.toLocaleString()} · 获得 ¤ ${receipt.reward.toLocaleString()} · 未使用筹码已释放`:state?.spectating?'旁观不参与下注与结算':state?.money?`本局锁定 ¤ ${state.money.rules.reserve.toLocaleString()} · 底注 ${state.base||100} × 叫分 × 倍率 · 本局结束自动释放剩余筹码${state.money.rules.computerReturns?' · 全人机：赢净赚 90%，输扣 50%':''}`:'每人本局锁定最多 100,000，底注最高 10,000。全人机：赢时净赚结算投入的 90%，输时扣除 50%；多人牌局胜方另获全桌结算投入的 25% 奖金。';
+  const receipt=state?.money?.settlement;$('[data-ddz-money]').textContent=moneyText(state);
   if(receipt?.autoOnly)$('[data-ddz-money]').textContent+=state.money.rules.autoProfitPolicy==='manual-play-v1'?' · 旧局规则：整局托管不计正收益':' · 托管按正常规则结算';
   if(receipt&&visible())window.AVEDPersonalRecord?.show(state.gameHighlight);
   if(receipt&&previous?.money?.round===state.money.round&&!previous.money.settlement&&receipt.net>0)playSfx('win');
   $('[data-ddz-bottom]').innerHTML=state?.bottom.map(c=>card(c)).join('')||'';
-  const last=state?.last;$('[data-ddz-trick]').innerHTML=last?last.cards.map(c=>card(c)).join(''):'';
+  const last=state?.last;renderLastPlay();
   $('[data-ddz-table-label]').textContent=state?.phase==='ended'?`${state.winner==='landlord'?'太姥':'少姥'}获胜${state.spring?' · 春天':''}`:last?`${state.seats[last.seat].name} · ${last.label} · ${last.count} 张`:state?.phase==='bidding'?'等待叫分':state?.phase==='waiting'?'等待同事入座':state?'本轮自由出牌':'入座，开始一局。';
   $('[data-ddz-turn]').textContent=!state?'等待入座':state.phase==='ended'?'本局结束':state.phase==='waiting'?`${state.seats.filter(Boolean).length} / ${size} 已入座`:state.turn===state.seat?'轮到你'+(state.phase==='bidding'?'叫分':'出牌'):state.seats[state.turn].name+'的回合';
   $('.ddz-turn').classList.toggle('is-mine',!!state&&!state.spectating&&state.turn===state.seat&&['bidding','playing'].includes(state.phase));
@@ -94,14 +157,14 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
  $('[data-ddz-ai]').onchange=()=>act('botLevel',{level:$('[data-ddz-ai]').value});
  $('[data-dialog-close]').onclick=()=>dialog.close();
  panel.addEventListener('click',e=>{
-  const c=e.target.closest('[data-card]');if(c){const id=Number(c.dataset.card);selected.has(id)?selected.delete(id):selected.add(id);selection();playSfx('click');return;}
+  const c=e.target.closest('[data-card]');if(c){if(!canSelectHand())return;const id=Number(c.dataset.card);selected.has(id)?selected.delete(id):selected.add(id);selection();playSfx('click');return;}
   const mode=e.target.closest('[data-size]');if(mode&&!state){size=Number(mode.dataset.size);render(null);return;}
   const b=e.target.closest('[data-ddz]');if(!b||b.disabled)return;const a=b.dataset.ddz;
   if(a==='clear'){selected.clear();selection();return;}
   if(a==='hint'){const choices=R.moves(state.hand,state.last,state.size);if(!choices.length){message('没有能压过上一手的牌，可以选择不出。');return;}selected=new Set(choices[hintIndex++%choices.length].cards.map(c=>c.id));selection();return;}
   if(a==='rules'){
    const example=(label,values)=>`<figure><figcaption>${label}</figcaption><div>${values.map((val,i)=>card({id:990+i,val,label:val===14?'A':String(val),suit:i%2?'♥':'♠',red:i%2===1})).join('')}</div></figure>`;
-   openDialog('牌桌规则',`<h4>人数与发牌</h4><p>三人：一副牌，每人 17 张，太姥拿 3 张底牌。<br>四人：两副牌，每人 25 张，太姥拿 8 张底牌；一位太姥对三位少姥。</p><p>依次叫 1—3 分，最高分做太姥。无人叫分则重新发牌。</p><h4>牌型与大小</h4><p>单张、对子、三张、三带一／二、顺子、连对、飞机及带牌、四带二／两对、炸弹和王炸。</p><div class="ddz-rule-examples">${example('对子',[7,7])}${example('顺子',[3,4,5,6,7])}${example('炸弹',[9,9,9,9])}</div><p>顺子至少 5 张，连对至少 3 对，飞机至少 2 组；连续牌型不含 2 和王。</p><p>飞机单翼可带对子，但不能使用机身点数；对子翅膀为不同点数。</p><p>同牌型同张数比主牌点数。四人炸弹为 4—8 张同点，张数优先；四张王才是王炸。三人王炸为一大一小。</p><h4>胜负与结算</h4><p>任一少姥出完，即少姥方获胜。</p><p>底注可选 1,000、5,000、10,000，或自定义 100 至 10,000 的整数。底注再乘叫分与倍率。<br>每人锁定底注的 10 倍筹码，最低 10,000、最高 100,000；未使用部分在结算后释放。<br>太姥承担对手人数份，其他玩家各承担一份。</p><p>超过任一方锁定筹码时，全桌结算单位统一封顶。全人机牌局按实际结算投入计算：赢局返还 190%（净赚 90%），输局返还 50%（只扣一半），不再叠加系统奖金。有两位及以上玩家的牌局仍按原规则转移筹码，胜方另获本局总投入的 25% 系统奖金。未使用筹码自动释放。</p><h4>托管与电脑</h4><p>联机 30 秒未操作自动托管；电脑对局不限时，可手动开启托管。电脑不读取其他人的手牌，也不根据输赢调难度。</p><p>先选择人数，再点“开联机房”或“开电脑房”；房间创建后须手动开局，不会自动发牌或续局。联机局末有 60 秒准备时间，房主也需准备；未准备者超时离桌，房主自动移交给其他真人。全员就绪后，房主有 60 秒确认开局。</p><p>手动和托管均使用本局结算规则。全人机按开局时实际座位判断，在联机房补齐电脑同样适用。只有你与电脑同桌时，你的托管与电脑使用相同的已选难度；有其他真人的联机桌使用聪明托管。新规则从下一局生效，已结算结果保持不变。</p>`);return;
+   openDialog('牌桌规则',`<h4>人数与发牌</h4><p>三人：一副牌，每人 17 张，太姥拿 3 张底牌。<br>四人：两副牌，每人 25 张，太姥拿 8 张底牌；一位太姥对三位少姥。</p><p>依次叫 1—3 分，最高分做太姥。无人叫分则重新发牌。</p><h4>牌型与大小</h4><p>单张、对子、三张、三带一／二、顺子、连对、飞机及带牌、四带二／两对、炸弹和王炸。</p><div class="ddz-rule-examples">${example('对子',[7,7])}${example('顺子',[3,4,5,6,7])}${example('炸弹',[9,9,9,9])}</div><p>顺子至少 5 张，连对至少 3 对，飞机至少 2 组；连续牌型不含 2 和王。</p><p>飞机单翼可带对子，但不能使用机身点数；对子翅膀为不同点数。</p><p>同牌型同张数比主牌点数。四人炸弹为 4—8 张同点，张数优先；四张王才是王炸。三人王炸为一大一小。</p><h4>胜负与筹码</h4><p>太姥先出完手牌即获胜；任一少姥先出完，即少姥方获胜。</p><p>开局前选择底注并锁定筹码，单局损失不超过锁定金额；未使用的筹码在结束后返还。</p><h4>开局与托管</h4><p>联机 30 秒未操作自动托管；电脑对局不限时，可手动开启托管。</p><p>选择人数并开房，入座后准备，由房主开局。联机局结束后，所有人须在 60 秒内准备，超时离桌；全员就绪后，房主须在 60 秒内开局。</p>`);return;
   }
   if(a==='leave'&&state.spectating){act('unwatch');return;}
   if(a==='leave'){openDialog('离开牌桌',`<p>${['playing','bidding'].includes(state.phase)?'离开后继续托管，本局输赢仍计入你的余额；锁定筹码在结束后结算，不会自动开启下一局。托管按本局规则正常结算。':'确认离开这张牌桌？'}</p><button data-leave-confirm class="ddz-gold">确认离桌</button>`);$('[data-leave-confirm]').onclick=()=>{dialog.close();act('leave');};return;}

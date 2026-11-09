@@ -7,7 +7,7 @@ test('switching accounts clears the old inbox immediately and ignores late respo
  class Element{
   constructor(){this.children=[];this.dataset={};this.innerHTML='';this.textContent='';this.classList={contains:()=>false};}
   append(el){this.children.push(el);}prepend(el){this.children.unshift(el);}
-  setAttribute(){}addEventListener(){}replaceChildren(){this.children=[];}
+  after(){}setAttribute(){}addEventListener(){}replaceChildren(){this.children=[];}
   close(){}querySelector(selector){if(selector==='.forum-persona-row')return null;return this.parts?.[selector]||(this.parts??={},this.parts[selector]=new Element());}
  }
  const elements=new Map(),get=id=>elements.get(id)||(elements.set(id,new Element()),elements.get(id));

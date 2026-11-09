@@ -3,6 +3,7 @@ import {radioVisibleSQL} from './server-radio-retention.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installForumSocial,forumAuthorSQL,mapForumAuthor} from './server-forum-social.mjs';
 import {installForumReplies} from './server-forum-replies.mjs';
+import {createForumPresence} from './server-forum-presence.mjs';
 import {mediaReference} from './server-media.mjs';
 import {weighted,scratchPrizeMultipliers} from './server-economy.mjs';
 import {spinSlot} from './server-slot.mjs';
@@ -38,6 +39,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     addColumn(table,'moderation',"TEXT NOT NULL DEFAULT 'approved'");
   }
   const forumSocial=installForumSocial(db);
+  const forumPresence=createForumPresence();
   db.exec(`
     CREATE TABLE IF NOT EXISTS activity_logs(id INTEGER PRIMARY KEY,employee_id INTEGER,username TEXT NOT NULL DEFAULT '',action TEXT NOT NULL,target TEXT NOT NULL DEFAULT '',details TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS earned_achievements(employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,code TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(employee_id,code));
@@ -225,7 +227,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
     const id=employee.id;let data={};
     try {
-      if(req.method==='POST'||req.method==='PUT')data=await readBody(req,2500000);
+      if(req.method==='POST'||req.method==='PUT')data=await readBody(req,path==='/api/player/forum/notifications'?8192:2500000);
       if(path==='/api/player/state'&&req.method==='GET') {
         const bootstrap=url.searchParams.get('bootstrap')==='1',section=url.searchParams.get('section');
         if(section&&!['news','departments','containment','forum','casino','life'].includes(section))throw new Error('未知页面。');
@@ -257,6 +259,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         else send(res,405,{error:'指令无效。'});return true;
       }
       if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,forumSocial.inbox(id));return true;}
+      if(path==='/api/player/forum/notifications'&&req.method==='POST'){
+        const presence=forumPresence.sync(id,data),threadId=Number(data.threadId||0),revision=Number(data.revision||0);
+        if(!Number.isSafeInteger(threadId)||threadId<0||!Number.isSafeInteger(revision)||revision<0)throw Error('无效的帖子刷新位置。');
+        const latest=threadId?db.prepare("SELECT MAX(v.revision) AS revision FROM forum_reply_versions v JOIN forum_threads t ON t.id=v.thread_id WHERE v.thread_id=? AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''").get(threadId)?.revision||0:0;
+        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:latest>revision});return true;
+      }
       const forumRead=path.match(/^\/api\/player\/forum\/(\d+)\/read$/);
       if(forumRead&&req.method==='POST'){send(res,200,data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);

@@ -5,6 +5,11 @@ export const cardStakes=globalThis.AVEDCardStakes;
 export const cardMoneyRules=Object.freeze({base:cardStakes.defaultBase,reserve:10000,bonusPercent:25,baseOptions:cardStakes.presets,autoProfitPolicy:'normal-v2'});
 // A fair-win-rate reference, not a guarantee: 50% * 190% + 50% * 50% = 120%.
 export const computerCardReturns=Object.freeze({winPercent:190,lossPercent:50});
+export function cardRulesFor(room){
+ const computerOnly=room.mode==='solo'||(room.seats.every(Boolean)&&room.seats.filter(p=>!p.bot).length===1);
+ const base=cardStakes.validate(room.base??100,computerOnly);
+ return {...cardMoneyRules,computerOnly,...(computerOnly?{bonusPercent:0,computerReturns:computerCardReturns}:{}),base,reserve:cardStakes.reserve(base)};
+}
 export function cardSettlement(size,landlord,winner,bid,multiplier,rules=cardMoneyRules){
  const unit=Math.min(rules.base*bid*multiplier,Math.floor(rules.reserve/(size-1)));
  const pot=2*(size-1)*unit,bonus=Math.floor(pot*rules.bonusPercent/100);
@@ -33,8 +38,7 @@ export function installCardWallet({db,balanceFor,recordLedger}){
  // Called inside the room transaction: debit, deal and persistence commit together.
  function start(room){
   // Classify the seats at deal time, including online rooms filled with bots.
-  const computerOnly=room.seats.filter(p=>p&&!p.bot).length===1;
-  const base=cardStakes.validate(room.base??100,computerOnly),rules={...cardMoneyRules,computerOnly,...(computerOnly?{bonusPercent:0,computerReturns:computerCardReturns}:{}),base,reserve:cardStakes.reserve(base)};
+  const rules=cardRulesFor(room);
   if(rules.reserve>MAX_GAME_STAKE)throw Error('每人本局锁定筹码最多为 100,000。');
   for(const p of room.seats)if(!p.bot){checkEntry(p.id);if(balanceFor(p.id)<rules.reserve)throw Error('开局需有 '+rules.reserve.toLocaleString('en-US')+' 可用余额，用于锁定本局筹码。');}
   const id=randomUUID();db.prepare('INSERT INTO card_money_rounds(id,room_id,rules_json) VALUES(?,?,?)').run(id,room.id,JSON.stringify(rules));

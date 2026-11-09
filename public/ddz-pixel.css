@@ -75,6 +75,16 @@
 #game-panel-doudizhu .ddz-card-back{background:repeating-conic-gradient(#b94c46 0 25%,#813c38 0 50%) 0/6px 6px;border:3px solid #e6d9b4;outline:1px solid #15372d;display:grid;place-items:center;color:#e9cc9a}
 #game-panel-doudizhu .ddz-card-back i{font-size:26px;font-style:normal}
 #game-panel-doudizhu .ddz-trick{position:relative;display:flex;justify-content:center;max-width:100%;padding-right:28px}
+#game-panel-doudizhu .ddz-trick-owner{position:relative;display:flex;align-items:center;gap:8px;max-width:100%;padding:5px 9px;border:1px solid #efc66e;background:#102e27;color:#ffe3a3;box-shadow:2px 2px #071c1780;font-family:var(--type-ui,'Microsoft YaHei',sans-serif)!important}
+#game-panel-doudizhu .ddz-trick-owner[hidden]{display:none!important}
+#game-panel-doudizhu .ddz-trick-owner:not([hidden])~.ddz-table-label{display:none}
+#game-panel-doudizhu .ddz-trick-owner .ddz-avatar{width:28px;height:28px;min-width:28px}
+#game-panel-doudizhu .ddz-trick-owner>span:not(.ddz-avatar){min-width:0;text-align:left}
+#game-panel-doudizhu .ddz-trick-owner small{display:block;font:11px/1.3 var(--type-ui,'Microsoft YaHei',sans-serif)!important;color:#d8d6bb}
+#game-panel-doudizhu .ddz-trick-owner strong{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 14px/1.4 var(--type-ui,'Microsoft YaHei',sans-serif)!important}
+#game-panel-doudizhu .ddz-trick-owner>b{font:700 21px/1 sans-serif!important}
+#game-panel-doudizhu .ddz-seat.is-last-play{border-color:#efc66e;box-shadow:inset 3px 0 #efc66e}
+#game-panel-doudizhu .ddz-self.is-last-play{box-shadow:inset 3px 0 #efc66e}
 #game-panel-doudizhu .ddz-trick .ddz-card{margin-right:-28px;transform:rotate(-2deg);height:68px;--card-w:48px}
 #game-panel-doudizhu .ddz-trick .ddz-card:nth-child(even){transform:rotate(2deg)}
 #game-panel-doudizhu .ddz-table-label{position:relative;font-size:11px!important;text-align:center;color:#e3e2bf;text-shadow:1px 1px #183c2d;max-width:100%;line-height:1.6}
@@ -215,7 +225,7 @@ body.effects-off #game-panel-doudizhu *{animation:none!important;transition:none
 #game-panel-doudizhu .ddz-self .ddz-actor-tag{left:43px;right:auto;top:-6px}
 #game-panel-doudizhu .ddz-seat.is-last-play .ddz-seat-last{color:#ffe2a0;background:#071f1a66;border-left:2px solid #e8bd68;padding:3px 5px}
 #game-panel-doudizhu .ddz-play-cue{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:6;pointer-events:none;background:#102e27ed;border:1px solid #91ad7e;box-shadow:3px 4px #081e1a77;padding:6px 12px;max-width:85%;text-align:center;color:#f1e5c3}
-#game-panel-doudizhu .ddz-play-cue small{display:block;color:#bacead;font-size:10px!important;margin-bottom:4px}
+#game-panel-doudizhu .ddz-play-cue small{display:block;color:#ffe3a3;font:700 13px/1.4 var(--type-ui,'Microsoft YaHei',sans-serif)!important;margin-bottom:4px}
 #game-panel-doudizhu .ddz-play-cue strong{display:block;font-size:16px!important;line-height:1.4}
 #game-panel-doudizhu .ddz-play-cue.is-bomb{border:3px double #ffd28a;background:#472f28;min-width:160px;padding:13px 20px;color:#ffdc88;box-shadow:4px 5px #0a201b,0 0 28px #f5bc493b}
 #game-panel-doudizhu .ddz-play-cue.is-bomb strong{font-size:30px!important;letter-spacing:5px!important;text-shadow:2px 3px #7e372c}
@@ -276,3 +286,12 @@ body.effects-off #game-panel-doudizhu *{animation:none!important;transition:none
 #game-panel-doudizhu:not([data-card-phase=idle]) .ddz-menu{grid-template-columns:repeat(3,minmax(0,1fr))}
 #game-panel-doudizhu .ddz-ready-clock{display:block;color:#efc66e;font:700 11px/1.6 monospace!important;margin-top:3px}
 #game-panel-doudizhu .ddz-ready-clock.is-urgent{color:#ffb28a}
+#game-panel-doudizhu .ddz-hand,#game-panel-doudizhu .ddz-hand-row .ddz-card{touch-action:none;-webkit-user-select:none;user-select:none}
+@media(max-width:650px){
+ #game-panel-doudizhu .ddz-table-center{inset:145px 9px 185px;justify-content:flex-start;gap:3px}
+ #game-panel-doudizhu .ddz-trick-owner{gap:6px;padding:4px 7px}
+ #game-panel-doudizhu .ddz-trick-owner .ddz-avatar{width:24px;height:24px;min-width:24px}
+ #game-panel-doudizhu .ddz-trick-owner>span:not(.ddz-avatar){display:flex;align-items:center;gap:6px}
+ #game-panel-doudizhu .ddz-trick-owner strong{font-size:13px!important;max-width:110px}
+ #game-panel-doudizhu .ddz-trick-owner small{font-size:10px!important}
+}

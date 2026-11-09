@@ -6,7 +6,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
  cue.className='ddz-play-cue';cue.hidden=true;cue.setAttribute('role','status');cue.setAttribute('aria-live','polite');felt.append(cue);
  result.className='ddz-result';result.hidden=true;result.setAttribute('role','status');result.setAttribute('aria-live','polite');felt.append(result);
  const blast=document.createElement('div');blast.className='ddz-blast';blast.hidden=true;blast.setAttribute('aria-hidden','true');felt.append(blast);
- round.className='ddz-round';round.hidden=true;round.setAttribute('aria-label','开局准备');$('.ddz-money').before(round);
+ round.className='ddz-round';round.hidden=true;round.setAttribute('aria-label','开局准备');$('.ddz-selection').before(round);
  let lastKey='',timer,blastTimer;
  function explode(rocket){
   clearTimeout(blastTimer);blast.hidden=false;blast.dataset.rocket=String(rocket);
@@ -43,6 +43,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   panel.dataset.myTurn=String(!!manual);panel.dataset.feedbackMotion=window.AVEDEffectsEnabled?.()===false?'off':'on';
   panel.querySelectorAll('.ddz-actor-tag').forEach(el=>el.remove());
   panel.querySelectorAll('.is-last-play').forEach(el=>el.classList.remove('is-last-play'));
+  if(active&&state.last)anchor(state.last.seat,state)?.classList.add('is-last-play');
   if(active){const node=anchor(state.turn,state);if(node&&!(mine&&manual)){const tag=document.createElement('span');tag.className='ddz-actor-tag';tag.textContent=(state.phase==='bidding'?'正在叫分':'正在出牌')+(mine&&state.seats[state.seat]?.auto?' · 托管':'');node.append(tag);}}
   const waiting=state&&!state.spectating&&['ended','waiting'].includes(state.phase);
   result.hidden=state?.phase!=='ended';
@@ -52,7 +53,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
    result.innerHTML=`<small>${state.spectating?'ROUND COMPLETE':won?'YOU WIN':'NEXT TIME'}</small><strong>${state.spectating?(state.winner==='landlord'?'太姥获胜':'少姥获胜'):won?'你赢了！':'下次一定……'}</strong>${receipt?`<b class="ddz-result-net">净变化 ${receipt.net>0?'+':''}${receipt.net.toLocaleString()}</b><span>投入 ${receipt.stake.toLocaleString()} · 返还 ${receipt.reward.toLocaleString()}</span>${receipt.autoOnly?'<span>'+ (state.money.rules.autoProfitPolicy==='manual-play-v1'?'旧局规则 · 托管不计正收益':'托管 · 正常结算')+'</span>':''}`:'<span>本局结束</span>'}`;
   }
   round.hidden=!waiting;panel.classList.toggle('ddz-intermission',!!waiting);
-  if(waiting)round.after($('[data-ddz-actions]'));else $('.ddz-money').after($('[data-ddz-actions]'));
+  if(waiting)round.after($('[data-ddz-actions]'));else $('.ddz-selection').after($('[data-ddz-actions]'));
   if(waiting){
    const host=String(state.host)===String(getUser()?.id),notReady=state.seats.filter(p=>p&&!p.bot&&p.id!==state.host&&!p.ready),empty=state.seats.filter(p=>!p).length;
    const ownReady=state.seats[state.seat]?.ready;
@@ -64,7 +65,6 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   lastKey=key;
   if(previous?.id!==state?.id||!state||state.phase==='waiting'||state.phase==='ended'&&previous?.phase!=='ended'||state.phase==='bidding'&&previous?.phase==='ended'){clearTimeout(timer);cue.hidden=true;clearTimeout(blastTimer);blast.hidden=true;blast.replaceChildren();}
   if(ev&&ev.seat>=0&&state&&['playing','ended'].includes(state.phase)&&state.seats[ev.seat]){
-   const node=anchor(ev.seat,state);if(state.seats[ev.seat].last)node?.classList.add('is-last-play');
    const bomb=['bomb','rocket'].includes(ev.type);
    if(fresh&&(state.phase!=='ended'||bomb)){
     const name=state.seats[ev.seat].name;

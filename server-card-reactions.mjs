@@ -8,6 +8,10 @@ const variants={like:['like','star','clap'],clap:['clap','star','fire'],laugh:['
 export function chooseTableReaction(room,previous,bot){
  const g=room.game,e=g?.event;if(!g||g.landlord<0||!e||e.seat<0)return null;
  const teammate=(e.seat===g.landlord)===(bot===g.landlord),count=g.hands[e.seat].length;
+ const name=room.seats[bot]?.name;
+ if(name==='你炸我就鼓掌'&&e.seat!==bot&&!teammate&&['bomb','rocket'].includes(e.type))return {emoji:'clap',fixed:true};
+ if(name==='笑容转移中'&&g.phase==='ended'&&previous?.game?.phase!=='ended')return {emoji:((g.winner==='landlord')===(bot===g.landlord))?'laugh':'cry',fixed:true};
+ if(name==='我牌呢'&&e.seat===bot&&g.hands[bot].length<=2&&e.type)return {emoji:'think',fixed:true};
  if(g.phase==='ended'&&previous?.game?.phase!=='ended')return ((g.winner==='landlord')===(bot===g.landlord))?{emoji:'clap'}:{emoji:'cry'};
  if(e.seat===bot)return null;
  if(['bomb','rocket'].includes(e.type))return teammate?{emoji:'clap'}:{emoji:'sweat'};
@@ -19,6 +23,7 @@ export function chooseTableReaction(room,previous,bot){
 
 // Reads public counts, roles and the last public play only; never card values.
 export function chooseReactionReply(room,sender,bot,emoji,positiveStreak=0){
+ if(room.seats[bot]?.name==='别给我发表情了')return 'eyeroll';
  const g=room.game;if(!g||g.landlord<0)return emoji==='cry'?'handshake':positive.has(emoji)?'like':'think';
  const teammates=(sender===g.landlord)===(bot===g.landlord);
  const senderWon=g.phase==='ended'&&((g.winner==='landlord')===(sender===g.landlord));
@@ -53,12 +58,13 @@ export function createCardReactions({clock=()=>Date.now(),random=Math.random}={}
    const now=clock(),s=stateFor(room);s.touched=now;
    if(key===s.lastObserved)return;s.lastObserved=key;
    const ended=room.game.phase==='ended'&&previous?.game?.phase!=='ended';
-   if(!ended&&(s.pending||now-s.lastContext<6500||now-s.lastReply<2400))return;
    const candidates=room.seats.flatMap((p,i)=>p?.bot?[[i,chooseTableReaction(room,previous,i)]]:[]).filter(([,reply])=>reply);
    if(!candidates.length)return;
-   const pool=candidates.filter(([i])=>i!==s.lastBot),choices=pool.length?pool:candidates;
+   const fixed=candidates.filter(([,reply])=>reply.fixed);
+   if(!fixed.length&&!ended&&(s.pending||now-s.lastContext<6500||now-s.lastReply<2400))return;
+   const eligible=fixed.length?fixed:candidates,pool=eligible.filter(([i])=>i!==s.lastBot),choices=pool.length?pool:eligible;
    const [bot,reply]=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
-   const options=variants[reply.emoji]||[reply.emoji],emoji=options[Math.min(options.length-1,Math.floor(random()*options.length))];
+   const options=reply.fixed?[reply.emoji]:variants[reply.emoji]||[reply.emoji],emoji=options[Math.min(options.length-1,Math.floor(random()*options.length))];
    s.pending={bot,emoji,context:true,round:room.money?.round,due:Math.max(now+850+Math.floor(random()*500),s.lastReply+2400)};s.lastContext=now;
   },
   receive(room,actorId,emoji,requestId){
@@ -78,7 +84,8 @@ export function createCardReactions({clock=()=>Date.now(),random=Math.random}={}
    const bots=room.seats.flatMap((p,i)=>p?.bot?[i]:[]);
    if(bots.length){
     // Coalesce rapid reactions: at most one delayed bot reply per table.
-    const bot=s.pending?.actorId===actorId?s.pending.bot:bots[Math.min(bots.length-1,Math.floor(random()*bots.length))];
+    const grumpy=bots.find(i=>room.seats[i].name==='别给我发表情了');
+    const bot=grumpy??(s.pending?.actorId===actorId?s.pending.bot:bots[Math.min(bots.length-1,Math.floor(random()*bots.length))]);
     const answer=chooseReactionReply(room,seat,bot,emoji,actor.positives.length),options=variants[answer]||[answer];
     const reply={actorId,bot,emoji:options[Math.min(options.length-1,Math.floor(random()*options.length))],replyTo:event.id,round:room.money?.round};
     s.pending={...reply,due:s.pending?.due??Math.max(now+850+Math.floor(random()*500),s.lastReply+2400)};

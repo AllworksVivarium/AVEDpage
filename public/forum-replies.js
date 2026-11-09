@@ -37,6 +37,7 @@ window.AVEDForumReplies=function({api,container,count,renderItem,onThread,onSeen
   get(id){return state?.nodes.get(Number(id))?.item||state?.context.get(Number(id));},
   open(id,replyId){if(state?.id!==String(id)){observer?.disconnect();state={id:String(id),nodes:new Map(),context:new Map(),page:1,pages:1,total:0,cursor:0,loaded:false,busy:false};container.replaceChildren();}return replyId?request('reveal',replyId):state.loaded?Promise.resolve():request();},
   refresh(){return request();},
+  revision(){return state?.cursor||0;},
   reveal(id){return request('reveal',id);},
   async context(id){const s=state;if(!s||!enabled())return;const known=s.nodes.get(Number(id))?.item||s.context.get(Number(id));if(known)return known;const data=await api('/api/player/forum/'+s.id+'?reply='+Number(id)+'&context=1');if(state!==s||!enabled())return;const item=data.items[0];s.context.set(item.id,item);return item;},
   reset(){serial++;state=null;observer?.disconnect();for(const p of pagers)p.el.hidden=true;container.replaceChildren();}

@@ -7,6 +7,21 @@ import {chooseReactionReply,chooseTableReaction,createCardReactions} from '../se
 import {installCardTables} from '../server-card-table.mjs';
 
 function room(){return {id:'table-a',seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}],game:{phase:'playing',landlord:0,hands:[Array(12),Array(2),Array(8)],last:null}};}
+
+test('named computers keep their promised exact emoji and take priority over generic reactions',()=>{
+ let now=10000;const r=room(),social=createCardReactions({clock:()=>now,random:()=>.99}),rooms=new Map([[r.id,r]]);
+ r.seats[1].name='你炸我就鼓掌';r.game.event={id:'bomb',seat:0,type:'bomb'};
+ assert.deepEqual(chooseTableReaction(r,{game:{phase:'playing'}},1),{emoji:'clap',fixed:true});
+ social.observe(r,{game:{phase:'playing',event:{id:'old'}}});now+=1500;social.tick(rooms,()=>{});
+ assert.equal(social.view(r).at(-1).seat,1);assert.equal(social.view(r).at(-1).emoji,'clap','no random fire/star variant');
+ r.seats[1].name='别给我发表情了';
+ for(const emoji of globalThis.AVEDCardReactionRules.quick.map(e=>e.id)){
+  now+=9000;social.receive(r,1,emoji,'name-'+emoji);now+=1500;social.tick(rooms,()=>{});
+  const reply=social.view(r).find(e=>e.replyTo);
+  assert.equal(reply.seat,1);assert.equal(reply.emoji,'eyeroll',emoji);
+ }
+ social.close();
+});
 test('all contextual computer reactions stay within the emoji vocabulary, with varied replies and no speech',()=>{
  const ids=new Set(globalThis.AVEDCardReactionRules.items.map(e=>e.id)),replies=new Set();
  for(const value of [0,.5,.99])for(const type of ['bomb','pair']){

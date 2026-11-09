@@ -26,7 +26,8 @@
     function request(path,options={}) {
       const safe=!options.method||options.method==='GET';
       const {cacheTtlMs=ttlFor(path),...transport}=options;
-      if(!safe){generation++;cache.clear();pending.clear();return perform(path,transport);}
+      // Forum sync changes only ephemeral presence, not cached reference data.
+      if(!safe){if(path!=='/api/player/forum/notifications'){generation++;cache.clear();pending.clear();}return perform(path,transport);}
       // Only low-frequency reference endpoints are eligible, never balances or market state.
       const ttl=Math.min(ttlFor(path),Math.max(0,Number(cacheTtlMs)||0)),key=JSON.stringify([path,transport]);
       const hit=cache.get(key);

@@ -1,10 +1,23 @@
 import {randomInt,randomUUID} from 'node:crypto';
 import './public/ddz-rules.js';
 import {robotAvatar,storedAvatar,defaultAvatar,installAvatarPresets} from './server-default-avatar.mjs';
-import {installCardWallet,cardMoneyRules,cardStakes} from './server-card-wallet.mjs';
+import {installCardWallet,cardMoneyRules,cardStakes,cardRulesFor} from './server-card-wallet.mjs';
 import {chooseAuto,autoLevels} from './server-card-ai.mjs';
 import {createCardReactions} from './server-card-reactions.mjs';
 const R=globalThis.AVEDDdzRules;
+// Nicknames stay with a seat across rounds; the separate role badge is authoritative.
+export const cardBotNames=Object.freeze([
+ '我爱当太姥','都起来我才是真太姥','太姥体验卡','太姥候补席','少姥也有梦想','今天不想当少姥','这把让我叫三分','三分烫嘴吗',
+ '家人们这把能赢吗','这牌能播吗','别急我在算','让我组织一下手牌','刚才那张不算','我以为轮到我了','这也能轮到我','等等我有个想法',
+ '真没藏炸弹','手里全是顺子',
+ '四个二路过','小王今天休假','大王让我带个话','掩护我下班',
+ '不出也是战术','过牌艺术家','我在让你赢','这把纯属意外','赢了算我加班','输了怪打印机','打完这把就下班','工资先别结',
+ '茶水间牌王','工位常驻选手','摸鱼不摸烂牌','带薪算牌员','这局算团建',
+ '稳住我还能送','优势在我这边吧','这把真的稳了','刚学会不出','只会一点点','今天手气借来的','好运正在排队','底牌请善待我',
+ '你炸我就鼓掌','别给我发表情了','笑容转移中','我牌呢','我不是来垫底的','再来最后亿把',
+ '神秘员工007','神秘员工042','神秘员工086','随机员工031','随机员工108','随机员工206','匿名员工404','临时员工002',
+ '方片07','梅花12','红桃03','黑桃A','方片九','红桃女士','黑桃事务员','茶水间常客','门口等车的人','夜班值班员','不知名同事','隔壁部门的','工牌忘带了','自动贩卖机',
+]);
 export const cardReadyTimeoutMs=60000;
 export function dealTable(size=3,random=()=>randomInt(0x1000000)/0x1000000){
  if(![3,4].includes(size))throw Error('请选择三人或四人桌。');
@@ -56,7 +69,7 @@ export function botTurn(s,level='standard'){
 }
 export function tableView(room,employeeId,spectating=false){
  const seat=room.seats.findIndex(p=>p?.id===employeeId),g=room.game;if(seat<0&&!spectating)throw Error('你不在这张牌桌。');
-  return {id:room.id,mode:room.mode,size:room.size,host:room.host,hostName:room.seats.find(p=>p?.id===room.host)?.name||'员工',revision:room.revision,base:room.base||100,reserve:room.money?.rules.reserve??cardStakes.reserve(room.base||100),botLevel:room.botLevel||'standard',spectating,readyCycle:!!room.readyCycle,readyTimeoutMs:cardReadyTimeoutMs,hostStartDeadline:room.hostStartDeadline||0, money:room.money&&!spectating?{round:room.money.round,rules:room.money.rules,settlement:room.money.settlement?{...room.money.settlement.players[seat]}:null}:null,seat,phase:g?.phase||'waiting',deadline:room.deadline,
+  return {id:room.id,mode:room.mode,size:room.size,host:room.host,hostName:room.seats.find(p=>p?.id===room.host)?.name||'员工',revision:room.revision,base:room.base||100,reserve:room.money?.rules.reserve??cardStakes.reserve(room.base||100),moneyRules:room.money?.rules??cardRulesFor(room),botLevel:room.botLevel||'standard',spectating,readyCycle:!!room.readyCycle,readyTimeoutMs:cardReadyTimeoutMs,hostStartDeadline:room.hostStartDeadline||0, money:room.money&&!spectating?{round:room.money.round,rules:room.money.rules,settlement:room.money.settlement?{...room.money.settlement.players[seat]}:null}:null,seat,phase:g?.phase||'waiting',deadline:room.deadline,
   seats:room.seats.map((p,i)=>p?{id:p.id,name:p.name,avatar:p.bot?robotAvatar(p.id):p.avatar||defaultAvatar('slate'),bot:p.bot,auto:p.auto,ready:p.ready,readyDeadline:p.readyDeadline||0,count:g?.hands[i].length||0,role:g?.landlord===i?'landlord':g?.landlord>=0?'farmer':null,last:g?.seatPlays[i]||null}:null),
   hand:g&&!spectating?[...g.hands[seat]].sort((a,b)=>b.val-a.val||a.id-b.id):[],bottom:g?.phase==='bidding'?Array(g.bottom.length).fill(null):g?.bottom||[],turn:g?.turn??-1,landlord:g?.landlord??-1,bid:g?.bid||0,multiplier:g?.multiplier||1,last:g?.last||null,event:g?.event||null,winner:g?.winner||null,spring:!!g?.spring};
 }
@@ -108,7 +121,10 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
   db.exec('COMMIT');if(r&&existed)reactions.observe(r,previous);broadcast(r,previous?.seats||[]);return result;
  }catch(e){db.exec('ROLLBACK');if(r){for(const k of Object.keys(r))delete r[k];Object.assign(r,previous);if(existed)rooms.set(r.id,r);else rooms.delete(r.id);}throw e;}}
  const person=e=>{const p=profileFor.get(e.id)||{};return {id:e.id,name:p.anonymous_name||e.display_name||e.username,avatar:portraitFor(e),ready:true,bot:false,auto:false};};
- const bots=r=>{const names=['方片 07','梅花 12','红桃 03'];r.seats=r.seats.map((p,i)=>p||{id:-i-1,name:names[(i-1+3)%3],avatar:'',bot:true,ready:true,auto:false});};
+ const bots=r=>{
+  const used=new Set(r.seats.filter(Boolean).map(p=>p.name)),names=cardBotNames.filter(name=>!used.has(name));
+  r.seats=r.seats.map((p,i)=>p||{id:-i-1,name:names.splice(randomInt(names.length),1)[0],avatar:'',bot:true,ready:true,auto:false});
+ };
  function start(r){wallet.start(r);r.game=dealTable(r.size);r.readyCycle=false;r.hostStartDeadline=0;r.seats.forEach(p=>{p.auto=false;p.readyDeadline=0;});}
  function leave(r,id){const i=r.seats.findIndex(p=>p?.id===id);if(i<0)return;
   // A departing human keeps their identity and financial liability until settlement.
