@@ -1,4 +1,12 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+test('scratch initialization runs before the later page helpers are initialized',()=>{
+ const source=fs.readFileSync(new URL('../public/player.js',import.meta.url),'utf8');
+ const start=source.indexOf("      let lastScratchRules='';"),end=source.indexOf("      document.getElementById('scratch-reveal-all-cells-btn')",start);
+ let listeners=0,boards=0;const host={addEventListener(type){assert.equal(type,'click');listeners++;}};
+ vm.runInNewContext(source.slice(start,end)+'\nconst byId=()=>{throw Error("late helper invoked during setup")};',{document:{getElementById(id){assert.equal(id,'active-ticket-board-container');return host;}},AVEDScratchBoard({host:node}){assert.equal(node,host);boards++;return {};}});
+ assert.equal(boards,1);assert.equal(listeners,1);
+});
+
 test('reveals and next tickets preserve the print and every unchanged cell',()=>{
  let replacements=0,mounts=0,nodes=[];const price={textContent:'票价 1,000'};
  const make=html=>({html,isConnected:true,replaceWith(next){nodes[nodes.indexOf(this)]=next;this.isConnected=false;next.isConnected=true;replacements++;}});

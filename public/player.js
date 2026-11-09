@@ -1361,7 +1361,7 @@
         if(!c.revealed)return `<button type="button" data-scratch-cell="${c.idx}" class="scratch-cell-foil sp-cell sp-covered ${seal?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center"><span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${seal?'核准倍率':'刮开好运'}</b></span></button>`;
         return `<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${seal?'sp-seal':''} ${c.isBomb?'is-bomb':''} h-20 border-2 ${c.isWinPart?'is-winning border-[#9e1b1b] bg-[#fff5f5]':'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center"><div class="text-sm font-bold ${c.isWinPart?'text-[#9e1b1b]':''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div><div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div></div>`;
       }
-      const scratchBoard=AVEDScratchBoard({host:byId('active-ticket-board-container'),cell:scratchCellMarkup,frame(tk,cells){
+      const scratchBoard=AVEDScratchBoard({host:document.getElementById('active-ticket-board-container'),cell:scratchCellMarkup,frame(tk,cells){
         const kind=tk.gameType.type,cols=kind==='step_climb'?'scratch-step-grid sp-step-grid':kind==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
         return AVEDScratchTicketArt.board(tk,`<div class="grid ${cols} gap-3">${cells.map((html,i)=>(kind==='lucky_num'&&i===4?'</div><div class="grid scratch-prize-grid sp-nums">':'')+html).join('')}</div>`);
       }});
@@ -1376,7 +1376,7 @@
           scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
         }
       }
-      byId('active-ticket-board-container').addEventListener('click',async event=>{
+      document.getElementById('active-ticket-board-container').addEventListener('click',async event=>{
         const button=event.target.closest('[data-scratch-cell]');if(!button||!event.currentTarget.contains(button))return;
         const idx=Number(button.dataset.scratchCell);if(!await activateScratchTicket())return;
         const tk=activeIssuedTicket;if(!tk?.cells[idx]||tk.cells[idx].revealed)return;
