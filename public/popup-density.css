@@ -1,15 +1,111 @@
-/* First cascade layer: shared dimensions win over per-window legacy rules. */
+/* The first layer owns window geometry and feedback, ahead of legacy skins.
+   Game award artwork and developer editing tools retain their own layouts. */
 @layer aved-popup-density {
- body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading,#global-confirm-modal>div>div:first-child){box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:nowrap!important;gap:8px!important;height:30px!important;min-height:30px!important;max-height:30px!important;padding:2px 8px!important;line-height:18px!important}
- body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading,#global-confirm-modal>div>div:first-child) :is(h2,h3,b,span){min-width:0;margin-block:0!important;padding-block:0!important;font-size:12px!important;line-height:18px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body {
+  --popup-gap:20px;--popup-size:440px;--popup-header:30px;--popup-padding:16px;
+  --popup-fast:120ms;--popup-drawer:160ms;
+  --popup-ink:var(--inner-text-main,var(--admin-ink,#ece9df));
+  --popup-muted:var(--inner-text-muted,var(--admin-muted,#aaa69a));
+  --popup-face:var(--system-window-face,var(--admin-panel,var(--inner-card-bg,#171a18)));
+  --popup-line:var(--inner-border,var(--admin-line,#76796f));
+  --popup-accent:var(--inner-accent,var(--admin-accent,#b2bc91));
+  --popup-accent-ink:var(--inner-accent-text,var(--admin-bg,#111411));
+  --popup-copy:var(--type-ui,'Segoe UI','Microsoft YaHei',sans-serif);
+ }
+ html[data-admin-theme] body {--popup-accent:var(--admin-red);--popup-accent-ink:#f7f1e5}
+ body :is(dialog:not(:where(#text-edit-panel,#type-study-panel)),#casino-switch-window) {
+  box-sizing:border-box!important;min-width:0!important;
+  width:min(var(--popup-size),calc(100% - var(--popup-gap)*2))!important;
+  max-width:calc(100% - var(--popup-gap)*2)!important;
+  min-height:0!important;height:fit-content!important;
+  max-height:calc(100dvh - 48px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
+  padding:0!important;overflow:auto!important;overscroll-behavior:contain;
+  border:1px solid var(--popup-line)!important;border-radius:0!important;
+  background:var(--popup-face)!important;color:var(--popup-ink)!important;
+  box-shadow:inset 1px 1px #ffffff35,3px 3px 0 #0005!important;
+  overflow-wrap:anywhere;
+ }
+ body dialog:not(:where(#text-edit-panel,#type-study-panel)) {position:fixed!important;inset:0!important;margin:auto!important}
+ body :is(.system-message-window,.welfare-transfer-dialog,.welfare-confirm,.forum-emoji-dialog) {--popup-size:360px}
+ body :is(.ddz-dialog,.forum-workshop-dialog) {--popup-size:580px}
+ body .admin-dialog {--popup-size:680px}
+ body #casino-switch-window {--popup-size:var(--casino-window-width,304px);margin:0!important;max-height:min(var(--casino-window-height,70dvh),calc(100dvh - 48px))!important}
+ body :is(dialog:not(:where(#text-edit-panel,#type-study-panel)),#casino-switch-window)::backdrop {
+  background:radial-gradient(#0005 .6px,transparent .7px) 0 0/3px 3px,#0005;
+  backdrop-filter:none!important;
+ }
+ body #casino-switch-window::backdrop {background:transparent}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel))>header {
+  position:sticky;top:0;z-index:2;margin:0!important;
+  background:var(--popup-accent)!important;color:var(--popup-accent-ink)!important;
+  border:0!important;border-bottom:3px double currentColor!important;
+ }
+ body dialog:not(:where(#text-edit-panel,#type-study-panel))>:is(form,div:not(.system-toast-stack),p) {padding:var(--popup-padding)!important;margin:0!important;min-width:0;box-sizing:border-box}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel)) :is(p,li,label) {font-size:13px!important;line-height:1.65!important;overflow-wrap:anywhere}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel)) :is(small,.hint,.palette-preview-note,[role=status]) {font-size:12px!important;line-height:1.6!important}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel)) :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {box-sizing:border-box;min-width:0;max-width:100%;font-size:16px!important;line-height:1.5!important}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel)) button {font-size:12px!important;line-height:1.5!important}
+ body dialog:not(:where(#text-edit-panel,#type-study-panel))>header :is(h2,h3,b,span,button) {color:inherit!important}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading){box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:nowrap!important;gap:8px!important;height:var(--popup-header)!important;min-height:var(--popup-header)!important;max-height:var(--popup-header)!important;padding:2px 8px!important;line-height:18px!important}
+ body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading) :is(h2,h3,b,span){min-width:0;margin-block:0!important;padding-block:0!important;font-size:12px!important;line-height:18px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band,#login-modal .personnel-login-heading)>:not(button){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band)>button:not(#close-login-btn){box-sizing:border-box!important;display:grid!important;place-items:center!important;position:relative;flex:0 0 22px!important;width:22px!important;min-width:22px!important;max-width:22px!important;height:22px!important;min-height:22px!important;max-height:22px!important;padding:0!important;margin:0!important;font:16px/1 monospace!important;border-width:1px!important;cursor:pointer}
  body :is(dialog>header,#casino-switch-window>header,#ticket-modal-header-band)>button::after{content:'';position:absolute;inset:-4px}
  body #login-modal #close-login-btn{height:22px!important;min-height:22px!important;padding:0 5px!important;font-size:11px!important;line-height:20px!important}
  body #casino-switch-window>header>div>small{display:none!important}
  body #speech-edit-dialog>header h2{border:0!important;padding:0!important}
- body #speech-edit-dialog>header{margin-bottom:12px!important}
- body .admin-dialog>header{margin-bottom:12px!important}
+ body :is(dialog>header,#casino-switch-window>header)>button {border-radius:0!important;background:transparent!important;color:inherit!important;box-shadow:inset 1px 1px #ffffff40,inset -1px -1px #0005!important}
  body .scratch-award-toast .scratch-award-close{width:18px!important;height:16px!important;min-height:16px!important;flex-basis:18px!important;font-size:14px!important}
  body .slot-award-card>button{width:20px!important;height:20px!important;min-height:20px!important;padding:0!important;font-size:16px!important;line-height:20px!important}
+
+ /* Confirmations block input; ordinary notices never take focus. */
+ .system-message-window .system-message-body p {white-space:pre-wrap;margin:0 0 16px}
+ .system-message-window footer {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+ /* Keep action keys visible above legacy button resets in every theme. */
+ .system-message-window footer button {box-sizing:border-box;min-width:76px!important;min-height:34px!important;padding:6px 14px!important;border:1px solid var(--popup-ink)!important;border-radius:0!important;background:var(--popup-face)!important;color:var(--popup-ink)!important;font-weight:600!important;box-shadow:inset 1px 1px 0 #ffffff45,inset -1px -1px 0 #0003,0 2px 0 #0005!important;cursor:pointer}
+ .system-message-window footer [data-accept] {background:var(--popup-accent)!important;color:var(--popup-accent-ink)!important}
+ @media(hover:hover) {.system-message-window footer button:hover:not(:disabled) {background-image:linear-gradient(#ffffff10,#ffffff10)!important}}
+ body .system-message-window[data-tone=warning] .system-message-body {border-left:3px solid var(--popup-accent)}
+ body .system-message-window [hidden] {display:none!important}
+ body :is(dialog,#casino-switch-window) :focus-visible {outline:2px solid var(--popup-ink);outline-offset:2px}
+
+ /* Keep the existing top-right toast surface; add only severity and bounds. */
+ body #toast-container {position:fixed;top:max(20px,env(safe-area-inset-top,0px));right:max(var(--popup-gap),env(safe-area-inset-right,0px));z-index:1200;display:flex;flex-direction:column;gap:8px;width:max-content;max-width:calc(100% - var(--popup-gap)*2);pointer-events:none}
+ body .system-toast-stack {position:sticky;bottom:8px;z-index:3;display:grid;gap:8px;margin:8px!important;padding:0!important;pointer-events:none}
+ body :is(#toast-container,.system-toast-stack) .aved-toast {box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;max-width:min(360px,100%)!important;padding:12px 16px;border:1px solid var(--popup-line);background:var(--popup-face);color:var(--popup-ink);border-radius:0;font:13px/1.6 var(--popup-copy);overflow-wrap:anywhere;pointer-events:auto}
+ body .aved-toast>span {flex:1;min-width:0}
+ body .aved-toast>button {flex:none;width:20px;height:22px;padding:0;border:0;background:transparent;color:inherit;opacity:.65;font:16px/20px monospace;cursor:pointer}
+ body .aved-toast>button:is(:hover,:focus-visible) {opacity:1}
+ body .aved-toast[data-type=warn] {border-left:3px solid var(--popup-accent)!important}
+ body .aved-toast[data-type=error] {border-left:4px solid var(--popup-accent)!important;outline:1px solid var(--popup-line);outline-offset:2px}
+
+ /* Existing chart tooltip: a compact note, without a window title bar. */
+ body #game-panel-stocks .market-crosshair-tooltip {padding:8px 10px;border:1px solid var(--popup-line)!important;background:var(--popup-face)!important;color:var(--popup-ink)!important;border-radius:0;box-shadow:2px 2px 0 #0004!important;font:12px/1.5 var(--popup-copy);backdrop-filter:none!important;pointer-events:none}
+ body :is(#login-modal,#signal-Connecting-overlay)>div {box-sizing:border-box;max-width:calc(100vw - var(--popup-gap)*2)!important;max-height:calc(100dvh - 48px);overflow:auto}
+ body #login-modal {backdrop-filter:none!important}
+ body #ticket-confirm-modal {padding:var(--popup-gap)!important;background:radial-gradient(#0005 .6px,transparent .7px) 0 0/3px 3px,#0005!important;backdrop-filter:none!important}
+ body #ticket-modal-card {box-sizing:border-box;width:min(440px,100%)!important;max-height:calc(100dvh - 48px)!important;overflow:auto!important;font-family:var(--popup-copy)!important}
+ body #ticket-modal-card>:not(#ticket-modal-header-band) {padding:var(--popup-padding)!important}
+ body #ticket-modal-header-band {position:sticky;top:0;z-index:2}
+ body #ticket-modal-card :is(p,.scratch-ticket-rules,.scratch-confirm-summary) {font:12px/1.65 var(--popup-copy)!important}
+
+ /* Short stepped movement resembles a terminal window snapping into place. */
+ body :is(dialog[open]:not(:where(#text-edit-panel,#type-study-panel)),#casino-switch-window:popover-open),
+ body #login-modal:not(.hidden)>div,body #ticket-confirm-modal:not(.hidden)>div {animation:aved-window-enter var(--popup-fast) steps(3,end) both}
+ body .aved-toast {animation:aved-notice-enter var(--popup-fast) steps(3,end) both}
+ body #left-sidebar {transition:width var(--popup-drawer) steps(4,end)!important}
+ body #sidebar-backdrop:not([hidden]) {animation:aved-note-enter var(--popup-fast) linear both}
+ body :is(.hud-record,.hud-earned,.hud-log)[open]>.hud-detail-body {animation:aved-note-enter var(--popup-fast) linear both}
+ body :is(dialog,#casino-switch-window) button {scale:1!important;transition:background-color 80ms linear,color 80ms linear!important}
+ body :is(dialog,#casino-switch-window) button:active:not(:disabled) {transform:translateY(1px)!important;box-shadow:inset 1px 1px 0 #0005!important}
+ @keyframes aved-window-enter {from{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}
+ @keyframes aved-notice-enter {from{opacity:0;translate:4px 0}to{opacity:1;translate:0 0}}
+ @keyframes aved-note-enter {from{opacity:0}to{opacity:1}}
+ @media(max-width:359px) {body{--popup-gap:16px;--popup-padding:14px}}
+ @media(prefers-reduced-motion:reduce) {
+  body :is(dialog,#casino-switch-window,.aved-toast,#left-sidebar,#sidebar-backdrop,.hud-detail-body),body :is(#login-modal,#ticket-confirm-modal)>div {animation:none!important;transition:none!important}
+  body :is(dialog,#casino-switch-window) button {transition:none!important;transform:none!important}
+ }
+ body.effects-off :is(dialog,#casino-switch-window,.aved-toast,#left-sidebar,#sidebar-backdrop,.hud-detail-body),body.effects-off :is(#login-modal,#ticket-confirm-modal)>div {animation:none!important;transition:none!important}
+ body.effects-off :is(dialog,#casino-switch-window) button {transition:none!important;transform:none!important}
 }

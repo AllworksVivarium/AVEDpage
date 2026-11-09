@@ -14,4 +14,5 @@ data-local/
 UPDATE-NOTES-*.md
 .local-text-history/
 node_modules/
+public/typography-preview.local.html
 

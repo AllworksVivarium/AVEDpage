@@ -8,8 +8,8 @@ async function renderModeration(){
   const {items}=await api('/api/admin/moderation');
   $('#panel').innerHTML='<div class="section-heading"><h3>图文审核</h3><p>待核通讯</p></div>'+items.map(x=>`<article class="notice-box"><h4>${esc(x.title)}</h4><small>${esc(x.displayName)} / ${esc(x.username)} ${AVEDTime.markup(x.createdAt)}</small><p class="announcement-body">${esc(x.body)}</p><img class="moderation-image" src="${esc(x.imageData)}" alt="待审核图片"><div class="content-actions"><button data-review="approve" data-kind="${x.kind}" data-id="${x.id}">批准整条内容</button><button data-review="reject" data-kind="${x.kind}" data-id="${x.id}">拒绝</button></div></article>`).join('')+(items.length?'':'<p>没有待审核内容。</p>');
   document.querySelectorAll('[data-review]').forEach(button=>button.addEventListener('click',async()=>{
-    if(!confirm(button.dataset.review==='approve'?'确认批准这条图文并公开显示？':'确认拒绝这条图文？'))return;
-    button.disabled=true;try{await api(`/api/admin/moderation/${button.dataset.kind}/${button.dataset.id}`,{method:'POST',body:JSON.stringify({action:button.dataset.review})});await renderModeration();}catch(e){alert(e.message);button.disabled=false;}
+    if(!await window.AVEDFeedback.confirm(button.dataset.review==='approve'?'确认批准这条图文并公开显示？':'确认拒绝这条图文？'))return;
+    button.disabled=true;try{await api(`/api/admin/moderation/${button.dataset.kind}/${button.dataset.id}`,{method:'POST',body:JSON.stringify({action:button.dataset.review})});await renderModeration();}catch(e){window.AVEDFeedback.alert(e.message);button.disabled=false;}
   }));
 }
 async function renderActivity(before){
@@ -17,5 +17,5 @@ async function renderActivity(before){
   const html=items.map(x=>`<article class="admin-post"><b>#${x.id} ${esc(activityActionName(x.action))} ${esc(activityTargetName(x.target))}</b><small>${esc(x.username||'系统/历史记录')} 员工 #${x.employee_id??'—'} ${AVEDTime.markup(x.created_at)}</small><details><summary>查看当时记录</summary><pre class="audit-detail">${esc(JSON.stringify(AVEDTime.sanitize(JSON.parse(x.details)),null,2))}</pre></details></article>`).join('');
   if(!before)$('#panel').innerHTML='<h3>活动记录</h3><p>监察记录 员工、通讯与账户异动</p><div id="activity-list"></div>';
   $('#activityMore')?.remove();$('#activity-list').insertAdjacentHTML('beforeend',html||'<p>没有更多记录。</p>');
-  if(items.length===100){$('#panel').insertAdjacentHTML('beforeend','<button id="activityMore" class="small-action">加载更早记录</button>');$('#activityMore').onclick=()=>renderActivity(items.at(-1).id).catch(e=>alert(e.message));}
+  if(items.length===100){$('#panel').insertAdjacentHTML('beforeend','<button id="activityMore" class="small-action">加载更早记录</button>');$('#activityMore').onclick=()=>renderActivity(items.at(-1).id).catch(e=>window.AVEDFeedback.alert(e.message));}
 }

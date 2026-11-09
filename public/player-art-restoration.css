@@ -42,15 +42,14 @@
     --scratch-foil-ink:var(--scratch-ink);
   }
   #game-panel-scratch {
-    background:var(--scratch-paper) !important;
-    border:1px solid var(--scratch-soft) !important;
-    box-shadow:3px 3px 0 #0002 !important;
+    background:transparent !important;
+    border:0 !important;
+    padding:0 !important;
+    box-shadow:none !important;
   }
   #game-panel-scratch::before, #game-panel-scratch::after {
-    display:block !important; border-color:var(--scratch-line) !important;
+    display:none !important;
   }
-  #game-panel-scratch::before {border-width:2px 0 0 2px !important}
-  #game-panel-scratch::after {border-width:0 2px 2px 0 !important}
   #game-panel-scratch .scratch-tier-btn {
     min-height:48px; border:1px solid var(--scratch-soft) !important;
     background:var(--scratch-paper-alt) !important; color:var(--scratch-ink) !important;
@@ -100,8 +99,8 @@
     outline:2px solid var(--scratch-line) !important; outline-offset:3px !important;
   }
   #active-ticket-board-container {
-    padding:clamp(10px,3vw,20px) !important;
-    background:var(--scratch-paper-alt) !important; border:2px solid var(--scratch-line) !important;
+    padding:0 !important;
+    background:transparent !important; border:0 !important;
   }
   #active-ticket-board-container>.grid {gap:clamp(6px,2vw,12px) !important}
   #active-ticket-board-container>.grid-cols-2 {grid-template-columns:repeat(2,minmax(0,1fr)) !important}
@@ -118,8 +117,6 @@
   }
   #game-panel-scratch .scratch-revealed-cell.is-winning * {color:var(--brand-red-ink,var(--scratch-red)) !important}
   #active-ticket-result-banner {border:1px solid var(--scratch-line) !important;background:var(--scratch-paper) !important}
-  #scratch-play-table-view>div:first-child {border-bottom:1px solid var(--scratch-soft) !important}
-  #scratch-play-table-view>div:first-child>div {flex-wrap:wrap !important;min-width:0}
   #game-panel-scratch button {white-space:normal;overflow-wrap:normal}
   #scratch-back-lobby-btn {min-height:44px;white-space:nowrap !important}
   #ticket-confirm-modal {background:#000c !important;overflow-y:auto}
@@ -163,7 +160,6 @@
     #scratch-lobby-view {grid-template-columns:repeat(2,minmax(0,1fr)) !important}
   }
   @media (max-width:479px) {
-    #game-panel-scratch {padding:12px !important}
     #scratch-tiers-bar {gap:6px}
     #game-panel-scratch .scratch-tier-btn {padding:8px 4px !important}
   }

@@ -37,16 +37,16 @@ test('card money survives restart, settles once, rolls back errors and follows d
  db.exec("CREATE TRIGGER reject_settle BEFORE INSERT ON ledger WHEN NEW.delta>0 BEGIN SELECT RAISE(ABORT,'settlement write failure'); END");
  assert.equal((await call(1,play)).status,400);assert.equal(deps.balanceFor(1),20000);assert.equal((await call(1)).data.room.phase,'playing');assert.equal(db.prepare('SELECT settlement_json FROM card_money_rounds').get().settlement_json,null);
  db.exec('DROP TRIGGER reject_settle');
- const finish=await call(1,play);assert.equal(finish.status,200);assert.equal(finish.data.room.money.settlement.stake,200);assert.equal(finish.data.room.money.settlement.reward,500);assert.equal(deps.balanceFor(1),30300);assert.equal(db.prepare('SELECT cost FROM game_tickets').get().cost,200);
+ const finish=await call(1,play);assert.equal(finish.status,200);assert.equal(finish.data.room.money.settlement.stake,200);assert.equal(finish.data.room.money.settlement.reward,380);assert.equal(deps.balanceFor(1),30180);assert.equal(db.prepare('SELECT cost FROM game_tickets').get().cost,200);
  const rows=db.prepare('SELECT count(*) n FROM ledger').get().n;await call(1,play);assert.equal(db.prepare('SELECT count(*) n FROM ledger').get().n,rows);
- assert.equal(db.prepare('SELECT system_delta FROM card_money_rounds').get().system_delta,-300);
+ assert.equal(db.prepare('SELECT system_delta FROM card_money_rounds').get().system_delta,-180);
  await new Promise(resolve=>setTimeout(resolve,1200));
  assert.equal((await call(1)).data.room.phase,'ended','the timer never starts the next round');
  assert.equal(db.prepare('SELECT count(*) n FROM card_money_rounds').get().n,1);
- service.close();service=installCardTables(deps);v=(await call(1)).data.room;assert.equal(v.money.settlement.reward,500);assert.equal(deps.balanceFor(1),30300);
- let next=await call(1,{action:'start',room:id,revision:v.revision,requestId:randomUUID()});assert.equal(next.status,200);assert.equal(deps.balanceFor(1),20300);
+ service.close();service=installCardTables(deps);v=(await call(1)).data.room;assert.equal(v.money.settlement.reward,380);assert.equal(deps.balanceFor(1),30180);
+ let next=await call(1,{action:'start',room:id,revision:v.revision,requestId:randomUUID()});assert.equal(next.status,200);assert.equal(deps.balanceFor(1),20180);
  const round=next.data.room.money.round;
- await call(1,{action:'leave',room:id,revision:next.data.room.revision,requestId:randomUUID()});assert.equal((await call(1)).data.room,null);assert.equal(deps.balanceFor(1),20300);
+ await call(1,{action:'leave',room:id,revision:next.data.room.revision,requestId:randomUUID()});assert.equal((await call(1)).data.room,null);assert.equal(deps.balanceFor(1),20180);
  const kept=JSON.parse(db.prepare('SELECT state_json FROM card_table_rooms WHERE id=?').get(id).state_json);assert.equal(kept.seats[0].id,1);assert.equal(kept.seats[0].auto,true);assert.equal(kept.seats[0].detached,true);
  assert.equal(db.prepare('SELECT employee_id FROM card_money_seats WHERE round_id=? AND seat=0').get(round).employee_id,1);
  assert.equal((await call(1,{action:'solo',size:3})).status,400,'leaving cannot open parallel automated tables');
@@ -77,7 +77,7 @@ test('solo humans have no deadline; explicitly enabled autoplay advances promptl
  }
 });
 
-test('autoplay earns normal winnings and bonuses, settlement stays idempotent and entry never cools down',()=>{
+test('computer autoplay follows reduced winnings and half-loss rules without duplicate credits',()=>{
  const db=new DatabaseSync(':memory:');try{
   db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT); CREATE TABLE card_auto_limits(employee_id INTEGER PRIMARY KEY,streak INTEGER,cooldown_until INTEGER); INSERT INTO card_auto_limits VALUES(1,99,9999999999999);');
   let credits=0;const deps={db,balanceFor:()=>100000,recordLedger:(_,delta)=>credits+=delta};let wallet=installCardWallet(deps);
@@ -90,11 +90,11 @@ test('autoplay earns normal winnings and bonuses, settlement stays idempotent an
    const before=credits;wallet.settle(r);assert.equal(credits,before,'settlement is idempotent');
    assert.doesNotThrow(()=>wallet.checkEntry(1));return r.money.settlement.players[0];
   }
-  for(let i=0;i<4;i++){const p=finish(false);assert.equal(p.net,300);assert.equal(p.reward,500);assert.equal(p.bonus,100);assert.equal(p.autoOnly,true);}
-  const manual=finish(true);assert.equal(manual.reward,500);assert.equal(manual.bonus,100);assert.equal(manual.net,300);assert.equal(manual.autoOnly,false);
-  assert.equal(finish(false,'landlord',true).net,300,'manual participation is not required for normal winnings');
-  const loss=finish(false,'farmers');assert.equal(loss.reward,0);assert.equal(loss.net,-200);
-  wallet=installCardWallet(deps);assert.doesNotThrow(()=>wallet.checkEntry(1));assert.equal(finish(false).net,300);
+  for(let i=0;i<4;i++){const p=finish(false);assert.equal(p.net,180);assert.equal(p.reward,380);assert.equal(p.bonus,0);assert.equal(p.autoOnly,true);}
+  const manual=finish(true);assert.equal(manual.reward,380);assert.equal(manual.bonus,0);assert.equal(manual.net,180);assert.equal(manual.autoOnly,false);
+  assert.equal(finish(false,'landlord',true).net,180,'manual participation is not required for normal winnings');
+  const loss=finish(false,'farmers');assert.equal(loss.reward,100);assert.equal(loss.net,-100);
+  wallet=installCardWallet(deps);assert.doesNotThrow(()=>wallet.checkEntry(1));assert.equal(finish(false).net,180);
   assert.equal(db.prepare('SELECT count(*) n FROM game_tickets').get().n,8);
  }finally{db.close();}
 });
@@ -104,9 +104,46 @@ test('an old in-flight round retains its saved autoplay policy rather than rewri
   db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);');
   const wallet=installCardWallet({db,balanceFor:()=>100000,recordLedger(){}}),room={id:randomUUID(),size:3,base:100,seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}]};
   wallet.start(room);const saved={...room.money.rules,autoProfitPolicy:'manual-play-v1'};
+  delete saved.computerReturns;delete saved.computerOnly;saved.bonusPercent=25;
   db.prepare('UPDATE card_money_rounds SET rules_json=? WHERE id=?').run(JSON.stringify(saved),room.money.round);
   room.game={phase:'ended',landlord:0,winner:'landlord',bid:1,multiplier:1};wallet.settle(room);
   assert.equal(room.money.settlement.players[0].net,0,'saved legacy policy is authoritative');
   assert.equal(room.money.settlement.players[0].bonus,0);
+ }finally{db.close();}
+});
+
+test('computer settlements bound gains and losses for both roles and use the saved round rules',()=>{
+ for(const size of [3,4])for(const humanSeat of [0,1])for(const won of [true,false]){
+  const db=new DatabaseSync(':memory:');let balance=2000000;
+  try{
+   db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);');
+   const deps={db,balanceFor:()=>balance,recordLedger:(_,delta)=>{balance+=delta;}};
+   let wallet=installCardWallet(deps);
+   const room={id:randomUUID(),mode:'online',size,base:10000,seats:Array.from({length:size},(_,seat)=>({id:seat===humanSeat?1:-seat-1,bot:seat!==humanSeat}))};
+   wallet.start(room);assert.equal(balance,1900000);
+   assert.equal(room.money.rules.computerOnly,true);assert.equal(room.money.rules.bonusPercent,0);
+   const winner=(humanSeat===0)===won?'landlord':'farmers';
+   room.game={phase:'ended',landlord:0,winner,bid:3,multiplier:64};
+   room.base=1000000;room.money.rules.computerReturns={winPercent:999999,lossPercent:100};
+   wallet=installCardWallet(deps);wallet.settle(room);
+   const p=room.money.settlement.players[humanSeat];
+   assert.equal(p.reward,Math.floor(p.stake*(won?190:50)/100));
+   assert.ok(p.net<=90000&&p.net>=-50000);assert.equal(p.bonus,0);
+   assert.equal(balance,2000000+p.net);
+   wallet.settle(room);assert.equal(balance,2000000+p.net);
+   assert.equal(db.prepare('SELECT COUNT(*) n FROM game_tickets').get().n,1);
+  }finally{db.close();}
+ }
+});
+
+test('an existing round keeps its previous full reward after the computer rule update',()=>{
+ const db=new DatabaseSync(':memory:');try{
+  db.exec('CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);');
+  const wallet=installCardWallet({db,balanceFor:()=>100000,recordLedger(){}});
+  const room={id:randomUUID(),size:3,base:100,seats:[{id:1},{id:-2,bot:true},{id:-3,bot:true}]};
+  wallet.start(room);
+  db.prepare('UPDATE card_money_rounds SET rules_json=? WHERE id=?').run(JSON.stringify({base:100,reserve:10000,bonusPercent:25,autoProfitPolicy:'normal-v2'}),room.money.round);
+  room.game={phase:'ended',landlord:0,winner:'landlord',bid:1,multiplier:1};wallet.settle(room);
+  assert.equal(room.money.settlement.players[0].reward,500);assert.equal(room.money.settlement.players[0].net,300);
  }finally{db.close();}
 });

@@ -24,8 +24,18 @@
  const panel=document.getElementById('dashboard');if(!panel)return;
  new MutationObserver(upgrade).observe(panel,{childList:true,subtree:true});upgrade();
  // Persistent deletes already confirm in their handlers; draft removals confirm here.
- document.addEventListener('click',event=>{
+ const confirmedDraftRemovals=new WeakSet(),pendingDraftRemovals=new WeakSet();
+ document.addEventListener('click',async event=>{
   const button=event.target.closest('[data-pool-remove],[data-range-remove]');
-  if(button&&!confirm('确认删除这一项配置？保存后生效。')){event.preventDefault();event.stopImmediatePropagation();}
+  if(!button)return;
+  if(confirmedDraftRemovals.delete(button))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pendingDraftRemovals.has(button))return;
+  pendingDraftRemovals.add(button);
+  try{
+   if(await window.AVEDFeedback.confirm('确认删除这一项配置？保存后生效。')){
+    if(button.isConnected&&!button.disabled){confirmedDraftRemovals.add(button);button.click();}
+   }
+  }finally{pendingDraftRemovals.delete(button);}
  },true);
 })();

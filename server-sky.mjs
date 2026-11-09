@@ -1,5 +1,6 @@
 import {storedAvatar,robotAvatar,installAvatarPresets} from './server-default-avatar.mjs';
 import {skyMultiplier} from './server-sky-rules.mjs';
+import {MAX_SHARED_GAME_STAKE,validateGameStake} from './game-stake-limits.mjs';
 import {randomInt} from 'node:crypto';
 import {proofRandom,weighted} from './server-economy.mjs';
 
@@ -115,7 +116,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   if(req.method!=='POST'||!['/api/player/games/sky/start','/api/player/games/sky/jump'].includes(path)){send(res,405,{error:'架次指令无效。'});return true;}
   const data=await readBody(req),receivedAt=Date.now();let f=current(receivedAt);
   tx(()=>{const now=receivedAt;f=db.prepare('SELECT * FROM sky_flights WHERE id=?').get(f.id);const p=db.prepare('SELECT * FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(f.id,actor.id);
-   if(path.endsWith('/start')){if(f.ended_at||now>=f.depart_at)throw Error('舱门已关闭，请等待下一架次。');if(data.round!=null&&Number(data.round)!==f.id)throw Error('架次已变更，请重新登机。');if(p)return;const cost=data.bet;if(!Number.isSafeInteger(cost)||cost<100||cost>1000000)throw Error('登机投入应为 100 至 1,000,000。');if(balanceFor(actor.id)<cost)throw Error('余额不足。');recordLedger(actor.id,-cost,'共享空投登机 #'+f.id);db.prepare('INSERT INTO sky_passengers(flight_id,employee_id,cost) VALUES(?,?,?)').run(f.id,actor.id,cost);pending=true;
+   if(path.endsWith('/start')){if(f.ended_at||now>=f.depart_at)throw Error('舱门已关闭，请等待下一架次。');if(data.round!=null&&Number(data.round)!==f.id)throw Error('架次已变更，请重新登机。');if(p)return;const cost=data.bet;validateGameStake(cost,MAX_SHARED_GAME_STAKE);if(balanceFor(actor.id)<cost)throw Error('余额不足。');recordLedger(actor.id,-cost,'共享空投登机 #'+f.id);db.prepare('INSERT INTO sky_passengers(flight_id,employee_id,cost) VALUES(?,?,?)').run(f.id,actor.id,cost);pending=true;
    }else{if(Number(data.round)!==f.id)throw Error('该架次已结束，请调阅结算记录。');if(!p)throw Error('您未登上本架次。');if(p.status!=='aboard')return;if(now<f.depart_at)throw Error('舱门尚未开启。');finish(f,p,depth(f,now),now,!!f.ended_at||now>=revealTime(f));}
   });send(res,200,snapshot(actor.id));queueBroadcast();return true;
  }catch(e){send(res,400,{error:e.message});return true;}}};

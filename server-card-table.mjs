@@ -177,7 +177,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
      mutate(r,()=>{r.seats[i]={...person(actor),ready:false,readyDeadline:r.readyCycle?clock()+cardReadyTimeoutMs:0};if(r.game){r.game=null;r.money=null;}});
     }else{
      const size=Number(d.size);if(![3,4].includes(size))throw Error('请选择三人或四人桌。');
-     const base=cardStakes.validate(d.base??cardStakes.defaultBase),reserve=cardStakes.reserve(base);
+     const base=cardStakes.validate(d.base??cardStakes.defaultBase,['solo','soloRoom'].includes(d.action)),reserve=cardStakes.reserve(base);
      if(balanceFor(actor.id)<reserve)throw Error('本桌入座需有 '+reserve.toLocaleString('en-US')+' 可用余额。');
      const level=d.botLevel??botLevel(actor.id);if(!autoLevels.includes(level))throw Error('请选择有效的电脑难度。');
      r={id:randomUUID(),botLevel:level,base,size,mode:['solo','soloRoom'].includes(d.action)?'solo':'online',host:actor.id,seats:Array(size).fill(null),revision:0,receipts:[],game:null};r.seats[0]=person(actor);

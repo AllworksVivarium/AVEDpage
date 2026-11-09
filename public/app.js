@@ -152,7 +152,7 @@ async function renderAnnouncements() {
         form.elements.body.value = "";
         await loadPosts(Number(form.dataset.announcement));
       } catch (e) {
-        alert(e.message);
+        window.AVEDFeedback.alert(e.message);
       } finally {
         button.disabled = false;
       }
@@ -213,21 +213,21 @@ async function renderProfile() {
           avatarUrl,
         }),
       });
-      alert("个人资料和头像已保存档案。");
+      window.AVEDFeedback.toast("个人资料和头像已保存档案。", "success");
       await renderProfile();
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
     }
   });
   $("#checkinButton").addEventListener("click", async (e) => {
     e.currentTarget.disabled = true;
     try {
       const result = await api("/api/checkin", { method: "POST", body: "{}" });
-      alert(`签到成功，获得 ${result.reward} 点。`);
+      window.AVEDFeedback.toast(`签到成功，获得 ${result.reward} 点。`, "success");
       await loadPortal();
       await renderProfile();
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
       e.currentTarget.disabled = false;
     }
   });
@@ -249,7 +249,7 @@ async function renderGames() {
       await loadPortal();
       await renderGames();
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
       e.currentTarget.disabled = false;
     }
   });
@@ -262,7 +262,7 @@ async function renderGames() {
       $("#scratchResult").innerHTML =
         `<b>${esc(r.prizeName)}${r.prize ? `：+${Number(r.prize).toLocaleString()} 点` : ""}</b>`;
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
       e.currentTarget.disabled = false;
     }
   });
@@ -275,7 +275,7 @@ async function renderGames() {
       $("#slotResult").innerHTML =
         `<b class="slot-symbols">${r.symbols.map(esc).join("　")}</b><small>${r.prize ? `获得 ${Number(r.prize).toLocaleString()} 点` : "未中奖"}</small>`;
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
       e.currentTarget.disabled = false;
     }
   });
@@ -297,7 +297,7 @@ async function renderForum() {
       });
       await renderForum();
     } catch (err) {
-      alert(err.message);
+      window.AVEDFeedback.alert(err.message);
     }
   });
   document.querySelectorAll("details[data-thread]").forEach((d) =>
@@ -317,7 +317,7 @@ async function renderForum() {
         f.elements.body.value = "";
         await loadReplies(f.dataset.thread);
       } catch (err) {
-        alert(err.message);
+        window.AVEDFeedback.alert(err.message);
       }
     }),
   );
@@ -441,7 +441,7 @@ async function renderAdmin() {
         });
         await renderAdmin();
       } catch (error) {
-        alert(error.message);
+        window.AVEDFeedback.alert(error.message);
       }
     }),
   );
@@ -483,7 +483,7 @@ function bindAdminForm(selector, path, map, custom) {
         await api(path, { method: "POST", body: JSON.stringify(map(values)) });
       await renderAdmin();
     } catch (e) {
-      alert(e.message);
+      window.AVEDFeedback.alert(e.message);
     } finally {
       button.disabled = false;
     }
@@ -492,19 +492,19 @@ function bindAdminForm(selector, path, map, custom) {
 
 // 删除前统一二次确认，删除后刷新管理台
 async function deleteContent(path, label = "这条内容") {
-  if (!confirm("确认永久删除" + label + "？此操作无法撤销。")) return;
+  if (!await window.AVEDFeedback.confirm("确认永久删除" + label + "？此操作无法撤销。")) return;
   try {
     await api(path, { method: "DELETE" });
     await renderAdmin();
   } catch (e) {
-    alert(e.message);
+    window.AVEDFeedback.alert(e.message);
   }
 }
 
 async function deleteEmployee(id, displayName, username) {
   const identity = displayName + "（" + username + "）";
-  if (!confirm("确认删除员工“" + identity + "”吗？")) return;
-  if (!confirm("再次确认：删除后，该员工账号及其帖子、论坛发言、余额和签到记录都会一并删除，审计记录仍会保留。继续删除“" + identity + "”？")) return;
+  if (!await window.AVEDFeedback.confirm("确认删除员工“" + identity + "”吗？")) return;
+  if (!await window.AVEDFeedback.confirm("再次确认：删除后，该员工账号及其帖子、论坛发言、余额和签到记录都会一并删除，审计记录仍会保留。继续删除“" + identity + "”？")) return;
   try {
     await api("/api/admin/employees/" + id, { method: "DELETE" });
     if (currentUser?.id === Number(id)) {
@@ -515,7 +515,7 @@ async function deleteEmployee(id, displayName, username) {
     }
     await renderAdmin();
   } catch (e) {
-    alert(e.message);
+    window.AVEDFeedback.alert(e.message);
   }
 }
 

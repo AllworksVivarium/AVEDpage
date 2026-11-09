@@ -20,8 +20,9 @@
     if(!rows.length){container.innerHTML='<p class="market-empty">等待首笔行情。</p>';return;}
 
     const width=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));
-    const priceHeight=width<500?240:300,height=priceHeight+230,left=64,right=12,top=16,bottom=priceHeight-90,volumeTop=priceHeight-65,volumeBottom=priceHeight-30;
-    const metrics=indicators(rows),macdTop=priceHeight+28,macdBottom=priceHeight+104,kdjTop=priceHeight+144,kdjBottom=height-16;
+    const priceHeight=width<500?240:300,left=64,right=12,top=16,bottom=priceHeight-90,volumeTop=priceHeight-65,volumeBottom=priceHeight-30;
+    const indicatorHeight=44,macdTop=priceHeight+20,macdBottom=macdTop+indicatorHeight,kdjTop=macdBottom+28,kdjBottom=kdjTop+indicatorHeight,height=kdjBottom+10;
+    const metrics=indicators(rows);
     const highest=Math.max(...rows.map(c=>c.high)),lowest=Math.min(...rows.map(c=>c.low));
     const padding=Math.max((highest-lowest)*.12,highest*.001,1),upper=highest+padding,lower=lowest-padding;
     const y=price=>top+(upper-price)/(upper-lower)*(bottom-top);
@@ -57,7 +58,7 @@
     });
 
     svg+='<text x="'+left+'" y="'+(volumeTop-8)+'" class="market-axis">成交量</text>';
-    function panel(top,bottom,label){return '<rect x="'+left+'" y="'+(top-20)+'" width="'+(width-left-right)+'" height="'+(bottom-top+25)+'" class="market-indicator-frame"/><text x="'+(left+7)+'" y="'+(top-7)+'" class="market-axis">'+label+'</text>';}
+    function panel(top,bottom,label){return '<rect x="'+left+'" y="'+(top-16)+'" width="'+(width-left-right)+'" height="'+(bottom-top+20)+'" class="market-indicator-frame"/><text x="'+(left+7)+'" y="'+(top-5)+'" class="market-axis">'+label+'</text>';}
     function line(key,scale,color){return '<polyline class="market-indicator-line" fill="none" stroke="var(--market-'+color+')" points="'+metrics.map((m,i)=>xAt(i).toFixed(2)+','+scale(m[key]).toFixed(2)).join(' ')+'"/>';}
     const magnitude=Math.max(.000001,...metrics.flatMap(m=>[Math.abs(m.dif),Math.abs(m.dea),Math.abs(m.macd)]))*1.15;
     const my=value=>macdTop+(magnitude-value)/(2*magnitude)*(macdBottom-macdTop);

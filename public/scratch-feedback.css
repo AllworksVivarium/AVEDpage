@@ -32,19 +32,19 @@
  .aved-jackpot-message{display:block!important;height:24px!important;line-height:24px!important;margin:0!important;padding:0!important;width:100%;min-width:0;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;animation:aved-jackpot-slide .6s ease-out both;text-shadow:0 0 4px #80808035}
  .scratch-modal-close{width:32px;height:32px;padding:0;line-height:1;font-size:24px;background:transparent!important;color:inherit!important;border:1px solid currentColor!important;cursor:pointer}
  #game-panel-scratch .scratch-top-prize,#game-panel-scratch .scratch-kind-label{color:var(--inner-text-main,#d9ceb8)!important;opacity:1!important}
- #scratch-back-lobby-btn{display:block;width:max-content;margin:4px 0 16px!important;padding:4px 0!important;background:none!important;border:0!important;color:var(--inner-text-main)!important;font-size:12px;text-decoration:underline;text-underline-offset:5px}
+ #scratch-back-lobby-btn{display:block;width:max-content;margin:0 auto 0 0!important;padding:5px 8px!important;background:none!important;border:0!important;color:var(--inner-text-main)!important;font-size:12px;text-decoration:underline;text-underline-offset:5px}
  #scratch-back-lobby-btn.hidden{display:none!important}
- .scratch-ticket-heading{display:flex!important;flex-direction:column;align-items:center;gap:16px;padding:4px 0 18px;border-bottom:1px solid var(--inner-border)}
- #active-ticket-title-bar{width:100%;text-align:center!important;font-size:22px!important;line-height:1.4;margin:0!important;color:var(--inner-text-main)!important}
- .scratch-ticket-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
- .scratch-ticket-actions button{box-sizing:border-box;min-height:40px;padding:8px 18px!important;font-size:13px!important;line-height:20px}
+ #scratch-play-table-view{width:100%;max-width:660px;margin-inline:auto}
+ .scratch-ticket-stage{min-width:0;width:100%}
+ .scratch-quick-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:6px}
+ .scratch-quick-actions button{flex:0 0 auto;min-height:36px!important;padding:5px 10px!important;font-size:12px!important;line-height:20px!important;white-space:nowrap!important}
  .scratch-cell-arriving{animation:scratch-cell-open .65s linear both!important;animation-delay:0ms!important}
  @keyframes scratch-cell-open{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
  #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn){box-shadow:none!important;outline-offset:2px!important;transform:none!important;margin-block:0!important;align-self:center!important;line-height:22px!important}
  #inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn)::before,#inner-app-view>.compact-terminal-header :is(#theme-toggle-btn,#logout-btn)::after{display:none!important;content:none!important}
  body.effects-off .scratch-cell-arriving{animation:none!important}
  @media(prefers-reduced-motion:reduce){.scratch-cell-arriving{animation:none!important}}
- @media(max-width:480px){.aved-jackpot-strip{gap:8px!important;padding-inline:8px!important}.aved-jackpot-strip strong{padding-right:8px;letter-spacing:0}.scratch-ticket-actions button{padding-inline:12px!important}}
+ @media(max-width:480px){.aved-jackpot-strip{gap:8px!important;padding-inline:8px!important}.aved-jackpot-strip strong{padding-right:8px;letter-spacing:0}}
 }
 @layer aved-section-ui {
  .scratch-rain-ribbon{display:block!important;position:absolute!important;top:-36px!important;background:var(--particle-color)!important;pointer-events:none!important;border-radius:0!important;box-shadow:0 0 3px #80808040;animation:scratch-ribbon-fall var(--duration) linear var(--delay) both!important}
@@ -82,16 +82,9 @@
  #scratch-lobby-view .scratch-ticket-preview{padding:6px!important;gap:4px!important}
  #scratch-lobby-view .scratch-preview-cell{height:15px!important;min-height:15px!important}
  #scratch-lobby-view .scratch-preview-cell .scratch-printed-mark{height:13px!important;width:13px!important}
- #game-panel-scratch #scratch-back-lobby-btn{margin:5px 0 9px!important}
- #game-panel-scratch .scratch-ticket-heading{position:relative;gap:8px!important;padding:8px 8px 10px!important;background:repeating-linear-gradient(120deg,transparent 0 7px,#8080800c 7px 8px);border-block:1px solid var(--inner-border-soft);isolation:isolate}
- #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{content:'';position:absolute;width:36px;height:36px;top:9px;border:3px double var(--inner-border);border-radius:50%;opacity:.65;z-index:-1}
- #game-panel-scratch .scratch-ticket-heading::before{left:12px}#game-panel-scratch .scratch-ticket-heading::after{right:12px}
  #scratch-ticket-ornament{position:absolute;top:14px;left:19px;line-height:1}
  #scratch-ticket-ornament .scratch-printed-mark{width:22px!important;height:22px!important}
- #game-panel-scratch #active-ticket-title-bar{font-size:20px!important;line-height:26px!important}
- #game-panel-scratch .scratch-ticket-actions{gap:8px!important}
- #game-panel-scratch .scratch-ticket-actions button{min-height:36px!important;padding:6px 12px!important;font-size:12px!important;line-height:22px!important}
- #inner-app-view #active-ticket-board-container{padding:10px!important;margin-top:10px!important}
+ #inner-app-view #active-ticket-board-container{padding:0!important;margin-top:0!important}
  #inner-app-view #active-ticket-board-container>.grid{display:grid!important;gap:6px!important}
  #inner-app-view #active-ticket-board-container>.scratch-reference-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
  #inner-app-view #active-ticket-board-container>.scratch-prize-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;margin-top:8px!important}
@@ -104,14 +97,11 @@
  @media(max-width:767px){
   #inner-app-view #game-panel-scratch{padding:10px!important}
   #scratch-play-table-view{padding-top:0!important}
-  #inner-app-view #active-ticket-board-container{padding:7px!important}
   #inner-app-view #active-ticket-board-container>.grid{gap:4px!important}
   #inner-app-view #game-panel-scratch :is(.scratch-cell-foil,.scratch-revealed-cell){height:49px!important;min-height:49px!important;max-height:49px!important;padding:2px!important}
   #game-panel-scratch .scratch-revealed-cell>div{font-size:11px!important;line-height:17px!important;letter-spacing:0!important}
   #game-panel-scratch .scratch-cell-foil>span{font-size:10px!important;line-height:16px!important}
   #game-panel-scratch .scratch-printed-mark{width:21px!important;height:21px!important}
-  #game-panel-scratch .scratch-ticket-heading{gap:6px!important;padding-block:6px 8px!important}
-  #game-panel-scratch #active-ticket-title-bar{font-size:18px!important;line-height:24px!important}
  }
 }
 @layer aved-section-ui {#scratch-back-lobby-btn{scroll-margin-top:72px}}
@@ -124,7 +114,6 @@
 }
 @layer aved-section-ui {
  #ticket-modal-balance-preview{white-space:pre-line!important;line-height:1.65!important}
- #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:none!important;content:none!important}
 }
 @layer aved-section-ui {
  #inner-app-view #view-casino .company-play-ticker,#inner-app-view #view-casino .aved-jackpot-strip{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;align-self:stretch!important}
@@ -174,9 +163,6 @@
  #scratch-lobby-view .scratch-mini-reference .scratch-mini-foil{height:25px!important}
  #scratch-lobby-view .scratch-mini-numbers .scratch-mini-foil{height:25px!important}
  #scratch-lobby-view .scratch-mini-steps .scratch-mini-foil{height:21px!important}
- #game-panel-scratch .scratch-ticket-heading{padding:14px 10px 12px!important;border:1px solid var(--inner-border)!important;border-bottom:3px double var(--inner-border)!important;background:repeating-radial-gradient(ellipse at 50% 0,transparent 0 7px,var(--inner-border-soft) 8px 9px,transparent 10px 16px),linear-gradient(90deg,var(--inner-card-alt),var(--inner-card-bg),var(--inner-card-alt))!important;background-size:32px 20px,100% 100%!important}
- #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:block!important;content:''!important;position:absolute;top:13px;width:clamp(12px,8%,58px);height:12px;border:0!important;border-block:3px double var(--inner-border)!important;border-radius:0!important;opacity:.65}
- #game-panel-scratch .scratch-ticket-heading::before{left:12px}#game-panel-scratch .scratch-ticket-heading::after{right:12px}
  #scratch-play-rules{padding:13px 14px!important;margin-top:14px!important;border-top:1px solid var(--inner-border)!important;background:var(--inner-card-alt)}
  #scratch-play-rules h4{font-size:14px!important;line-height:22px!important;margin:0 0 6px!important;color:var(--inner-text-main)!important}
  #scratch-play-rules p,#ticket-modal-rules p{font-size:12px!important;line-height:1.7!important;margin:3px 0!important;color:var(--inner-text-main)!important}
@@ -197,8 +183,6 @@
  #scratch-lobby-view .scratch-mini-steps{height:100%;justify-content:space-between}
  #scratch-lobby-view .scratch-mini-steps>div{height:17%;grid-template-columns:24% minmax(0,1fr) 7px}
  #scratch-lobby-view .scratch-ticket-preview .scratch-mini-foil{height:100%!important;min-height:0!important}
- #game-panel-scratch .scratch-ticket-heading{background:none!important;background-image:none!important;border:0!important;border-bottom:1px solid var(--inner-border-soft)!important}
- #game-panel-scratch .scratch-ticket-heading::before,#game-panel-scratch .scratch-ticket-heading::after{display:none!important;content:none!important}
 }
 @layer aved-section-ui {
  #inner-app-view #scratch-lobby-view .scratch-ticket-preview{width:88%!important;max-width:320px!important;padding:10px!important;margin:12px auto!important}

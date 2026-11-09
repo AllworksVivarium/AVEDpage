@@ -19,7 +19,7 @@ window.AVEDCreateCasinoSwitcher=function({games,tabs,gameHeader,getUser,selectGa
   panel.style.setProperty('--casino-window-width',Math.min(304,Math.max(0,width-24))+'px');
   const panelWidth=Math.min(304,Math.max(0,width-24));
   panel.style.left=Math.round(left+(width-panelWidth)/2)+'px';panel.style.top=Math.round(top)+'px';panel.style.right='auto';panel.style.transform='none';
-  panel.style.maxHeight=Math.max(80,height-top-12)+'px';
+  panel.style.setProperty('--casino-window-height',Math.max(80,height-top-12)+'px');
  }
 
  toggle.onclick=()=>{if(panel.matches(':popover-open')){close();return;}panel.showPopover();position();tabs.querySelector('[aria-pressed="true"]')?.focus();};

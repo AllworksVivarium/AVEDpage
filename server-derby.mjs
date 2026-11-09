@@ -1,4 +1,5 @@
 import {proofRandom} from './server-economy.mjs';
+import {MAX_SHARED_GAME_STAKE,validateGameStake} from './game-stake-limits.mjs';
 import {createHmac,randomInt} from 'node:crypto';
 import {mediaReference} from './server-media.mjs';
 import {robotAvatar} from './server-default-avatar.mjs';
@@ -103,9 +104,12 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
     const d=await readBody(req),race=current(),config=raceRules(race),modern=config.version===2,market=d.market??'first',table=wagersTable(race);tx(()=>{
      if(Number(d.round)!==race.id||Date.now()>=race.start_at)throw Error('本场已封盘，请等待下一场。');
      if(!['first','last'].includes(market)||!modern&&market!=='first')throw Error('本场不支持该竞猜位次。');
-     if(!Number.isInteger(d.runner)||!config.runners[d.runner]||!Number.isSafeInteger(d.bet)||d.bet<100||d.bet>1000000)throw Error('请选择选手，投入为 100 至 1,000,000 的整数。');
+     if(!Number.isInteger(d.runner)||!config.runners[d.runner])throw Error('请选择有效选手。');
+     validateGameStake(d.bet,MAX_SHARED_GAME_STAKE);
      const key=[race.id,employee.id];if(modern)key.push(market);
      const existing=db.prepare(`SELECT runner,cost FROM ${table} WHERE race_id=? AND employee_id=?${modern?' AND market=?':''}`).get(...key);if(existing){if(existing.runner!==d.runner||existing.cost!==d.bet)throw Error('这个位次的委托已封存，不可更改。');return;}
+     const committed=db.prepare(`SELECT COALESCE(SUM(cost),0) AS total FROM ${table} WHERE race_id=? AND employee_id=?`).get(race.id,employee.id).total;
+     if(committed+d.bet>MAX_SHARED_GAME_STAKE)throw Error('本场第一名与最后一名合计最多投入 500,000。');
      if(balanceFor(employee.id)<d.bet)throw Error('余额不足。');recordLedger(employee.id,-d.bet,'下班竞速投入 #'+race.id+' '+(market==='first'?'第一名':'最后一名'));
      if(modern)db.prepare('INSERT INTO derby_wagers(race_id,employee_id,market,runner,cost) VALUES(?,?,?,?,?)').run(race.id,employee.id,market,d.runner,d.bet);
      else db.prepare('INSERT INTO derby_bets(race_id,employee_id,runner,cost) VALUES(?,?,?,?)').run(race.id,employee.id,d.runner,d.bet);

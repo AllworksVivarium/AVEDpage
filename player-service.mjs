@@ -1,3 +1,4 @@
+import {installForumList} from './server-forum-list.mjs';
 import {radioVisibleSQL} from './server-radio-retention.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installForumSocial,forumAuthorSQL,mapForumAuthor} from './server-forum-social.mjs';
@@ -11,6 +12,7 @@ import { installMarket } from './server-market.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
 import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './server-content.mjs';
 import { generateOutcomeTicket, settleGameTicket } from './server-ticket.mjs';
+import {validateGameStake} from './game-stake-limits.mjs';
 
 export const DERBY_ODDS=derbyRules.map(r=>r.odds);
 export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
@@ -102,7 +104,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS slot_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='slot' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
   const settle=(id,game,cost,prize,result,proof)=>settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof);
-  const bet=n=>{if(!Number.isSafeInteger(n)||n<100||n>1000000)throw new Error('投入应为 100 至 1,000,000 的整数。');return n;};
+  const bet=validateGameStake;
   // Only replace the exact system-generated starter copy; preserve authored notices.
   db.prepare('UPDATE announcements SET body=? WHERE title=? AND body=?').run('公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。','员工终端已启用','这里发布的公告会保存在服务器数据库中。员工可以在公告下方匿名留言。');
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('卷宗待核。','WY-002','档案内容由管理人员录入。');
@@ -117,7 +119,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   };
   const normalizeLeverage=value=>{
     const n=Math.round(Number(value));
-    if(!Number.isSafeInteger(n)||![3,10].includes(n))throw new Error('杠杆仅支持 3x 或 10x。');
+    if(!Number.isSafeInteger(n)||![1,3,10].includes(n))throw new Error('杠杆仅支持 1x、3x 或 10x。');
     return n;
   };
   const validateStopsAgainstPrice=(side,price,stopLoss,takeProfit)=>{
@@ -215,12 +217,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       executeStockTrade(id,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit+'自动平仓'});
     }
   }
-  function forum(before=Number.MAX_SAFE_INTEGER,viewer=0) {
-    const rows=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,
-      (SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount
-      FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.status='published' AND f.deleted_at='' AND f.id<? ORDER BY f.id DESC LIMIT 11`).all(viewer,before);
-    return {items:rows.slice(0,10).map(row=>mapForumAuthor({...row,imageData:mediaReference('thread',row.id,row.imageData)})),next:rows.length>10?rows[9].id:null};
-  }
+  const forum=installForumList(db);
   const replies=installForumReplies(db);
   return {log,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
@@ -244,11 +241,11 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
           departments:!(include('departments')||include('life'))?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
           announcements:!include('news')?[]:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
           dossiers:!include('containment')?[]:db.prepare('SELECT id,code,title,department,status,summary FROM dossiers ORDER BY id').all(),
-          forum:!include('forum')?{items:[],next:null}:forum(Number.MAX_SAFE_INTEGER,id),stocks:!include('casino')?[]:market(id),stockOrders:!include('casino')?[]:pendingOrders(id)});return true;
+          forum:!include('forum')?{items:[],next:null}:forum(id),stocks:!include('casino')?[]:market(id),stockOrders:!include('casino')?[]:pendingOrders(id)});return true;
       }
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
-      if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER,id));return true;}
+      if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(id,url.searchParams));return true;}
       if(path==='/api/player/forum/personas'){
         if(req.method==='GET')send(res,200,forumSocial.list(id));
         else if(req.method==='POST')send(res,201,forumSocial.create(id,data.name));
@@ -261,7 +258,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       }
       if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,forumSocial.inbox(id));return true;}
       const forumRead=path.match(/^\/api\/player\/forum\/(\d+)\/read$/);
-      if(forumRead&&req.method==='POST'){send(res,200,forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
+      if(forumRead&&req.method==='POST'){send(res,200,data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
       if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:{...mapForumAuthor(topic),readThrough:forumSocial.readThrough(Number(thread[1]),id)},...replies(Number(thread[1]),id,url.searchParams)});return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
@@ -297,7 +294,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         if(data.requestKey){const previous=settledScratch(id,data.requestKey);if(previous){if(previous.result.tier.id!==data.tier||previous.result.gameType.type!==data.type||previous.cost!==data.cost)throw new Error('票据请求不匹配。');send(res,200,previous);return true;}}
 
         const config=getEconomy().get(),rule=config.scratch.find(t=>t.id===data.tier),game=scratchGameTypes.find(g=>g.type===data.type);if(!rule||!game)throw new Error('请选择有效票种。');if(data.cost!==rule.cost||data.revision!==config.revision)throw Object.assign(new Error('票券规程已修订，请重新确认票种。'),{code:'RULES_CHANGED'});
-        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:rule.cost},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateOutcomeTicket(tier,game,proof.seed,proof.random,outcome);if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=outcome.multiplier>=5;
+        const tier={...scratchTiers.find(t=>t.id===data.tier),name:rule.name,cost:validateGameStake(rule.cost)},proof=random(),outcome=weighted(rule.variants[game.type],proof.random),ticket=generateOutcomeTicket(tier,game,proof.seed,proof.random,outcome);if(data.requestKey)ticket.requestKey=data.requestKey;ticket.revision=config.revision;ticket.multiplier=outcome.multiplier;ticket.rarePrize=outcome.multiplier>=5;
         send(res,200,settle(id,'scratch',tier.cost,ticket.totalPayout,ticket,proof));return true;
       }
       if(path==='/api/player/games/slot'&&req.method==='POST') {

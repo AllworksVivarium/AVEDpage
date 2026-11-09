@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-entry-state="checking">
 <head>
-  <link rel="stylesheet" href="/popup-density.css?v=1">
+  <link rel="stylesheet" href="/typography.css?v=integrated-ui-20261109">
+  <script src="/popup-ui.js?v=window-system-2" defer></script>
+  <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
   <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
@@ -9,9 +11,9 @@
   <script src="terminal-preferences.js?v=theme-owned-3"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=pixel-a-2">
   <link rel="stylesheet" href="/scratch-bomb.css?v=adaptive-ticker-3">
-  <link rel="stylesheet" href="/scratch-feedback.css?v=ticker-vertical-center-1">
+  <link rel="stylesheet" href="/scratch-feedback.css?v=single-action-row-5">
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/player-art-restoration.css?v=receipt-grain-1">
+  <link rel="stylesheet" href="/player-art-restoration.css?v=frameless-ticket-3">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=equal-cards-4">
   <link rel="stylesheet" href="/notice-document.css?v=notice-compact-accent-3">
@@ -365,7 +367,7 @@
 <link rel="stylesheet" href="/terminal-patterns.css?v=welcome-1">
 <link rel="stylesheet" href="/terminal-welcome.css?v=welcome-1">
 <link rel="stylesheet" href="/terminal-unified.css?v=sfx-only-1">
-<link rel="stylesheet" href="/personal-terminal.css?v=hub-1">
+<link rel="stylesheet" href="/personal-terminal.css?v=frameless-ticket-2">
 <link rel="stylesheet" href="/radix-palette.css?v=window-1">
 <link rel="stylesheet" href="/window-terminal.css?v=sfx-only-1">
 <script src="/window-style.js?v=unified-2"></script>
@@ -377,30 +379,6 @@
 
   <!-- 全局顶部轻提示 (Toast) -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- ==========================================================================
-       通用模块 A：全局二次确认弹窗（用于所有删除操作、删帖、删评、余额一键归零）
-       ========================================================================== -->
-  <div id="global-confirm-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="w-full max-w-md bg-[#141414] text-neutral-100 border-2 border-[#9e1b1b] shadow-2xl p-6 space-y-4 font-mono-tech">
-      <div class="flex items-center justify-between border-b border-white/15 pb-2.5">
-        <span class="text-xs font-bold text-[#e03e3e] flex items-center gap-2">
-          <span>⚠️ SECURITY CONFIRMATION // 二次确认</span>
-        </span>
-        <span class="text-[10px] text-neutral-400">A.V.E.D. GUARD</span>
-      </div>
-      <h3 id="confirm-modal-title" class="text-base font-bold font-serif-sc text-white">请确认是否执行此操作？</h3>
-      <p id="confirm-modal-desc" class="text-xs text-neutral-300 leading-relaxed">此操作一旦执行将立即生效，请再次核对。</p>
-      <div class="grid grid-cols-2 gap-3 pt-2 text-xs">
-        <button id="confirm-modal-cancel-btn" type="button" class="py-2.5 border border-white/30 hover:bg-white/10 text-neutral-200 font-bold cursor-pointer">
-          取消操作
-        </button>
-        <button id="confirm-modal-ok-btn" type="button" class="press-cta py-2.5 bg-[#9e1b1b] hover:bg-red-700 text-white font-bold cursor-pointer">
-          确认执行
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ==========================================================================
        模块 0：老式机器柔和信号“登录中”过渡层
@@ -659,8 +637,8 @@
             <span id="system-realtime-clock" class="text-[11px] tracking-wider">--:--:--</span>
           </div>
 
-          <!-- 本机音效开关 -->
-          <div class="flex items-center border border-[var(--inner-border-soft)] bg-[var(--inner-card-bg)] p-0.5">
+          <!-- Personal home owns the visible sound control; this button stores shared state. -->
+          <div hidden>
             <button id="audio-sfx-btn" type="button" aria-pressed="true" title="音效开关" class="px-2 py-1 text-[11px] cursor-pointer">音效开启</button>
           </div>
 
@@ -719,7 +697,7 @@
 
           <button type="button" data-nav="casino" class="nav-tab-btn w-full px-3 py-3 flex items-center gap-3 opacity-80 hover:opacity-100 text-left cursor-pointer transition">
             <span class="text-base shrink-0 w-5 text-center">🎰</span>
-            <span class="sidebar-label truncate">员工娱乐室</span>
+            <span class="sidebar-label truncate">愉乐空间</span>
           </button>
 
         </div>
@@ -1337,7 +1315,7 @@
                   <div class="text-xs font-bold">押注总额 (平分至五线)</div>
                   <div class="flex items-center gap-1.5">
                     <button type="button" id="slot5x3-minus-btn" class="px-3 py-2 inner-card-alt font-bold cursor-pointer">-</button>
-                    <input id="slot5x3-bet-input" type="number" value="500" min="500" step="500"
+                    <input id="slot5x3-bet-input" type="number" value="500" min="500" max="100000" step="500"
                       class="flex-1 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-center font-bold text-sm">
                     <button type="button" id="slot5x3-plus-btn" class="px-3 py-2 inner-card-alt font-bold cursor-pointer">+</button>
                     <button type="button" id="slot5x3-double-btn" class="px-2.5 py-2 inner-card-alt font-bold cursor-pointer">×2</button>
@@ -1371,29 +1349,22 @@
           <!-- ================================================================
                娱乐面板 3：配给刮刮乐（已彻底去除猫咪元素，改为严肃 SCP 收容配给主题，隐藏EV）
                ================================================================ -->
-          <div id="game-panel-scratch" class="retro-corner-box p-4 sm:p-6 hidden space-y-5">
+          <div id="game-panel-scratch" class="hidden space-y-5">
             <div class="space-y-3">
-              <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono-tech">
-                <span>⁣</span>
-                <span class="px-2 py-0.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold">
-                  ⁣
-                </span>
-              </div>
               <div id="scratch-tiers-bar" class="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono-tech"></div>
             </div>
 
             <div id="scratch-lobby-view" class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2"></div>
 
-            <button id="scratch-back-lobby-btn" type="button" class="scratch-exit-link hidden">← 返回选票大厅</button>
-            <div id="scratch-play-table-view" class="hidden space-y-4 pt-2">
-              <div class="scratch-ticket-heading">
-                <h3 id="active-ticket-title-bar" class="font-serif-sc"></h3>
-                <div class="scratch-ticket-actions">
-                  <button id="scratch-reveal-all-cells-btn" type="button" class="inner-btn-primary">一键全部刮开</button>
+            <div id="scratch-play-table-view" class="hidden space-y-4">
+              <div class="scratch-ticket-stage">
+                <div class="scratch-quick-actions">
+                  <button id="scratch-back-lobby-btn" type="button" class="scratch-exit-link hidden">返回大厅</button>
+                  <button id="scratch-reveal-all-cells-btn" type="button" class="inner-btn-primary">一键刮开</button>
+                  <button id="scratch-next-ticket" type="button" class="inner-btn-primary" disabled>下一张</button>
                 </div>
+                <div id="active-ticket-board-container"></div>
               </div>
-
-              <div id="active-ticket-board-container" class="p-5 inner-card-alt border-2 border-[var(--inner-border)]"></div>
 
               <div id="active-ticket-result-banner" class="p-4 retro-corner-box text-center font-mono-tech text-sm font-bold">
 
@@ -1446,7 +1417,7 @@
                 <p id="stock-trade-position"></p>
                 <div class="stock-order-fields">
                   <label>委托数量<input id="stock-trade-quantity" type="number" min="1" max="10000" step="1" value="1"></label>
-                  <label>杠杆倍数<select id="stock-trade-leverage"><option value="3">3x</option><option value="10" selected>10x</option></select></label>
+                  <label>杠杆倍数<select id="stock-trade-leverage"><option value="1" selected>1x（无杠杆）</option><option value="3">3x</option><option value="10">10x</option></select></label>
                 </div>
                 <details class="stock-order-advanced"><summary>止盈 / 止损（可选）</summary><div class="stock-order-fields"><label>止损价<input id="stock-trade-stop" type="number" min="1" step="1"></label><label>止盈价<input id="stock-trade-take" type="number" min="1" step="1"></label></div></details>
                 <p class="stock-order-estimate">成交额 <b id="stock-est-trade">—</b><span>预计保证金 <b id="stock-est-margin">—</b></span></p>
@@ -1472,18 +1443,19 @@
   <script src="/http-client.js?v=sfx-only-6" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
   <script src="/notices-ui.js?v=real-comments-4" defer></script>
-  <script src="/market-chart.js?v=macd-kdj-2" defer></script>
+  <script src="/market-chart.js?v=compact-indicators-3" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=game-pages-5" defer></script>
+  <script src="/player-community.js?v=profile-sound-6" defer></script>
   <script src="/game-results.js?v=seal-formula-2" defer></script>
-  <script src="/forum-replies.js?v=social-2" defer></script>
-  <script src="/forum-social.js?v=company-robots-2" defer></script>
-  <link rel="stylesheet" href="/forum-social.css?v=company-robots-2">
+  <script src="/forum-replies.js?v=paged-4" defer></script>
+  <script src="/forum-browser.js?v=paged-4" defer></script>
+  <script src="/forum-social.js?v=paged-4" defer></script>
+  <link rel="stylesheet" href="/forum-social.css?v=paged-4">
   <script src="/personal-record.js?v=1" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
   <script src="/jackpot-ticker.js?v=no-derby-5" defer></script>
 <script src="/pixel-game-icons.js?v=1" defer></script>
-<link rel="stylesheet" href="/scratch-ticket-art.css?v=print-1">
+<link rel="stylesheet" href="/scratch-ticket-art.css?v=compact-header-2">
 <script src="/scratch-ticket-art.js?v=print-1" defer></script>
 <script src="/scratch-symbols.js?v=game-balance-1" defer></script>
 <script src="/scratch-bomb.js?v=seal-audio-3" defer></script>
@@ -1492,7 +1464,7 @@
   <script src="/currency-symbol.js?v=pixel-a-2" defer></script>
   <script src="/sky-scene.js?v=sharp-labels-9" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=instant-opening-2" defer></script>
+<script src="/sky-ui.js?v=shared-stake-cap-4" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
   <script src="/welfare-ui.js?v=pixel-scenes-8" defer></script>
@@ -1501,27 +1473,27 @@
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=animal-habits-16" defer></script>
-<script src="/derby-ui.js?v=animal-habits-16" defer></script>
+<script src="/derby-ui.js?v=shared-stake-cap-18" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
 <script src="/archive-board.js?v=entry-glitch-2" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
 <link rel="stylesheet" href="/casino-switcher.css?v=game-pages-10">
-<link rel="stylesheet" href="/retro-window-chrome.css?v=claimed-opacity-9">
-<script src="/casino-switcher.js?v=game-pages-2" defer></script>
+<link rel="stylesheet" href="/retro-window-chrome.css?v=integrated-ui-20261109">
+<script src="/casino-switcher.js?v=window-system-2" defer></script>
 <script src="/player-startup.js?v=game-pages-4" defer></script>
-<link rel="stylesheet" href="/ddz-pixel.css?v=room-ready-13">
+<link rel="stylesheet" href="/ddz-pixel.css?v=integrated-ui-20261109">
 <link rel="stylesheet" href="/card-reactions.css?v=emoji-only-4">
   <link rel="stylesheet" href="/card-room-lobby.css?v=custom-stakes-7">
-<script src="/card-stakes.js?v=custom-1" defer></script>
+<script src="/card-stakes.js?v=stake-cap-3" defer></script>
 <script src="/ddz-rules.js?v=card-table-1" defer></script>
 <script src="/card-reaction-rules.js?v=emoji-only-4" defer></script>
 <script src="/card-reactions.js?v=emoji-only-4" defer></script>
 <script src="/card-feedback.js?v=room-ready-4" defer></script>
-<script src="/ddz-ui.js?v=room-ready-13" defer></script>
-<script src="/card-room-lobby.js?v=room-ready-8" defer></script>
+<script src="/ddz-ui.js?v=stake-cap-15" defer></script>
+<script src="/card-room-lobby.js?v=stake-cap-9" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=inset-wins-3">
 <script src="/slot-effects.js?v=inset-wins-3" defer></script>
-<script src="/player.js?v=print-seals-1" defer></script>
+<script src="/player.js?v=integrated-ui-20261109" defer></script>
   <script src="/page-headings.js?v=header-center-8" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=brand-mark-3-crt-1" defer></script>

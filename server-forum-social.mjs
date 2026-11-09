@@ -58,6 +58,7 @@ export function installForumSocialSchema(db){
  CREATE TABLE IF NOT EXISTS forum_notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,reply_id INTEGER NOT NULL REFERENCES forum_replies(id) ON DELETE CASCADE,thread_id INTEGER NOT NULL,UNIQUE(employee_id,reply_id));
  CREATE INDEX IF NOT EXISTS forum_notifications_inbox ON forum_notifications(employee_id,thread_id,id);
  CREATE TABLE IF NOT EXISTS forum_notification_reads(employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,thread_id INTEGER NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,last_notification_id INTEGER NOT NULL,PRIMARY KEY(employee_id,thread_id));`);
+ if(!db.prepare('PRAGMA table_info(forum_notifications)').all().some(c=>c.name==='read_at'))db.exec("ALTER TABLE forum_notifications ADD COLUMN read_at TEXT NOT NULL DEFAULT ''");
  migrateLegacyPersonaOwner(db);
  db.exec('CREATE TABLE IF NOT EXISTS forum_workshop_requests(employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,request_id TEXT NOT NULL,result_json TEXT NOT NULL,PRIMARY KEY(employee_id,request_id))');
  for(const [name,definition] of [['robot_employee_id','INTEGER REFERENCES employees(id) ON DELETE SET NULL'],['robot_name',"TEXT NOT NULL DEFAULT ''"]]){
@@ -99,7 +100,7 @@ export function installForumSocial(db){
  function target(thread,value){if(value==null||value==='')return null;if(!Number.isSafeInteger(value)||!db.prepare("SELECT id FROM forum_replies WHERE id=? AND thread_id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(value,thread))throw Error('回复对象不存在或不在本帖中。');return value;}
  const visible=`FROM forum_notifications n JOIN forum_threads t ON t.id=n.thread_id JOIN forum_replies r ON r.id=n.reply_id
  LEFT JOIN forum_notification_reads v ON v.employee_id=n.employee_id AND v.thread_id=n.thread_id
- WHERE n.employee_id=? AND n.id>COALESCE(v.last_notification_id,0) AND r.employee_id<>n.employee_id
+ WHERE n.employee_id=? AND n.read_at='' AND n.id>COALESCE(v.last_notification_id,0) AND r.employee_id<>n.employee_id
  AND t.status='published' AND t.moderation='approved' AND t.deleted_at='' AND r.status='published' AND r.moderation='approved' AND r.deleted_at=''`;
  return {allowed,persona,target,
   list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
@@ -121,8 +122,15 @@ export function installForumSocial(db){
     const result={threadId,replyIds};db.prepare('INSERT INTO forum_workshop_requests VALUES(?,?,?)').run(id,data.requestId,JSON.stringify(result));db.exec('COMMIT');return result;
    }catch(e){db.exec('ROLLBACK');throw e;}
   },
-  inbox(id){return {unread:db.prepare('SELECT COUNT(*) AS n '+visible).get(id).n,items:db.prepare(`WITH unread AS (SELECT n.id,n.thread_id,n.reply_id,t.title,r.created_at ${visible}),grouped AS (SELECT thread_id,COUNT(*) AS count,MAX(id) AS latest FROM unread GROUP BY thread_id ORDER BY latest DESC LIMIT 20)
-   SELECT u.thread_id AS threadId,u.title,g.count,u.reply_id AS replyId,u.created_at AS createdAt FROM grouped g JOIN unread u ON u.id=g.latest ORDER BY g.latest DESC`).all(id)};},
+  inbox(id){return {unread:db.prepare('SELECT COUNT(*) AS n '+visible).get(id).n,items:db.prepare(`SELECT n.thread_id AS threadId,t.title,1 AS count,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
+   CASE WHEN EXISTS(SELECT 1 FROM forum_replies q WHERE q.id=r.reply_to_id AND q.employee_id=n.employee_id) THEN 'reply' ELSE 'thread' END AS kind,
+   (SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor
+   ${visible} ORDER BY n.id DESC LIMIT 20`).all(id)};},
+  readReplies(id,thread,ids){
+   if(!Array.isArray(ids)||ids.length>20||ids.some(n=>!Number.isSafeInteger(n)||n<1))throw Error('无效的已读楼层。');
+   if(ids.length)db.prepare(`UPDATE forum_notifications SET read_at=CURRENT_TIMESTAMP WHERE employee_id=? AND thread_id=? AND reply_id IN (${ids.map(()=>'?').join(',')})`).run(id,thread,...ids);
+   return {ok:true};
+  },
   readThrough(thread,viewer){return db.prepare('SELECT COALESCE(MAX(id),0) AS id FROM forum_notifications WHERE thread_id=? AND employee_id=?').get(thread,viewer).id;},
   read(id,thread,through){if(!Number.isSafeInteger(through)||through<0)throw Error('无效阅读位置。');if(!db.prepare("SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread))throw Error('帖子不存在。');const max=db.prepare('SELECT COALESCE(MAX(id),0) AS id FROM forum_notifications WHERE thread_id=? AND employee_id=?').get(thread,id).id;db.prepare('INSERT INTO forum_notification_reads VALUES(?,?,?) ON CONFLICT(employee_id,thread_id) DO UPDATE SET last_notification_id=MAX(last_notification_id,excluded.last_notification_id)').run(id,thread,Math.min(through,max));return {ok:true};}
  };

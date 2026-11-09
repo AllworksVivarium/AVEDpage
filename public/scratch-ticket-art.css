@@ -10,19 +10,19 @@
 #game-panel-scratch .scratch-print .sp-registration i{display:block!important;width:5px!important;height:5px!important;background:#725a41!important}
 #game-panel-scratch .scratch-print .sp-registration i:nth-child(2){background:#6b8b72!important}
 #game-panel-scratch .scratch-print .sp-registration i:nth-child(3){background:#b7794e!important}
-#game-panel-scratch .scratch-print .sp-hero{position:relative!important;min-height:204px!important;background:var(--deep)!important;overflow:hidden!important;border:7px solid var(--deep)!important;color:#f6dc8e!important}
+#game-panel-scratch .scratch-print .sp-hero{position:relative!important;min-height:164px!important;background:var(--deep)!important;overflow:hidden!important;border:7px solid var(--deep)!important;color:#f6dc8e!important}
 #game-panel-scratch .scratch-print .sp-hero:before{content:''!important;position:absolute!important;inset:3px!important;border:1px solid #d2ae62b0!important;z-index:2!important;pointer-events:none!important}
 #game-panel-scratch .scratch-print .sp-hero:after{content:''!important;position:absolute!important;inset:8px!important;border:1px solid #e6bd6e40!important;pointer-events:none!important}
 #game-panel-scratch .scratch-print .sp-hero-art{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;opacity:.92!important}
-#game-panel-scratch .scratch-print .sp-hero-kicker{position:relative!important;z-index:1!important;text-align:center!important;padding:13px 0 0!important;font:8px/1.5 monospace!important;letter-spacing:2px!important;color:#f4deb2b0!important}
-#game-panel-scratch .scratch-print .sp-name{position:relative!important;margin:34px 0 8px!important;text-align:center!important;z-index:1!important;transform:rotate(-4deg)!important}
+#game-panel-scratch .scratch-print .sp-hero-kicker{position:relative!important;z-index:1!important;text-align:center!important;padding:9px 0 0!important;font:8px/1.5 monospace!important;letter-spacing:2px!important;color:#f4deb2b0!important}
+#game-panel-scratch .scratch-print .sp-name{position:relative!important;margin:18px 0 6px!important;text-align:center!important;z-index:1!important;transform:rotate(-4deg)!important}
 #game-panel-scratch .scratch-print .sp-name strong{font-family:'AVED IPix','Microsoft YaHei',sans-serif!important;font-size:39px!important;line-height:1.25!important;letter-spacing:3px!important;color:#ffe79c!important;text-shadow:-2px -2px var(--deep),2px -2px var(--deep),-2px 2px var(--deep),2px 2px var(--deep),3px 4px #c3863e,5px 6px #341e1a!important}
 #game-panel-scratch .scratch-print[data-print-kind="seals"] .sp-name{transform:rotate(0deg)!important}
 #game-panel-scratch .scratch-print[data-print-kind="seals"] .sp-name strong{text-shadow:-2px -2px #244c3f,2px -2px #244c3f,-2px 2px #244c3f,2px 2px #244c3f,4px 4px #85965f,6px 6px #173f34!important}
 #game-panel-scratch .scratch-print[data-print-kind="steps"] .sp-name{transform:rotate(-5deg)!important}
 #game-panel-scratch .scratch-print[data-print-kind="steps"] .sp-name strong{text-shadow:-2px -2px #203d51,2px -2px #203d51,-2px 2px #203d51,2px 2px #203d51,3px 4px #bb8044,5px 6px #162e40!important}
-#game-panel-scratch .scratch-print .sp-ribbon{position:relative!important;z-index:1!important;text-align:center!important;margin:5px auto 8px!important;width:76%!important;padding:5px 10px!important;font-size:11px!important;letter-spacing:4px!important;background:#e9c874!important;color:var(--deep)!important;clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%)!important}
-#game-panel-scratch .scratch-print .sp-hero-en{text-align:center!important;position:relative!important;z-index:1!important;font:8px monospace!important;color:#f1d99b!important;letter-spacing:3px!important;margin-top:8px!important}
+#game-panel-scratch .scratch-print .sp-ribbon{position:relative!important;z-index:1!important;text-align:center!important;margin:4px auto 6px!important;width:76%!important;padding:4px 10px!important;font-size:11px!important;letter-spacing:4px!important;background:#e9c874!important;color:var(--deep)!important;clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%)!important}
+#game-panel-scratch .scratch-print .sp-hero-en{text-align:center!important;position:relative!important;z-index:1!important;font:8px monospace!important;color:#f1d99b!important;letter-spacing:3px!important;margin-top:6px!important}
 #game-panel-scratch .scratch-print .sp-paper{padding:12px 14px 0!important;position:relative!important;background-image:radial-gradient(#66573b1d .5px,transparent .8px)!important;background-size:4px 4px!important}
 #game-panel-scratch .scratch-print .sp-ticket-info{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:0 1px 11px!important;border-bottom:1px dashed #baac8a!important;margin-bottom:12px!important;font-size:10px!important;color:#98866a!important}
 #game-panel-scratch .scratch-print .sp-ticket-info b{color:var(--deep)!important;font:bold 15px monospace!important}
@@ -91,7 +91,6 @@
 #game-panel-scratch .scratch-print .sp-cell.sp-seal.sp-covered{background:#c1c5b6!important;border:1px solid #a6ad9c!important}
 #game-panel-scratch #active-ticket-board-container{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 #game-panel-scratch .scratch-print.is-active{max-width:660px!important;margin:auto!important}
-#game-panel-scratch .scratch-print.is-active .sp-hero{min-height:220px!important}
 #game-panel-scratch .scratch-print .scratch-printed-mark{width:28px!important;height:28px!important}
 #game-panel-scratch #active-ticket-result-banner{white-space:pre-line!important;background:var(--inner-card-alt)!important;border-color:#ac946b!important;box-shadow:inset 3px 0 #c4a66a!important;line-height:1.8!important}
 @media(max-width:1000px){#game-panel-scratch .scratch-print .sp-name strong{font-size:29px!important;letter-spacing:0!important}#game-panel-scratch .scratch-print .sp-ribbon{font-size:9px!important;letter-spacing:1px!important;width:90%!important;white-space:nowrap!important}#game-panel-scratch .scratch-print .sp-paper{padding:10px!important}}

@@ -1,14 +1,19 @@
 import {randomUUID} from 'node:crypto';
+import {MAX_GAME_STAKE} from './game-stake-limits.mjs';
 import './public/card-stakes.js';
 export const cardStakes=globalThis.AVEDCardStakes;
 export const cardMoneyRules=Object.freeze({base:cardStakes.defaultBase,reserve:10000,bonusPercent:25,baseOptions:cardStakes.presets,autoProfitPolicy:'normal-v2'});
+// A fair-win-rate reference, not a guarantee: 50% * 190% + 50% * 50% = 120%.
+export const computerCardReturns=Object.freeze({winPercent:190,lossPercent:50});
 export function cardSettlement(size,landlord,winner,bid,multiplier,rules=cardMoneyRules){
  const unit=Math.min(rules.base*bid*multiplier,Math.floor(rules.reserve/(size-1)));
  const pot=2*(size-1)*unit,bonus=Math.floor(pot*rules.bonusPercent/100);
  const winners=Array.from({length:size},(_,i)=>i).filter(i=>(i===landlord)===(winner==='landlord'));
  return {unit,pot,bonus,players:Array.from({length:size},(_,seat)=>{
   const stake=unit*(seat===landlord?size-1:1),index=winners.indexOf(seat);
-  const reward=index<0?0:2*stake+Math.floor(bonus/winners.length)+(index<bonus%winners.length?1:0);
+  const reward=rules.computerReturns
+   ?Math.floor(stake*(index<0?rules.computerReturns.lossPercent:rules.computerReturns.winPercent)/100)
+   :index<0?0:2*stake+Math.floor(bonus/winners.length)+(index<bonus%winners.length?1:0);
   return {seat,stake,reward,net:reward-stake,release:rules.reserve-stake+reward};
  })};
 }
@@ -27,7 +32,10 @@ export function installCardWallet({db,balanceFor,recordLedger}){
  }
  // Called inside the room transaction: debit, deal and persistence commit together.
  function start(room){
-  const base=cardStakes.validate(room.base??100),rules={...cardMoneyRules,base,reserve:cardStakes.reserve(base)};
+  // Classify the seats at deal time, including online rooms filled with bots.
+  const computerOnly=room.seats.filter(p=>p&&!p.bot).length===1;
+  const base=cardStakes.validate(room.base??100,computerOnly),rules={...cardMoneyRules,computerOnly,...(computerOnly?{bonusPercent:0,computerReturns:computerCardReturns}:{}),base,reserve:cardStakes.reserve(base)};
+  if(rules.reserve>MAX_GAME_STAKE)throw Error('每人本局锁定筹码最多为 100,000。');
   for(const p of room.seats)if(!p.bot){checkEntry(p.id);if(balanceFor(p.id)<rules.reserve)throw Error('开局需有 '+rules.reserve.toLocaleString('en-US')+' 可用余额，用于锁定本局筹码。');}
   const id=randomUUID();db.prepare('INSERT INTO card_money_rounds(id,room_id,rules_json) VALUES(?,?,?)').run(id,room.id,JSON.stringify(rules));
   room.money={round:id,rules,participation:{},settlement:null};

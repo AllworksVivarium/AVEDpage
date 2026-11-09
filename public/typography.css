@@ -1,0 +1,142 @@
+/* Shared vocabulary, explicit component ownership. The terminal topbar is excluded.
+   Keep this layer before legacy component layers while those are gradually retired. */
+@layer aved-typography;
+@font-face{font-family:'AVED UI Latin';src:url('/assets/fonts/IBMPlexSans-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'AVED UI Latin';src:url('/assets/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');font-weight:600 700;font-style:normal;font-display:swap}
+@font-face{font-family:'AVED UI Chinese';src:url('/assets/fonts/IBMPlexSansSC-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2E80-9FFF,U+F900-FAFF,U+FF00-FFEF,U+20000-2FA1F}
+@font-face{font-family:'AVED UI Chinese';src:url('/assets/fonts/IBMPlexSansSC-SemiBold.woff2') format('woff2');font-weight:600 700;font-style:normal;font-display:swap;unicode-range:U+2E80-9FFF,U+F900-FAFF,U+FF00-FFEF,U+20000-2FA1F}
+@font-face{font-family:'AVED UI Hebrew';src:url('/assets/fonts/IBMPlexSansHebrew-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F}
+@font-face{font-family:'AVED UI Hebrew';src:url('/assets/fonts/IBMPlexSansHebrew-SemiBold.woff2') format('woff2');font-weight:600 700;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F}
+@font-face{font-family:'AVED Archive Song';src:url('/assets/fonts/design/35d92af5ac4e9485e8e7749098e67211da5885d2697d95aea979fe4acd19ee2a-common.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+:root{
+ --type-ui:'AVED UI Latin','AVED UI Hebrew','AVED UI Chinese','PingFang SC','Microsoft YaHei',sans-serif;
+ --type-heading:'AVED UI Latin','AVED UI Hebrew','Noto Serif SC','Source Han Serif SC',serif;
+ --type-archive:'AVED UI Latin','AVED UI Hebrew','AVED Archive Song','Noto Serif SC','Songti SC',serif;
+ --type-code:'AVED Plex Mono','AVED UI Hebrew','AVED UI Chinese',monospace;
+ --type-hebrew:'AVED UI Hebrew','AVED UI Latin',sans-serif;
+ --type-entry:'AVED UI Latin','AVED UI Hebrew','PingFang SC','Microsoft YaHei',sans-serif;
+}
+@layer aved-typography{
+ /* Page owners: no body, universal selector or topbar inheritance changes. */
+ #view-news,#view-departments,#view-containment,#view-life,#view-forum,#view-profile,#view-casino{
+  --terminal-copy:var(--type-ui);--terminal-type:var(--type-code);
+  --aved-english:'AVED UI Latin',sans-serif;--aved-hebrew:var(--type-hebrew);
+  font-family:var(--type-ui);font-size:14px;line-height:1.7;
+ }
+ #inner-app-view .player-section-title{font-family:var(--type-heading)!important;font-size:32px!important;font-weight:700!important;line-height:1.35!important;letter-spacing:.025em!important}
+ #inner-app-view .player-section-kicker{gap:3px!important;font-family:var(--type-ui)!important;font-size:11px!important;line-height:1.5!important}
+ #inner-app-view .player-section-kicker>span{font-family:var(--type-ui)!important;font-size:11px!important;font-style:normal!important;font-weight:600!important;letter-spacing:.07em!important}
+ #inner-app-view .player-section-kicker>bdi{font-family:var(--type-hebrew)!important;font-size:12px!important;font-style:normal!important;font-weight:400!important;line-height:1.5!important;letter-spacing:0!important;unicode-bidi:isolate}
+
+ /* Discussion and notice comments are conversation, not display typography. */
+ #view-forum :is(.forum-card-title,.forum-detail-title){font-family:var(--type-heading)!important;font-size:16px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:0!important}
+ #view-forum .forum-detail-title{font-size:20px!important}
+ #view-forum :is(.forum-card-excerpt,.forum-detail-body,.forum-post-content),
+ #view-forum #forum-detail-replies-list article>p,
+ #view-news :is(.notice-comment-body,.notice-comment-body p){font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
+ #view-forum :is(.forum-post-meta,.forum-author-balance,.forum-post-meta time),
+ #view-news :is(.notice-meta,.notice-comment-heading time,.notice-comment-department){font-family:var(--type-ui)!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important}
+ #view-forum .forum-author b,#view-news .notice-comment-author{font-family:var(--type-ui)!important;font-size:13px!important;line-height:1.5!important;font-weight:600!important;letter-spacing:0!important}
+ #view-forum :is(.forum-upload-note,.forum-edit-action,.forum-reply-action,.forum-reply-quote,.forum-compose-quote){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.6!important;font-weight:400!important}
+ #view-forum :is(.forum-compose,.forum-persona-row){font-family:var(--type-ui)!important}
+ #view-forum .forum-persona-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px!important}
+ #view-forum .forum-persona-row label{display:flex!important;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+ #view-forum .forum-persona-row select{flex:1;min-width:0;width:80px;max-width:180px}
+ #view-forum :is(input,textarea,select),#view-news #news-detail-comment-input{font-family:var(--type-ui)!important;font-size:16px!important;font-weight:400!important;line-height:1.5!important}
+ #view-forum :is(button,label),#view-news :is(.notice-button,#back-to-news-list-btn,#news-detail-comment-form>button){font-family:var(--type-ui)!important;font-size:12px!important;font-weight:600!important;line-height:1.5!important}
+ #view-forum .forum-identity-choice{font-weight:400!important}
+ #view-forum .forum-identity-choice span{font-size:inherit!important}
+ #view-forum .forum-browse-tools :is(input,select){box-sizing:border-box;min-height:36px!important;padding:5px 8px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important}
+ #view-forum .forum-search input::placeholder{color:var(--inner-text-muted)!important;opacity:1}
+ #view-forum #forum-detail-reply-form .forum-reply-actions{gap:6px!important}
+
+ /* Archive prose keeps its paper character. Headings use a real heavier face. */
+ #view-news :is(.notice-title,.notice-detail-title,.notice-title-secondary),
+ #view-containment :is(.scp-item-card h3,.scp-entry-title),
+ #view-departments :is(.department-sheet h3,.personnel-name),#view-life .life-record h3{font-family:var(--type-heading)!important;font-size:18px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:.015em!important}
+ #view-news :is(.notice-body,.notice-body p,.notice-summary),
+ #view-containment :is(.scp-document-body,.scp-document-body p,.scp-detail-content,.scp-entry-body),
+ #view-life .life-record>p.whitespace-pre-wrap{font-family:var(--type-archive)!important;font-size:16px!important;line-height:1.85!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
+ #view-news :is(.notice-drafter,.notice-signature,.notice-conduct),
+ #view-containment :is(.scp-item-card p,.scp-item-card small,.scp-document-kicker),
+ #view-departments :is(.department-meta,.department-sheet footer),
+ #view-life :is(.life-record time,.life-record small){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.65!important;font-weight:400!important;letter-spacing:0!important}
+ #view-departments .department-summary p{font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important}
+ #view-containment #scp-detail-container>div.space-y-4 p{font-family:var(--type-archive)!important;font-size:16px!important;line-height:1.85!important;font-weight:400!important;letter-spacing:0!important}
+ #view-containment :is(.scp-dossier-heading,.scp-dossier-meta,#scp-detail-container h4){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.65!important;letter-spacing:0!important}
+ #view-containment .scp-glitchable-title{font-family:var(--type-heading)!important;font-size:16px!important;line-height:1.5!important;font-weight:700!important}
+
+ /* Personal terminal: micro labels remain secondary, but are actually readable. */
+ #view-profile .hud-name-row h1{font-family:var(--type-heading)!important;font-weight:700!important;line-height:1.25!important;text-shadow:none!important}
+ #view-profile :is(.hud-key,.hud-data-row,.hud-checkins,.hud-disclosure,.hud-dialog){font-family:var(--type-ui)!important}
+ #view-profile :is(.hud-topline,.hud-boot-line [data-hud-typed],.hud-frame header,.hud-data-row>span:first-child>small,.hud-micro-label [lang=en],.hud-micro-label b,.hud-key-en,.hud-personnel-tag,.hud-terminal-lines>span,.hud-system-copy [lang=en],.hud-signal-terminal header){font-family:var(--type-ui)!important;font-size:10px!important;line-height:1.5!important;font-weight:400!important;letter-spacing:.035em!important;text-shadow:none!important}
+ #view-profile :is(.hud-boot-line bdi,.hud-matrix-line bdi,.hud-footer bdi){font-family:var(--type-hebrew)!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important;font-weight:400!important}
+ #view-profile :is(.hud-data-row,.hud-checkins){font-size:13px!important;line-height:1.6!important}
+ #view-profile :is(.hud-data-row strong,.hud-checkins strong){font-weight:600!important}
+ #view-profile :is(#hub-balance,.hud-clock time){font-family:var(--type-code)!important;font-variant-numeric:tabular-nums;font-weight:400!important;letter-spacing:0!important}
+ #view-profile .hud-boot-line{gap:12px;flex-wrap:wrap}
+ #view-profile .hud-data-row{grid-template-columns:80px minmax(0,1fr) 20px!important;min-height:54px!important}
+ #view-profile .hud-data-row>span:first-child>small{display:block;white-space:nowrap;line-height:1.4!important;margin-top:3px}
+ #view-profile .hud-top-terminal>header{white-space:nowrap;min-width:82px}
+
+ /* Entertainment: illustrated game surfaces keep pixel lettering; utility UI does not. */
+ #view-casino :is(.casino-compact-bar,.welfare-dashboard,.card-room-lobby,.game-rule-card,.flight-rule-grid,.stock-controls,.market-crosshair-tooltip){font-family:var(--type-ui)!important}
+ #view-casino :is(.welfare-heading h3,.company-ranking-panel>h3,.game-rule-card h3,.card-room-lobby h3){font-family:var(--type-heading)!important;font-size:18px!important;line-height:1.5!important;font-weight:700!important}
+ #view-casino :is(.game-rule-card p,.flight-rule-grid p,.ranking-preferences,.ranking-help,.welfare-dashboard small,.card-room-lobby p){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.7!important;font-weight:400!important;letter-spacing:0!important}
+ #view-casino :is(.welfare-dashboard button,.welfare-dashboard select,.card-room-lobby button,.casino-compact-bar button){font-family:var(--type-ui)!important;line-height:1.5!important}
+ #view-casino :is(.rank-amount,.stock-quote-price,.flight-readout>strong){font-family:var(--type-code)!important;font-variant-numeric:tabular-nums;letter-spacing:0!important}
+ #game-panel-skydive{--flight-ui-font:var(--type-ui)}
+ #game-panel-skydive :is(.flight-passenger b,.flight-passenger small,.flight-passenger em,.flight-countdown,.flight-last-result){font-family:var(--type-ui)!important}
+ #game-panel-doudizhu :is(.ddz-menu,.ddz-status,.ddz-roomline,.ddz-player-name,.ddz-spectators,.ddz-stakes,.ddz-turn-feedback){font-family:var(--type-ui)!important}
+ #game-panel-derby .animal-race{font-family:var(--type-ui)!important}
+ #game-panel-derby :is(.animal-topline,.animal-radio h3 small,.animal-options .animal-code){font-family:var(--type-ui)!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important}
+
+ /* English / Hebrew inscriptions share a type family, while numbers stay monospaced. */
+ :is(#view-news,#view-departments,#view-containment,#view-life,#view-forum,#view-profile,#view-casino) [lang=he]{font-family:var(--type-hebrew)!important;font-style:normal!important;letter-spacing:0!important;unicode-bidi:isolate}
+ :is(#view-news,#view-departments,#view-containment,#view-life,#view-forum,#view-profile,#view-casino) [lang=en]:not([data-hud-typed]){font-family:var(--type-ui)!important;font-style:normal!important}
+ :is(#view-news,#view-departments,#view-containment,#view-life,#view-forum) .font-mono-tech{font-family:var(--type-ui)!important}
+ #landing-view :is(.landing-edge-line,.landing-float,.landing-motto p,.landing-disclaimer),#login-modal :is(.personnel-login-heading,.personnel-login-title,label,input,button){font-family:var(--type-entry)!important;font-style:normal!important;letter-spacing:.015em!important}
+ #landing-view [lang=he]{font-family:var(--type-hebrew)!important;font-size:13px!important;letter-spacing:0!important;font-style:normal!important}
+ #signal-Connecting-overlay :is(.signal-log,.signal-mesh p){font-family:var(--type-ui)!important}
+
+ /* Window typography is opt-in and owned per window, not `dialog *`. */
+ .hud-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .forum-social-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .forum-emoji-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ #speech-edit-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .welfare-transfer-dialog,.welfare-confirm{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .ddz-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .derby-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .admin-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .aved-feedback-dialog{--window-copy:var(--type-ui);--window-heading:var(--type-ui)}
+ .system-message-window{font-family:var(--type-ui)!important}
+ :is(.hud-dialog,.forum-social-dialog,.forum-emoji-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog){font-family:var(--window-copy)!important;font-size:13px!important;line-height:1.7!important}
+ :is(.hud-dialog,.forum-social-dialog,.forum-emoji-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog) :is(p,label,small,li,summary){font-family:var(--window-copy)!important;font-size:12px!important;line-height:1.7!important;font-weight:400!important;letter-spacing:0!important}
+ :is(.hud-dialog,.forum-social-dialog,.forum-emoji-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog)>header{font-family:var(--window-heading)!important}
+ :is(.hud-dialog,.forum-social-dialog,.forum-emoji-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog)>header :is(h2,h3,b,span){font-family:var(--window-heading)!important;font-size:12px!important;line-height:18px!important;font-weight:600!important;letter-spacing:.015em!important}
+ :is(.hud-dialog,.forum-social-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog) :is(input,textarea,select){font-family:var(--window-copy)!important;font-size:16px!important;line-height:1.5!important;font-weight:400!important}
+ :is(.hud-dialog,.forum-social-dialog,#speech-edit-dialog,.welfare-transfer-dialog,.welfare-confirm,.ddz-dialog,.derby-dialog,.admin-dialog,.aved-feedback-dialog) button:not([aria-label^='关闭']){font-family:var(--window-copy)!important;font-size:12px!important;font-weight:600!important;line-height:1.5!important}
+ #casino-switch-window{--window-copy:var(--type-ui);font-family:var(--window-copy)!important}
+ #casino-switch-window :is(header,[data-game],[data-game] span){font-family:var(--window-copy)!important;font-style:normal!important}
+ #casino-switch-window [data-game] span{font-size:14px!important;line-height:1.5!important}
+ #global-confirm-modal{font-family:var(--type-ui)!important}
+ #global-confirm-modal :is(p,button){font-family:var(--type-ui)!important;font-size:13px!important;line-height:1.7!important}
+ #ticket-modal-card :is(#ticket-modal-header-band,.ticket-modal-description,button){font-family:var(--type-ui)!important}
+
+ /* Management forms use the same UI language without changing their brand header. */
+ .admin-mode :is(.content,.admin-form,.community-form,.admin-post,.admin-dialog){--terminal-copy:var(--type-ui);--terminal-type:var(--type-code);font-family:var(--type-ui)!important;font-size:13px;line-height:1.65}
+ .admin-mode :is(.content,.admin-form,.community-form) :is(button,label,small,select,input,textarea){font-family:var(--type-ui)!important;line-height:1.5!important}
+ .admin-mode :is(.content,.admin-form,.community-form) :is(input,textarea,select){font-size:16px!important}
+ .admin-mode :is(.content,.admin-form,.community-form) :is(small,.hint){font-size:12px!important;line-height:1.65!important}
+ .admin-mode :is(.content,.admin-form,.community-form) :is(h2,h3){font-family:var(--type-heading)!important;font-size:18px!important;line-height:1.5!important}
+ @media(max-width:600px){
+  #inner-app-view .player-section-title{font-size:28px!important}
+  #view-profile .hud-top-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+  #view-profile .hud-key{padding-inline:1px!important}
+  #view-profile .hud-key-en{letter-spacing:0!important}
+  #view-forum #forum-detail-reply-form .forum-reply-actions{gap:4px!important}
+  #view-forum #forum-detail-reply-form .forum-reply-actions>button{padding-inline:5px!important;font-size:11px!important}
+  #view-forum #forum-detail-reply-form .forum-identity-choice{font-size:11px!important}
+ }
+ @media(max-width:380px){#view-profile .hud-key-en{font-size:9px!important}}
+}

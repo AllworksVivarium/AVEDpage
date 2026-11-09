@@ -2,11 +2,6 @@
 window.AVEDCommunity=function(ctx){
   const {api,esc,byId,showToast,mainViews,switchMainView,getUser,getProfile,departments,renderDepartments,renderScp,refreshForum,getThread,getReply,backForum}=ctx;
   const fileData=file=>new Promise((resolve,reject)=>{if(!file?.size)return resolve('');if(file.size>1500000||!['image/png','image/jpeg','image/webp'].includes(file.type))return reject(new Error('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。'));const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('影像读取失败。'));reader.readAsDataURL(file);});
-  const sidebar=byId('left-sidebar');
-  const controls=byId('audio-sfx-btn').parentElement;
-  const audioSection=document.createElement('section');audioSection.className='terminal-audio sidebar-expanded';
-  audioSection.innerHTML='<div class="audio-primary"><h3>音效</h3></div>';
-  sidebar.append(audioSection);audioSection.querySelector('.audio-primary').append(byId('audio-sfx-btn'));controls.remove();
   const games=byId('view-casino'),tabs=games.querySelector('[data-game]').parentElement;
   const home=document.createElement('a');home.href=AVEDStartup.gamePath('home');home.dataset.game='home';home.className='game-tab-btn community-button';home.textContent="公司大厅";tabs.prepend(home);
   const homePanel=document.createElement('section');homePanel.id='game-panel-home';homePanel.className='casino-home-sections';homePanel.innerHTML='<nav class="casino-home-shortcuts" aria-label="大厅直达"><button type="button" data-home-section="daily-allocation">签到补给</button><button type="button" data-home-section="card-room-lobby">联机牌室</button><button type="button" data-home-section="company-fund-panel">爱心账户</button><button type="button" data-home-section="company-ranking-panel">余额榜</button></nav><div id="daily-allocation" class="community-actions"></div>';

@@ -150,6 +150,24 @@ test('live API uses database login, server-priced trades and persistent quantiti
   const indexClose=await player('/api/player/stocks',{code:'KARMA',intent:'close',side:'long',quantity:2,stopLoss:1});
   assert.equal(indexClose.status,200);assert.equal(indexClose.data.items.find(s=>s.code==='KARMA').holding,0);
   assert.equal(indexClose.data.balance,100000,'closing uses server position direction and releases margin');
+  for(const side of ['long','short']){
+    const before=(await player('/api/me')).data.balance;
+    const opened=await player('/api/player/stocks',{code:'KARMA',intent:'open',side,quantity:2,leverage:1,price:1});
+    assert.equal(opened.status,200);
+    const position=opened.data.items.find(s=>s.code==='KARMA');
+    assert.equal(position.holding,side==='long'?2:-2);
+    assert.equal(position.marginUsed,position.positionNotional,'1x reserves the full server-priced notional');
+    assert.equal(position.effectiveLeverage,1);
+    assert.equal(opened.data.balance,before-position.marginUsed);
+    const closed=await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:2,leverage:1});
+    assert.equal(closed.status,200);
+    const exit=closed.data.items.find(s=>s.code==='KARMA');
+    const pnl=(side==='long'?1:-1)*(exit.price*2-position.positionNotional);
+    assert.equal(closed.data.balance,before+pnl,'1x returns all margin and settles the actual long/short PnL');
+    assert.equal(exit.holding,0);assert.equal(exit.marginUsed,0);
+  }
+  const unsupported=await player('/api/player/stocks',{code:'KARMA',intent:'open',side:'long',quantity:1,leverage:2});
+  assert.equal(unsupported.status,400);
   const code=state.stocks[0].code;
   const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,leverage:10,price:1,seed:'client-injected'});
   assert.equal(buy.status,200);const stock=buy.data.items.find(s=>s.code===code);

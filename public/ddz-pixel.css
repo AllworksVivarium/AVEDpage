@@ -1,8 +1,8 @@
 /* Pixel card-club art is drawn locally: no background textures or remote art. */
 @layer aved-type-system {
- #game-panel-doudizhu.ddz-panel,#game-panel-doudizhu.ddz-panel :is(button,input,p,span,strong,b,small,h3,label){font-family:'AVED IPix','Courier New',monospace!important;letter-spacing:0!important}
+ #game-panel-doudizhu.ddz-panel{font-family:var(--type-ui,var(--terminal-copy));letter-spacing:0}
  #game-panel-doudizhu.ddz-panel :is(button,input){font-size:13px!important;line-height:1.2!important}
- #game-panel-doudizhu.ddz-panel small{font-size:9px!important;line-height:1.5!important}
+ #game-panel-doudizhu.ddz-panel small{font-size:11px!important;line-height:1.5!important}
  #game-panel-doudizhu.ddz-panel h3{font-size:18px!important;line-height:1.4!important}
  #game-panel-doudizhu.ddz-panel .ddz-card-rank{font:bold 19px/1 'Courier New',monospace!important}
  #game-panel-doudizhu.ddz-panel .ddz-joker .ddz-joker-name{writing-mode:vertical-rl;letter-spacing:2px;font:700 12px/1.1 var(--terminal-type)!important}

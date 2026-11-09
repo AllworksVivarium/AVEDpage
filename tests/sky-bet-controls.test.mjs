@@ -10,10 +10,11 @@ test('both multipliers update valid draft amounts and enforce the server limit',
  assert.equal(scale('10000',2).value,20000);
  assert.equal(scale('10000',5).value,50000);
  assert.equal(scale('100',5).value,500);
- assert.equal(scale('200000',5).capped,false);
- assert.equal(scale('600000',2).value,1000000);
+ assert.equal(scale('100000',5).capped,false);
+ assert.equal(scale('200000',5).capped,true);
+ assert.equal(scale('600000',2).value,500000);
  assert.equal(scale('600000',2).capped,true);
- assert.equal(scale('1000000',5).value,1000000);
+ assert.equal(scale('1000000',5).value,500000);
 });
 
 test('empty, fractional and unsafe amounts cannot become a draft stake',()=>{

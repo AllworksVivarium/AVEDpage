@@ -19,7 +19,7 @@ function bindAuditDates(form){
 async function renderModeration(){
  const {items}=await api('/api/admin/moderation');
  $('#panel').innerHTML='<div class="section-heading"><h3>图文核验</h3><p>待核材料</p></div>'+items.map(x=>`<article class="notice-box"><h4>${esc(x.title)}</h4><small>发布用户：${esc(x.displayName)}（${esc(x.username)} / #${x.employeeId}）<br>来源：${esc(({thread:'匿名聊天论坛 · 主题',reply:'匿名聊天论坛 · 回复',life:'生活记录'})[x.kind]||x.kind)}<br>${AVEDTime.markup(x.createdAt)}</small><p class="announcement-body">${esc(x.body)}</p><img class="moderation-image" src="${esc(x.imageData)}" alt="待核影像"><div class="moderation-actions"><button class="small-action" data-archive-id="${x.archiveId}" data-review="approve" data-kind="${x.kind}" data-id="${x.id}">批准</button><button class="small-action" data-archive-id="${x.archiveId}" data-review="reject" data-kind="${x.kind}" data-id="${x.id}">拒绝</button></div></article>`).join('')+(items.length?'':'<p>暂无待核材料。</p>');
- document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`/api/admin/moderation/${b.dataset.kind}/${b.dataset.id}`,{method:'POST',body:JSON.stringify({action:b.dataset.review,archiveId:Number(b.dataset.archiveId)})});await renderModeration();}catch(e){alert(e.message);b.disabled=false;}});
+ document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`/api/admin/moderation/${b.dataset.kind}/${b.dataset.id}`,{method:'POST',body:JSON.stringify({action:b.dataset.review,archiveId:Number(b.dataset.archiveId)})});await renderModeration();}catch(e){window.AVEDFeedback.alert(e.message);b.disabled=false;}});
 }
 
 async function renderActivity(){
@@ -39,8 +39,8 @@ async function renderActivity(){
    $('#activity-list').querySelectorAll('[data-audit-image]').forEach(b=>b.onclick=()=>{const img=document.createElement('img');img.className='moderation-image';img.alt='留存图片';img.src=b.dataset.auditImage;img.onerror=()=>{img.replaceWith(document.createTextNode('图片已移除或不可读取。'));};b.replaceWith(img);});
   }finally{if(current===serial)button.disabled=false;}
  }
- $('#audit-categories').onclick=e=>{const b=e.target.closest('[data-audit-category]');if(!b)return;category=b.dataset.auditCategory;status.hidden=category!=='image';next=null;$('#activityMore').hidden=true;for(const option of $('#audit-categories').querySelectorAll('button'))option.setAttribute('aria-pressed',String(option===b));search().catch(e=>alert(e.message));};
- form.onsubmit=e=>{e.preventDefault();search().catch(e=>alert(e.message));};$('#activityMore').onclick=()=>search(true).catch(e=>alert(e.message));
+ $('#audit-categories').onclick=e=>{const b=e.target.closest('[data-audit-category]');if(!b)return;category=b.dataset.auditCategory;status.hidden=category!=='image';next=null;$('#activityMore').hidden=true;for(const option of $('#audit-categories').querySelectorAll('button'))option.setAttribute('aria-pressed',String(option===b));search().catch(e=>window.AVEDFeedback.alert(e.message));};
+ form.onsubmit=e=>{e.preventDefault();search().catch(e=>window.AVEDFeedback.alert(e.message));};$('#activityMore').onclick=()=>search(true).catch(e=>window.AVEDFeedback.alert(e.message));
 }
 
 async function renderSpeechRecords(){
@@ -49,9 +49,9 @@ async function renderSpeechRecords(){
  $('#speech-filters').querySelector('button').insertAdjacentHTML('beforebegin','<select name="sourceType" aria-label="通讯来源"><option value="">全部来源</option>'+Object.entries(sourceLabels).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')+'</select>');let serial=0,offset=0;
  async function search(more=false){const current=++serial,q=new URLSearchParams(new FormData($('#speech-filters')));if(!more)offset=0;q.set('offset',offset);const {items}=await api('/api/admin/speech-records?'+q);if(current!==serial)return;
   const markup=items.map(x=>`<article class="admin-post ${x.deletedAt?'deleted-record':''}"><div class="admin-post-head"><h4>${esc(sourceLabels[x.sourceType])} #${x.sourceId} ${esc(x.title)}</h4>${x.deletedAt?'':`<button class="small-action danger" data-speech-remove="${x.sourceType}" data-id="${x.sourceId}">移除公开内容</button>`}</div><div class="audit-identity"><span>实名 ${esc(x.displayName||'离职员工')}</span><span>账号 ${esc(x.username)}</span><span>QQ ${esc(x.qqNumber||'未绑定')}</span><span>当前代号 ${esc(x.anonymousName)}</span>${x.personaName?`<span>演绎身份 ${esc(x.personaName)}</span>`:''}</div><p>曾用代号：${x.aliases.map(esc).join(' / ')||'—'}</p><small>${AVEDTime.markup(x.createdAt)}</small><p class="announcement-body">${esc(x.body)}</p>${x.editedAt?`<p>已编辑 ${AVEDTime.markup(x.editedAt)}</p>`:''}${x.deletedAt?`<p>管理员 #${x.deletedBy} 于 ${AVEDTime.markup(x.deletedAt)} 删除</p>`:''}${x.revisions.length?`<details><summary>修订历史 (${x.revisions.length})</summary><div class="audit-revisions">${x.revisions.map(v=>`<section><small>${AVEDTime.markup(v.createdAt)}</small><p>修订前：${esc(v.before.title||'')} ${esc(v.before.body)}</p><p>修订后：${esc(v.after.title||'')} ${esc(v.after.body)}</p></section>`).join('')}</div></details>`:''}</article>`).join('');if(more)$('#speech-results').insertAdjacentHTML('beforeend',markup);else $('#speech-results').innerHTML=markup||'<p>未检索到通讯。</p>';offset+=items.length;$('#speech-more').hidden=items.length<50;
-  document.querySelectorAll('[data-speech-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('确认移除这条公开内容？'))return;const type=b.dataset.speechRemove,path=type==='thread'?'/api/admin/forum/threads/':type==='reply'?'/api/admin/forum/replies/':'/api/admin/speech/'+({comment:'posts',dossier:'dossier_comments',chat:'chat_messages',life:'life_records'})[type]+'/';b.disabled=true;try{await api(path+b.dataset.id,{method:'DELETE'});await search();}catch(e){alert(e.message);b.disabled=false;}});
+  document.querySelectorAll('[data-speech-remove]').forEach(b=>b.onclick=async()=>{if(!await window.AVEDFeedback.confirm('确认移除这条公开内容？'))return;const type=b.dataset.speechRemove,path=type==='thread'?'/api/admin/forum/threads/':type==='reply'?'/api/admin/forum/replies/':'/api/admin/speech/'+({comment:'posts',dossier:'dossier_comments',chat:'chat_messages',life:'life_records'})[type]+'/';b.disabled=true;try{await api(path+b.dataset.id,{method:'DELETE'});await search();}catch(e){window.AVEDFeedback.alert(e.message);b.disabled=false;}});
  }
- $('#speech-filters').onsubmit=e=>{e.preventDefault();search().catch(e=>alert(e.message));};$('#speech-more').onclick=()=>search(true).catch(e=>alert(e.message));
+ $('#speech-filters').onsubmit=e=>{e.preventDefault();search().catch(e=>window.AVEDFeedback.alert(e.message));};$('#speech-more').onclick=()=>search(true).catch(e=>window.AVEDFeedback.alert(e.message));
 }
 
 async function renderContentAdmin(section='announcements'){
@@ -81,7 +81,7 @@ async function renderContentAdmin(section='announcements'){
          const form=row.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const save=form.querySelector('button'),status=form.querySelector('[role=status]');save.disabled=true;status.textContent='';try{await api('/api/admin/posts/'+c.id,{method:'PUT',body:JSON.stringify({createdAt:form.elements.createdAt.value})});status.textContent='已保存';}catch(error){status.textContent=error.message;}finally{save.disabled=false;}};box.append(row);
         }
         cursor=page.next;button.hidden=cursor===null;started=true;if(!box.children.length)box.textContent='暂无评论。';
-       }catch(error){alert(error.message);}finally{fetching=false;button.disabled=false;}
+       }catch(error){window.AVEDFeedback.alert(error.message);}finally{fetching=false;button.disabled=false;}
       }
       comments.addEventListener('toggle',()=>{if(comments.open&&!started)readComments();});button.onclick=readComments;
      }catch(error){content.textContent=error.message+'；收起后重新展开可重试。';}finally{loading=false;}
@@ -90,24 +90,24 @@ async function renderContentAdmin(section='announcements'){
    bindContentForms(()=>renderContentAdmin(section));
   }
   append(news.items);if(!news.items.length)list.textContent='暂无公告。';more.hidden=next===null;
-  more.onclick=async()=>{if(busy||next===null)return;busy=true;more.disabled=true;try{const page=await api('/api/admin/announcements?offset='+next);if(!list.isConnected)return;append(page.items);next=page.next;more.hidden=next===null;}catch(error){alert(error.message);}finally{busy=false;more.disabled=false;}};
+  more.onclick=async()=>{if(busy||next===null)return;busy=true;more.disabled=true;try{const page=await api('/api/admin/announcements?offset='+next);if(!list.isConnected)return;append(page.items);next=page.next;more.hidden=next===null;}catch(error){window.AVEDFeedback.alert(error.message);}finally{busy=false;more.disabled=false;}};
  }
 }
 
 function bindContentForms(render){
  document.querySelectorAll('[data-content-form]').forEach(form=>form.onsubmit=async e=>{
   e.preventDefault();const button=form.querySelector('button');button.disabled=true;
-  try{const data=Object.fromEntries(new FormData(form));if(form.dataset.contentForm==='announcements')data.pinned=!!data.pinned;await api('/api/admin/'+form.dataset.contentForm+(form.dataset.id?'/'+form.dataset.id:''),{method:form.dataset.id?'PUT':'POST',body:JSON.stringify(data)});await render();}catch(err){alert(err.message);button.disabled=false;}
+  try{const data=Object.fromEntries(new FormData(form));if(form.dataset.contentForm==='announcements')data.pinned=!!data.pinned;await api('/api/admin/'+form.dataset.contentForm+(form.dataset.id?'/'+form.dataset.id:''),{method:form.dataset.id?'PUT':'POST',body:JSON.stringify(data)});await render();}catch(err){window.AVEDFeedback.alert(err.message);button.disabled=false;}
  });
- document.querySelectorAll('[data-content-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('确认删除这项内容？前台将同步移除。'))return;b.disabled=true;try{await api('/api/admin/'+b.dataset.contentDelete,{method:'DELETE'});await render();}catch(e){alert(e.message);b.disabled=false;}});
+ document.querySelectorAll('[data-content-delete]').forEach(b=>b.onclick=async()=>{if(!await window.AVEDFeedback.confirm('确认删除这项内容？前台将同步移除。'))return;b.disabled=true;try{await api('/api/admin/'+b.dataset.contentDelete,{method:'DELETE'});await render();}catch(e){window.AVEDFeedback.alert(e.message);b.disabled=false;}});
 }
 
 async function renderTerminology(){
  const {items}=await api('/api/admin/terminology');
  const fields=x=>`<label>原词<input name="pattern" required maxlength="80" value="${esc(x?.pattern||'')}"></label><label>替换为<input name="replacement" maxlength="160" value="${esc(x?.replacement||'')}"></label>${x?.isRegex?'<p>此项为旧版表达式规则，保存时保留原有匹配方式。</p>':''}<label><span><input name="enabled" type="checkbox" ${!x||x.enabled?'checked':''}>启用</span></label><button class="small-action">保存词条</button>`;
  $('#panel').innerHTML='<h3>公司用语规范</h3><p>直接填写要替换的原词和替换后的文字，无需表达式或特殊语法。</p><details class="admin-section" open><summary>登记词条</summary><form class="community-form terminology-form">'+fields()+'</form></details>'+items.map(x=>`<details class="admin-post" data-keep-original><summary>${esc(x.pattern)} → ${esc(x.replacement)} ${x.enabled?'启用':'停用'}</summary><form class="community-form terminology-form" data-id="${x.id}" data-legacy-regex="${x.isRegex?'true':'false'}">${fields(x)}</form><button class="small-action danger" data-rule-remove="${x.id}">移除词条</button></details>`).join('');
- document.querySelectorAll('.terminology-form').forEach(form=>form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),b=form.querySelector('button');b.disabled=true;try{await api('/api/admin/terminology'+(form.dataset.id?'/'+form.dataset.id:''),{method:form.dataset.id?'PUT':'POST',body:JSON.stringify({pattern:f.get('pattern'),replacement:f.get('replacement'),isRegex:form.dataset.legacyRegex==='true',enabled:f.has('enabled')})});window.AVEDTerminology?.refreshRules();await renderTerminology();}catch(e){alert(e.message);b.disabled=false;}});
- document.querySelectorAll('[data-rule-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('确认移除这条用语规范？'))return;await api('/api/admin/terminology/'+b.dataset.ruleRemove,{method:'DELETE'});window.AVEDTerminology?.refreshRules();await renderTerminology();});
+ document.querySelectorAll('.terminology-form').forEach(form=>form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),b=form.querySelector('button');b.disabled=true;try{await api('/api/admin/terminology'+(form.dataset.id?'/'+form.dataset.id:''),{method:form.dataset.id?'PUT':'POST',body:JSON.stringify({pattern:f.get('pattern'),replacement:f.get('replacement'),isRegex:form.dataset.legacyRegex==='true',enabled:f.has('enabled')})});window.AVEDTerminology?.refreshRules();await renderTerminology();}catch(e){window.AVEDFeedback.alert(e.message);b.disabled=false;}});
+ document.querySelectorAll('[data-rule-remove]').forEach(b=>b.onclick=async()=>{if(!await window.AVEDFeedback.confirm('确认移除这条用语规范？'))return;await api('/api/admin/terminology/'+b.dataset.ruleRemove,{method:'DELETE'});window.AVEDTerminology?.refreshRules();await renderTerminology();});
 }
 
 async function renderForumWorkshopAdmin(){
