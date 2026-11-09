@@ -231,3 +231,9 @@
  body.theme-inner #inner-app-view #forum-threads-list-container .forum-card-title{font-size:16px!important;line-height:1.4!important}
  body.theme-inner #inner-app-view #forum-threads-list-container .forum-card-excerpt{font-size:13px!important;line-height:1.55!important}
 }
+
+/* Keep the directory label at its final width while the rail animates. */
+@layer aved-section-ui {
+ #inner-app-view #left-sidebar .sidebar-directory-heading{overflow:hidden!important}
+ #inner-app-view #left-sidebar .sidebar-directory-heading .sidebar-label{flex:0 0 180px!important;width:180px!important;min-width:180px!important;max-width:none!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important}
+}

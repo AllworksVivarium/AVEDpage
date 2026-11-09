@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {randomBytes} from 'node:crypto';
-import {candidatesFor,replaceCandidate,sourceFiles,normalize} from './tools/local-text-editor.mjs';
+import {candidatesFor,replaceCandidate,sourceFiles,normalize} from './tools/player-text-source.mjs';
 import {decodeDesignFont,sanitizeDesign,designHash} from './player-design-core.mjs';
 
 export function installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee,files=sourceFiles}){

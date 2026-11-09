@@ -1,0 +1,87 @@
+/* The unauthenticated gateway has its own monochrome surface, independent of terminal palettes. */
+@layer aved-site {
+ body.theme-landing{background-color:#040506!important;color:#d6d9d7!important;color-scheme:dark}
+ body.theme-landing.landing-sphere{background-color:#040506!important;background-image:none!important}
+ body.theme-landing.landing-sphere #landing-view{background-color:#040506!important}
+}
+#landing-view .gateway-tall-glyph{display:inline-flex;gap:clamp(10px,1.65vw,22px);white-space:nowrap;transform:none;letter-spacing:0;text-shadow:inherit}
+#landing-view #cover-logo-slot{overflow:hidden}
+#landing-view .gateway-orbit{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;color:#fff;z-index:3;filter:drop-shadow(0 0 2px #ffffff45)}
+#landing-view .gateway-orbit-rail{fill:none;stroke:#e5eee9;stroke-width:1;opacity:.1}
+#landing-view .gateway-orbit-tail{fill:none;stroke:#f4fff9;stroke-width:3;stroke-linecap:round;stroke-dasharray:38 962;animation:gatewayOrbitTrail 7s linear infinite;opacity:.3}
+#landing-view .gateway-orbit-dot{fill:#f0f3ef;stroke:#e6fff3;stroke-width:1;opacity:.35}
+#landing-view #cover-logo-slot::after{content:none}
+#landing-view #open-login-btn{position:relative;overflow:hidden}
+#landing-view #open-login-btn::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;background:linear-gradient(180deg,transparent 28%,#edf7ef0d 43%,#f2fff433 49%,#f5fff56b 50%,#edf7ef1c 54%,transparent 69%);transform:translateY(-120%);animation:gatewayLoginScan 4.6s linear infinite;mix-blend-mode:screen}
+
+#gateway-snow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:11;opacity:1;filter:blur(.18px);mix-blend-mode:screen}
+body.landing-sphere #gateway-snow{display:none}
+@keyframes gatewayOrbitTrail{to{stroke-dashoffset:-1000}}
+@keyframes gatewayLoginScan{0%,12%{transform:translateY(-120%)}78%,100%{transform:translateY(120%)}}
+body.effects-off #landing-view .gateway-orbit-tail,body.effects-off #landing-view #open-login-btn::before{animation:none;display:none}
+body.effects-off #gateway-snow{display:none}
+@media(prefers-reduced-motion:reduce){#landing-view .gateway-orbit-tail,#landing-view #open-login-btn::before{animation:none;display:none}#gateway-snow{display:none}}
+
+/* The gateway lettering is a flat phosphor image: tiny local deformation, low-amplitude light. */
+.gateway-filter-defs{position:absolute;pointer-events:none;overflow:hidden}
+@layer aved-site {
+ #landing-view .floating-kanji,#landing-view .landing-float{animation:none!important;transform:none!important;will-change:auto}
+ #landing-view .gateway-hero-copy :is(.floating-kanji,.landing-float){
+  animation:none!important;
+  transform:translate3d(var(--phosphor-x,0px),var(--phosphor-y,0px),0)!important;
+  filter:url(#gateway-phosphor-wave);
+  text-shadow:0 0 .6px #ffffffe0,.25px 0 #a7606026,0 0 5px rgb(245 245 237 / calc(.44 * var(--phosphor-level,1))),0 0 15px rgb(245 245 237 / calc(.18 * var(--phosphor-level,1)));
+ }
+ #landing-view .gateway-hero-copy .floating-kanji{color:#e8e9e2!important}
+ #landing-view .gateway-tall-glyph{letter-spacing:0;text-shadow:inherit}
+ #landing-view #cover-logo-slot{animation:none!important;filter:none!important}
+ #landing-view #cover-logo-slot .company-emblem{filter:brightness(calc(.95 * var(--phosphor-level,1))) url(#gateway-phosphor-wave)!important}
+ body.effects-off #landing-view .gateway-hero-copy :is(.floating-kanji,.landing-float){transform:none!important;filter:none!important}
+ body.effects-off #landing-view #cover-logo-slot .company-emblem{filter:brightness(.95)!important}
+ @media(prefers-reduced-motion:reduce){
+  #landing-view .gateway-hero-copy :is(.floating-kanji,.landing-float){transform:none!important;filter:none!important}
+  #landing-view #cover-logo-slot .company-emblem{filter:brightness(.95)!important}
+ }
+}
+#landing-view .landing-motto p{animation:none;transform:none;will-change:auto}
+#landing-view .gateway-hero-copy .login-trigger-copy{animation:none!important}
+
+/* Earlier interaction-layer important rules own the supplied raster logo's inversion. */
+@layer aved-interactions {
+ #landing-view #cover-logo-slot .company-emblem{filter:brightness(calc(.95 * var(--phosphor-level,1))) url(#gateway-phosphor-wave)!important}
+ body.effects-off #landing-view #cover-logo-slot .company-emblem{filter:brightness(.95)!important}
+ @media(prefers-reduced-motion:reduce){#landing-view #cover-logo-slot .company-emblem{filter:brightness(.95)!important}}
+}
+
+/* The PDF-sourced symbol has transparent vector paths and needs no image inversion. */
+@layer aved-site {
+ #landing-view #cover-logo-slot{width:clamp(130px,21vw,260px)!important;height:clamp(114px,18.3vw,226px)!important;overflow:visible}
+}
+@layer aved-interactions {
+ #landing-view #cover-logo-slot .company-emblem{transform:none;mix-blend-mode:normal;opacity:.94!important}
+}
+
+/* Explicit character gaps keep the two title pairs balanced around the emblem. */
+#landing-view .gateway-letter{display:block;transform:scale(.82,1.25);transform-origin:center}
+@layer aved-site {
+ #landing-view .landing-brand-row .floating-kanji{font-size:clamp(40px,6.4vw,88px)!important;line-height:1.15!important;letter-spacing:0!important}
+ #landing-view .landing-brand-row{gap:clamp(14px,3vw,44px)!important}
+ @media(max-width:600px){
+  #landing-view .landing-brand-row .floating-kanji{font-size:clamp(28px,8vw,40px)!important}
+  #landing-view .landing-brand-row{gap:8px!important}
+ }
+}
+@media(max-width:600px){#landing-view .gateway-tall-glyph{gap:8px}}
+
+@layer aved-entry-stable {
+ #landing-view .floating-kanji{width:auto!important;font-size:clamp(40px,6.4vw,88px)!important;line-height:1.15!important;letter-spacing:0!important}
+ @media(max-width:600px){#landing-view .floating-kanji{font-size:clamp(28px,8vw,40px)!important}}
+}
+
+/* The access control is a fixed, tactile switch; only its light scans. */
+@layer aved-interactions {
+ #landing-view #open-login-btn{background:linear-gradient(180deg,#313433e8,#1c1e1dee 65%,#171918f2)!important;border-color:#9ca49e85!important;box-shadow:inset 0 1px 0 #ffffff24,inset 0 -1px 0 #0009,0 3px 0 #0b0c0b,0 5px 9px #0006!important;transition:background-color .15s,border-color .15s,box-shadow .12s}
+ #landing-view #open-login-btn:is(:hover,:focus-visible){background:linear-gradient(180deg,#3b3e3ce8,#252826ee)!important;border-color:#c7ceca99!important;box-shadow:inset 0 1px 0 #ffffff2c,inset 0 -1px 0 #0009,0 3px 0 #0b0c0b,0 5px 10px #0007!important}
+ #landing-view #open-login-btn:active{background:linear-gradient(180deg,#191c1af2,#282b29ee)!important;box-shadow:inset 0 2px 4px #0008,inset 0 -1px 0 #ffffff14,0 1px 0 #0b0c0b!important}
+ #landing-view #open-login-btn .login-trigger-copy{animation:none!important;transform:none!important;filter:none!important;text-shadow:0 0 5px rgb(245 245 237 / calc(.22 * var(--phosphor-level,1)))}
+}

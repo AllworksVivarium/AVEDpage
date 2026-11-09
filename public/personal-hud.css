@@ -402,3 +402,7 @@
 }
 
 @layer aved-personal {#view-profile.personal-hud .hud-checkins>button[data-claimed="true"]{--hud-claim-opacity:.82;opacity:.82!important}}
+
+@layer aved-personal {
+ .hud-dialog .hud-dialog-kicker{font-family:var(--entry-copy,monospace)!important;font-size:10px!important;line-height:1.4!important;letter-spacing:.12em!important;opacity:.55;margin-bottom:12px}
+}

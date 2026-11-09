@@ -317,7 +317,7 @@
         const cached=terminalArtCache.cached;let shown=false;
         const reveal=()=>{
           shown=true;signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-          signalOverlay.dataset.assetLoading=cached?'warm':'cold';signalPhase('正在加载员工终端',35,'');
+          signalOverlay.dataset.assetLoading=cached?'warm':'cold';signalPhase('正在建立内网链路',35,'接入节点已响应，正在同步员工授权域……');
         };
         let delayed;
         if(!cached||!signalOverlay.classList.contains('hidden'))reveal();else delayed=setTimeout(reveal,350);
@@ -327,10 +327,11 @@
       function signalPhase(title,progress,line) {
         document.getElementById('signal-status-title').textContent=title;
         document.getElementById('signal-progress-bar').style.width=progress+'%';
-        document.getElementById('signal-noise-code').textContent=progress===100?'CARRIER: LOCKED':'CARRIER: SYNCING';
+        document.getElementById('signal-noise-code').textContent=progress===100?'ACCESS // GRANTED':progress<40?'IDENTITY // VERIFYING':progress<80?'UPLINK // NEGOTIATING':'AUTHORITY // SYNCING';
         const logs=document.getElementById('signal-log-lines');if(progress<40)logs.replaceChildren();
-        const steps=signalOverlay.dataset.assetLoading?['正在点亮侧栏图标……','正在整理终端界面……','即将进入公司内网……']:['正在确认个人身份令牌……','正在连接公司内网……','正在加载公司档案……'];
+        const steps=signalOverlay.dataset.assetLoading?['人员识别回执已确认。','正在同步岗位授权域……','工作终端待激活……']:['正在检索在册人员档案……','公司主干链路握手中……','正在同步岗位访问矩阵……'];
         const count=progress<40?1:progress<80?2:3;
+        if(line)steps[count-1]=line;
         steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');entry.style.animation='signalLogReveal .18s ease-out both';entry.style.animationDelay=(index*70)+'ms';logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
       }
       async function restoreSavedLogin() {
@@ -351,20 +352,20 @@
         const connectStarted=performance.now();button.disabled=true;if(error)error.textContent='';
         loginModal.classList.add('hidden');loginModal.classList.remove('flex');
         signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-        signalPhase('欢迎回到公司',12,'正在核验员工凭证……');
+        signalPhase('员工身份核验中',12,'正在检索在册人员档案，等待识别回执……');
         try {
           await nextPaint();
           const authenticated=await apiLogin(identifier,password,remember);
-          signalPhase('欢迎回到公司，'+authenticated.employee.displayName,45,'正在接通员工终端……');
+          signalPhase('正在连接万业内网',45,'人员识别通过，正在与接入节点握手……');
           await nextPaint();
-          signalPhase('正在加载公司档案',85,'正在加载公司档案……');
+          signalPhase('岗位授权域同步中',85,'内网链路已建立，正在调阅岗位访问矩阵……');
           const employee=await loadPlayerData();
           if(employee.account!==authenticated.employee.username)throw new Error('登录身份未能确认，请重新接入。');
-          signalPhase('欢迎回到公司，'+employee.name,85,'正在调阅公司档案……');
+          signalPhase('正在激活员工席位',85,'归属档案已确认，正在分配工作终端……');
           await nextPaint();
           idleSession.start(true);
           await completeEnterIntranet(employee);
-          signalPhase('欢迎回到公司，'+employee.name,100,'终端已接通。');
+          signalPhase('欢迎归岗，'+employee.name,100,'接入许可已签发。您的工作终端已就绪。');
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
           delete signalOverlay.dataset.assetLoading;
           try {
@@ -464,7 +465,7 @@
 
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          switchMainView(btn.getAttribute('data-nav'));if(!isSidebarCollapsed)toggleSidebar();
+          switchMainView(btn.getAttribute('data-nav'));
         });
       });
 
@@ -611,12 +612,13 @@
 
           const emptyTitle = document.getElementById('scp-empty-title');
           const emptyDesc = document.getElementById('scp-empty-desc');
+          emptyDesc.hidden = true;
           if (scpSimulatedEmpty) {
-            emptyTitle.textContent = '档案板已被临时清空归档';
-            emptyDesc.textContent = '您执行了清空归档操作，当前视图下暂无收容物卡片。点击下方主按钮可立即恢复全部在册档案。';
+            emptyTitle.textContent = '暂无在册卷宗';
+            emptyDesc.textContent = '';
           } else {
-            emptyTitle.textContent = '未检索到匹配的收容物卷宗';
-            emptyDesc.textContent = `当前检索词「${scpSearchKeyword || selectedScpFilter}」下没有匹配的收容物。请清除筛选条件以恢复全部收容物列表。`;
+            emptyTitle.textContent = '未检索到对应卷宗';
+            emptyDesc.textContent = '';
           }
           return;
         }
@@ -793,7 +795,7 @@
         playSfx('checkin');
         renderScpArchives();
         scpSearchInput.focus();
-        showToast('已清除筛选并恢复全部收容物档案！', 'success');
+        showToast('已清除筛选。', 'success');
       });
 
 
@@ -1222,7 +1224,7 @@
           rules: [
             '一、刮开票面上的 12 枚公司印章',
             '二、同一收容印章凑满三枚即成一组',
-            '三、组内三格津贴相加，多组可叠加'
+            '三、同一张票可领多组津贴'
           ]
         },
         {
@@ -1239,7 +1241,7 @@
           rules: [
             '一、刮开上方 3 个领赏号与核准印',
             '二、刮开下方 9 个票号，对上领赏号即得对应奖金',
-            '三、对应奖金相加，再乘核准印所示倍数'
+            '三、核准印可放大奖金，也会加重炸弹扣款'
           ]
         },
         {
@@ -1256,7 +1258,7 @@
           rules: [
             '一、五个站点各有两枚签号，共 10 格',
             '二、右侧员工签号大于左侧站点签号，即通过该站',
-            '三、通过站点的奖金相加，就是本张获得金额'
+            '三、通过的每个站点均可领奖'
           ]
         }
       ];
@@ -1317,7 +1319,7 @@
         }
       }
 
-      function scratchRulesMarkup(game){return [...game.rules,'四、0.2% 概率出现炸弹，额外扣除票价的 1 / 2 / 4 倍，可产生负余额。',...(game.type==='lucky_num'?['五、核准印 ×1 / ×2 / ×3 / ×5 概率为 70% / 20% / 8% / 2%；奖金与炸弹追加扣款均乘倍率，票价只计一次。']:[])].map(rule=>`<p>${esc(rule)}</p>`).join('');}
+      function scratchRulesMarkup(game){return [...game.rules,'四、0.2% 概率出现炸弹，额外扣除票价的 1 / 2 / 4 倍，可产生负余额。'].map(rule=>`<p>${esc(rule)}</p>`).join('');}
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
         const g = scratchGameTypes.find(x => x.type === gType);
@@ -1603,11 +1605,11 @@
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
         renderScratchTiersAndLobby();initSlot5x3Game();restorePlayerRoute(true);
         communityUI.refresh();
-        if(window.innerWidth<768&&!isSidebarCollapsed)toggleSidebar();
+
         // Chat streams open only while their game panel is visible.
         startChatStreams();
         await nextPaint();
-        if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎回到公司，'+emp.name,100,'');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
+        if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
         }finally{innerAppView.classList.remove('intranet-preparing');}
       }
@@ -1668,7 +1670,7 @@
         if(th.preview){byId('forum-detail-main-post').textContent='正在加载主题…';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
-      function forumAuthor(item){const name=item.anonymousName||'未登记代号',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false"><span class="forum-author-avatar">${real&&item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}<i class="forum-online-dot" aria-label="在线" hidden></i></span><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
+      function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false"><span class="forum-author-avatar">${real&&item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}<i class="forum-online-dot" aria-label="在线" hidden></i></span><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
 
       async function refreshForum(){if(currentForumThreadId)return forumReplies.refresh();return forumBrowser.load();}
       async function openForumThread(id,replyId,{navigation=true}={}){
@@ -1870,9 +1872,9 @@
           unavailable:()=>{
             delete signalOverlay.dataset.assetLoading;
             signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');
-            currentUser=null;signalPhase('暂时无法恢复页面',12,'');
+            currentUser=null;signalPhase('公司内网连接暂未建立',12,'');
             const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
-            message.textContent='连接未完成，尚未确认登录状态。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
+            message.textContent='暂未取得内网响应，员工身份尚未确认。请重新连接。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
             retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);
           }
         });

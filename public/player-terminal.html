@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
   <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
-  <link rel="stylesheet" href="/personal-hud.css?v=claimed-opacity-12">
+  <link rel="stylesheet" href="/personal-hud.css?v=sidebar-copy-12">
   <script src="terminal-preferences.js?v=theme-owned-3"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=pixel-a-2">
   <link rel="stylesheet" href="/scratch-bomb.css?v=adaptive-ticker-3">
@@ -17,9 +17,8 @@
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=equal-cards-4">
   <link rel="stylesheet" href="/notice-document.css?v=notice-compact-accent-3">
-  <link rel="stylesheet" href="/section-mastheads.css?v=compact-news-entry-15">
+  <link rel="stylesheet" href="/section-mastheads.css?v=sidebar-copy-12">
   <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
-  <link rel="stylesheet" href="/player-text-editor.css?v=delete-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
   <link rel="stylesheet" href="/site-refinements.css?v=logo-wordmark-4">
   <link rel="stylesheet" href="/palette-preview.css?v=accent-consistency-3">
@@ -36,7 +35,7 @@
        ========================================================================== */
     :root {
       /* 1. 已绑定的宣发美术底图与预留插槽 */
-      --cover-bg-image: url("/assets/entrance.2ac482a14a01.webp");
+      --cover-bg-image: url("/assets/entrance-clean-no-frame.webp");
 
       --medical-card-bg: url("/assets/medical.ae5509bedeb3.webp");
       --megaphone-img: url("/assets/broadcast-ui-v1.9417d9e80963.webp");
@@ -386,24 +385,23 @@
   <div id="signal-Connecting-overlay" data-type-ignore role="dialog" aria-label="公司终端连接" aria-busy="true" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
     <div class="signal-mesh w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
-        <span>\\UPLINK\A.V.E.D.\TERMINAL_09</span>
-        <span id="signal-noise-code">CARRIER: 82% [SYNCING]</span>
+        <span>\\A.V.E.D.\INTRANET\NODE_09</span>
+        <span id="signal-noise-code">IDENTITY // VERIFYING</span>
       </div>
       <div class="text-center py-4 space-y-3">
-        <div class="text-xs tracking-[0.3em] text-neutral-400">&gt; A.V.E. DIRECTORATE &lt;</div>
+        <div class="text-xs tracking-[0.3em] text-neutral-400">&gt; PERSONNEL ACCESS PROTOCOL &lt;</div>
         <div id="signal-status-title" class="text-base sm:text-lg font-bold tracking-widest text-white">
-          正在确认登录状态
+          员工身份核验中
         </div>
         <div class="signal-progress-track w-full h-1.5 bg-neutral-900 border border-white/25 overflow-hidden p-0.5">
           <div id="signal-progress-bar" class="h-full bg-white transition-all duration-300" style="width: 20%"></div>
         </div>
         <div aria-live="polite" id="signal-log-lines" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
-          <div>&gt; 正在确认保存的员工会话……</div>
+          <div>&gt; 正在检索在册人员档案，等待识别回执……</div>
         </div>
       </div>
       <div class="border-t border-white/15 pt-2 mt-2 flex justify-between text-[10px] text-neutral-500">
-        <span>ALLWORKS VIVARIUM ENGINEERING DIRECTORATE</span>
-        <span>SYS.3.0</span>
+        <span>A.V.E.D. INTERNAL NETWORK</span><span>AUTHORIZED PERSONNEL</span>
       </div>
     </div>
   </div>
@@ -422,12 +420,9 @@
       <div>STATUS // STANDBY</div>
     </div>
 
-    <div class="w-full max-w-6xl my-auto py-6 flex flex-col items-center z-10">
+    <div class="gateway-hero-copy w-full max-w-6xl my-auto py-6 flex flex-col items-center z-10">
       <div class="landing-float text-center mb-5 sm:mb-7 space-y-1">
-        <div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.28em] sm:tracking-[0.38em] text-white/70 uppercase">
-          Allworks Vivarium Engineering Directorate
-        </div>
-        <div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.45em] text-white/45">
+<div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.45em] text-white/45">
           [ A . V . E . D . ]
         </div>
       </div>
@@ -437,15 +432,15 @@
         <div class="flex-1 min-w-[16px] sm:min-w-[60px] tech-line-left"></div>
 
         <div class="font-cover-tc font-black text-2xl xs:text-3xl sm:text-5xl md:text-7xl floating-kanji tracking-[0.12em] sm:tracking-[0.22em] shrink-0">
-          萬業
+          <span class="gateway-tall-glyph"><span class="gateway-letter">萬</span><span class="gateway-letter">業</span></span>
         </div>
 
         <div id="cover-logo-slot" class="logo-glow relative flex items-center justify-center shrink-0">
-          <img class="company-emblem" src="/assets/company-emblem-wordmark.png?v=wordmark-1" alt="万业携生公司标志" width="1578" height="1568" decoding="async">
+          <img class="company-emblem" src="/assets/company-emblem-plain.svg?v=plain-1" alt="万业携生公司标志" width="788" height="686" decoding="async">
         </div>
 
         <div class="font-cover-tc font-black text-2xl xs:text-3xl sm:text-5xl md:text-7xl floating-kanji tracking-[0.12em] sm:tracking-[0.22em] shrink-0">
-          攜生
+          <span class="gateway-tall-glyph"><span class="gateway-letter">攜</span><span class="gateway-letter">生</span></span>
         </div>
 
         <div class="flex-1 min-w-[16px] sm:min-w-[60px] tech-line-right"></div>
@@ -506,17 +501,17 @@
         </button>
       </div>
 
-<div class="px-6 py-3 border-b border-white/15 text-xs">员工账号登录</div>
+<div class="px-6 py-3 border-b border-white/15 text-xs">万业内网 · 员工接入认证</div>
 
       <div id="panel-account-login" class="p-6 space-y-4">
         <form id="account-login-form" action="/api/login" method="post" autocomplete="on" class="space-y-4">
           <div>
-            <label for="login-username" class="block text-xs text-neutral-300 mb-1 font-mono-tech">PERSONNEL ID // 用户名</label>
+            <label for="login-username" class="block text-xs text-neutral-300 mb-1 font-mono-tech">PERSONNEL ID // 员工标识</label>
             <input id="login-username" name="username" type="text" autocomplete="username" placeholder="请输入用户名或角色名" required
               class="w-full px-3.5 py-2.5 bg-black border border-white/30 text-sm text-white focus:outline-none focus:border-white font-mono-tech">
           </div>
           <div>
-            <label for="login-password" class="block text-xs text-neutral-300 mb-1 font-mono-tech">PASSWORD // 登录密码</label>
+            <label for="login-password" class="block text-xs text-neutral-300 mb-1 font-mono-tech">ACCESS KEY // 登录密码</label>
             <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required
               class="w-full px-3.5 py-2.5 bg-black border border-white/30 text-sm text-white focus:outline-none focus:border-white font-mono-tech">
           </div>
@@ -528,7 +523,7 @@
 
           </div>
           <button type="submit" class="press-cta w-full py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] uppercase transition cursor-pointer font-mono-tech">
-            &gt; CONNECT TO A.V.E.D. &lt;
+            &gt; 提交凭证 · 接入内网 &lt;
           </button>
           <p id="login-error" role="alert" class="text-xs text-red-300"></p>
         </form>
@@ -834,16 +829,14 @@
                 </svg>
 
                 <div class="space-y-1.5 max-w-sm mx-auto">
-                  <h4 id="scp-empty-title" class="text-base font-bold font-serif-sc">未检索到匹配的收容物卷宗</h4>
-                  <p id="scp-empty-desc" class="text-xs opacity-75 leading-relaxed">
-                    当前搜索关键词或威胁等级筛选下没有对应的在册档案。您可以清除筛选条件以恢复全部收容物视图。
-                  </p>
+                  <h4 id="scp-empty-title" class="text-base font-bold font-serif-sc">未检索到对应卷宗</h4>
+                  <p id="scp-empty-desc" hidden></p>
                 </div>
 
                 <!-- 唯一主 CTA 按钮（带磁吸交互） + 弱化为链接的次级操作 -->
                 <div class="flex flex-col items-center gap-2.5 pt-2 font-mono-tech text-xs">
                   <button id="scp-empty-primary-cta" type="button" class="magnetic-cta inner-btn-primary px-6 py-2.5 font-bold cursor-pointer">
-                    清除筛选并恢复全部档案
+                    清除筛选
                   </button>
                 </div>
               </div>
@@ -1266,7 +1259,7 @@
 
                 <!-- 赔付簿与三处隐藏收容协议 -->
                 <div class="retro-corner-box game-rule-card p-5 space-y-4">
-                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 倍数 × 每线押注 从最左一轮连起</div>
+                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 五线同押 · 从最左一轮连起</div>
                   <h4 class="text-lg font-bold font-serif-sc">异常回路赔付簿</h4>
 
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -1282,7 +1275,7 @@
                         </thead>
                         <tbody id="slot5x3-paytable-body" class="divide-y divide-[var(--inner-border-soft)]"></tbody>
                       </table>
-                      <p class="text-[11px] opacity-70 mt-2">总投入平分到 5 条线：投入 500 = 每线 100。奖金包含返还本金；最终金额以服务器结算为准。未触发连线或协议时，95% 概率返还本局投入的 5%—75%，其余返还 0。每局另有 0.75% 概率回路过载，追加扣除投入的 2 倍维修费，原有奖金照常结算；最多损失投入的 3 倍，可产生负余额。</p>
+                      <p class="text-[11px] opacity-70 mt-2">选择投入后启动回路。沿任一轨迹从最左轮连中相同信标，即可获奖；奖金包含本金。</p>
                     </div>
 
                     <div class="md:col-span-5 space-y-4">
@@ -1333,7 +1326,7 @@
                     ↻ 启动回路
                     <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 五线</span>
                   </button>
-                  <p class="slot-overload-rule">0.75% 概率过载 · 另扣投入的 2 倍维修费，可产生负余额。</p>
+                  <p class="slot-overload-rule">0.75% 概率过载 · 另扣投入的 2 倍维修费，最多损失投入的 3 倍，可产生负余额。</p>
                 </div>
 
                 <div class="retro-corner-box p-4 space-y-2.5">
@@ -1448,7 +1441,7 @@
   <script src="/notices-ui.js?v=real-comments-4" defer></script>
   <script src="/market-chart.js?v=compact-indicators-3" defer></script>
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=forum-floating-refresh-8" defer></script>
+  <script src="/player-community.js?v=gateway-release-20261110" defer></script>
   <script src="/game-results.js?v=seal-formula-2" defer></script>
   <script src="/forum-replies.js?v=presence-sync-5" defer></script>
   <script src="/forum-browser.js?v=paged-4" defer></script>
@@ -1468,16 +1461,16 @@
   <script src="/currency-symbol.js?v=pixel-a-2" defer></script>
   <script src="/sky-scene.js?v=sharp-labels-9" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=unified-layout-7" defer></script>
+<script src="/sky-ui.js?v=concise-rules-11" defer></script>
   <script src="/economy-ui.js?v=window-1" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
-  <script src="/welfare-ui.js?v=pixel-scenes-8" defer></script>
+  <script src="/welfare-ui.js?v=sidebar-copy-12" defer></script>
   <script src="/visual-style.js?v=critical-coin-4" defer></script>
-  <script src="/personal-hud.js?v=private-id-4" defer></script>
+  <script src="/personal-hud.js?v=sidebar-copy-12" defer></script>
 <script src="/rewards-ui.js?v=rewards-2" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=animal-habits-16" defer></script>
-<script src="/derby-ui.js?v=sidebar-rules-20" defer></script>
+<script src="/derby-ui.js?v=concise-rules-11" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
 <script src="/archive-board.js?v=entry-glitch-2" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
@@ -1497,14 +1490,14 @@
 <script src="/card-room-lobby.js?v=stake-cap-9" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=inset-wins-3">
 <script src="/slot-effects.js?v=inset-wins-3" defer></script>
-<script src="/player.js?v=forum-presence-8" defer></script>
+<script src="/player.js?v=gateway-release-20261110" defer></script>
   <script src="/page-headings.js?v=header-center-8" defer></script>
   <script src="/print-signal.js?v=window-1" defer></script>
   <script src="/terminal-frame.js?v=game-columns-4" defer></script>
   <script src="/landing-sphere.js?v=window-1" defer></script>
-  <script src="/player-design-client.js?v=local-only-4" defer></script>
-  <script src="/player-text-editor.js?v=compact-popup-2" defer></script>
-<script src="/stock-help.js?v=1" defer></script>
+<script src="/gateway-effects.js?v=fixed-access-8" defer></script>
+<link rel="stylesheet" href="/gateway-effects.css?v=fixed-access-8">
+<script src="/stock-help.js?v=concise-rules-11" defer></script>
 <link rel="stylesheet" href="/stock-help.css?v=1">
 <link rel="stylesheet" href="/desktop-game-layout.css?v=4">
 </body>

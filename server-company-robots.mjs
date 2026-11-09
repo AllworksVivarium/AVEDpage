@@ -9,7 +9,7 @@ export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,r
   try{if(req.method==='GET'&&url.pathname==='/api/admin/company-robots'){send(res,200,{items:list()});return true;}
    if(!['POST','PUT'].includes(req.method)){send(res,405,{error:'不支持的操作。'});return true;}
    const data=await readBody(req),codename=typeof data.codename==='string'?data.codename.trim():'';
-   if(!codename||codename.length>32||/[\u0000-\u001f\u007f]/.test(codename))throw Error('内网代号须为 1—32 个可见字符。');
+   if(!codename||codename.length>32||/[\u0000-\u001f\u007f]/.test(codename))throw Error('内网 ID须为 1—32 个可见字符。');
    if(!Number.isSafeInteger(data.balance)||Math.abs(data.balance)>1000000000)throw Error('余额须为 -1,000,000,000 至 1,000,000,000 的整数。');
    if(data.avatarPreset!==undefined&&data.avatarPreset!==''&&!avatarPresets.includes(data.avatarPreset))throw Error('请选择有效的头像底色。');
    const id=Number(url.pathname.split('/')[4]);if(req.method==='POST'&&id||req.method==='PUT'&&!id)throw Error('请选择有效机器人。');
@@ -27,6 +27,6 @@ export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,r
     const delta=data.balance-oldBalance;if(delta)recordLedger(robotId,delta,'管理员调整公司机器人余额');
     log(actor.id,req.method==='POST'?'robot.create':'robot.update','company-robot',{id:robotId,codename,oldBalance,balance:data.balance});return {id:robotId,codename,balance:balanceFor(robotId)};
    });send(res,200,result);return true;
-  }catch(e){send(res,e.status||(/UNIQUE constraint/.test(e.message)?409:400),{error:/UNIQUE constraint/.test(e.message)?'这个内网代号已被机器人使用。':e.message});return true;}
+  }catch(e){send(res,e.status||(/UNIQUE constraint/.test(e.message)?409:400),{error:/UNIQUE constraint/.test(e.message)?'这个内网 ID已被机器人使用。':e.message});return true;}
  }};
 }
