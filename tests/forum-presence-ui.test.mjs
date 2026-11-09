@@ -18,7 +18,7 @@ test('own posts get a marker, personas do not; anonymous posts never borrow a re
  const source=fs.readFileSync(new URL('../public/player.js',import.meta.url),'utf8'),fn=source.match(/function forumAuthor\(item\)\{[^\n]+\}/)[0];
  const render=vm.runInNewContext('('+fn+')',{esc:s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))});
  let html=render({anonymousName:'<员工>',canEdit:true,avatarUrl:'/private-avatar',presenceKey:'abc'});
- assert.match(html,/我的发言/);assert.match(html,/&lt;员工&gt;/);assert.doesNotMatch(html,/private-avatar/);assert.match(html,/NOINFO/);
+ assert.match(html,/我的发言/);assert.match(html,/&lt;员工&gt;/);assert.doesNotMatch(html,/private-avatar/);assert.doesNotMatch(html,/NOINFO|forum-author-avatar/);assert.match(html,/forum-online-dot/);
  html=render({anonymousName:'机器人',canEdit:true,personaId:3});assert.doesNotMatch(html,/我的发言/);
  html=render({anonymousName:'员工',identityMode:'real',avatarUrl:'/avatar'});assert.match(html,/src="\/avatar"/);
 });

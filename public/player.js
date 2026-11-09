@@ -484,6 +484,7 @@
       // 分页 2：部门介绍与员工名录（医疗部直接嵌入您上传的第3张宣发背景卡）
       // ======================================================================
       function renderDepartmentsAndPersonnel() {
+        document.getElementById('view-departments').dataset.directoryView=window.avedDepartmentFilter?'roster':'overview';
         const deptGrid = document.getElementById('departments-grid');
         if (deptGrid) {
           const departmentOrder=['收容部','武装部','医疗部','科研部','后勤部'];
@@ -495,6 +496,7 @@
         let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';byId('view-departments').append(leadership);}byId('view-departments').append(leadership);const leaders=employees.filter(e=>e.isLeadership&&e.department==='公司直属');leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属">调阅直属档案 ↗</button></article>`).join('')+'</div>';
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
+        dirGrid.parentElement.classList.add('directory-results');
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
         if(!window.avedDepartmentFilter){dirGrid.replaceChildren();return;}
 
@@ -1653,7 +1655,7 @@
         if(th.preview){byId('forum-detail-main-post').textContent='正在加载主题…';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
-      function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false"><span class="forum-author-avatar">${real&&item.avatarUrl?`<img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async">`:'<small class="avatar-noinfo">NOINFO</small>'}<i class="forum-online-dot" aria-label="在线" hidden></i></span><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
+      function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false">${real&&item.avatarUrl?`<span class="forum-author-avatar"><img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async"></span>`:''}<i class="forum-online-dot" aria-label="在线" hidden></i><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
 
       async function refreshForum(){if(currentForumThreadId)return forumReplies.refresh();return forumBrowser.load();}
       async function openForumThread(id,replyId,{navigation=true}={}){

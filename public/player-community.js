@@ -33,7 +33,7 @@ window.AVEDCommunity=function(ctx){
   nav.onclick=()=>{switchMainView('life');if(!byId('life-filters'))lifeShell();loadLife().catch(e=>showToast(e.message));};
   const directoryToolbar=document.createElement('div');directoryToolbar.className='directory-selection';directoryToolbar.innerHTML='<button class="community-button" id="directory-back">← 部门总览</button><strong id="directory-active" role="status"></strong>';byId('personnel-directory-grid').before(directoryToolbar);
   byId('directory-back').onclick=()=>{window.avedDepartmentFilter='';renderDepartments();byId('departments-grid').scrollIntoView({block:'start',behavior:'smooth'});};
-  document.addEventListener('click',e=>{const b=e.target.closest('[data-department-filter]');if(!b)return;window.avedDepartmentFilter=b.dataset.departmentFilter;byId('directory-active').textContent=b.dataset.departmentFilter+' / 人员档案';renderDepartments();byId('directory-active').scrollIntoView({block:'nearest',behavior:'smooth'});});
+  document.addEventListener('click',e=>{const b=e.target.closest('#view-departments [data-department-filter]');if(!b)return;const department=b.dataset.departmentFilter;window.avedDepartmentFilter=department;byId('directory-active').textContent=department+' / 人员档案';renderDepartments();byId('personnel-directory-grid').parentElement.scrollIntoView({block:'start',behavior:'instant'});});
   const scpSearch=byId('scp-search-input').parentElement,scpLevels=scpSearch.nextElementSibling;
   scpSearch.parentElement.classList.add('scp-search-layout');
   const scpFilters=document.createElement('div');scpFilters.className='scp-filter-row';scpSearch.after(scpFilters);scpFilters.append(scpLevels);scpLevels.classList.add('scp-level-filters');

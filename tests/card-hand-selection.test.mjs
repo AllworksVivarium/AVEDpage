@@ -38,13 +38,15 @@ test('secondary pointers, blocked hands, interrupted captures and keyboard click
  assert.equal(h.send('click',0,{detail:0}).stopped,undefined,'keyboard activation remains available');
 });
 
-test('the persistent owner follows the played cards, including after another seat passes',()=>{
- const owner={dataset:{},hidden:true,innerHTML:''},trick={innerHTML:''};
- const ctx={state:{id:'room',size:3,seat:0,landlord:1,phase:'playing',seats:[{name:'你'},{name:'夜航员'},{name:'同事'}],last:{seat:1,cards:[{id:7}]} ,event:{seat:2,type:'pass'}},$:selector=>selector==='[data-ddz-owner]'?owner:trick,portrait:()=>'',card:()=>'<card>',esc:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;')};
- vm.runInNewContext(source.slice(source.indexOf(' function seatDirection('),source.indexOf(" panel.addEventListener('error'")),ctx);
- ctx.renderLastPlay();assert.match(owner.innerHTML,/右侧出牌 · 太姥/);assert.match(owner.innerHTML,/夜航员/);assert.equal(owner.dataset.position,'right');
- ctx.state.last={seat:2,cards:[{id:8}]};ctx.state.seats[2].name='<unsafe>';ctx.renderLastPlay();
- assert.match(owner.innerHTML,/左侧出牌 · 少姥/);assert.match(owner.innerHTML,/&lt;unsafe&gt;/);assert.ok(!owner.innerHTML.includes('<unsafe>'));
- ctx.state.size=4;ctx.state.seat=0;assert.equal(ctx.seatDirection(2).label,'上方');assert.equal(ctx.seatDirection(0).label,'你');
- ctx.state.last=null;ctx.renderLastPlay();assert.equal(owner.hidden,true);assert.equal(trick.innerHTML,'');
+test('played cards keep their seat colour after another player passes, without an owner popup',()=>{
+ const properties={},attributes={},trick={dataset:{},hidden:true,innerHTML:'',style:{setProperty:(k,v)=>properties[k]=v},replaceChildren(){this.innerHTML='';},setAttribute:(k,v)=>attributes[k]=v,removeAttribute:k=>delete attributes[k]};
+ const tableProperties={};
+ const ctx={innerWidth:390,panel:{style:{setProperty:(k,v)=>tableProperties[k]=v}},state:{id:'room',size:3,seat:0,landlord:1,phase:'playing',seats:[{name:'你'},{name:'夜航员'},{name:'同事'}],last:{seat:1,cards:[{id:7}]},event:{seat:2,type:'pass'}},$:()=>trick,card:()=>'<card>'};
+ vm.runInNewContext(source.slice(source.indexOf(' function seatTone('),source.indexOf(" panel.addEventListener('error'")),ctx);
+ ctx.renderLastPlay();assert.equal(trick.dataset.position,'right');assert.equal(properties['--play-color'],ctx.seatTone(1));assert.match(attributes['aria-label'],/夜航员出的牌/);
+ assert.doesNotMatch(source,/data-ddz-owner/);
+ ctx.state.last={seat:2,cards:Array.from({length:20},(_,id)=>({id}))};ctx.renderLastPlay();
+ assert.equal(trick.dataset.position,'left');assert.equal(properties['--play-color'],ctx.seatTone(2));assert.equal(properties['--trick-cols'],8);assert.equal(trick.innerHTML.match(/<card>/g).length,20);assert.equal(tableProperties['--trick-area'],'218px');
+ ctx.state.size=4;assert.equal(ctx.seatDirection(2).label,'上方');assert.equal(ctx.seatDirection(0).label,'你');
+ ctx.state.last=null;ctx.renderLastPlay();assert.equal(trick.hidden,true);assert.equal(trick.innerHTML,'');
 });

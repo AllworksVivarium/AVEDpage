@@ -26,7 +26,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
  }
  function layout(){
   if(frame.hidden)return;const hand=$('.ddz-hand');
-  frame.style.top=Math.max(100,hand.offsetTop-30)+'px';frame.style.bottom='43px';
+  frame.style.top=Math.max(100,hand.offsetTop-30)+'px';frame.style.bottom=Math.max(0,felt.clientHeight-hand.offsetTop-hand.offsetHeight-8)+'px';
  }
  function clock(text,now){
   $('[data-turn-time]').textContent=text?text+' 秒':'';
@@ -79,5 +79,5 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   layout();
  }
  window.addEventListener('resize',layout);
- return {render,clock};
+ return {render,clock,layout};
 };

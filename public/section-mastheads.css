@@ -53,6 +53,8 @@
   #view-departments .department-sheet:is(:hover,:active,:focus-visible) {transform:none!important;scale:1!important}
   #view-departments .department-summary p {position:relative;z-index:1}
   #view-departments .department-sheet footer {display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+  #view-departments .directory-results{scroll-margin-top:calc(var(--terminal-header-height,54px) + 20px)}
+  #view-departments[data-directory-view=roster] :is(#departments-grid,#directory-unassigned,#company-leadership-directory){display:none!important}
   #view-news .notice-body p {text-indent:2em;line-height:1.9;margin:0 0 1em;text-align:justify;overflow-wrap:anywhere}
   @media(min-width:1200px) {#view-departments #departments-grid {grid-template-columns:repeat(5,minmax(0,1fr))!important}}
   @media(max-width:600px) {#view-departments #departments-grid {grid-template-columns:1fr!important}#view-departments .department-sheet {min-height:180px}}
