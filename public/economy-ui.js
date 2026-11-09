@@ -1,65 +1,30 @@
 window.AVEDEconomyUI=function({api,esc,byId,getUser,onBalance,showToast,stocks,refreshMarket}){
- function configure(){}
- const stocksPanel=byId('game-panel-stocks');
- const summary=document.createElement('section');
- summary.id='stock-funds-summary';
- summary.className='portfolio-summary';
- const nav=document.createElement('div');nav.className='portfolio-tabs';nav.innerHTML='<button type="button" class="community-button" data-portfolio-view="quotes" aria-pressed="true">证券行情</button><button type="button" class="community-button" data-portfolio-view="holdings" aria-pressed="false">我的持仓</button>';
- stocksPanel.prepend(summary);
- stocksPanel.prepend(nav);
- const holdings=document.createElement('section');holdings.id='stock-holdings-page';holdings.hidden=true;stocksPanel.append(holdings);
- let view='quotes';
- const closingCodes=new Set();
- const money=n=>'¤ '+Math.round(n||0).toLocaleString();
- const signed=n=>(n>=0?'+':'')+Math.round(n||0).toLocaleString();
- function renderSummary(){
-  const list=stocks();
-  const cash=getUser()?.balance||0;
-  const cashClass=cash<0?'market-down':'';
-  const marketValue=list.reduce((sum,s)=>sum+(s.marketValue??(s.price*s.holding)),0);
-  const costBasis=list.reduce((sum,s)=>sum+(s.costBasis||0),0);
-  const positionNotional=list.reduce((sum,s)=>sum+(s.positionNotional||0),0);
-  const unrealized=list.reduce((sum,s)=>sum+(s.unrealizedPnl||0),0);
-  const realized=list.reduce((sum,s)=>sum+(s.realizedPnl||0),0);
-  summary.innerHTML='<div class="stock-funds-grid">'+[['可用余额',money(cash),cashClass],['占用保证金',money(costBasis),''],['名义仓位',money(positionNotional),''],['盈亏概览',signed(unrealized+realized),(unrealized+realized)>=0?'market-up':'market-down']].map(([label,value,color])=>'<article class="stock-funds-card"><h4>'+label+'</h4><strong class="stock-funds-value '+color+'">'+value+'</strong></article>').join('')+'</div>';
- }
- function showView(next){view=next;for(const child of stocksPanel.children)if(child!==nav&&child!==summary)child.hidden=child===holdings?view!=='holdings':view==='holdings';nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.portfolioView===view)));renderHoldings();}
+ const panel=byId('game-panel-stocks'),summary=document.createElement('section'),nav=document.createElement('div'),holdings=document.createElement('section'),history=document.createElement('section');
+ summary.id='stock-funds-summary';summary.className='portfolio-summary';nav.className='portfolio-tabs';
+ nav.innerHTML=[['quotes','证券行情'],['holdings','我的持仓'],['history','交易记录']].map(([key,label])=>'<button type="button" class="community-button" data-portfolio-view="'+key+'" aria-pressed="'+(key==='quotes')+'">'+label+'</button>').join('');
+ holdings.id='stock-holdings-page';history.id='stock-history-page';holdings.hidden=history.hidden=true;panel.prepend(summary);panel.prepend(nav);panel.append(holdings,history);
+ let view='quotes',historyBusy=false,historyData=null,historyError='',owner=null,historyRequest=0;
+ const closing=new Set(),money=n=>'¤ '+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}),signed=n=>(n>=0?'+':'')+money(n),tone=n=>n>=0?'market-up':'market-down';
+ const date=s=>{if(!s)return '历史仓位';const d=new Date(s.replace(' ','T')+(s.includes('Z')?'':'Z'));return Number.isNaN(+d)?s:d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});};
+ function totals(){return stocks().reduce((a,s)=>({margin:a.margin+(s.marginUsed||0),floating:a.floating+(s.unrealizedPnl||0),realized:a.realized+(s.realizedPnl||0)}),{margin:0,floating:0,realized:0});}
+ function renderSummary(){const t=totals();summary.innerHTML='<div class="stock-funds-grid">'+[['可用余额',money(getUser()?.balance),''],['占用保证金',money(t.margin),''],['浮动盈亏',signed(t.floating),tone(t.floating)],['历史盈亏',signed(t.realized),tone(t.realized)]].map(([label,value,color])=>'<article class="stock-funds-card"><h4>'+label+'</h4><strong class="stock-funds-value '+color+'">'+value+'</strong></article>').join('')+'</div>';}
+ function showView(next){view=next;for(const child of panel.children)if(child!==nav&&child!==summary)child.hidden=child===holdings?view!=='holdings':child===history?view!=='history':view!=='quotes';nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.portfolioView===view)));renderHoldings();if(view==='history')loadHistory(false);}
  nav.onclick=e=>{const b=e.target.closest('[data-portfolio-view]');if(!b)return;showView(b.dataset.portfolioView);refreshMarket().catch(err=>showToast(err.message));};
  function renderHoldings(){
-  const owned=stocks().filter(s=>s.holding!==0),value=owned.reduce((sum,s)=>sum+(s.marketValue??(s.price*s.holding)),0),cost=owned.reduce((sum,s)=>sum+(s.costBasis||0),0);
-  renderSummary();
-  holdings.innerHTML='<header class="portfolio-summary"><span class="section-kicker">SECURITIES / POSITIONS</span><h3>我的持仓</h3><strong>'+money(value)+'</strong><p>持仓估值 '+owned.length+' 支证券 ｜ 保证金 '+money(cost)+'</p></header><div class="portfolio-grid">'+owned.map(s=>{const marketValue=s.marketValue??(s.price*s.holding),costBasis=s.costBasis||0,positionNotional=s.positionNotional||0,unrealized=s.unrealizedPnl??0,avgCost=Math.abs(s.holding)>0?(s.avgCost??(positionNotional/Math.abs(s.holding))):0,rate=positionNotional?unrealized/positionNotional*100:0,sideLabel=s.holding>0?'买涨':'买跌',closing=closingCodes.has(s.code),closeLabel=closing?'平仓中…':(s.holding>0?'卖出平仓':'买入平仓');return `<article class="stock-quote-card"><span class="section-kicker">${esc(s.code)}</span><h4>${esc(s.name)}</h4><dl><div><dt>方向</dt><dd>${sideLabel}</dd></div><div><dt>持有数量</dt><dd>${Math.abs(s.holding).toLocaleString()} 股</dd></div><div><dt>当前单价</dt><dd>${money(s.price)}</dd></div><div><dt>平均开仓价</dt><dd>${money(avgCost)}</dd></div><div><dt>占用保证金</dt><dd>${money(costBasis)}</dd></div><div><dt>名义仓位</dt><dd>${money(positionNotional)}</dd></div><div><dt>杠杆倍数</dt><dd>${s.effectiveLeverage?`${s.effectiveLeverage}x`:'—'}</dd></div><div><dt>持仓估值</dt><dd>${money(marketValue)}</dd></div><div><dt>浮动盈亏</dt><dd class="${unrealized>=0?'market-up':'market-down'}">${signed(unrealized)} (${rate>=0?'+':''}${rate.toFixed(2)}%)</dd></div><div><dt>已实现盈亏</dt><dd class="${(s.realizedPnl||0)>=0?'market-up':'market-down'}">${signed(s.realizedPnl||0)}</dd></div>${s.stopLoss?`<div><dt>止损</dt><dd>${money(s.stopLoss)}</dd></div>`:''}${s.takeProfit?`<div><dt>止盈</dt><dd>${money(s.takeProfit)}</dd></div>`:''}</dl><div class="stock-position-actions"><button type="button" class="community-button" data-close-position-code="${esc(s.code)}" ${closing?'disabled':''}>${closeLabel}</button><button type="button" class="community-button" data-position-code="${esc(s.code)}">前往交易 ↗</button></div></article>`;}).join('')+(owned.length?'':'<p class="portfolio-empty">暂无证券持仓。</p>')+'</div>';
+  if(owner!==getUser()?.id){owner=getUser()?.id;historyData=null;historyError='';historyBusy=false;historyRequest++;}
+  renderSummary();const lots=stocks().flatMap(s=>s.lots||[]);
+  holdings.innerHTML='<header class="portfolio-compact-heading"><h3>逐笔持仓 <small>'+lots.length+' 笔</small></h3><span>每笔独立结算</span></header><div class="portfolio-lots">'+lots.map(l=>{
+   const key=String(l.id),busy=closing.has(key),rate=l.marginUsed?l.unrealizedPnl/l.marginUsed*100:0;
+   return '<article class="portfolio-lot"><header><div><b>'+esc(l.name)+'</b><small>'+esc(l.code)+' · #'+l.id+'</small></div><span class="portfolio-lot-side">'+(l.holding>0?'买涨':'买跌')+' · '+(l.legacy?'历史合并仓':l.leverage+'x')+'</span></header><dl><div><dt>数量 / 开仓价</dt><dd>'+Math.abs(l.holding).toLocaleString()+' / '+money(l.avgCost)+'</dd></div><div><dt>现价 / 保证金</dt><dd>'+money(l.price)+' / '+money(l.marginUsed)+'</dd></div><div class="portfolio-lot-pnl"><dt>浮动盈亏</dt><dd class="'+tone(l.unrealizedPnl)+'">'+signed(l.unrealizedPnl)+' <small>('+rate.toFixed(2)+'%)</small></dd></div></dl><footer><small>'+esc(l.legacy?'旧版账面成本保留':date(l.createdAt))+(l.stopLoss?' · 止损 '+money(l.stopLoss):'')+(l.takeProfit?' · 止盈 '+money(l.takeProfit):'')+'</small><button type="button" class="community-button" data-close-lot="'+key+'" '+(busy?'disabled':'')+'>'+(busy?'平仓中…':'平此仓')+'</button></footer></article>';
+  }).join('')+(lots.length?'':'<p class="portfolio-empty">暂无证券持仓。</p>')+'</div><p class="portfolio-footnote">单笔平仓使用该笔成本；快捷交易的平仓按最早开仓顺序执行。历史盈亏为已实现盈亏。</p>';
+  if(view==='history')renderHistory();
  }
- holdings.onclick=async e=>{
-  const close=e.target.closest('[data-close-position-code]');
-  if(close){
-   const code=close.dataset.closePositionCode;
-   if(!code||closingCodes.has(code))return;
-   const position=stocks().find(item=>item.code===code);
-   const quantity=Math.abs(Math.round(position?.holding||0));
-   if(!quantity){showToast('该仓位已为空。');renderHoldings();return;}
-   closingCodes.add(code);
-   renderHoldings();
-   try{
-    const action=position.holding>0?'sell':'buy';
-    const payload=await api('/api/player/stocks',{method:'POST',body:{code,intent:'close',quantity,orderType:'market'}});
-    if(Array.isArray(payload?.items)){
-     const list=stocks();
-     list.splice(0,list.length,...payload.items);
-    }
-    if(typeof payload?.balance==='number')onBalance(payload.balance);
-    showToast('已平仓 '+code+' × '+quantity+'。');
-    renderHoldings();
-   }catch(err){
-    showToast(err.message||'平仓失败。');
-   }finally{
-    closingCodes.delete(code);
-    refreshMarket().catch(refreshErr=>showToast(refreshErr.message));
-    renderHoldings();
-   }
-   return;
-  }
-  const b=e.target.closest('[data-position-code]');if(!b)return;showView('quotes');stocksPanel.querySelector('[data-stock-chart-code="'+b.dataset.positionCode+'"]')?.click();byId('stock-trade-ticket').scrollIntoView({behavior:'smooth',block:'nearest'});
- };
- return {configure,renderHoldings};
+ function renderHistory(){
+  const s=historyData?.summary;
+  history.innerHTML='<header class="portfolio-compact-heading"><h3>交易统计</h3><button class="community-button" data-history-refresh '+(historyBusy?'disabled':'')+'>刷新记录</button></header>'+(s?'<div class="portfolio-stat-grid">'+[['盈利平仓',s.wins+' 笔'],['亏损平仓',(s.closedCount-s.wins-s.draws)+' 笔'],['保本平仓',s.draws+' 笔'],['交易胜率',s.winRate===null?'—':(s.winRate*100).toFixed(1)+'%']].map(([k,v])=>'<div><small>'+k+'</small><strong>'+v+'</strong></div>').join('')+'</div>':'')+'<p class="portfolio-footnote">胜率 = 盈利平仓 ÷ 全部平仓操作，含部分平仓；未平仓不计入。历史盈亏不含浮动盈亏。</p><div class="portfolio-trade-history">'+(historyData?.items||[]).map(t=>'<article><div><b>'+esc(stocks().find(s=>s.code===t.code)?.name||t.code)+'</b><small>'+esc(date(t.createdAt))+' · #'+t.id+'</small></div><div><span>'+(t.closing?'平仓':(t.action==='buy'?'买涨开仓':'买跌开仓'))+' · '+t.leverage+'x</span><small>'+t.quantity.toLocaleString()+' × '+money(t.price)+'</small></div><strong class="'+(t.closing?tone(t.pnl):'')+'">'+(t.closing?signed(t.pnl):'—')+'</strong></article>').join('')+'</div>'+(historyError?'<p role="status">'+esc(historyError)+'</p>':'')+(historyBusy?'<p class="portfolio-footnote" role="status">正在读取记录…</p>':(!historyData?.items.length?'<p class="portfolio-empty">暂无交易记录。</p>':''))+(historyData?.nextCursor?'<button type="button" class="community-button portfolio-history-more" data-history-more '+(historyBusy?'disabled':'')+'>更早记录</button>':'');
+ }
+ async function loadHistory(more){if(historyBusy)return;historyBusy=true;historyError='';const request=++historyRequest,user=getUser()?.id;renderHistory();try{const d=await api('/api/player/stocks/history'+(more&&historyData?.nextCursor?'?before='+historyData.nextCursor:''));if(request!==historyRequest||user!==getUser()?.id)return;historyData={...d,items:more?[...(historyData?.items||[]),...d.items]:d.items};}catch(e){if(request===historyRequest)historyError=e.message;}finally{if(request===historyRequest){historyBusy=false;renderHistory();}}}
+ history.onclick=e=>{if(e.target.closest('[data-history-more]'))loadHistory(true);else if(e.target.closest('[data-history-refresh]'))loadHistory(false);};
+ holdings.onclick=async e=>{const button=e.target.closest('[data-close-lot]');if(!button)return;const key=button.dataset.closeLot;if(closing.has(key))return;const lot=stocks().flatMap(s=>s.lots||[]).find(l=>String(l.id)===key);if(!lot)return;closing.add(key);renderHoldings();try{const d=await api('/api/player/stocks',{method:'POST',body:{code:lot.code,intent:'close',lotId:lot.id,quantity:Math.abs(lot.holding),orderType:'market'}});if(d.items)stocks().splice(0,stocks().length,...d.items);if(typeof d.balance==='number')onBalance(d.balance);historyData=null;showToast('已平仓 '+lot.code+' · #'+lot.id);}catch(err){showToast(err.message||'平仓失败。');}finally{closing.delete(key);renderHoldings();refreshMarket().catch(err=>showToast(err.message));}};
+ return {configure(){},renderHoldings};
 };

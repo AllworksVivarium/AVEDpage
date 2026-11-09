@@ -258,6 +258,8 @@ installAvatarPresets(db);
 let economy,personal,highlights;
 const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
+// Preserve legacy split ordering before migrating independent fills.
+playerService.initializeStockLots();
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 highlights=installGameHighlights({db,send,requireEmployee});

@@ -1,3 +1,4 @@
+import {installStockLots} from './server-stock-lots.mjs';
 import {installForumList} from './server-forum-list.mjs';
 import {radioVisibleSQL} from './server-radio-retention.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
@@ -113,7 +114,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('卷宗待核。','WY-002','档案内容由管理人员录入。');
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
   const marketService=installMarket(db);
-  const market=id=>marketService.items(id);
+  const stockLots=installStockLots(db);
+  const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>({...s,lots:lots.filter(l=>l.code===s.code)}));};
   const normalizeOptionalPrice=value=>{
     if(value==null||value==='')return null;
     const n=Math.round(Number(value));
@@ -135,58 +137,26 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     if(takeProfit!==null&&takeProfit>=price)throw new Error('买跌时止盈需低于现价。');
   };
   const pendingOrders=id=>db.prepare("SELECT id,code,side,quantity,leverage,limit_price AS limitPrice,stop_loss AS stopLoss,take_profit AS takeProfit,created_at AS createdAt FROM stock_orders WHERE employee_id=? AND status='open' ORDER BY id DESC").all(id);
-  function executeStockTrade(id,{stock,delta,leverage=3,stopLoss=null,takeProfit=null,reason=''}) {
+  function executeStockTrade(id,{stock,delta,leverage=3,stopLoss=null,takeProfit=null,reason='',lotId=null}) {
     if(!Number.isSafeInteger(delta)||delta===0)throw new Error('交易指令无效。');
     leverage=normalizeLeverage(leverage);
     const amount=Math.abs(delta)*stock.price;
     if(!Number.isSafeInteger(amount))throw new Error('委托金额超出限额。');
-    const position=db.prepare('SELECT quantity,cost_basis AS costBasis,position_notional AS positionNotional,margin_used AS marginUsed,realized_pnl AS realizedPnl,leverage,stop_loss AS stopLoss,take_profit AS takeProfit FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code);
-    const held=position?.quantity||0;
-    const costBasis=position?.costBasis||0;
-    const positionNotional=position?.positionNotional||((held!==0&&costBasis>0)?costBasis:0);
-    const marginUsed=position?.marginUsed||((held!==0&&costBasis>0)?costBasis:0);
-    const realizedPnl=position?.realizedPnl||0;
-    const next=held+delta;
-    if(!Number.isSafeInteger(next))throw new Error('持仓数量超出可精确计量范围。');
-    const closing=Math.sign(held)!==0&&Math.sign(held)!==Math.sign(delta);
-    const closeQuantity=closing?Math.min(Math.abs(held),Math.abs(delta)):0;
-    const openQuantity=closing?Math.max(0,Math.abs(delta)-Math.abs(held)):Math.abs(delta);
-    const fullClose=closeQuantity>0&&closeQuantity===Math.abs(held);
-    const closeNotional=closeQuantity>0?(fullClose?positionNotional:Math.round(positionNotional*closeQuantity/Math.abs(held))):0;
-    const closeMarginRelease=closeQuantity>0?(fullClose?marginUsed:Math.round(marginUsed*closeQuantity/Math.abs(held))):0;
-    const openNotional=openQuantity*stock.price;
-    const openMargin=openQuantity>0?Math.ceil(openNotional/leverage):0;
-    let nextCostBasis=costBasis-closeMarginRelease+openMargin;
-    let nextPositionNotional=positionNotional-closeNotional+openNotional;
-    let realizedPnlChange=0;
-    if(closeQuantity>0) {
-      realizedPnlChange=held>0
-        ? closeQuantity*stock.price-closeNotional
-        : closeNotional-closeQuantity*stock.price;
-    }
-    if(next===0) {
-      nextCostBasis=0;
-      nextPositionNotional=0;
-    }
-    const currentLeverage=Number(position?.leverage)||0;
-    const nextLeverage=next===0
-      ? 0
-      : openQuantity>0
-        ? leverage
-        : currentLeverage;
-    const nextRealizedPnl=realizedPnl+realizedPnlChange;
-    if(!Number.isSafeInteger(nextCostBasis)||nextCostBasis<0||!Number.isSafeInteger(nextPositionNotional)||nextPositionNotional<0||!Number.isSafeInteger(realizedPnlChange)||!Number.isSafeInteger(nextRealizedPnl))throw new Error('交易结果超出限额。');
-    const available=balanceFor(id)+closeMarginRelease+realizedPnlChange;
-    if(openQuantity>0&&available<openMargin)throw new Error('可用余额不足。');
-    const ledgerDelta=closeMarginRelease+realizedPnlChange-openMargin;
-    recordLedger(id,ledgerDelta,(delta>0?'买涨 ':'买跌 ')+stock.code+' × '+Math.abs(delta)+' @'+leverage+'x'+(reason?(' · '+reason):''));
-    const nextStopLoss=next===0?null:(stopLoss!==null?stopLoss:position?.stopLoss??null);
-    const nextTakeProfit=next===0?null:(takeProfit!==null?takeProfit:position?.takeProfit??null);
-    db.prepare('INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity,cost_basis=excluded.cost_basis,position_notional=excluded.position_notional,margin_used=excluded.margin_used,realized_pnl=excluded.realized_pnl,leverage=excluded.leverage,stop_loss=excluded.stop_loss,take_profit=excluded.take_profit').run(id,stock.code,next,nextCostBasis,nextPositionNotional,nextCostBasis,nextRealizedPnl,nextLeverage,nextStopLoss,nextTakeProfit);
-    const balanceAfter=balanceFor(id);
-    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,leverage,held,next,costBasis,nextCostBasis,realizedPnlChange,balanceAfter);
+    const position=db.prepare('SELECT cost_basis,realized_pnl FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code);
+    const plan=stockLots.plan(id,stock.code,delta,stock.price,leverage,lotId);
+    const nextRealized=(position?.realized_pnl||0)+plan.pnl;
+    for(const n of [plan.next,plan.nextMargin,plan.nextNotional,plan.pnl,nextRealized])if(!Number.isSafeInteger(n))throw new Error('交易结果超出限额。');
+    if(plan.nextMargin<0||plan.nextNotional<0)throw new Error('持仓账目无效。');
+    const available=balanceFor(id)+plan.closeMargin+plan.pnl;
+    if(plan.openQuantity&&available<plan.openMargin)throw new Error('可用余额不足。');
+    if(!Number.isSafeInteger(available-plan.openMargin))throw new Error('交易结果超出限额。');
+    const actualLeverage=plan.openQuantity?leverage:plan.changes.length===1?plan.changes[0].lot.leverage:Math.round(plan.closeNotional/Math.max(1,plan.closeMargin)*100)/100;
+    recordLedger(id,plan.closeMargin+plan.pnl-plan.openMargin,(plan.openQuantity?'开仓 ':'平仓 ')+stock.code+' × '+Math.abs(delta)+' @'+actualLeverage+'x'+(reason?(' · '+reason):''));
+    stockLots.apply(id,stock.code,delta,leverage,stopLoss,takeProfit,plan);
+    const aggregateLeverage=plan.nextMargin?plan.nextNotional/plan.nextMargin:0;
+    db.prepare('INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?,NULL,NULL) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity,cost_basis=excluded.cost_basis,position_notional=excluded.position_notional,margin_used=excluded.margin_used,realized_pnl=excluded.realized_pnl,leverage=excluded.leverage,stop_loss=NULL,take_profit=NULL').run(id,stock.code,plan.next,plan.nextMargin,plan.nextNotional,plan.nextMargin,nextRealized,aggregateLeverage);
+    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,actualLeverage,plan.held,plan.next,position?.cost_basis||0,plan.nextMargin,plan.pnl,balanceFor(id));
     marketService.trade(stock.code,delta,stock.price);
-    log(id,'stock.'+(delta>0?'buy':'sell'),stock.code,{quantity:Math.abs(delta),price:stock.price,amount,leverage,openedMargin:openMargin,releasedMargin:closeMarginRelease,holdingBefore:held,holdingAfter:next,costBefore:costBasis,costAfter:nextCostBasis,realizedPnlChange,balanceAfter,side:delta>0?'long':'short',stopLoss:nextStopLoss,takeProfit:nextTakeProfit,reason});
   }
   function processStockAutomations(id) {
     market(id);
@@ -206,7 +176,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         if(error.message!=='可用余额不足。')throw error;
       }
     }
-    const positions=db.prepare('SELECT h.code,h.quantity,h.stop_loss AS stopLoss,h.take_profit AS takeProfit,s.price FROM stock_holdings h JOIN stock_prices s ON s.code=h.code WHERE h.employee_id=? AND h.quantity<>0').all(id);
+    const positions=stockLots.list(id).map(p=>({...p,quantity:p.holding}));
     for(const p of positions) {
       let hit='';
       if(p.quantity>0) {
@@ -217,12 +187,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         else if(p.stopLoss!=null&&p.price>=p.stopLoss)hit='止损';
       }
       if(!hit)continue;
-      executeStockTrade(id,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit+'自动平仓'});
+      executeStockTrade(id,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit+'自动平仓',lotId:p.id});
     }
   }
   const forum=installForumList(db);
   const replies=installForumReplies(db);
-  return {log,close:marketService.close, async handle(req,res,url) {
+  return {log,initializeStockLots:stockLots.migrate,close:marketService.close, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
@@ -320,6 +290,9 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,settle(id,'derby',cost,prize,{winner},proof));return true;
       }
       if(path==='/api/player/games/cards'){send(res,410,{error:'旧牌桌已停用，请进入新版练习牌桌。',code:'GAME_RETIRED'});return true;}
+      if(path==='/api/player/stocks/history'&&req.method==='GET') {
+        const before=url.searchParams.get('before');send(res,200,stockLots.history(id,before===null?null:Number(before)));return true;
+      }
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
         const code=url.searchParams.get('code')||'KARMA',period=Number(url.searchParams.get('period')||1);
@@ -346,6 +319,8 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
               const orderType=String(data.orderType??'').toLowerCase()==='limit'?'limit':'market';
               let side=(String(data.side??'').toLowerCase()==='short'||String(data.action??'').toLowerCase()==='sell')?'short':'long';
               const intent=data.intent;
+              const lotId=data.lotId==null?null:Number(data.lotId);
+              if(lotId!==null&&intent!=='close')throw new Error('指定持仓仅用于平仓。');
               if(intent!==undefined&&!['open','close'].includes(intent))throw new Error('交易意图无效。');
               const held=db.prepare('SELECT quantity FROM stock_holdings WHERE employee_id=? AND code=?').get(id,code)?.quantity||0;
               if(intent==='close'){
@@ -366,7 +341,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
                 processStockAutomations(id);
               } else {
                 if(intent!=='close')validateStopsAgainstPrice(side,stock.price,stopLoss,takeProfit);
-                executeStockTrade(id,{stock,delta:side==='long'?quantity:-quantity,leverage,stopLoss,takeProfit});
+                executeStockTrade(id,{stock,delta:side==='long'?quantity:-quantity,leverage,stopLoss,takeProfit,lotId});
                 award(id);
               }
             }

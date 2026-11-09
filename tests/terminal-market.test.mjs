@@ -201,7 +201,7 @@ test('live API uses database login, server-priced trades and persistent quantiti
   const trades=snapshot.prepare('SELECT action,quantity,leverage,holding_before AS before,holding_after AS after FROM stock_trades WHERE code=? ORDER BY id').all(code);
   assert.deepEqual(trades.map(t=>({action:t.action,quantity:t.quantity,leverage:t.leverage})),[
     {action:'buy',quantity:3,leverage:10},
-    {action:'sell',quantity:2,leverage:3}
+    {action:'sell',quantity:2,leverage:10}
   ]);
   assert.equal(trades[0].before,0);
   assert.equal(trades[0].after,3);
@@ -217,6 +217,33 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal((await large({code:cheap,quantity:1.5})).status,400);
   assert.equal((await large({code:cheap,quantity:Number.MAX_SAFE_INTEGER})).status,400);
   const pendingLarge=await large({code:cheap,orderType:'limit',side:'long',quantity:10001,limitPrice:1});assert.equal(pendingLarge.status,200);assert.ok(pendingLarge.data.orders.some(o=>o.quantity===10001));
+  // Controlled quotes in this disposable test database exercise independent fill settlement.
+  const quotes=new DatabaseSync(join(folder,'wanyehui.db'));
+  const price=n=>{quotes.prepare('UPDATE stock_prices SET price=? WHERE code=?').run(n,cheap);quotes.prepare('UPDATE stock_quote_clock SET quoted_at=? WHERE id=1').run(Date.now()+60000);};
+  price(100);
+  const one=await large({code:cheap,intent:'open',side:'long',quantity:10,leverage:1});assert.equal(one.status,200);
+  const first=one.data.items.find(s=>s.code===cheap).lots[0];
+  price(150);
+  const ten=await large({code:cheap,intent:'open',side:'long',quantity:10,leverage:10});assert.equal(ten.status,200);
+  const lots=ten.data.items.find(s=>s.code===cheap).lots;assert.equal(lots.length,2);
+  const second=lots.find(l=>l.id!==first.id);assert.equal(second.leverage,10);assert.equal(second.avgCost,150);assert.equal(first.avgCost,100);
+  assert.equal((await player('/api/player/stocks',{code:cheap,intent:'close',lotId:second.id,quantity:1})).status,400,'foreign lot cannot be closed');
+  price(160);
+  const closedSecond=await large({code:cheap,intent:'close',lotId:second.id,quantity:10});assert.equal(closedSecond.status,200);
+  assert.equal(closedSecond.data.balance,ten.data.balance+150+100);
+  assert.equal(closedSecond.data.items.find(s=>s.code===cheap).lots[0].id,first.id);
+  assert.equal((await large({code:cheap,intent:'close',lotId:second.id,quantity:10})).status,400,'repeat closing cannot release money twice');
+  price(150);
+  const stopped=await large({code:cheap,intent:'open',side:'long',quantity:10,leverage:10,stopLoss:140});assert.equal(stopped.status,200);
+  price(130);
+  const stopResult=await large({action:'cancelOrder',orderId:pendingLarge.data.orders[0].id});assert.equal(stopResult.status,200);
+  const afterStop=stopResult.data.items.find(s=>s.code===cheap).lots;assert.equal(afterStop.length,1);assert.equal(afterStop[0].id,first.id);
+  assert.equal(stopResult.data.balance,stopped.data.balance+150-200,'only triggered lot releases its margin and loss');
+  const records=await fetch(base+'/api/player/stocks/history',{headers:{cookie:fundedCookie}});assert.equal(records.status,200);const history=await records.json();
+  assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===-200));assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===100));
+  assert.ok(history.summary.closedCount>=3);assert.ok(history.summary.wins>=1);
+  quotes.close();
+
 
 });
 

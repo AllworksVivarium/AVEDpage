@@ -91,3 +91,24 @@
 #game-panel-stocks .stock-trade-actions button:disabled{opacity:.35;cursor:default}
 
 .pixel-game-icon{display:inline-block;width:24px;height:24px;vertical-align:middle;image-rendering:pixelated;flex:none}.slot-symbol .pixel-game-icon{width:36px;height:36px}.slot-overload-rule{display:block;font-size:11px;font-weight:400;line-height:1.6;margin-top:6px}#game-panel-slots .slot-symbol-name{font-size:9px!important}.scratch-printed-mark{shape-rendering:crispEdges;stroke:none!important}
+/* Compact fill tickets and history share the existing terminal palette. */
+#game-panel-stocks .portfolio-compact-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 8px;padding:0;background:none;border:0}
+#game-panel-stocks .portfolio-compact-heading h3{margin:0;font-size:13px;line-height:1.5}
+#game-panel-stocks .portfolio-compact-heading small,#game-panel-stocks .portfolio-compact-heading>span{font-size:10px;font-weight:400;opacity:.7}
+.portfolio-lots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:8px}
+.portfolio-lot{min-width:0;padding:10px;border:1px solid var(--inner-border-soft);background:var(--inner-card-bg)}
+#game-panel-stocks .portfolio-lot header{display:flex;justify-content:space-between;align-items:start;gap:8px;padding:0 0 7px;margin:0;background:none;border:0}
+.portfolio-lot b{font-size:12px}.portfolio-lot header small{display:block;font:9px/1.5 monospace;opacity:.65}
+.portfolio-lot-side{font-size:10px;border:1px solid var(--inner-border-soft);padding:2px 5px;white-space:nowrap}
+.portfolio-lot dl{margin:0}.portfolio-lot dl>div{display:flex;justify-content:space-between;gap:10px;font-size:11px;line-height:1.7;padding:2px 0}
+.portfolio-lot dt{opacity:.7;white-space:nowrap}.portfolio-lot dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.portfolio-lot-pnl{border-top:1px solid var(--inner-border-soft);margin-top:4px}.portfolio-lot-pnl dd{font-weight:700}.portfolio-lot-pnl small{font-size:10px;font-weight:400}
+.portfolio-lot footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}.portfolio-lot footer small{font-size:9px;opacity:.7;line-height:1.5;overflow-wrap:anywhere}
+#game-panel-stocks :is(.portfolio-lot,.portfolio-compact-heading,.portfolio-history-more) .community-button,#game-panel-stocks .portfolio-history-more{font-size:11px;padding:5px 9px;min-height:30px;border:1px solid var(--inner-border-soft);white-space:nowrap}
+#game-panel-stocks .portfolio-footnote{font-size:10px;line-height:1.6;opacity:.7;margin:9px 0}
+.portfolio-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--inner-border-soft)}.portfolio-stat-grid>div{padding:8px;min-width:0;border-right:1px solid var(--inner-border-soft)}.portfolio-stat-grid>div:last-child{border:0}.portfolio-stat-grid small{display:block;font-size:10px;opacity:.7}.portfolio-stat-grid strong{display:block;font:700 15px/1.8 monospace;overflow-wrap:anywhere}
+.portfolio-trade-history article{display:grid;grid-template-columns:minmax(0,1fr) minmax(85px,1fr) minmax(55px,.7fr);align-items:center;gap:6px;padding:9px 0;border-bottom:1px solid var(--inner-border-soft);font-size:11px}
+.portfolio-trade-history small{display:block;font-size:9px;opacity:.65;line-height:1.6}.portfolio-trade-history strong{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.portfolio-history-more{margin:10px 0}
+@layer aved-type-system{#inner-app-view #game-panel-stocks :is(.portfolio-lot,.portfolio-trade-history) b{font-size:12px!important}#inner-app-view #game-panel-stocks .portfolio-lot dl{font-size:11px!important}#inner-app-view #game-panel-stocks :is(.portfolio-lot,.portfolio-trade-history) small{font-size:10px!important}#inner-app-view #game-panel-stocks .portfolio-compact-heading h3{font-size:13px!important}}
+
+@layer aved-type-system{#inner-app-view #game-panel-stocks .portfolio-footnote{font-size:10px!important;line-height:1.6!important}}
