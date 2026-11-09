@@ -310,7 +310,7 @@
  #landing-view #open-login-btn:is(:hover,:focus-visible) {background:rgba(52,55,54,.48)!important;border-color:#c7ceca99!important;box-shadow:0 0 14px #b5bdb61c!important}
  #landing-view #open-login-btn .login-trigger-copy :is(div,span) {color:#c0c5c2!important}
  #landing-view .landing-brand-row,#landing-view .landing-motto {opacity:.76}
- #landing-view #cover-logo-slot .company-emblem {opacity:.72!important;filter:brightness(.84) contrast(.94)!important}
+ #landing-view #cover-logo-slot .company-emblem {opacity:.9!important;filter:invert(1) brightness(.9)!important;mix-blend-mode:screen;transform:scale(1.35)}
  #landing-view #open-login-btn::after {content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 1px 3px);opacity:.4}
  body:not(.effects-off) #landing-view #open-login-btn .login-trigger-copy {animation:gatewaySignalSlip 11s steps(1,end) infinite}
  #signal-Connecting-overlay {background-color:rgba(7,9,8,.84)!important}
@@ -351,3 +351,6 @@
 @layer aved-type-system {
  #inner-app-view .terminal-brand-mark,#inner-app-view .terminal-brand-mark * {filter:none!important;text-shadow:none!important;animation:none!important}
 }
+
+/* Use the supplied complete wordmark without changing the source image. */
+#landing-view #cover-logo-slot{overflow:hidden}
