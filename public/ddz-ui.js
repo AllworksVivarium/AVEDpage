@@ -9,7 +9,7 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
    <div class="ddz-turn"><i></i><span data-ddz-turn>等待入座</span><b data-ddz-clock></b></div>
   <section class="ddz-felt" aria-label="智斗太姥牌桌"><div class="ddz-grain" aria-hidden="true"></div>
    <div class="ddz-seat ddz-seat-top" data-seat="top"></div><div class="ddz-seat ddz-seat-left" data-seat="left"></div><div class="ddz-seat ddz-seat-right" data-seat="right"></div>
-   <div class="ddz-table-center"><div class="ddz-watermark" aria-hidden="true"><img src="/assets/company-emblem-plain.svg?v=plain-1" alt="" width="788" height="686" decoding="async"></div><div class="ddz-bottom" data-ddz-bottom></div><div class="ddz-trick" data-ddz-trick role="group" hidden></div><div class="ddz-table-label" data-ddz-table-label>入座，开始一局。</div></div>
+   <div class="ddz-table-center"><div class="ddz-bottom" data-ddz-bottom></div><div class="ddz-trick" data-ddz-trick role="group" hidden></div><div class="ddz-table-label" data-ddz-table-label>入座，开始一局。</div></div>
    <div class="ddz-score"><span>叫分 <b data-ddz-bid>—</b></span><span>倍率 <b data-ddz-mult>×1</b></span></div>
    <div class="ddz-hand" data-ddz-hand aria-label="我的手牌"></div>
    <div class="ddz-self"><div data-ddz-self></div><button data-ddz="auto" hidden>托管</button></div>
