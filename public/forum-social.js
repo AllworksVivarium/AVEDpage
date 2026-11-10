@@ -1,7 +1,7 @@
 (function(){
  let workshopLoad;
  window.AVEDLoadForumWorkshop=()=>workshopLoad||(workshopLoad=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/forum-workshop.js?v=company-robots-2';script.onload=()=>resolve(window.AVEDForumWorkshop);script.onerror=()=>{script.remove();workshopLoad=null;reject(Error('演绎编排暂时无法加载，请重试。'));};document.head.append(script);}));
- window.AVEDForumSocial=function({api,esc,getUser,getThread,openThread,getReply,getContext,showToast,refreshForum,getReplyRevision=()=>0,onRepliesChanged=()=>{}}){
+ window.AVEDForumSocial=function({api,esc,getUser,getThread,openThread,getReply,getContext,showToast,refreshForum,getReplyRevision=()=>0,onRepliesChanged=()=>{},onStockRisk=()=>{}}){
   const view=document.getElementById('view-forum'),tools=view.querySelector('.forum-action-toolbar'),nav=document.querySelector('[data-nav="forum"]');
   const inboxButton=document.createElement('button');inboxButton.type='button';inboxButton.className='community-button forum-inbox-button';inboxButton.textContent='回复提醒';tools.prepend(inboxButton);
   const toolbarBack=document.createElement('button');toolbarBack.type='button';toolbarBack.id='forum-toolbar-back';toolbarBack.className='community-button';toolbarBack.textContent='← 返回';toolbarBack.setAttribute('aria-label','返回帖子列表');toolbarBack.hidden=true;toolbarBack.onclick=()=>document.getElementById('forum-global-back')?.click();inboxButton.after(toolbarBack);
@@ -23,11 +23,11 @@
   });
   async function reveal(id){if(!view.querySelector(`[data-reply-id="${id}"]`))await getReply(id,true);const target=view.querySelector(`[data-reply-id="${id}"]`);if(target){target.scrollIntoView({block:'center',behavior:'smooth'});target.classList.remove('forum-reply-highlight');requestAnimationFrame(()=>target.classList.add('forum-reply-highlight'));}}
   function paintInbox(){const count=inbox.unread;inboxButton.textContent=count?'回复提醒 ('+(count>99?'99+':count)+')':'回复提醒';inboxButton.dataset.unread=String(count>0);dot.hidden=!count;nav.setAttribute('aria-label',count?'匿名论坛，'+count+' 条新回复':'匿名论坛');dialog.querySelector('.forum-inbox-list').innerHTML=inbox.items.map(n=>`<button type="button" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId}"><strong>${esc(n.authorName||'新回复')} · ${n.kind==='reply'?'回复了你的评论':'回复了你的主题'}</strong><span>${esc(n.excerpt||n.title)}</span><small>${esc(n.title)} · ${n.floor||''} 楼 →</small></button>`).join('')||'<p>暂时没有新回复。</p>';}
-  async function poll(force=false){const user=getUser();if(uid!==(user?.id??null)){uid=user?.id??null;inbox={unread:0,items:[]};people=[];capability=false;lastPoll=0;readPositions.clear();presence?.reset();cancelReply();paintInbox();renderPeople();if(!user){dialog.close();workshopDialog?.close();}}if(!user||document.hidden&&!force||busy||!force&&Date.now()-lastPoll<30000)return;busy=true;const id=user.id;lastPoll=Date.now();try{
+  async function poll(force=false){const user=getUser();if(uid!==(user?.id??null)){uid=user?.id??null;inbox={unread:0,items:[]};people=[];capability=false;lastPoll=0;readPositions.clear();presence?.reset();onStockRisk(null);cancelReply();paintInbox();renderPeople();if(!user){dialog.close();workshopDialog?.close();}}if(!user||document.hidden&&!force||busy||!force&&Date.now()-lastPoll<30000)return;busy=true;const id=user.id;lastPoll=Date.now();try{
    const threadId=!document.hidden&&!view.classList.contains('hidden')?getThread()?.id||0:0;
    const body=presence?{...presence.request(),threadId,revision:getReplyRevision()}:null;
    const d=await api('/api/player/forum/notifications',body?{method:'POST',body}:undefined);if(getUser()?.id!==id)return;
-   inbox=d;paintInbox();presence?.receive(d.presence);
+   inbox=d;paintInbox();presence?.receive(d.presence);onStockRisk(d.stockRisk);
    if(d.repliesChanged&&String(d.threadId)===String(getThread()?.id)&&!document.hidden&&!view.classList.contains('hidden'))await onRepliesChanged();
   }catch(e){if(force&&!document.hidden)showToast(e.message,'warn');}finally{busy=false;if(getUser()?.id!==id)poll();else if(queuedSync){queuedSync=false;poll(true);}}}
   inboxButton.onclick=()=>{paintInbox();dialog.showModal();poll(true);};

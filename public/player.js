@@ -1416,7 +1416,7 @@
         if(data.market?.code===marketCode&&data.market.period===marketPeriod)marketView=data.market;
         if(data.serverTime)AVEDTime.sync(data.serverTime);
         if(typeof data.balance==='number'){currentUser.balance=data.balance;syncUserHeaderUI();}
-        renderStocks();
+        renderStocks();if(data.stockRisk)economyUI?.updateRisk(data.stockRisk);
       }
       async function refreshMarket() {
         if(!marketVisible()||marketBusy)return;marketBusy=true;
@@ -1479,6 +1479,7 @@
         const amount=(stock?.price||0)*(Number(byId('stock-trade-quantity').value)||0),leverage=Number(byId('stock-trade-leverage').value)||1;
         byId('stock-est-trade').textContent=fmtMoney(amount);
         byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
+        byId('stock-est-fee').textContent=fmtMoney(amount>0?Math.max(1,Math.ceil(amount/1000)):0);
         const thresholds=marketRiskRules?.leverageBalanceThresholds,balance=currentUser?.balance||0;
         for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=level>1&&(!thresholds||balance<=thresholds[level]);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（余额需超过 '+(thresholds?.[level]/10000||'—')+' 万）':'');}
         const leverageLocked=leverage>1&&(!thresholds||balance<=thresholds[leverage]);
@@ -1542,6 +1543,7 @@
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumDetail=null;forumBrowser.reset();
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));
+        economyUI?.updateRisk(data.stockRisk);
         return currentUser;
       }
       const deferredSections=new Set(),deferredRequests=new Map();
@@ -1561,7 +1563,7 @@
           if(section==='news')companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
           if(section==='containment')scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
           if(section==='forum'){forumBrowser.seed(data.forum);}
-          if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();welfareUI.refresh().catch(()=>{});}
+          if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
           if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
@@ -1836,7 +1838,7 @@
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,navigateGame:game=>switchMainView('casino',{game}),getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumDetail});
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
-      forumSocialUI=AVEDForumSocial({api,esc,getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
+      forumSocialUI=AVEDForumSocial({api,esc,onStockRisk:data=>economyUI?.updateRisk(data),getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});

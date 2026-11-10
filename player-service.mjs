@@ -1,4 +1,5 @@
-import {stockRiskRules,requireStockLeverage,stockPositionRisk} from './stock-risk.mjs';
+import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
+import {installStockMargin} from './server-stock-margin.mjs';
 import {installStockLots} from './server-stock-lots.mjs';
 import {installForumList} from './server-forum-list.mjs';
 import {radioVisibleSQL} from './server-radio-retention.mjs';
@@ -116,6 +117,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
   const marketService=installMarket(db);
   const stockLots=installStockLots(db);
+  const topUpStockMargin=installStockMargin({db,lots:stockLots,balanceFor,recordLedger});
   const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>{
     const positions=lots.filter(l=>l.code===s.code),longHolding=positions.reduce((n,l)=>n+Math.max(0,l.holding),0),shortHolding=positions.reduce((n,l)=>n+Math.max(0,-l.holding),0);
     const marginUsed=positions.reduce((n,l)=>n+l.marginUsed,0),positionNotional=positions.reduce((n,l)=>n+l.positionNotional,0),unrealizedPnl=positions.reduce((n,l)=>n+l.unrealizedPnl,0);
@@ -150,18 +152,22 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     const position=db.prepare('SELECT cost_basis,realized_pnl FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code);
     const plan=stockLots.plan(id,stock.code,delta,stock.price,leverage,lotId,intent);
     if(plan.openQuantity)requireStockLeverage(balanceFor(id),leverage);
-    const nextRealized=(position?.realized_pnl||0)+plan.pnl;
+    const fee=stockTradeFee(amount);
+    plan.openFee=plan.openQuantity?Math.round(fee*(plan.openQuantity/Math.abs(delta))):0;
+    const closingFee=fee-plan.openFee,openingFees=plan.changes.reduce((n,c)=>n+c.openFee,0);
+    const realized=plan.pnl-fee,netPnl=plan.closeQuantity?plan.pnl-closingFee-openingFees:-fee;
+    const nextRealized=(position?.realized_pnl||0)+realized;
     for(const n of [plan.next,plan.nextMargin,plan.nextNotional,plan.pnl,nextRealized])if(!Number.isSafeInteger(n))throw new Error('交易结果超出限额。');
     if(plan.nextMargin<0||plan.nextNotional<0)throw new Error('持仓账目无效。');
     const available=balanceFor(id)+plan.closeMargin+plan.pnl;
-    if(plan.openQuantity&&available<plan.openMargin)throw new Error('可用余额不足。');
-    if(!Number.isSafeInteger(available-plan.openMargin))throw new Error('交易结果超出限额。');
+    if(plan.openQuantity&&available<plan.openMargin+fee)throw new Error('可用余额不足。');
+    if(!Number.isSafeInteger(available-plan.openMargin-fee))throw new Error('交易结果超出限额。');
     const actualLeverage=plan.openQuantity?leverage:plan.changes.length===1?plan.changes[0].lot.leverage:Math.round(plan.closeNotional/Math.max(1,plan.closeMargin)*100)/100;
-    recordLedger(id,plan.closeMargin+plan.pnl-plan.openMargin,(plan.openQuantity?'开仓 ':'平仓 ')+stock.code+' × '+Math.abs(delta)+' @'+actualLeverage+'x'+(reason?(' · '+reason):''));
+    recordLedger(id,plan.closeMargin+plan.pnl-plan.openMargin-fee,(plan.openQuantity?'开仓 ':'平仓 ')+stock.code+' × '+Math.abs(delta)+' @'+actualLeverage+'x · 手续费 '+fee+(reason?(' · '+reason):''));
     stockLots.apply(id,stock.code,delta,leverage,stopLoss,takeProfit,plan);
     const aggregateLeverage=plan.nextMargin?plan.nextNotional/plan.nextMargin:0;
     db.prepare('INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?,NULL,NULL) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity,cost_basis=excluded.cost_basis,position_notional=excluded.position_notional,margin_used=excluded.margin_used,realized_pnl=excluded.realized_pnl,leverage=excluded.leverage,stop_loss=NULL,take_profit=NULL').run(id,stock.code,plan.next,plan.nextMargin,plan.nextNotional,plan.nextMargin,nextRealized,aggregateLeverage);
-    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after,intent,position_side,close_reason) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,actualLeverage,plan.held,plan.next,position?.cost_basis||0,plan.nextMargin,plan.pnl,balanceFor(id),plan.closeQuantity?(plan.openQuantity?'mixed':'close'):'open',plan.openQuantity?(delta>0?'long':'short'):(delta>0?'short':'long'),plan.closeQuantity?reason:'');
+    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after,intent,position_side,close_reason,fee,net_pnl) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,actualLeverage,plan.held,plan.next,position?.cost_basis||0,plan.nextMargin,realized,balanceFor(id),plan.closeQuantity?(plan.openQuantity?'mixed':'close'):'open',plan.openQuantity?(delta>0?'long':'short'):(delta>0?'short':'long'),plan.closeQuantity?reason:'',fee,netPnl);
     marketService.trade(stock.code,delta,stock.price);
   }
   function processStockAutomations(id) {
@@ -216,7 +222,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const include=name=>!bootstrap&&(!section||section===name);
         if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
+        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
@@ -240,12 +246,12 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         else if(req.method==='POST')send(res,201,forumSocial.publish(id,data));
         else send(res,405,{error:'指令无效。'});return true;
       }
-      if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,forumSocial.inbox(id));return true;}
+      if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,{...forumSocial.inbox(id),stockRisk:stockLots.riskSummary(id)});return true;}
       if(path==='/api/player/forum/notifications'&&req.method==='POST'){
         const presence=forumPresence.sync(id,data),threadId=Number(data.threadId||0),revision=Number(data.revision||0);
         if(!Number.isSafeInteger(threadId)||threadId<0||!Number.isSafeInteger(revision)||revision<0)throw Error('无效的帖子刷新位置。');
         const latest=threadId?db.prepare("SELECT MAX(v.revision) AS revision FROM forum_reply_versions v JOIN forum_threads t ON t.id=v.thread_id WHERE v.thread_id=? AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''").get(threadId)?.revision||0:0;
-        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:latest>revision});return true;
+        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:latest>revision,stockRisk:stockLots.riskSummary(id)});return true;
       }
       const forumRead=path.match(/^\/api\/player\/forum\/(\d+)\/read$/);
       if(forumRead&&req.method==='POST'){send(res,200,data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
@@ -303,6 +309,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/games/cards'){send(res,410,{error:'旧牌桌已停用，请进入新版练习牌桌。',code:'GAME_RETIRED'});return true;}
       if(path==='/api/player/stocks/history'&&req.method==='GET') {
         const before=url.searchParams.get('before');send(res,200,stockLots.history(id,before===null?null:Number(before)));return true;
+      }
+      if(path==='/api/player/stocks/margin'&&req.method==='POST'){
+        let result;transaction(()=>{processStockAutomations(id);result=topUpStockMargin(id,data);});
+        send(res,200,{...result,items:market(id),balance:balanceFor(id),stockRisk:stockLots.riskSummary(id)});return true;
       }
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
@@ -363,7 +373,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
             }
           }
         });
-        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
+        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,stockRisk:stockLots.riskSummary(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');

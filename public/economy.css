@@ -114,3 +114,24 @@
 @layer aved-type-system{#inner-app-view #game-panel-stocks .portfolio-footnote{font-size:10px!important;line-height:1.6!important}}
 
 #game-panel-stocks .portfolio-risk-warning{border-color:var(--inner-accent);border-style:dashed}#game-panel-stocks .portfolio-risk-critical{border:2px solid var(--inner-danger,#b02525)}#stock-leverage-note{margin:6px 0;font-size:10px;line-height:1.5}
+
+/* Persistent, quiet warnings share the forum's existing notification refresh. */
+.stock-risk-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border:1px solid var(--inner-text-main);background:var(--inner-accent);border-radius:50%}.stock-risk-dot[data-critical=true]{background:#cc4539}
+#game-panel-stocks .stock-risk-notice{display:block;width:100%;margin:0 0 9px;padding:8px 10px;border:1px solid var(--inner-accent);background:var(--inner-card-bg);color:var(--inner-text-main);text-align:left;font:11px/1.7 var(--terminal-copy,sans-serif);cursor:pointer}
+#game-panel-stocks .stock-risk-notice[data-critical=true]{border-color:var(--inner-danger,#b02525);border-left-width:4px}
+.stock-risk-dot[hidden],#game-panel-stocks .stock-risk-notice[hidden]{display:none!important}
+.portfolio-lot-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;flex:none}
+.stock-margin-dialog{box-sizing:border-box;width:min(380px,calc(100vw - 40px));max-height:80dvh;padding:0;overflow:auto;font-family:var(--terminal-copy,sans-serif)}
+.stock-margin-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 9px}
+.stock-margin-dialog>header h2{margin:0;font:600 12px/1.5 var(--terminal-copy,sans-serif)}
+.stock-margin-dialog>header button{width:20px;height:20px;padding:0;border:1px solid currentColor;background:transparent;color:inherit;font:15px/1 sans-serif}
+.stock-margin-dialog form{padding:12px 14px;font:11px/1.8 var(--terminal-copy,sans-serif)}
+.stock-margin-dialog p{margin:0 0 10px}.stock-margin-position{font-weight:700;overflow-wrap:anywhere}
+.stock-margin-dialog label{display:grid;gap:5px;font-weight:600}.stock-margin-dialog input{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--inner-border);padding:7px 9px;color:var(--inner-text-main);background:var(--inner-card-bg);font:13px/1.5 var(--terminal-copy,sans-serif)}
+.stock-margin-preview{margin-top:9px!important;padding:8px;border:1px solid var(--inner-border-soft);font-variant-numeric:tabular-nums}
+.stock-margin-dialog footer{display:flex;justify-content:flex-end;gap:8px}.stock-margin-dialog footer button{min-height:30px;border:1px solid var(--inner-border);padding:4px 12px;font:11px/1.5 var(--terminal-copy,sans-serif)}
+.stock-margin-dialog [data-margin-submit]{background:var(--inner-accent);color:var(--inner-accent-text);border-color:var(--inner-accent)}.stock-margin-error{color:var(--inner-danger,#b02525)}.stock-margin-error:empty{display:none}.stock-margin-dialog button:disabled{opacity:.5}
+.stock-order-estimate{flex-wrap:wrap}.stock-margin-dialog :focus-visible{outline:2px solid var(--inner-accent);outline-offset:2px}
+@media(max-width:600px){.portfolio-lot footer{align-items:flex-start;flex-wrap:wrap}.portfolio-lot-actions{margin-left:auto}.stock-margin-dialog{width:min(360px,calc(100vw - 40px))}}
+
+body.theme-inner .stock-margin-dialog [data-margin-cancel]{background:var(--system-window-control,var(--inner-card-bg))!important;color:var(--inner-text-main)!important;border:1px solid var(--inner-border)!important}

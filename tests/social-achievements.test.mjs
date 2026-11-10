@@ -63,3 +63,8 @@ test('stock awards distinguish opening, long/short closing, losses and zero PnL;
  db.exec("UPDATE achievement_definitions SET enabled=0 WHERE code='stock-first';INSERT INTO stock_trades VALUES(5,2,0,'buy',0)");
  assert.equal(earned(2,'stock-first'),false);
 });
+
+test('stock wins use the closing net outcome after allocated opening fees',t=>{
+ const {db,metric}=fixture(t);db.exec('ALTER TABLE stock_trades ADD COLUMN net_pnl INTEGER');installSocialAchievements(db);
+ db.exec("INSERT INTO stock_trades VALUES(1,1,10,'sell',1,-1)");assert.equal(metric(1,'stock_wins'),0);assert.equal(metric(1,'stock_losses'),1);
+});

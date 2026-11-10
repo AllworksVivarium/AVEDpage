@@ -13,6 +13,10 @@ export function installStockLots(db){
   CREATE TABLE IF NOT EXISTS stock_lot_migrations(name TEXT PRIMARY KEY);`);
  const tradeColumns=new Set(db.prepare('PRAGMA table_info(stock_trades)').all().map(c=>c.name));
  for(const name of ['intent','position_side','close_reason'])if(!tradeColumns.has(name))db.exec(`ALTER TABLE stock_trades ADD COLUMN ${name} TEXT NOT NULL DEFAULT ''`);
+ if(!tradeColumns.has('fee'))db.exec('ALTER TABLE stock_trades ADD COLUMN fee INTEGER NOT NULL DEFAULT 0');
+ if(!tradeColumns.has('net_pnl'))db.exec('ALTER TABLE stock_trades ADD COLUMN net_pnl INTEGER');
+ if(!db.prepare('PRAGMA table_info(stock_lots)').all().some(c=>c.name==='open_fee_remaining'))db.exec('ALTER TABLE stock_lots ADD COLUMN open_fee_remaining INTEGER NOT NULL DEFAULT 0');
+ db.exec(`CREATE TABLE IF NOT EXISTS stock_margin_topups(id INTEGER PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,lot_id INTEGER NOT NULL REFERENCES stock_lots(id) ON DELETE CASCADE,amount INTEGER NOT NULL,request_key TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE(employee_id,request_key));`);
  function migrate(){
   if(db.prepare("SELECT 1 FROM stock_lot_migrations WHERE name='lots-v1'").get())return;
   const owned=!db.isTransaction;if(owned)db.exec('BEGIN IMMEDIATE');
@@ -26,7 +30,7 @@ export function installStockLots(db){
   }catch(e){if(owned)db.exec('ROLLBACK');throw e;}
  }
  const select=`SELECT l.id,l.code,l.quantity AS holding,l.position_notional AS positionNotional,l.margin_used AS marginUsed,
-  l.leverage,l.stop_loss AS stopLoss,l.take_profit AS takeProfit,l.legacy,l.created_at AS createdAt,s.name,s.price
+  l.leverage,l.open_fee_remaining AS openFeeRemaining,l.stop_loss AS stopLoss,l.take_profit AS takeProfit,l.legacy,l.created_at AS createdAt,s.name,s.price
   FROM stock_lots l JOIN stock_prices s ON s.code=l.code WHERE l.employee_id=? AND l.quantity<>0`;
  function list(id){migrate();return db.prepare(select+' ORDER BY l.id DESC').all(id).map(l=>({...l,avgCost:l.positionNotional/Math.abs(l.holding),unrealizedPnl:Math.sign(l.holding)*(Math.abs(l.holding)*l.price-l.positionNotional),...stockPositionRisk(l)}));}
  function plan(id,code,delta,price,leverage,lotId=null,intent='auto'){
@@ -41,7 +45,8 @@ export function installStockLots(db){
   for(const lot of chosen){if(!remaining)break;const qty=Math.min(remaining,Math.abs(lot.holding)),full=qty===Math.abs(lot.holding);
    const notional=full?lot.positionNotional:Math.round(lot.positionNotional*qty/Math.abs(lot.holding));
    const margin=full?lot.marginUsed:Math.round(lot.marginUsed*qty/Math.abs(lot.holding));
-   changes.push({lot,qty,notional,margin});closeNotional+=notional;closeMargin+=margin;remaining-=qty;
+   const openFee=full?lot.openFeeRemaining:Math.round(lot.openFeeRemaining*qty/Math.abs(lot.holding));
+   changes.push({lot,qty,notional,margin,openFee});closeNotional+=notional;closeMargin+=margin;remaining-=qty;
   }
   if(remaining)throw new Error('平仓数量超出持仓。');
   const openQuantity=Math.abs(delta)-closeQuantity,openNotional=openQuantity*price,openMargin=openQuantity?Math.ceil(openNotional/leverage):0;
@@ -51,15 +56,17 @@ export function installStockLots(db){
    nextMargin:lots.reduce((n,l)=>n+l.marginUsed,0)-closeMargin+openMargin};
  }
  function apply(id,code,delta,leverage,stopLoss,takeProfit,plan){
-  for(const c of plan.changes)db.prepare('UPDATE stock_lots SET quantity=quantity-?,position_notional=position_notional-?,margin_used=margin_used-? WHERE id=?').run(Math.sign(c.lot.holding)*c.qty,c.notional,c.margin,c.lot.id);
-  if(plan.openQuantity)db.prepare('INSERT INTO stock_lots(employee_id,code,quantity,position_notional,margin_used,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?)').run(id,code,Math.sign(delta)*plan.openQuantity,plan.openNotional,plan.openMargin,leverage,stopLoss,takeProfit);
+  for(const c of plan.changes)db.prepare('UPDATE stock_lots SET quantity=quantity-?,position_notional=position_notional-?,margin_used=margin_used-?,open_fee_remaining=open_fee_remaining-? WHERE id=?').run(Math.sign(c.lot.holding)*c.qty,c.notional,c.margin,c.openFee,c.lot.id);
+  if(plan.openQuantity)db.prepare('INSERT INTO stock_lots(employee_id,code,quantity,position_notional,margin_used,leverage,stop_loss,take_profit,open_fee_remaining) VALUES(?,?,?,?,?,?,?,?,?)').run(id,code,Math.sign(delta)*plan.openQuantity,plan.openNotional,plan.openMargin,leverage,stopLoss,takeProfit,plan.openFee||0);
  }
  const closed="(intent IN ('close','mixed') OR (intent='' AND holding_before<>0 AND ((holding_before>0 AND action='sell') OR (holding_before<0 AND action='buy'))))";
  function history(id,before=null){
   if(before!==null&&(!Number.isSafeInteger(before)||before<1))throw new Error('记录游标无效。');
-  const rows=db.prepare(`SELECT id,code,action,quantity,price,leverage,intent,position_side AS positionSide,close_reason AS closeReason,holding_before AS holdingBefore,holding_after AS holdingAfter,realized_pnl_change AS pnl,created_at AS createdAt,CASE WHEN ${closed} THEN 1 ELSE 0 END AS closing FROM stock_trades WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21`).all(id,before??Number.MAX_SAFE_INTEGER);
-  const summary=db.prepare(`SELECT COUNT(*) AS closedCount,COALESCE(SUM(realized_pnl_change>0),0) AS wins,COALESCE(SUM(realized_pnl_change=0),0) AS draws,COALESCE(SUM(realized_pnl_change),0) AS realizedPnl FROM stock_trades WHERE employee_id=? AND ${closed}`).get(id);
+  const rows=db.prepare(`SELECT id,code,action,quantity,price,leverage,intent,position_side AS positionSide,close_reason AS closeReason,holding_before AS holdingBefore,holding_after AS holdingAfter,COALESCE(net_pnl,realized_pnl_change) AS pnl,fee,created_at AS createdAt,CASE WHEN ${closed} THEN 1 ELSE 0 END AS closing FROM stock_trades WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21`).all(id,before??Number.MAX_SAFE_INTEGER);
+  const summary=db.prepare(`SELECT COUNT(*) AS closedCount,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)>0),0) AS wins,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)=0),0) AS draws FROM stock_trades WHERE employee_id=? AND ${closed}`).get(id);
+  Object.assign(summary,db.prepare('SELECT COALESCE(SUM(realized_pnl_change),0) AS realizedPnl,COALESCE(SUM(fee),0) AS totalFees FROM stock_trades WHERE employee_id=?').get(id));
   return {items:rows.slice(0,20),nextCursor:rows.length>20?rows[19].id:null,summary:{...summary,winRate:summary.closedCount?summary.wins/summary.closedCount:null}};
  }
- return {list,plan,apply,history,migrate};
+ function riskSummary(id){const items=list(id).filter(l=>l.liquidationEligible&&['warning','critical'].includes(l.riskLevel));return {count:items.length,criticalCount:items.filter(l=>l.riskLevel==='critical').length,items:items.sort((a,b)=>a.equityPercent-b.equityPercent).slice(0,5).map(l=>({lotId:l.id,code:l.code,name:l.name,equityPercent:l.equityPercent,riskLevel:l.riskLevel,positionEquity:l.positionEquity,marginUsed:l.marginUsed}))};}
+ return {list,plan,apply,history,migrate,riskSummary};
 }

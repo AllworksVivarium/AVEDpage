@@ -10,6 +10,7 @@ import vm from 'node:vm';
 import { DatabaseSync } from 'node:sqlite';
 import { installMarket } from '../server-market.mjs';
 
+const fee=n=>Math.max(1,Math.ceil(n/1000));
 const root=fileURLToPath(new URL('../',import.meta.url));
 const timeContext={Intl,Date};
 vm.runInNewContext(readFileSync(join(root,'public/terminal-time.js'),'utf8'),timeContext);
@@ -160,7 +161,8 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal((await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:3})).status,400);
   const indexClose=await player('/api/player/stocks',{code:'KARMA',intent:'close',side:'long',quantity:2,stopLoss:1});
   assert.equal(indexClose.status,200);assert.equal(indexClose.data.items.find(s=>s.code==='KARMA').holding,0);
-  assert.equal(indexClose.data.balance,10000000,'closing uses server position direction and releases margin');
+  const indexCosts=fee(indexBuy.data.items.find(s=>s.code==='KARMA').positionNotional)+fee(shortLot.positionNotional)+fee(shortExit.data.items.find(s=>s.code==='KARMA').price*2)+fee(indexClose.data.items.find(s=>s.code==='KARMA').price*2);
+  assert.equal(indexClose.data.balance,10000000-indexCosts,'closing releases margin and both directions pay their actual notional fees');
   for(const side of ['long','short']){
     const before=(await player('/api/me')).data.balance;
     const opened=await player('/api/player/stocks',{code:'KARMA',intent:'open',side,quantity:2,leverage:1,price:1});
@@ -169,23 +171,24 @@ test('live API uses database login, server-priced trades and persistent quantiti
     assert.equal(position.holding,side==='long'?2:-2);
     assert.equal(position.marginUsed,position.positionNotional,'1x reserves the full server-priced notional');
     assert.equal(position.effectiveLeverage,1);
-    assert.equal(opened.data.balance,before-position.marginUsed);
+    assert.equal(opened.data.balance,before-position.marginUsed-fee(position.positionNotional));
     const closed=await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:2,leverage:1});
     assert.equal(closed.status,200);
     const exit=closed.data.items.find(s=>s.code==='KARMA');
     const pnl=(side==='long'?1:-1)*(exit.price*2-position.positionNotional);
-    assert.equal(closed.data.balance,before+pnl,'1x returns all margin and settles the actual long/short PnL');
+    assert.equal(closed.data.balance,before+pnl-fee(position.positionNotional)-fee(exit.price*2),'1x returns margin and settles actual PnL minus both fees');
     assert.equal(exit.holding,0);assert.equal(exit.marginUsed,0);
   }
   const unsupported=await player('/api/player/stocks',{code:'KARMA',intent:'open',side:'long',quantity:1,leverage:2});
   assert.equal(unsupported.status,400);
   const code=state.stocks[0].code;
+  const beforeBuy=(await player('/api/me')).data.balance;
   const buy=await player('/api/player/stocks?code='+code,{code,action:'buy',quantity:3,leverage:10,price:1,seed:'client-injected'});
   assert.equal(buy.status,200);const stock=buy.data.items.find(s=>s.code===code);
   const expectedNotional=stock.price*3;
   const expectedMargin=Math.ceil(expectedNotional/10);
   assert.equal(stock.holding,3);
-  assert.equal(buy.data.balance,10000000-expectedMargin);
+  assert.equal(buy.data.balance,beforeBuy-expectedMargin-fee(expectedNotional));
   assert.equal(stock.positionNotional,expectedNotional);
   assert.equal(stock.costBasis,expectedMargin);
   assert.equal(stock.marginUsed,expectedMargin);
@@ -241,7 +244,7 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal((await player('/api/player/stocks',{code:cheap,intent:'close',lotId:second.id,quantity:1})).status,400,'foreign lot cannot be closed');
   price(160);
   const closedSecond=await large({code:cheap,intent:'close',lotId:second.id,quantity:10});assert.equal(closedSecond.status,200);
-  assert.equal(closedSecond.data.balance,ten.data.balance+150+100);
+  assert.equal(closedSecond.data.balance,ten.data.balance+150+100-fee(1600));
   assert.equal(closedSecond.data.items.find(s=>s.code===cheap).lots[0].id,first.id);
   assert.equal((await large({code:cheap,intent:'close',lotId:second.id,quantity:10})).status,400,'repeat closing cannot release money twice');
   price(150);
@@ -249,9 +252,9 @@ test('live API uses database login, server-priced trades and persistent quantiti
   price(130);
   const stopResult=await large({action:'cancelOrder',orderId:pendingLarge.data.orders[0].id});assert.equal(stopResult.status,200);
   const afterStop=stopResult.data.items.find(s=>s.code===cheap).lots;assert.equal(afterStop.length,1);assert.equal(afterStop[0].id,first.id);
-  assert.equal(stopResult.data.balance,stopped.data.balance+150-200,'only triggered lot releases its margin and loss');
+  assert.equal(stopResult.data.balance,stopped.data.balance+150-200-fee(1300),'only triggered lot releases its margin and loss');
   const records=await fetch(base+'/api/player/stocks/history',{headers:{cookie:fundedCookie}});assert.equal(records.status,200);const history=await records.json();
-  assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===-200));assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===100));
+  assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===-200-fee(1500)-fee(1300)));assert.ok(history.items.some(t=>t.closing&&t.leverage===10&&t.pnl===100-fee(1500)-fee(1600)));
   assert.ok(history.summary.closedCount>=3);assert.ok(history.summary.wins>=1);
   price(130);
   const hedgeOrder=await large({code:cheap,orderType:'limit',side:'short',quantity:10,leverage:10,limitPrice:120,stopLoss:145});assert.equal(hedgeOrder.status,200);
@@ -259,7 +262,7 @@ test('live API uses database login, server-priced trades and persistent quantiti
   price(150);
   const hedgeResponse=await fetch(base+'/api/player/stocks',{headers:{cookie:fundedCookie}});assert.equal(hedgeResponse.status,200);const hedgeStopped=await hedgeResponse.json();
   const remainingHedge=hedgeStopped.items.find(s=>s.code===cheap);assert.equal(remainingHedge.lots.length,1);assert.equal(remainingHedge.lots[0].id,first.id);assert.equal(remainingHedge.marginUsed,1000);assert.equal(remainingHedge.unrealizedPnl,500);
-  assert.equal(hedgeStopped.balance,hedgeOrder.data.balance+130-200,'short stop closes only its own leg even when net holding was zero');
+  assert.equal(hedgeStopped.balance,hedgeOrder.data.balance+130-200-fee(1500),'short stop closes only its own leg even when net holding was zero');
   // Qualification is checked server-side and cannot be supplied by the client.
   const gated=await api('/api/admin/employees',{username:'gate-player',displayName:'门槛测试',password:'player123',initialBalance:1000000});assert.equal(gated.status,201);
   const gateLogin=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:'gate-player',password:'player123'})});const gateCookie=gateLogin.headers.get('set-cookie').split(';')[0];
@@ -272,7 +275,7 @@ test('live API uses database login, server-priced trades and persistent quantiti
   price(136);quotes.prepare('UPDATE stock_quote_clock SET quoted_at=0').run();
   let liquidation;for(let n=0;n<120;n++){liquidation=quotes.prepare("SELECT price,realized_pnl_change AS pnl,balance_after AS balance FROM stock_trades WHERE employee_id=? AND code=? AND close_reason='强制平仓' AND id>? ORDER BY id DESC LIMIT 1").get(funded.data.id,cheap,liquidationAfter);if(liquidation)break;await new Promise(r=>setTimeout(r,50));}
   assert.ok(liquidation,'offline leveraged position must be forcibly settled on the server quote timer');
-  assert.equal(liquidation.pnl,10*liquidation.price-1500);assert.equal(liquidation.balance,exposed.data.balance+150+liquidation.pnl);
+  assert.equal(liquidation.pnl,10*liquidation.price-1500-fee(10*liquidation.price));assert.equal(liquidation.balance,exposed.data.balance+150+liquidation.pnl);
   assert.equal(quotes.prepare('SELECT quantity FROM stock_lots WHERE id=?').get(exposedLot.id).quantity,0);
   assert.equal(quotes.prepare("SELECT COUNT(*) n FROM stock_trades WHERE employee_id=? AND close_reason='强制平仓' AND id>?").get(funded.data.id,liquidationAfter).n,1);
   assert.ok(quotes.prepare('SELECT quantity FROM stock_lots WHERE id=?').get(first.id).quantity>0,'cash long remains open');
@@ -285,7 +288,44 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(gateChecked.balance,5000000);
   assert.equal((await api('/api/admin/employees/'+funded.data.id+'/balance',{balance:1000000,expectedBalance:5000000,reason:'测试旧仓平仓'})).status,200);
   const belowGateClose=await large({code:cheap,intent:'close',lotId:first.id,quantity:10,leverage:10});assert.equal(belowGateClose.status,200,'closing an existing lot never requires leverage qualification');
-  assert.equal(belowGateClose.data.balance,1000000+1000+200);
+  assert.equal(belowGateClose.data.balance,1000000+1000+200-fee(1200));
+
+  price(100);const feeBroke=await fetch(base+'/api/player/stocks',{method:'POST',headers:{cookie:gateCookie,origin:base,'content-type':'application/json'},body:JSON.stringify({code:cheap,intent:'open',side:'long',quantity:10000,leverage:1})});assert.equal(feeBroke.status,400,'having the exact margin without its fee cannot open a position');
+  // Top-ups move cash, not position size or PnL, and retries are idempotent.
+  price(100);const beforeTopup=(await large({code:cheap,intent:'open',side:'long',quantity:100,leverage:1}));
+  assert.equal(beforeTopup.status,200);const cashLot=beforeTopup.data.items.find(s=>s.code===cheap).lots[0];
+  async function margin(cookie,body){const r=await fetch(base+'/api/player/stocks/margin',{method:'POST',headers:{cookie,origin:base,'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};}
+  assert.equal((await margin(fundedCookie,{lotId:cashLot.id,amount:500,requestKey:'cash-no-topup'})).status,400);
+  // Restore a sufficient cash balance for a fresh leveraged fill.
+  assert.equal((await api('/api/admin/employees/'+funded.data.id+'/balance',{balance:6000000,expectedBalance:beforeTopup.data.balance,reason:'追加保证金测试'})).status,200);
+  const fundedMargin=await large({code:cheap,intent:'open',side:'long',quantity:100,leverage:10});assert.equal(fundedMargin.status,200);
+  const target=fundedMargin.data.items.find(s=>s.code===cheap).lots.find(l=>l.leverage===10),balanceBefore=fundedMargin.data.balance;
+  price(94);
+  const notices=(await fetch(base+'/api/player/forum/notifications',{headers:{cookie:fundedCookie}}));assert.equal(notices.status,200);const risks=(await notices.json()).stockRisk;
+  assert.equal(risks.count,1);assert.equal(risks.criticalCount,1);assert.equal(risks.items[0].equityPercent,40);
+  assert.equal((await player('/api/player/forum/notifications')).data.stockRisk.count,0,'risk summaries cannot leak another employee positions');
+  const body={lotId:target.id,amount:500,requestKey:'topup-retry-once'};
+  assert.equal((await margin(playerCookie,body)).status,400,'cannot top up another employee lot');
+  assert.equal((await margin(fundedCookie,{...body,amount:0})).status,400);
+  assert.equal((await margin(fundedCookie,{...body,amount:0.5})).status,400);
+  assert.equal((await margin(fundedCookie,{...body,amount:Number.MAX_SAFE_INTEGER})).status,400);
+  const topup=await margin(fundedCookie,body);assert.equal(topup.status,200,JSON.stringify(topup.data));assert.equal(topup.data.balance,balanceBefore-500);
+  const topped=topup.data.items.find(s=>s.code===cheap).lots.find(l=>l.id===target.id);
+  assert.equal(topped.holding,100);assert.equal(topped.avgCost,100);assert.equal(topped.marginUsed,1500);assert.equal(topped.unrealizedPnl,-600);assert.equal(topped.positionEquity,900);assert.equal(topped.maintenanceMargin,300);assert.equal(topped.liquidationPrice,88);
+  assert.equal(topup.data.stockRisk.count,1);assert.equal(topup.data.stockRisk.criticalCount,0);
+  const repeat=await margin(fundedCookie,body);assert.equal(repeat.status,200);assert.equal(repeat.data.replayed,true);assert.equal(repeat.data.balance,topup.data.balance);
+  assert.equal((await margin(fundedCookie,{...body,amount:600})).status,400,'same key cannot be reused with different parameters');
+  assert.equal(quotes.prepare('SELECT COUNT(*) n FROM stock_margin_topups WHERE employee_id=?').get(funded.data.id).n,1);
+  const sums=quotes.prepare('SELECT SUM(margin_used) margin FROM stock_lots WHERE employee_id=? AND code=? AND quantity<>0').get(funded.data.id,cheap);
+  assert.equal(quotes.prepare('SELECT margin_used FROM stock_holdings WHERE employee_id=? AND code=?').get(funded.data.id,cheap).margin_used,sums.margin);
+  const latestTrade=quotes.prepare('SELECT MAX(id) id FROM stock_trades').get().id;
+  price(88);const tooLate=await margin(fundedCookie,{...body,requestKey:'too-late-topup'});assert.equal(tooLate.status,400,'a triggered lot cannot be rescued at or beyond its line');
+  const closedTarget=await fetch(base+'/api/player/stocks',{headers:{cookie:fundedCookie}});assert.equal(closedTarget.status,200);
+  const settled=await closedTarget.json();assert.equal(settled.items.find(s=>s.code===cheap).lots.some(l=>l.id===target.id),false);
+  const forced=quotes.prepare('SELECT fee,net_pnl FROM stock_trades WHERE id>? AND employee_id=? ORDER BY id DESC').get(latestTrade,funded.data.id);assert.equal(forced.fee,9);assert.equal(forced.net_pnl,-1200-10-9);
+  assert.equal((await margin(fundedCookie,body)).data.balance,settled.balance,'a completed retry stays harmless after closure');
+  const afterRisk=await fetch(base+'/api/player/forum/notifications',{headers:{cookie:fundedCookie}});assert.equal((await afterRisk.json()).stockRisk.count,0);
+
   quotes.close();
 
 

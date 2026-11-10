@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {stockPositionRisk,requireStockLeverage} from '../stock-risk.mjs';
+import {stockPositionRisk,requireStockLeverage,stockTradeFee} from '../stock-risk.mjs';
+
+test('fees round up actual notional, including tiny fills, without charging unfilled orders',()=>{
+ for(const [amount,expected] of [[1,1],[999,1],[1000,1],[1001,2],[10000,10],[1000001,1001]])assert.equal(stockTradeFee(amount),expected);
+ for(const value of [0,-1,1.5,Infinity,Number.MAX_SAFE_INTEGER+1])assert.throws(()=>stockTradeFee(value));
+});
 
 test('leverage qualification uses strict available-balance thresholds',()=>{
  for(const [balance,leverage,allowed] of [[0,1,true],[1000000,3,false],[1000001,3,true],[5000000,10,false],[5000001,10,true],[100000,10,false]]){
