@@ -13,6 +13,20 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA';`);
   const bulletins=installMarketBulletins(db);
   let quoteListener=null;
+  // Version checks use SQLite counters, not scans of quotes/candles. External writers
+  // and rollbacks invalidate the view; uncommitted reads never populate the cache.
+  const changes=db.prepare('SELECT total_changes() AS n'),dataVersion=db.prepare('PRAGMA data_version');
+  const version=()=>changes.get().n+':'+dataVersion.get().data_version;
+  let observedVersion='',lastQuoteAt=db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at;
+  let publicKey='',publicQuotes;const historyCache=new Map();
+  function quotes(){
+    const start=Math.floor((clock()+28800000)/86400000)*86400000-28800000,key=version()+':'+start;
+    if(!db.isTransaction&&key===publicKey)return {key,values:publicQuotes};
+    const openings=new Map(db.prepare('SELECT c.code,c.open FROM stock_candles c JOIN (SELECT code,MIN(bucket) AS bucket FROM stock_candles WHERE bucket>=? GROUP BY code) first ON first.code=c.code AND first.bucket=c.bucket').all(start).map(r=>[r.code,r.open]));
+    const index=indexValue(),values=new Map(db.prepare('SELECT code,price FROM stock_prices').all().map(row=>{const price=row.code==='KARMA'?index:row.price,opening=openings.get(row.code)||price;return [row.code,{code:row.code,price,change:opening?Math.round((price/opening-1)*10000)/100:0}];}));
+    if(!db.isTransaction){publicKey=key;publicQuotes=values;historyCache.clear();}
+    return {key,values};
+  }
   const upsert=db.prepare(`INSERT INTO stock_candles(code,bucket,open,high,low,close,quote_seed) VALUES(?,?,?,?,?,?,?)
     ON CONFLICT(code,bucket) DO UPDATE SET high=MAX(high,excluded.high),low=MIN(low,excluded.low),close=excluded.close,quote_seed=excluded.quote_seed`);
   const bucketFor=t=>Math.floor(t/60000)*60000;
@@ -29,7 +43,9 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
   // New listings acquire a baseline automatically; the index itself is not a constituent.
   syncIndex(clock());
   function advance(at=clock()) {
-    if(at-db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at<5000){syncIndex(at);return;}
+    const currentVersion=version();
+    if(currentVersion!==observedVersion)lastQuoteAt=db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at;
+    if(at-lastQuoteAt<5000){if(currentVersion!==observedVersion)syncIndex(at);observedVersion=db.isTransaction?'':version();return;}
     const owned=!db.isTransaction;
     if(owned)db.exec('BEGIN IMMEDIATE');
     try {
@@ -50,14 +66,8 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       db.prepare('UPDATE stock_quote_clock SET quoted_at=? WHERE id=1').run(at);
       quoteListener?.();
       if(owned)db.exec('COMMIT');
+      lastQuoteAt=at;observedVersion=owned?version():'';
     } catch(error) {if(owned)db.exec('ROLLBACK');throw error;}
-  }
-  function quote(code) {
-    const price=code==='KARMA'?indexValue():db.prepare('SELECT price FROM stock_prices WHERE code=?').get(code)?.price;
-    if(price==null)throw new Error('证券代码不存在。');
-    const start=Math.floor((clock()+28800000)/86400000)*86400000-28800000;
-    const opening=db.prepare('SELECT open FROM stock_candles WHERE code=? AND bucket>=? ORDER BY bucket LIMIT 1').get(code,start)?.open||price;
-    return {code,price,change:opening?Math.round((price/opening-1)*10000)/100:0};
   }
     const holdingColumns=new Set(db.prepare('PRAGMA table_info(stock_holdings)').all().map(c=>c.name));
     const tradeColumns=new Set(db.prepare('PRAGMA table_info(stock_trades)').all().map(c=>c.name));
@@ -65,6 +75,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     const hasTrade=name=>tradeColumns.has(name);
   function items(id) {
     advance();
+    const publicView=quotes().values;
     const lastOpenLeverageByCode=new Map();
     const needsLegacyLeverage=!hasHolding('leverage')||!!db.prepare('SELECT 1 FROM stock_holdings WHERE employee_id=? AND quantity<>0 AND COALESCE(leverage,0)<=0 LIMIT 1').get(id);
     try {
@@ -118,12 +129,14 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
         const effectiveLeverage=(hasMissingLeverageMeta&&fallbackLeverage>0)
           ? fallbackLeverage
           : (calculatedLeverage>0?calculatedLeverage:fallbackLeverage);
-        return {...s,positionNotional,marginUsed,side,avgCost,marketValue,unrealizedPnl,effectiveLeverage,totalPnl:unrealizedPnl+s.realizedPnl,change:quote(s.code).change};
+        return {...s,positionNotional,marginUsed,side,avgCost,marketValue,unrealizedPnl,effectiveLeverage,totalPnl:unrealizedPnl+s.realizedPnl,change:publicView.get(s.code)?.change||0};
       });
   }
   function history(code='KARMA',period=1,employeeId=null) {
     if(![1,5,15].includes(period))throw new Error('行情周期无效。');
-    advance();const q=quote(code),width=period*60000;
+    advance();const view=quotes(),q=view.values.get(code),width=period*60000;if(!q)throw Error('证券代码不存在。');
+    const cacheKey=view.key+':'+code+':'+period;let common=!db.isTransaction?historyCache.get(cacheKey):null;
+    if(!common){
     const rows=db.prepare('SELECT bucket,open,high,low,close,volume,turnover FROM stock_candles WHERE code=? ORDER BY bucket DESC LIMIT ?').all(code,period*120).reverse();
     const grouped=[];
     for(const row of rows) {
@@ -132,8 +145,12 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       else grouped.push({...row,bucket});
     }
     const candles=grouped.slice(-60);
+    common={code,period,index:view.values.get('KARMA'),quote:q,candles,bulletins:bulletins.recent()};
+    if(!db.isTransaction){if(historyCache.size>=24)historyCache.clear();historyCache.set(cacheKey,common);}
+    }
+    const {candles}=common;
     const trades=employeeId==null||!candles.length?[]:db.prepare(`SELECT id,action,quantity,price,holding_before AS holdingBefore,holding_after AS holdingAfter,CAST(strftime('%s',created_at) AS INTEGER)*1000 AS tradedAt FROM stock_trades WHERE employee_id=? AND code=? AND created_at>=datetime(?/1000,'unixepoch') ORDER BY created_at DESC,id DESC LIMIT 300`).all(employeeId,code,candles[0].bucket);
-    return {code,period,index:quote('KARMA'),quote:q,candles,trades,bulletins:bulletins.recent()};
+    return {...structuredClone(common),trades};
   }
   function trade(code,quantity,price) {
     const volume=Math.abs(quantity),bucket=bucketFor(clock());

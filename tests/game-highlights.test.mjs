@@ -20,7 +20,7 @@ test('records and announcements follow committed settlements, exclude refunds, a
  const tied=insert(1,'scratch',1000,30000,{rarePrize:true});assert.equal(service.event(1,tied).personalBest,0,'equal awards do not set new records');
  const small=insert(1,'slot',100,2000);assert.equal(service.event(1,small).broadcast,1);assert.equal(service.event(1,small).personalBest,1);
  const sky=insert(1,'sky',10000,60000,{flight:7});assert.equal(service.roundEvent(1,'sky',7).ticketId,sky);assert.equal(service.roundEvent(2,'sky',7),null);
- const firstRace=insert(1,'derby',1000,8500,{round:8});insert(1,'derby',1000,6250,{round:8});assert.equal(service.roundEvent(1,'derby',8).ticketId,firstRace,'a smaller second bet must not hide the record');insert(1,'cards',0,20000,{round:9});
+ const firstRace=insert(1,'derby',1000,8500,{round:8});insert(1,'derby',1000,6250,{round:8});assert.equal(service.roundEvent(1,'derby',8).ticketId,firstRace,'a smaller second bet must not hide the record');assert.deepEqual(service.roundEvents('derby',8).get(1),service.roundEvent(1,'derby',8));assert.equal(service.roundEvents('derby',8).get(2),undefined);insert(1,'cards',0,20000,{round:9});
  const overload=insert(2,'slot',1000,2000,{penalty:2000});assert.equal(service.event(2,overload).penalty,2000);
  // Even an old, incorrectly flagged repair fee must not leak into the ticker.
  db.prepare('UPDATE game_highlights SET broadcast=1 WHERE ticket_id=?').run(overload);

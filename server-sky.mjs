@@ -81,17 +81,17 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   if(!f||f.ended_at&&now>=f.ended_at){const p=proofRandom(),s=economy.get().sky,range=weighted(s.ranges,p.random),line=range.min+Math.floor(p.random()*(range.max-range.min+1));const row=db.prepare('INSERT INTO sky_flights(depart_at,safety_line,seed,seed_hash,rules_json) VALUES(?,?,?,?,?)').run(now+s.boardingSeconds*1000,line,p.seed,p.seedHash,JSON.stringify(s));f=db.prepare('SELECT * FROM sky_flights WHERE id=?').get(row.lastInsertRowid);}
   return f;
  }
- function snapshot(id,f=current(),sharedPassengers=null){
+ function snapshot(id,f=current(),sharedPassengers=null,context=null){
   const now=clock(),phase=f.ended_at?'LANDING':now<f.depart_at?'BOARDING':'DROPPING';
   const passengers=sharedPassengers||passengersFor(f);
-  const prior=db.prepare('SELECT * FROM sky_flights WHERE id<? AND ended_at>0 AND ended_at<=? ORDER BY id DESC LIMIT 1').get(f.id,now);
-  let previous=null;if(prior){const mine=db.prepare('SELECT status,cost,depth,prize FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(prior.id,id);previous={round:prior.id,safetyLine:prior.safety_line,seed:prior.seed,seedHash:prior.seed_hash,self:mine||null};}
+  const prior=context?context.prior:db.prepare('SELECT * FROM sky_flights WHERE id<? AND ended_at>0 AND ended_at<=? ORDER BY id DESC LIMIT 1').get(f.id,now);
+  let previous=null;if(prior){const mine=context?context.previous.get(id):db.prepare('SELECT status,cost,depth,prize FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(prior.id,id);previous={round:prior.id,safetyLine:prior.safety_line,seed:prior.seed,seedHash:prior.seed_hash,self:mine||null};}
   // Never disclose the safety line OR its timestamp while decisions remain open.
   const reveal=f.ended_at?{safetyLine:f.safety_line,revealedAt:revealTime(f),seed:f.seed}:{};
-  return {inputProbe:passengers.some(p=>p.id===id&&p.status==='aboard')&&!f.ended_at?input.issue(id,f.id):null,round:f.id,gameHighlight:highlights.roundEvent(id,'sky',f.id),phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:f.ended_at?f.safety_line:depth(f,now),speed:rules(f).speed,payoutRules:{curve:rules(f).curve,ranges:rules(f).ranges,breakEvenDepth:rules(f).breakEvenDepth},breakEvenDepth:rules(f).breakEvenDepth,boardingSeconds:rules(f).boardingSeconds,landingMs:SKY_LANDING_MS,...reveal,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
+  return {inputProbe:passengers.some(p=>p.id===id&&p.status==='aboard')&&!f.ended_at?input.issue(id,f.id):null,round:f.id,gameHighlight:context?.events?context.events.get(id)||null:highlights.roundEvent(id,'sky',f.id),phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:f.ended_at?f.safety_line:depth(f,now),speed:rules(f).speed,payoutRules:{curve:rules(f).curve,ranges:rules(f).ranges,breakEvenDepth:rules(f).breakEvenDepth},breakEvenDepth:rules(f).breakEvenDepth,boardingSeconds:rules(f).boardingSeconds,landingMs:SKY_LANDING_MS,...reveal,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
  }
  function passengersFor(f){return db.prepare(`SELECT s.employee_id AS id,COALESCE(r.codename,p.anonymous_name,'员工') AS alias,p.avatar_url AS avatar,p.avatar_preset AS avatarPreset,r.employee_id IS NOT NULL AS isRobot,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s LEFT JOIN profiles p ON p.employee_id=s.employee_id LEFT JOIN company_robots r ON r.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...p,avatar:p.isRobot?robotAvatar(p.id):storedAvatar(p.id,p.avatar,p.avatarPreset,64)}));}
- function write(stream,f,passengers){if(stream.res.destroyed||stream.res.writableLength>262144){stream.res.destroy();streams.delete(stream);return;}stream.res.write('data: '+JSON.stringify(snapshot(stream.id,f,passengers))+'\n\n');}
+ function write(stream,f,passengers,context){if(stream.res.destroyed||stream.res.writableLength>262144){stream.res.destroy();streams.delete(stream);return;}stream.res.write('data: '+JSON.stringify(snapshot(stream.id,f,passengers,context))+'\n\n');}
  function broadcast(){const f=current();
   // One shared wake-up for the next arrival/departure/reveal, never a timer per client.
   const now=clock(),deadlines=[];
@@ -104,7 +104,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   }
   const next=deadlines.length?Math.ceil(Math.min(...deadlines)):0;
   if(next!==eventDeadline){clearTimeout(eventTimer);eventDeadline=next;if(next){eventTimer=setTimeout(()=>{eventDeadline=0;try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},Math.max(1,next-now));eventTimer.unref();}}
-  const passengers=streams.size?passengersFor(f):null;for(const s of streams)write(s,f,passengers);}
+  if(streams.size){const passengers=passengersFor(f),prior=db.prepare('SELECT * FROM sky_flights WHERE id<? AND ended_at>0 AND ended_at<=? ORDER BY id DESC LIMIT 1').get(f.id,now),previous=new Map();if(prior)for(const row of db.prepare('SELECT employee_id,status,cost,depth,prize FROM sky_passengers WHERE flight_id=?').all(prior.id)){const {employee_id,...self}=row;previous.set(employee_id,self);}const context={prior,previous,events:highlights.roundEvents?.('sky',f.id)};for(const s of streams)write(s,f,passengers,context);}}
  let broadcastTask=null;
  function queueBroadcast(){if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;try{broadcast();}catch(e){console.error('Shared flight:',e.message);}});broadcastTask.unref();}
  const timer=setInterval(()=>{try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},1000);timer.unref();

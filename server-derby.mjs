@@ -70,16 +70,16 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
     entrants:db.prepare('SELECT COUNT(DISTINCT employee_id) AS n FROM derby_wagers WHERE race_id=?').get(race.id).n};
   }
  }
- function snapshot(id,race=current(),shared=null){
+ function snapshot(id,race=current(),shared=null,context=null){
   if(!shared)shared=sharedSnapshot(race);
-  const bets=db.prepare('SELECT market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? AND employee_id=? ORDER BY market').all(race.id,id);
+  const bets=context?(context.bets.get(id)||[]):db.prepare('SELECT market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? AND employee_id=? ORDER BY market').all(race.id,id);
   const self=bets.find(b=>b.market==='first')||bets[0]||null;
-  return {...shared,self,bets,balance:balanceFor(id),gameHighlight:highlights.roundEvent(id,'derby',race.id)};
+  return {...shared,self,bets,balance:balanceFor(id),gameHighlight:context?.events?context.events.get(id)||null:highlights.roundEvent(id,'derby',race.id)};
  }
- function write(s,race,shared){if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}s.res.write('data: '+JSON.stringify(snapshot(s.id,race,shared))+'\n\n');}
+ function write(s,race,shared,context){if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}s.res.write('data: '+JSON.stringify(snapshot(s.id,race,shared,context))+'\n\n');}
  let wakeTask=null,wakeAt=0,broadcastTask=null;
  function arm(race){const now=clock(),active=streams.size||db.prepare('SELECT 1 FROM derby_wagers WHERE settled=0 LIMIT 1').get(),next=!active?0:now<race.start_at?race.start_at:now<race.finish_at?race.finish_at:race.next_at;if(next===wakeAt)return;clearTimer(wakeTask);wakeAt=next;if(next){wakeTask=setTimer(()=>{wakeAt=0;try{broadcast();}catch(e){console.error('Race phase:',e.message);}},Math.max(1,next-now));wakeTask?.unref();}}
- function broadcast(){const race=current(),shared=sharedSnapshot(race);for(const s of streams)write(s,race,shared);arm(race);}
+ function broadcast(){const race=current(),shared=sharedSnapshot(race),bets=new Map();if(streams.size)for(const row of db.prepare('SELECT employee_id,market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? ORDER BY market').all(race.id)){const {employee_id,...bet}=row;if(!bets.has(employee_id))bets.set(employee_id,[]);bets.get(employee_id).push(bet);}const context={bets,events:streams.size?highlights.roundEvents?.('derby',race.id):null};for(const s of streams)write(s,race,shared,context);arm(race);}
  function queueBroadcast(){if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;try{broadcast();}catch(e){console.error('Race update:',e.message);}});broadcastTask.unref();}
  const timer=setInterval(()=>{try{if(!streams.size&&!db.prepare('SELECT 1 FROM derby_wagers WHERE settled=0 LIMIT 1').get())return;broadcast();}catch(e){console.error('Shared derby:',e.message);}},1000);timer.unref();
  return {close(){clearInterval(timer);clearImmediate(broadcastTask);clearTimer(wakeTask);for(const s of streams)s.res.end();},async handle(req,res,url){

@@ -197,13 +197,7 @@ async function renderProfile() {
       let avatarUrl = v.get("avatarUrl");
       const image = f.elements.avatarFile.files[0];
       if (image) {
-        if (image.size > 1600000) throw new Error("头像图片不能超过 1.6 MB。");
-        avatarUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error("读取图片失败。"));
-          reader.readAsDataURL(image);
-        });
+        avatarUrl = await AVEDImageUpload.read(image,{kind:'avatar'});
       }
       await api("/api/profile", {
         method: "PUT",

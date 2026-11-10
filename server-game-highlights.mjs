@@ -11,6 +11,7 @@ export function installGameHighlights({db,send,requireEmployee}) {
   personal_best INTEGER NOT NULL,broadcast INTEGER NOT NULL,created_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS highlights_broadcast ON game_highlights(broadcast,ticket_id DESC);
  CREATE INDEX IF NOT EXISTS highlights_recent ON game_highlights(created_at,ticket_id) WHERE broadcast=1;
+ CREATE INDEX IF NOT EXISTS highlights_round_batch ON game_highlights(game,round_id);
  CREATE INDEX IF NOT EXISTS highlights_round ON game_highlights(employee_id,game,round_id);
  CREATE INDEX IF NOT EXISTS tickets_record ON game_tickets(employee_id,game,prize DESC,id);
  `);
@@ -67,7 +68,8 @@ export function installGameHighlights({db,send,requireEmployee}) {
  const records=id=>{const byGame=db.prepare('SELECT game,ticket_id AS ticketId,cost,prize,created_at AS createdAt FROM game_personal_records WHERE employee_id=? ORDER BY prize DESC,ticket_id').all(id);return {highest:byGame[0]||null,byGame};};
  const event=(id,ticket)=>db.prepare(`SELECT ${columns} FROM game_highlights WHERE employee_id=? AND ticket_id=?`).get(id,ticket)||null;
  const roundEvent=(id,game,round)=>db.prepare(`SELECT ${columns} FROM game_highlights WHERE employee_id=? AND game=? AND round_id=? ORDER BY personal_best DESC,prize DESC,ticket_id DESC LIMIT 1`).get(id,game,round)||null;
- return {records,event,roundEvent,async handle(req,res,url){
+ const roundEvents=(game,round)=>{const out=new Map();for(const row of db.prepare(`SELECT ${columns} FROM game_highlights WHERE game=? AND round_id=? ORDER BY personal_best DESC,prize DESC,ticket_id DESC`).all(game,round))if(!out.has(row.employeeId))out.set(row.employeeId,row);return out;};
+ return {records,event,roundEvent,roundEvents,async handle(req,res,url){
   if(url.pathname!=='/api/player/game-highlights')return false;
   if(!requireEmployee(req,res))return true;
   if(req.method!=='GET'){send(res,405,{error:'只支持调阅已结算的大奖。'});return true;}

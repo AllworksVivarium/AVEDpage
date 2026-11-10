@@ -810,12 +810,13 @@
 
       document.getElementById('new-topic-image-input').addEventListener('change', (e) => {
         const file = e.target.files[0];
+        if(e.target.id==='new-topic-image-input')pendingNewTopicImageData='';else pendingReplyImageData='';
         readImageFileAsDataUrl(file, (dataUrl) => {
           pendingNewTopicImageData = dataUrl;
           document.getElementById('new-topic-image-hint').textContent = dataUrl
             ? file.name
             : '';
-        });
+        },e.target);
       });
 
       document.getElementById('reply-upload-trigger-btn').addEventListener('click', () => {
@@ -824,12 +825,13 @@
 
       document.getElementById('forum-detail-reply-image').addEventListener('change', (e) => {
         const file = e.target.files[0];
+        if(e.target.id==='new-topic-image-input')pendingNewTopicImageData='';else pendingReplyImageData='';
         readImageFileAsDataUrl(file, (dataUrl) => {
           pendingReplyImageData = dataUrl;
           document.getElementById('reply-image-selected-hint').textContent = dataUrl
             ? file.name
             : '';
-        });
+        },e.target);
       });
 
       function renderAttachmentHtml(item) {
@@ -1594,7 +1596,9 @@
       }
       function randomizeScpDualNamePlaceholder(){const item=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)]:null;byId('scp-search-input').placeholder=item?(item.searchName||item.codeName):'检索收容物名称';}
       function triggerForumSkeletonLoading(){renderForumView();}
-      function readImageFileAsDataUrl(file,callback){if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1500000){showToast('请选择 1.5 MB 以内的 PNG、JPG 或 WEBP 图片。','warn');return;}const reader=new FileReader();reader.onload=()=>callback(reader.result);reader.readAsDataURL(file);}
+      const pendingImageReads=new WeakMap();
+      async function readImageFileAsDataUrl(file,callback,input){if(!file)return;const token={};pendingImageReads.set(input,token);const submit=input.closest('form')?.querySelector('[type=submit]');if(submit)submit.disabled=true;try{const value=await AVEDImageUpload.read(file);if(pendingImageReads.get(input)===token)callback(value);}catch(error){if(pendingImageReads.get(input)===token)showToast(error.message,'warn');}finally{if(pendingImageReads.get(input)===token&&submit)submit.disabled=false;}}
+
       const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button forum-edit-action" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
       const attachment=item=>item.imageData?`<img src="${esc(item.imageData)}" class="max-w-full max-h-96 object-contain mt-3" alt="随帖影像" loading="lazy">`:'';
       let forumSocialUI=null,forumDetail=null;
@@ -1682,7 +1686,7 @@
             const room=id.startsWith('skydive-')?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
           }else if(id==='cloud-profile-form'){
             const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
-            if(file?.size){avatarPreset='';if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
+            if(file?.size){avatarPreset='';avatarUrl=await AVEDImageUpload.read(file,{kind:'avatar'});}
             const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});renderProfile();showToast('个人资料已保存。','success',{stamp:'档案已修订'});
           }
         });
