@@ -326,6 +326,37 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal((await margin(fundedCookie,body)).data.balance,settled.balance,'a completed retry stays harmless after closure');
   const afterRisk=await fetch(base+'/api/player/forum/notifications',{headers:{cookie:fundedCookie}});assert.equal((await afterRisk.json()).stockRisk.count,0);
 
+
+  // User-selected automatic rescue is also enforced by offline quote ticks.
+  const prefPath='/api/player/stocks/preferences';
+  async function pref(body){const r=await fetch(base+prefPath,{method:body?'POST':'GET',headers:{cookie:fundedCookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};}
+  assert.equal((await pref()).data.stockPreferences.autoMargin,false);
+  assert.equal((await pref({autoMargin:'true'})).status,400);
+  price(100);const autoOpened=await large({code:cheap,intent:'open',side:'long',quantity:1000,leverage:10});assert.equal(autoOpened.status,200);
+  const autoLot=autoOpened.data.items.find(s=>s.code===cheap).lots.find(l=>l.leverage===10);
+  assert.equal((await pref({autoMargin:true,employeeId:added.data.id})).data.stockPreferences.autoMargin,true);
+  const ownPref=await player(prefPath);assert.equal(ownPref.data.stockPreferences.autoMargin,false,'preference ownership cannot be forged');
+  const autoAfter=quotes.prepare('SELECT COALESCE(MAX(id),0) id FROM stock_margin_topups').get().id;
+  const autoTradeAfter=quotes.prepare('SELECT MAX(id) id FROM stock_trades').get().id;
+  price(90);quotes.prepare('UPDATE stock_quote_clock SET quoted_at=0').run();
+  let automatic;for(let n=0;n<120;n++){automatic=quotes.prepare('SELECT * FROM stock_margin_topups WHERE id>? AND lot_id=? AND automatic=1').get(autoAfter,autoLot.id);if(automatic)break;await new Promise(r=>setTimeout(r,50));}
+  assert.ok(automatic,'offline quote tick must rescue an opted-in position before liquidation');
+  const savedLot=quotes.prepare('SELECT quantity,margin_used margin FROM stock_lots WHERE id=?').get(autoLot.id);assert.equal(savedLot.quantity,1000);assert.equal(savedLot.margin,10000+automatic.amount);
+  assert.equal(quotes.prepare("SELECT COUNT(*) n FROM stock_trades WHERE id>? AND employee_id=? AND close_reason='强制平仓'").get(autoTradeAfter,funded.data.id).n,0);
+  assert.equal((await pref({autoMargin:false})).data.stockPreferences.autoMargin,false);
+  price(80);const disabledResponse=await fetch(base+'/api/player/stocks',{headers:{cookie:fundedCookie}});assert.equal(disabledResponse.status,200);
+  assert.equal(quotes.prepare('SELECT quantity FROM stock_lots WHERE id=?').get(autoLot.id).quantity,0,'disabled rescue returns to ordinary liquidation');
+  assert.equal(quotes.prepare('SELECT COUNT(*) n FROM stock_margin_topups WHERE lot_id=? AND automatic=1').get(autoLot.id).n,1);
+
+  const allFees=quotes.prepare('SELECT COALESCE(SUM(fee),0) total,COUNT(*) trades FROM stock_trades WHERE fee>0').get();
+  const fundFees=quotes.prepare("SELECT COALESCE(SUM(amount),0) total,COUNT(*) trades FROM company_fund WHERE kind='stock_fee'").get();
+  assert.deepEqual(fundFees,allFees,'market, limit, stop and forced fills all remit their actual fees');
+  const fundResponse=await fetch(base+'/api/player/welfare',{headers:{cookie:fundedCookie}});
+  assert.equal(fundResponse.status,200);const fundState=await fundResponse.json();
+  assert.equal(fundState.fund.stockFees,allFees.total);assert.equal(fundState.fund.stockFeeTrades,allFees.trades);
+  assert.equal(fundState.personal.donated,0,'fees never become personal donations');
+  const feeHistory=await fetch(base+'/api/player/stocks/history',{headers:{cookie:fundedCookie}});
+  assert.deepEqual((await feeHistory.json()).marketFees,{...allFees});
   quotes.close();
 
 

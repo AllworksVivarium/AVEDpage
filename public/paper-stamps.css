@@ -1,0 +1,54 @@
+/* Small paper labels and dry ink impressions; no bitmap requests or idle animation. */
+@layer aved-paper-stamps {
+  #view-containment :is(.scp-item-card,#scp-detail-container) {
+    background-image:repeating-linear-gradient(0deg,transparent 0 3px,#00000006 3px 4px),
+      radial-gradient(color-mix(in srgb,var(--inner-text-muted) 14%,transparent) .5px,transparent .9px)!important;
+    background-size:auto,5px 7px!important;
+  }
+  .scp-status-stamp {
+    --stamp-ink:var(--brand-red-ink,var(--inner-crimson,#831b1b));
+    display:inline-flex!important;align-items:center;justify-content:center;position:relative;
+    isolation:isolate;flex:0 1 auto;max-width:100%;box-sizing:border-box;
+    padding:5px 10px!important;min-height:26px;line-height:1.35!important;
+    border:1px solid currentColor!important;outline:1px solid currentColor;outline-offset:-4px;
+    background:var(--inner-card-bg,#eee8db)!important;color:var(--stamp-ink)!important;
+    font-family:var(--font-body,"Noto Sans SC",sans-serif)!important;
+    font-size:11px!important;font-weight:800!important;letter-spacing:.12em;
+    text-align:center;white-space:normal;overflow-wrap:anywhere;
+    transform:rotate(-3deg);box-shadow:1px 2px 0 #0002!important;
+    background-image:repeating-linear-gradient(2deg,transparent 0 3px,#00000008 3px 4px),
+      radial-gradient(ellipse at 20% 40%,#ffffff18,transparent 65%)!important;
+  }
+  .scp-status-stamp::after {
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.28;
+    background-image:radial-gradient(var(--inner-card-bg,#eee8db) .65px,transparent .9px);
+    background-size:3px 4px;mix-blend-mode:normal;
+  }
+  #scp-detail-container .scp-status-stamp {font-size:12px!important;padding:7px 15px!important;min-height:32px}
+  #scp-list-container .scp-item-card:nth-child(even) .scp-status-stamp {transform:rotate(2deg)}
+  .aved-toast[data-stamp] {border-inline-start:3px solid var(--brand-red-ink,var(--inner-crimson))!important}
+  .feedback-paper-stamp {
+    display:inline-block;flex:none;align-self:center;margin:2px 2px 2px 0;padding:5px 8px;
+    border:2px solid currentColor;outline:1px solid currentColor;outline-offset:-5px;
+    color:var(--brand-red-ink,var(--inner-crimson));font-size:11px;font-weight:800;
+    line-height:1.4;letter-spacing:.08em;white-space:nowrap;transform:rotate(-5deg);
+    animation:paper-stamp-press 220ms steps(3,end) both;
+  }
+  @keyframes paper-stamp-press {
+    0% {opacity:0;transform:translateY(-7px) scale(1.12) rotate(-5deg)}
+    65% {opacity:1;transform:translateY(1px) scale(.98) rotate(-5deg)}
+    100% {opacity:1;transform:translateY(0) scale(1) rotate(-5deg)}
+  }
+  .fund-tax-register {
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-block:12px;
+    padding:12px;border:1px dashed var(--inner-border-soft);background:var(--inner-card-alt);
+  }
+  .fund-tax-register>div {flex:1 1 130px;min-width:0}
+  .fund-tax-register h4 {margin:0 0 4px;font-size:12px!important;font-weight:700}
+  .fund-tax-register strong {font-size:18px!important;line-height:1.4;color:var(--brand-red-ink,var(--inner-crimson))}
+  .fund-tax-register p {flex-basis:100%;margin:0;font-size:11px!important;line-height:1.6!important;color:var(--inner-text-muted)}
+  .fund-tax-register small {font-size:11px!important;color:var(--inner-text-muted)}
+  .portfolio-fee-register {margin-block:10px}
+  @media(prefers-reduced-motion:reduce) {.feedback-paper-stamp{animation:none!important}}
+  body.effects-off .feedback-paper-stamp {animation:none!important}
+}

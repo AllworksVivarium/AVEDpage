@@ -15,7 +15,8 @@ test('joker faces say small/big king and use a crown; J, Q and K remain separate
 });
 
 test('a stale zero clock recovers server state with bounded reads and ignores local wall-clock skew',async()=>{
- let ticks=0,reads=0;const clockText={},ctx={feedback:{clock(){}},state:{phase:'playing',deadline:130000},clockBase:{server:100000,local:0},performance:{now:()=>ticks},Date:{now:()=>9000000},$:()=>clockText,visible:()=>true,busy:false,lastRecovery:-Infinity,refresh:async()=>{reads++;}};
+ let ticks=0,reads=0;const clockText={},ctx={feedback:{clock(){}},state:{phase:'playing',deadline:130000},performance:{now:()=>ticks},Date:{now:()=>9000000},$:()=>clockText,visible:()=>true,busy:false,lastRecovery:-Infinity,refresh:async()=>{reads++;}};
+ vm.runInNewContext(readFileSync(new URL('../public/game-clock.js',import.meta.url),'utf8'),ctx);ctx.gameClock=ctx.AVEDGameClock.create({now:()=>ticks});ctx.gameClock.snapshot(100000,0);
  vm.runInNewContext(source.slice(source.indexOf(' function clock()'),source.indexOf(' async function act(')),ctx);
  ctx.clock();assert.equal(clockText.textContent,'30');assert.equal(reads,0);
  ticks=31000;ctx.clock();assert.equal(clockText.textContent,'00');assert.equal(reads,0);

@@ -85,3 +85,25 @@ body.effects-off #gateway-snow{display:none}
  #landing-view #open-login-btn:active{background:linear-gradient(180deg,#191c1af2,#282b29ee)!important;box-shadow:inset 0 2px 4px #0008,inset 0 -1px 0 #ffffff14,0 1px 0 #0b0c0b!important}
  #landing-view #open-login-btn .login-trigger-copy{animation:none!important;transform:none!important;filter:none!important;text-shadow:0 0 5px rgb(245 245 237 / calc(.22 * var(--phosphor-level,1)))}
 }
+
+/* Retained CRT surface: gateway only. Inner palettes and controls use original styles. */
+body.theme-landing::after{
+ content:"";position:fixed;inset:0;pointer-events:none;z-index:100!important;opacity:1!important;
+ --gateway-crt-sweep:#fff2c90d;
+ box-shadow:inset 0 0 75px #00000040,inset 0 0 0 2px #29261f55!important;
+ background-image:radial-gradient(ellipse at center,transparent 42%,#00000052 100%),linear-gradient(180deg,transparent 44%,var(--gateway-crt-sweep) 49%,var(--gateway-crt-sweep) 51%,transparent 56%),repeating-linear-gradient(180deg,#00000017 0,#00000017 1px,transparent 1px,transparent 4px)!important;
+ background-size:100% 100%,100% 180%,100% 4px!important;
+ animation:aved-gateway-crt-scan 7s steps(56,end) infinite!important;
+}
+@keyframes aved-gateway-crt-scan{from{background-position:0 0,0 180%,0 0}to{background-position:0 0,0 -180%,0 4px}}
+@media(max-width:600px){body.theme-landing::after{background-image:radial-gradient(ellipse at center,transparent 48%,#00000040 100%),linear-gradient(180deg,transparent 44%,var(--gateway-crt-sweep) 49%,var(--gateway-crt-sweep) 51%,transparent 56%),repeating-linear-gradient(180deg,#00000012 0,#00000012 1px,transparent 1px,transparent 4px)!important}}
+body.theme-landing.effects-off::after{display:none!important;animation:none!important}
+@media(prefers-reduced-motion:reduce){body.theme-landing::after{animation:none!important}}
+
+/* Remove compounded transparency from both the emblem and its brand-row parent. */
+@layer aved-interactions {
+ body.theme-landing #landing-view .landing-brand-row{opacity:1}
+ body.theme-landing #landing-view #cover-logo-slot .company-emblem{opacity:1!important;filter:brightness(1.04) url(#gateway-phosphor-wave)!important}
+ body.theme-landing.effects-off #landing-view #cover-logo-slot .company-emblem{filter:brightness(1.04)!important}
+ @media(prefers-reduced-motion:reduce){body.theme-landing #landing-view #cover-logo-slot .company-emblem{filter:brightness(1.04)!important}}
+}

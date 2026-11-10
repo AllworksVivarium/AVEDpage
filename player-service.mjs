@@ -1,4 +1,5 @@
 import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
+import {stockFeeTotals} from './server-stock-fees.mjs';
 import {installStockMargin} from './server-stock-margin.mjs';
 import {installStockLots} from './server-stock-lots.mjs';
 import {installForumList} from './server-forum-list.mjs';
@@ -10,7 +11,6 @@ import {createForumPresence} from './server-forum-presence.mjs';
 import {mediaReference} from './server-media.mjs';
 import {weighted,scratchPrizeMultipliers} from './server-economy.mjs';
 import {spinSlot} from './server-slot.mjs';
-import {runners as derbyRules,derbyReturn} from './server-derby.mjs';
 import {directoryEmployees} from './server-directory.mjs';
 import { installMarket } from './server-market.mjs';
 import { randomBytes, createHash, createHmac } from 'node:crypto';
@@ -18,13 +18,13 @@ import { scratchTiers, scratchGameTypes, departmentsData, stocksData } from './s
 import { generateOutcomeTicket, settleGameTicket } from './server-ticket.mjs';
 import {validateGameStake} from './game-stake-limits.mjs';
 
-export const DERBY_ODDS=derbyRules.map(r=>r.odds);
-export const DERBY_WIN_PROBABILITIES=derbyRules.map(r=>r.weight);
 
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
-  const chatStreams=new Map();
-  const chatItems=room=>db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`).all(room).reverse();
+  const chatStreams=new Map(),chatRequests=new WeakMap();let chatStatement;
+  const chatItems=room=>(chatStatement??=db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`)).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[]){if(response.destroyed||response.writableLength>262144){response.destroy();chatStreams.get(room).delete(response);}else response.write(payload);}}
+  // A shared heartbeat queries and serializes each radio room once, not once per listener.
+  const chatHeartbeat=setInterval(()=>{for(const [room,clients] of chatStreams){try{for(const response of [...clients])if(!sessionEmployee(chatRequests.get(response))){clients.delete(response);response.end();}if(clients.size)emitChat(room);}catch(e){console.error('Radio heartbeat:',e.message);}}},20000);chatHeartbeat.unref();
   const addColumn=(table,name,definition)=>{
     if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
   };
@@ -105,7 +105,6 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(e){db.exec('ROLLBACK');throw e;}};
   function rng(seed) {let counter=0;return ()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296;}
   const random=()=>{const seed=randomBytes(32).toString('hex');return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:rng(seed)};};
-  const derbyWinnerFromRandom=r=>{let cumulative=0;for(let i=0;i<DERBY_WIN_PROBABILITIES.length;i++){cumulative+=DERBY_WIN_PROBABILITIES[i];if(r<cumulative)return i;}return DERBY_WIN_PROBABILITIES.length-1;};
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS scratch_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='scratch' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
   function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS slot_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='slot' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
@@ -117,7 +116,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
   const marketService=installMarket(db);
   const stockLots=installStockLots(db);
-  const topUpStockMargin=installStockMargin({db,lots:stockLots,balanceFor,recordLedger});
+  const stockMargin=installStockMargin({db,lots:stockLots,balanceFor,recordLedger});
   const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>{
     const positions=lots.filter(l=>l.code===s.code),longHolding=positions.reduce((n,l)=>n+Math.max(0,l.holding),0),shortHolding=positions.reduce((n,l)=>n+Math.max(0,-l.holding),0);
     const marginUsed=positions.reduce((n,l)=>n+l.marginUsed,0),positionNotional=positions.reduce((n,l)=>n+l.positionNotional,0),unrealizedPnl=positions.reduce((n,l)=>n+l.unrealizedPnl,0);
@@ -192,6 +191,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     processProtectedStockLots(id);
   }
   function processProtectedStockLots(employeeId=null){
+    stockMargin.autoTopUp(employeeId);
     const positions=db.prepare(`SELECT l.id,l.employee_id AS employeeId,l.code,l.quantity,l.quantity AS holding,l.position_notional AS positionNotional,l.margin_used AS marginUsed,l.stop_loss AS stopLoss,l.take_profit AS takeProfit,s.price FROM stock_lots l JOIN stock_prices s ON s.code=l.code WHERE l.quantity<>0 AND (l.quantity<0 OR l.position_notional>l.margin_used OR l.stop_loss IS NOT NULL OR l.take_profit IS NOT NULL) AND (? IS NULL OR l.employee_id=?) AND (((l.quantity<0 OR l.position_notional>l.margin_used) AND l.margin_used+CASE WHEN l.quantity>0 THEN l.quantity*s.price-l.position_notional ELSE l.position_notional+l.quantity*s.price END <= (l.margin_used+4)/5) OR (l.take_profit IS NOT NULL AND ((l.quantity>0 AND s.price>=l.take_profit) OR (l.quantity<0 AND s.price<=l.take_profit))) OR (l.stop_loss IS NOT NULL AND ((l.quantity>0 AND s.price<=l.stop_loss) OR (l.quantity<0 AND s.price>=l.stop_loss)))) ORDER BY l.id`).all(employeeId,employeeId);
     for(const p of positions) {
       let hit=stockPositionRisk(p).shouldLiquidate?'强制平仓':'';
@@ -209,7 +209,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   marketService.onQuote(()=>processProtectedStockLots());
   const forum=installForumList(db);
   const replies=installForumReplies(db);
-  return {log,initializeStockLots:stockLots.migrate,close:marketService.close, async handle(req,res,url) {
+  return {log,initializeStockLots:stockLots.migrate,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
@@ -222,7 +222,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const include=name=>!bootstrap&&(!section||section===name);
         if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
+        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
@@ -301,18 +301,17 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const cost=bet(data.bet),proof=random(),{prize,result}=spinSlot(cost,proof.random);
         result.requestKey=data.requestKey;send(res,200,settle(id,'slot',cost,prize,result,proof));return true;
       }
-      if(path==='/api/player/games/derby'&&req.method==='POST') {
-        const cost=bet(data.bet);if(!Number.isInteger(data.runner)||data.runner<0||data.runner>3)throw new Error('请选择跑道。');
-        const proof=random(),winner=derbyWinnerFromRandom(proof.random()),prize=derbyReturn(cost,data.runner,winner,proof.random);
-        send(res,200,settle(id,'derby',cost,prize,{winner},proof));return true;
-      }
       if(path==='/api/player/games/cards'){send(res,410,{error:'旧牌桌已停用，请进入新版练习牌桌。',code:'GAME_RETIRED'});return true;}
       if(path==='/api/player/stocks/history'&&req.method==='GET') {
-        const before=url.searchParams.get('before');send(res,200,stockLots.history(id,before===null?null:Number(before)));return true;
+        const before=url.searchParams.get('before');send(res,200,{...stockLots.history(id,before===null?null:Number(before)),marketFees:stockFeeTotals(db)});return true;
       }
       if(path==='/api/player/stocks/margin'&&req.method==='POST'){
-        let result;transaction(()=>{processStockAutomations(id);result=topUpStockMargin(id,data);});
+        let result;transaction(()=>{processStockAutomations(id);result=stockMargin.topUp(id,data);});
         send(res,200,{...result,items:market(id),balance:balanceFor(id),stockRisk:stockLots.riskSummary(id)});return true;
+      }
+      if(path==='/api/player/stocks/preferences'&&['GET','POST'].includes(req.method)){
+        const preferences=req.method==='POST'?transaction(()=>stockMargin.setPreferences(id,data.autoMargin)):stockMargin.preferences(id);
+        send(res,200,{stockPreferences:preferences});return true;
       }
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
@@ -373,17 +372,16 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
             }
           }
         });
-        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,stockRisk:stockLots.riskSummary(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
+        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');
         res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
         if(!chatStreams.has(room))chatStreams.set(room,new Set());
         for(const old of [...chatStreams.get(room)].filter(r=>r.avedEmployeeId===id).slice(0,-1)){old.end();chatStreams.get(room).delete(old);}
-        res.avedEmployeeId=id;chatStreams.get(room).add(res);
+        res.avedEmployeeId=id;chatRequests.set(res,req);chatStreams.get(room).add(res);
         res.write('data: '+JSON.stringify({items:chatItems(room)})+'\n\n');
-        const timer=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}if(res.writableLength>262144){res.destroy();return;}res.write('data: '+JSON.stringify({items:chatItems(room)})+'\n\n');},20000);
-        res.on('close',()=>{clearInterval(timer);chatStreams.get(room)?.delete(res);});return true;
+        res.on('close',()=>{chatStreams.get(room)?.delete(res);});return true;
       }
       if(path==='/api/player/chat') {
         const room=req.method==='POST'?data.room:url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');

@@ -37,7 +37,7 @@
     return result;
   }
 
-  function toast(message, type = 'info') {
+  function toast(message, type = 'info', options = {}) {
     const text = String(message);
     const tone = ['info', 'success', 'warn', 'error'].includes(type) ? type : 'info';
     // A native modal is in the top layer: keep its feedback in that layer too.
@@ -58,6 +58,14 @@
     el.dataset.message = text;
     el.setAttribute('role', tone === 'error' ? 'alert' : 'status');
     el.setAttribute('aria-atomic', 'true');
+    if (tone === 'success' && typeof options.stamp === 'string' && options.stamp) {
+      el.dataset.stamp = options.stamp;
+      const stamp = document.createElement('b');
+      stamp.className = 'feedback-paper-stamp';
+      stamp.textContent = options.stamp;
+      stamp.setAttribute('aria-hidden', 'true');
+      el.append(stamp);
+    }
     const copy = document.createElement('span');
     copy.textContent = text;
     el.append(copy);

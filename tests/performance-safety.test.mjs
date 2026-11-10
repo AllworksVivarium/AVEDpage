@@ -85,3 +85,10 @@ test('reference cache expires, isolates callers, clears on mutations, and never 
  const read=concurrent.request('/api/player/directory');await concurrent.request('/api/logout',{method:'POST'});release();await read;
  const fresh=concurrent.request('/api/player/directory');release();await fresh;assert.equal(referenceReads,2,'a pre-logout read cannot populate the new session cache');
 });
+
+test('latency probes preserve reference caches while financial writes still invalidate them',async()=>{
+ const ctx={setTimeout,clearTimeout,AbortController};vm.runInNewContext(await readFile(new URL('../public/http-client.js',import.meta.url),'utf8'),ctx);
+ let reads=0;const http=ctx.AVEDHttp.create({fetchImpl:async path=>{if(path==='/api/player/directory')reads++;return {ok:true,status:200,json:async()=>({ok:true})};}});
+ await http.request('/api/player/directory');for(const path of ['/api/player/games/sky/input-sync','/api/player/card-table/input-sync']){await http.request(path,{method:'POST'});await http.request('/api/player/directory');}assert.equal(reads,1);
+ await http.request('/api/checkin',{method:'POST'});await http.request('/api/player/directory');assert.equal(reads,2);
+});

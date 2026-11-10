@@ -1,3 +1,4 @@
+import {createInputTiming} from './server-input-timing.mjs';
 import {randomInt,randomUUID} from 'node:crypto';
 import './public/ddz-rules.js';
 import {robotAvatar,storedAvatar,defaultAvatar,installAvatarPresets} from './server-default-avatar.mjs';
@@ -69,23 +70,24 @@ export function botTurn(s,level='standard'){
 }
 export function tableView(room,employeeId,spectating=false){
  const seat=room.seats.findIndex(p=>p?.id===employeeId),g=room.game;if(seat<0&&!spectating)throw Error('你不在这张牌桌。');
-  return {id:room.id,mode:room.mode,size:room.size,host:room.host,hostName:room.seats.find(p=>p?.id===room.host)?.name||'员工',revision:room.revision,base:room.base||100,reserve:room.money?.rules.reserve??cardStakes.reserve(room.base||100),moneyRules:room.money?.rules??cardRulesFor(room),botLevel:room.botLevel||'standard',spectating,readyCycle:!!room.readyCycle,readyTimeoutMs:cardReadyTimeoutMs,hostStartDeadline:room.hostStartDeadline||0, money:room.money&&!spectating?{round:room.money.round,rules:room.money.rules,settlement:room.money.settlement?{...room.money.settlement.players[seat]}:null}:null,seat,phase:g?.phase||'waiting',deadline:room.deadline,
+  return {id:room.id,mode:room.mode,size:room.size,host:room.host,hostName:room.seats.find(p=>p?.id===room.host)?.name||'员工',revision:room.revision,base:room.base||100,reserve:room.money?.rules.reserve??cardStakes.reserve(room.base||100),moneyRules:room.money?.rules??cardRulesFor(room),botLevel:room.botLevel||'standard',spectating,readyCycle:!!room.readyCycle,readyTimeoutMs:cardReadyTimeoutMs,hostStartDeadline:room.hostStartDeadline||0, money:room.money&&!spectating?{round:room.money.round,rules:room.money.rules,settlement:room.money.settlement?{...room.money.settlement.players[seat]}:null}:null,seat,phase:g?.phase||'waiting',deadline:room.deadline,turnId:g?.event?.id||null,
   seats:room.seats.map((p,i)=>p?{id:p.id,name:p.name,avatar:p.bot?robotAvatar(p.id):p.avatar||defaultAvatar('slate'),bot:p.bot,auto:p.auto,ready:p.ready,readyDeadline:p.readyDeadline||0,count:g?.hands[i].length||0,role:g?.landlord===i?'landlord':g?.landlord>=0?'farmer':null,last:g?.seatPlays[i]||null}:null),
   hand:g&&!spectating?[...g.hands[seat]].sort((a,b)=>b.val-a.val||a.id-b.id):[],bottom:g?.phase==='bidding'?Array(g.bottom.length).fill(null):g?.bottom||[],turn:g?.turn??-1,landlord:g?.landlord??-1,bid:g?.bid||0,multiplier:g?.multiplier||1,last:g?.last||null,event:g?.event||null,winner:g?.winner||null,spring:!!g?.spring};
 }
 export function installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,clock=()=>Date.now(),schedule=setInterval,cancel=clearInterval}){
  installAvatarPresets(db);
  const profileFor=db.prepare('SELECT anonymous_name,avatar_url,avatar_preset FROM profiles WHERE employee_id=?');
- const portraitFor=p=>{const profile=profileFor.get(p.id);return storedAvatar(p.id,profile?.avatar_url??p.avatar,profile?.avatar_preset,64)||defaultAvatar('slate');};
+ const portraitFor=(p,cache)=>{if(cache?.has(p.id))return cache.get(p.id);const profile=profileFor.get(p.id),url=storedAvatar(p.id,profile?.avatar_url??p.avatar,profile?.avatar_preset,64)||defaultAvatar('slate');cache?.set(p.id,url);return url;};
  db.exec('CREATE TABLE IF NOT EXISTS card_table_rooms(id TEXT PRIMARY KEY,state_json TEXT NOT NULL,updated_at INTEGER NOT NULL)');
  db.exec("DROP TABLE IF EXISTS card_auto_preferences;CREATE TABLE IF NOT EXISTS card_bot_preferences(employee_id INTEGER PRIMARY KEY,level TEXT NOT NULL CHECK(level IN ('easy','standard','smart')))");
  const botLevel=id=>db.prepare('SELECT level FROM card_bot_preferences WHERE employee_id=?').get(id)?.level||'standard';
  const wallet=installCardWallet({db,balanceFor,recordLedger});
- const rooms=new Map(),streams=new Set(),watchers=new Map(),reactions=createCardReactions({clock});
+ const rooms=new Map(),streams=new Set(),watchers=new Map(),reactions=createCardReactions({clock}),input=createInputTiming({clock});
  const vacantRoomTimeoutMs=30*60*1000,hostDisconnectGraceMs=30*1000;
  const save=r=>{r.updatedAt=clock();db.prepare('INSERT INTO card_table_rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state_json=excluded.state_json,updated_at=excluded.updated_at').run(r.id,JSON.stringify(r),r.updatedAt);};
  for(const row of db.prepare('SELECT state_json FROM card_table_rooms').all()){
   const r=JSON.parse(row.state_json);rooms.set(r.id,r);if(!Number.isFinite(r.deadline))r.deadline=clock()+30000;
+  if(!Number.isFinite(r.turnDeadline))r.turnDeadline=r.deadline||clock()+30000;
   // Give pre-upgrade completed tables a fresh preparation window once only.
   if(r.mode==='online'&&r.game?.phase==='ended'&&!Object.hasOwn(r,'readyCycle')){
    r.readyCycle=true;r.hostStartDeadline=0;r.seats=r.seats.map(p=>p?.detached?null:p);
@@ -96,9 +98,15 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  const humans=r=>r.seats.filter(p=>p&&!p.bot&&!p.detached);
  const roomFor=id=>[...rooms.values()].find(r=>r.seats.some(p=>p?.id===id&&!p.detached));
  const selectedRoom=id=>roomFor(id)||rooms.get(watchers.get(id)?.roomId);
- const view=(r,id)=>r?{...tableView({...r,seats:r.seats.map(p=>p&&!p.bot?{...p,avatar:portraitFor(p)}:p)},id,!roomFor(id)),reactions:reactions.view(r),spectators:[...watchers.values()].filter(w=>w.roomId===r.id).map(w=>({...w.person,avatar:portraitFor(w.person)})),serverTime:clock(),gameHighlight:r.money?.settlement?highlights?.roundEvent(id,'cards',r.money.round)||null:null,balance:balanceFor(id)}:null;
- const write=(s,r)=>{if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}try{s.res.write('data: '+JSON.stringify({room:view(r,s.id),balance:balanceFor(s.id)})+'\n\n');}catch{streams.delete(s);}};
- const broadcast=(r,previousSeats=[])=>{for(const s of streams)if(r?.seats.some(p=>p?.id===s.id)||previousSeats.some(p=>p?.id===s.id)||watchers.get(s.id)?.roomId===r?.id)write(s,selectedRoom(s.id));};
+ const turnKey=r=>r&&playing(r)?r.game.event?.id||r.game.phase+':'+r.game.turn:'';
+ const manual=r=>playing(r)&&r.mode==='online'&&r.seats[r.game.turn]&&!r.seats[r.game.turn].bot&&!r.seats[r.game.turn].auto;
+ const timeoutAt=r=>r.deadline+(manual(r)?input.allowance(r.seats[r.game.turn].id):0);
+ const probeFor=(r,id)=>{if(!r.seats.some(p=>p?.id===id&&!p.detached&&!p.bot))return null;const scope=r.id+':'+Math.floor(clock()/60000),probe=input.issue(id,scope);return probe?{...probe,scope}:null;};
+ const view=(r,id,portraits)=>r?{...tableView({...r,seats:r.seats.map(p=>p&&!p.bot?{...p,avatar:portraitFor(p,portraits)}:p)},id,!roomFor(id)),inputProbe:probeFor(r,id),reactions:reactions.view(r),spectators:[...watchers.values()].filter(w=>w.roomId===r.id).map(w=>({...w.person,avatar:portraitFor(w.person,portraits)})),serverTime:clock(),gameHighlight:r.money?.settlement?highlights?.roundEvent(id,'cards',r.money.round)||null:null,balance:balanceFor(id)}:null;
+ const write=(s,r,portraits)=>{if(s.res.destroyed||s.res.writableLength>262144){s.res.destroy();streams.delete(s);return;}try{s.res.write('data: '+JSON.stringify({room:view(r,s.id,portraits),balance:balanceFor(s.id)})+'\n\n');}catch{streams.delete(s);}};
+ const broadcast=(r,previousSeats=[])=>{const portraits=new Map();for(const s of streams)if(r?.seats.some(p=>p?.id===s.id)||previousSeats.some(p=>p?.id===s.id)||watchers.get(s.id)?.roomId===r?.id)write(s,selectedRoom(s.id),portraits);};
+ const pendingBroadcasts=new Map();let broadcastTask=null;
+ function queueBroadcast(r,previousSeats=[]){if(!r)return;let pending=pendingBroadcasts.get(r.id);if(!pending){pending={room:r,seats:new Map()};pendingBroadcasts.set(r.id,pending);}for(const p of previousSeats)if(p)pending.seats.set(p.id,p);if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;const batch=[...pendingBroadcasts.values()];pendingBroadcasts.clear();for(const p of batch)broadcast(p.room,[...p.seats.values()]);});broadcastTask.unref();}
  const broadcastReactions=r=>{
   const payload='event: reaction\ndata: '+JSON.stringify({roomId:r.id,reactions:reactions.view(r),serverTime:clock()})+'\n\n';
   for(const s of streams)if(r.seats.some(p=>p?.id===s.id&&!p.detached)||watchers.get(s.id)?.roomId===r.id){
@@ -107,7 +115,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
   }
  };
  // All mutations (including automatic turns) persist together with money. Restore memory on rollback.
- function mutate(r,fn){const previous=r?structuredClone(r):null,existed=r&&rooms.has(r.id);db.exec('BEGIN IMMEDIATE');try{
+ function mutate(r,fn,deferBroadcast=false){const previous=r?structuredClone(r):null,existed=r&&rooms.has(r.id);db.exec('BEGIN IMMEDIATE');try{
   const result=fn();if(r){wallet.settle(r);if(r.game?.phase==='ended'&&previous?.game?.phase!=='ended'){
     r.readyCycle=r.mode==='online';r.hostStartDeadline=0;
     r.seats=r.seats.map(p=>p?.detached?null:p);
@@ -117,10 +125,19 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
     const allReady=r.seats.every(p=>p&&p.ready&&!p.detached);
     r.hostStartDeadline=allReady?(r.hostStartDeadline||clock()+cardReadyTimeoutMs):0;
    }
-   r.revision++;r.deadline=r.mode==='solo'&&!r.seats[r.game?.turn]?.bot&&!r.seats[r.game?.turn]?.auto?0:clock()+(r.seats[r.game?.turn]?.bot||r.seats[r.game?.turn]?.auto?400:30000);
+   r.revision++;
+   const newTurn=turnKey(r)!==turnKey(previous),seat=r.seats[r.game?.turn],wasAutomated=previous?.seats[previous?.game?.turn]?.bot||previous?.seats[previous?.game?.turn]?.auto;
+   if(!playing(r)){r.deadline=0;r.turnDeadline=0;}
+   else{
+    if(newTurn||!r.turnDeadline)r.turnDeadline=clock()+30000;
+    if(seat?.bot||seat?.auto){if(newTurn||!wasAutomated||!r.deadline)r.deadline=clock()+400;}
+    else r.deadline=r.mode==='solo'?0:r.turnDeadline;
+   }
    if(!humans(r).length&&!playing(r)){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}else{save(r);rooms.set(r.id,r);}}
-  db.exec('COMMIT');if(r&&existed)reactions.observe(r,previous);broadcast(r,previous?.seats||[]);return result;
+  db.exec('COMMIT');if(r&&existed)reactions.observe(r,previous);(deferBroadcast?queueBroadcast:broadcast)(r,previous?.seats||[]);return result;
  }catch(e){db.exec('ROLLBACK');if(r){for(const k of Object.keys(r))delete r[k];Object.assign(r,previous);if(existed)rooms.set(r.id,r);else rooms.delete(r.id);}throw e;}}
+ // Commit first, acknowledge the command, then fan out the latest room once.
+ const commandMutation=(r,fn)=>mutate(r,fn,true);
  const person=e=>{const p=profileFor.get(e.id)||{};return {id:e.id,name:p.anonymous_name||e.display_name||e.username,avatar:portraitFor(e),ready:true,bot:false,auto:false};};
  const bots=r=>{
   const used=new Set(r.seats.filter(Boolean).map(p=>p.name)),names=cardBotNames.filter(name=>!used.has(name));
@@ -150,12 +167,12 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
    if(expired.length){try{mutate(r,()=>{for(const id of new Set(expired))leave(r,id);});}catch(e){console.error('Card readiness:',e.message);}}
    continue;
   }
-  if(!playing(r)||!r.deadline||clock()<r.deadline)continue;
+  if(!playing(r)||!r.deadline||clock()<timeoutAt(r))continue;
   try{mutate(r,()=>{const p=r.seats[r.game.turn];if(!p.bot)p.auto=true;const seat=r.game.turn,move=botTurn(r.game,autoplayLevel(r,seat));tableAction(r.game,seat,move.action,move);wallet.recordTurn(r,seat,move.action,true);});}
   catch(e){console.error('Card table:',e.message);r.deadline=clock()+30000;}
  }},350);timer.unref();
  const cleanup=schedule(()=>{for(const r of rooms.values())if(!playing(r)&&clock()-r.updatedAt>86400000){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}},3600000);cleanup.unref();
- return {close(){cancel(timer);cancel(cleanup);reactions.close();for(const s of streams)s.res.end();},async handle(req,res,url){
+ return {close(){input.clear();clearImmediate(broadcastTask);pendingBroadcasts.clear();cancel(timer);cancel(cleanup);reactions.close();for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/card-table'))return false;
   const actor=requireEmployee(req,res);if(!actor)return true;
   if(url.pathname==='/api/player/card-table/rooms'&&req.method==='GET'){
@@ -170,11 +187,14 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
    const s={id:actor.id,res};streams.add(s);write(s,selectedRoom(actor.id));const ping=setInterval(()=>{if(!sessionEmployee(req)){res.end();return;}if(res.writableLength>262144){res.destroy();return;}res.write(': heartbeat\n\n');},15000);ping.unref();res.on('close',()=>{clearInterval(ping);streams.delete(s);const cleanup=setTimeout(()=>{if([...streams].some(x=>x.id===actor.id))return;const watched=rooms.get(watchers.get(actor.id)?.roomId);watchers.delete(actor.id);if(watched)broadcast(watched);},2000);cleanup.unref();});return true;
   }
+  if(url.pathname==='/api/player/card-table/input-sync'&&req.method==='POST'){
+   try{const d=await readBody(req,8192),r=roomFor(actor.id);if(!r||d.room!==r.id)throw Error('牌桌已变化。');send(res,200,input.acknowledge(actor.id,d.scope,d.token));}catch(e){send(res,400,{error:e.message});}return true;
+  }
   if(url.pathname!=='/api/player/card-table'){send(res,404,{error:'牌桌接口不存在。'});return true;}
   if(req.method==='GET'){send(res,200,{room:view(selectedRoom(actor.id),actor.id),botLevel:botLevel(actor.id),balance:balanceFor(actor.id)});return true;}
   if(req.method!=='POST'){send(res,405,{error:'指令无效。'});return true;}
   try{
-   const d=await readBody(req,8192);let r=roomFor(actor.id);
+   const d=await readBody(req,8192),receivedAt=clock();let r=roomFor(actor.id);
    if(d.action==='reaction'){
     if(!r||r.id!==d.room)throw Error('入座后才能发送表情。');
     // Ephemeral social events must not write the wallet, change turns or reset deadlines.
@@ -185,7 +205,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
     if(!autoLevels.includes(d.level))throw Error('请选择有效的电脑难度。');
     if(r&&(r.host!==actor.id||playing(r)))throw Error('只能由房主在开局前选择电脑难度。');
     const savePreference=()=>{db.prepare('INSERT INTO card_bot_preferences VALUES(?,?) ON CONFLICT(employee_id) DO UPDATE SET level=excluded.level').run(actor.id,d.level);if(r)r.botLevel=d.level;};
-    if(r)mutate(r,savePreference);else savePreference();
+    if(r)commandMutation(r,savePreference);else savePreference();
     send(res,200,{room:view(selectedRoom(actor.id),actor.id),balance:balanceFor(actor.id),botLevel:d.level});return true;
    }
    if(d.action==='watch'||d.action==='unwatch'){
@@ -203,22 +223,24 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
      r=typeof d.roomId==='string'&&!('code' in d)?rooms.get(d.roomId):null;if(!r||r.mode!=='online')throw Error('请从牌桌列表选择有效的员工牌桌。');if(playing(r))throw Error('这张牌桌已经开局。');
      const reserve=cardStakes.reserve(r.base||100);if(balanceFor(actor.id)<reserve)throw Error('本桌入座需有 '+reserve.toLocaleString('en-US')+' 可用余额。');
      const i=r.seats.findIndex(p=>!p||p.detached);if(i<0)throw Error('牌桌已经坐满。');
-     mutate(r,()=>{r.hadGuest=true;r.seats[i]={...person(actor),ready:false,readyDeadline:r.readyCycle?clock()+cardReadyTimeoutMs:0};if(r.game){r.game=null;r.money=null;}});
+     commandMutation(r,()=>{r.hadGuest=true;r.seats[i]={...person(actor),ready:false,readyDeadline:r.readyCycle?clock()+cardReadyTimeoutMs:0};if(r.game){r.game=null;r.money=null;}});
     }else{
      const size=Number(d.size);if(![3,4].includes(size))throw Error('请选择三人或四人桌。');
      const base=cardStakes.validate(d.base??cardStakes.defaultBase,['solo','soloRoom'].includes(d.action)),reserve=cardStakes.reserve(base);
      if(balanceFor(actor.id)<reserve)throw Error('本桌入座需有 '+reserve.toLocaleString('en-US')+' 可用余额。');
      const level=d.botLevel??botLevel(actor.id);if(!autoLevels.includes(level))throw Error('请选择有效的电脑难度。');
      r={id:randomUUID(),botLevel:level,base,size,mode:['solo','soloRoom'].includes(d.action)?'solo':'online',host:actor.id,seats:Array(size).fill(null),revision:0,receipts:[],game:null,createdAt:clock(),hadGuest:false,hostSeenOnline:[...streams].some(s=>s.id===actor.id&&!s.res.destroyed)};r.seats[0]=person(actor);
-     mutate(r,()=>{if(r.mode==='solo')bots(r);if(d.action==='solo')start(r);});
+     commandMutation(r,()=>{if(r.mode==='solo')bots(r);if(d.action==='solo')start(r);});
     }
    }else{
     if(!r||r.id!==d.room)throw Error('牌桌已变化，请重新入座。');
     if(typeof d.requestId!=='string'||!d.requestId.length||d.requestId.length>80)throw Error('请重试本次操作。');
     if(r.receipts.includes(d.requestId)){send(res,200,{room:view(r,actor.id),balance:balanceFor(actor.id)});return true;}
-    if(d.revision!==r.revision){send(res,409,{error:'牌局已更新，请再试一次。',room:view(r,actor.id)});return true;}
-    const i=r.seats.findIndex(p=>p?.id===actor.id);
-    mutate(r,()=>{
+    const i=r.seats.findIndex(p=>p?.id===actor.id),turnAction=['bid','play','pass'].includes(d.action);
+    const sameTurn=turnAction&&d.turnId&&d.turnId===turnKey(r)&&playing(r)&&r.game.turn===i;
+    if(turnAction&&d.turnId!=null&&d.turnId!==turnKey(r)||d.revision!==r.revision&&!sameTurn){send(res,409,{error:'牌局已更新，请再试一次。',room:view(r,actor.id)});return true;}
+    if(turnAction&&manual(r)&&r.game.turn===i&&r.deadline>0&&receivedAt>r.deadline+input.allowance(actor.id,receivedAt))throw Error('本轮操作时间已结束，请等待牌桌同步。');
+    commandMutation(r,()=>{
      if(d.action==='leave'){
       if(r.mode==='online'&&!playing(r)&&r.host===actor.id)r.seats=r.seats.map(()=>null);
       else leave(r,actor.id);

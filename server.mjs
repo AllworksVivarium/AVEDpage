@@ -1,4 +1,5 @@
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
+import {installLogRetention} from './server-log-retention.mjs';
 import {installAvatarPresets,storedAvatar,avatarPresets} from './server-default-avatar.mjs';
 import {installRadioRetention} from './server-radio-retention.mjs';
 import {installCompanyRobots} from './server-company-robots.mjs';
@@ -269,6 +270,7 @@ personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceF
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
+const logRetention=installLogRetention(db);
 const dossierImages=installDossierImages({db,send,requireAdmin});
 const media=installMedia({db,send,requireEmployee});
 const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
@@ -279,7 +281,6 @@ db.exec(`
  CREATE INDEX IF NOT EXISTS posts_notice_active ON posts(announcement_id,id) WHERE status='published' AND deleted_at='';
  CREATE INDEX IF NOT EXISTS dossier_comment_active ON dossier_comments(dossier_id,id) WHERE deleted_at='';
  CREATE INDEX IF NOT EXISTS orders_employee_open ON stock_orders(employee_id,id) WHERE status='open';
- CREATE INDEX IF NOT EXISTS derby_pending ON derby_bets(race_id) WHERE settled=0;
  CREATE INDEX IF NOT EXISTS sky_pending ON sky_passengers(flight_id) WHERE status='aboard';
  CREATE INDEX IF NOT EXISTS fund_employee_kind ON company_fund(employee_id,kind);
  CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
@@ -713,7 +714,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   }
 });
 
-server.on('close',()=>radioRetention.close());
+server.on('close',()=>{radioRetention.close();logRetention.close();});
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 server.listen(port,host,() => console.log(`万业携生收容公司服务已启动：${host}:${port}`));

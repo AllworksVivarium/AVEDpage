@@ -7,19 +7,20 @@ window.AVEDDerbyUI=function({api,byId,esc,getUser,onBalance,showToast,playSfx=()
  <aside class="race-sidebar"><form id="shared-race-form" class="race-slip"><h3 id="derby-ticket-state">本场竞猜</h3><div class="race-market-tabs" role="group" aria-label="竞猜位次"><button type="button" data-market="first" aria-pressed="true">第一名</button><button type="button" data-market="last" aria-pressed="false">最后一名</button></div><div class="race-select"><fieldset id="shared-runner-options" class="animal-options" aria-label="选择选手"></fieldset></div><div class="race-stake"><label class="race-amount" for="shared-race-bet">本笔投入<input id="shared-race-bet" type="number" min="100" max="500000" step="1" value="1000" required inputmode="numeric"></label><div class="race-amounts"><button type="button" data-race-chip="1000">1,000</button><button type="button" data-race-chip="10000">10,000</button><button type="button" data-race-chip="50000">50,000</button></div><button type="submit" class="race-submit" disabled>同步中</button></div><div id="derby-self-result" class="race-tickets" role="status"></div></form><section class="animal-radio"><h3>看台无线电 <small>LIVE RADIO</small></h3><div id="derby-radio-slot"></div></section></aside></div></section>`;
  byId('derby-radio-slot').append(messages,chat);
  const root=panel.querySelector('.animal-race'),form=byId('shared-race-form'),scene=window.AVEDDerbyScene(byId('animal-race-canvas'),{onFinish:()=>{if(motion())playSfx('win');}});
- let supportersKey='',state=null,source=null,lastMessage=0,lastPoll=0,polling=false,submitting=false,market='first',clockOffset=null,bestRtt=Infinity,receivedAt=0,raf=0,lastFrame=0,celebratedAt=0,optionsKey='',uiKey='',ticketsKey='';
+ let supportersKey='',state=null,source=null,lastMessage=0,lastPoll=0,polling=false,submitting=false,market='first',sourceOwner=null,receivedAt=0,raf=0,lastFrame=0,celebratedAt=0,optionsKey='',uiKey='',ticketsKey='';
+ const gameClock=window.AVEDGameClock.create();
  const drafts={first:{runner:0,bet:1000},last:{runner:4,bet:1000}},text=new WeakMap();
  const setText=(el,value)=>{value=String(value);if(text.get(el)!==value){el.textContent=value;text.set(el,value);}};
  const money=n=>'¤ '+Number(n).toLocaleString(),marketName=m=>m==='first'?'第一名':'最后一名';
  const visible=()=>!!getUser()&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!panel.classList.contains('hidden');
  const motion=()=>window.AVEDEffectsEnabled?.()!==false&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
- const now=()=>state?Math.min(clockOffset==null?state.serverTime+performance.now()-receivedAt:performance.now()+clockOffset,state.serverTime+3000):0;
+ const now=()=>state?gameClock.now(state.serverTime+3000):0;
  function remember(){if(!state?.bets?.some(b=>b.market===market)){drafts[market]={runner:Number(form.elements.runner?.value||0),bet:byId('shared-race-bet').value};}}
  function chooseMarket(value){remember();market=value;uiKey='';updateControls();}
  function updateControls(){
   if(!state)return;const remaining=Math.max(0,500000-state.bets.reduce((n,b)=>n+b.cost,0));const selected=state.bets.find(b=>b.market===market),fresh=performance.now()-lastMessage<3500,locked=submitting||!fresh||state.phase!=='BETTING'||now()>=state.startAt||!!selected||remaining<100;
   const key=[state.round,market,locked,selected?.runner,selected?.cost,submitting,remaining].join(':');if(key===uiKey)return;uiKey=key;
-  root.querySelectorAll('[data-market]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.market===market));b.disabled=submitting||state.version!==2&&b.dataset.market==='last';});
+  root.querySelectorAll('[data-market]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.market===market));b.disabled=submitting;});
   form.querySelectorAll('input,[data-race-chip]').forEach(el=>el.disabled=locked);
   form.elements.runner.value=String(selected?.runner??drafts[market].runner);byId('shared-race-bet').max=String(selected?.cost??remaining);byId('shared-race-bet').value=selected?.cost??Math.min(Number(drafts[market].bet),remaining);
   const button=form.querySelector('[type=submit]');button.disabled=locked;
@@ -28,7 +29,7 @@ window.AVEDDerbyUI=function({api,byId,esc,getUser,onBalance,showToast,playSfx=()
  }
  function render(d){
   if(!getUser()||state&&(d.round<state.round||d.round===state.round&&d.serverTime<state.serverTime))return;
-  const previous=state;remember();state=d;receivedAt=performance.now();lastMessage=receivedAt;
+  const previous=state;gameClock.snapshot(d.serverTime);remember();state=d;receivedAt=performance.now();lastMessage=receivedAt;
   const totalCost=d.bets.reduce((n,b)=>n+b.cost,0),totalPrize=d.bets.reduce((n,b)=>n+b.prize,0);
   if(previous?.round===d.round&&previous.phase!=='RESULT'&&d.phase==='RESULT'&&totalPrize>totalCost){celebratedAt=d.serverTime;playSfx('win');}
   if(previous?.round!==d.round){celebratedAt=0;uiKey='';}
@@ -52,18 +53,19 @@ window.AVEDDerbyUI=function({api,byId,esc,getUser,onBalance,showToast,playSfx=()
  }
  function paint(){raf=0;if(!visible()||!state)return;const time=performance.now();if(time-lastFrame>=32){lastFrame=time;const at=now(),target=state.phase==='BETTING'?state.startAt:state.phase==='RACING'?state.finishAt:state.nextAt,seconds=Math.max(0,Math.ceil((target-at)/1000));setText(byId('derby-clock'),(state.phase==='BETTING'?'下注 ':state.phase==='RACING'?'比赛 ':'下场 ')+seconds+' s');scene.paint(state,at,motion(),celebratedAt);updateControls();}schedule();}
  function schedule(){if(visible()&&state&&!raf)raf=requestAnimationFrame(paint);}
- async function poll(){if(polling||!visible())return;polling=true;lastPoll=performance.now();try{const sent=performance.now(),d=await api('/api/player/games/derby/current'),arrived=performance.now(),rtt=arrived-sent;if(rtt<bestRtt*1.5+20){bestRtt=Math.min(bestRtt,rtt);clockOffset=d.serverTime+rtt/2-arrived;}render(d);}catch{}finally{polling=false;}}
+ async function poll(){if(polling||!visible())return;polling=true;lastPoll=performance.now();try{const owner=getUser()?.id,sent=performance.now(),d=await api('/api/player/games/derby/current');if(owner!==getUser()?.id)return;gameClock.measure(d.serverTime,sent);render(d);}catch{}finally{polling=false;}}
  function setSupporters(open,restoreFocus=false){byId('race-supporter-window').hidden=!open;byId('race-supporter-toggle').setAttribute('aria-expanded',String(open));if(restoreFocus)byId('race-supporter-toggle').focus();}
  byId('race-supporter-toggle').onclick=()=>setSupporters(byId('race-supporter-window').hidden);
  byId('race-supporter-close').onclick=()=>setSupporters(false,true);
  document.addEventListener('pointerdown',e=>{if(!byId('race-supporter-window').hidden&&!e.target.closest('#race-supporter-window,#race-supporter-toggle'))setSupporters(false);});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!byId('race-supporter-window').hidden){e.preventDefault();setSupporters(false,true);}});
  function ensure(){
+  if(source&&sourceOwner!==getUser()?.id){source.close();source=null;state=null;gameClock.reset();}
   if(!visible()){setSupporters(false);source?.close();source=null;if(raf)cancelAnimationFrame(raf);raf=0;return;}
-  if(!source){source=new EventSource('/api/player/games/derby/stream');source.onmessage=e=>{try{render(JSON.parse(e.data));}catch(error){console.warn('Race update:',error);}};poll();}
+  if(!source){sourceOwner=getUser()?.id;const owner=sourceOwner;source=new EventSource('/api/player/games/derby/stream');source.onmessage=e=>{if(owner!==getUser()?.id)return;try{render(JSON.parse(e.data));}catch(error){console.warn('Race update:',error);}};poll();}
   if(performance.now()-lastMessage>3500&&performance.now()-lastPoll>5000)poll();schedule();
  }
- form.onsubmit=async e=>{e.preventDefault();if(submitting||!state||form.querySelector('[type=submit]').disabled)return;remember();const body={round:state.round,market,runner:Number(form.elements.runner.value),bet:Number(byId('shared-race-bet').value)};submitting=true;updateControls();try{render(await api('/api/player/games/derby/bet',{method:'POST',body}));}catch(error){showToast(error.message);await poll();}finally{submitting=false;uiKey='';updateControls();}};
+ form.onsubmit=async e=>{e.preventDefault();if(submitting||!state||form.querySelector('[type=submit]').disabled)return;remember();const body={round:state.round,market,runner:Number(form.elements.runner.value),bet:Number(byId('shared-race-bet').value)};submitting=true;updateControls();const owner=getUser()?.id,sent=performance.now();try{const d=await api('/api/player/games/derby/bet',{method:'POST',body});if(owner!==getUser()?.id)return;gameClock.measure(d.serverTime,sent);render(d);}catch(error){showToast(error.message);await poll();}finally{submitting=false;uiKey='';updateControls();}};
  form.addEventListener('input',remember);root.querySelectorAll('[data-market]').forEach(b=>b.onclick=()=>chooseMarket(b.dataset.market));root.querySelectorAll('[data-race-chip]').forEach(b=>b.onclick=()=>{byId('shared-race-bet').value=b.dataset.raceChip;remember();});
  new MutationObserver(ensure).observe(panel,{attributes:true,attributeFilter:['class']});new MutationObserver(ensure).observe(byId('view-casino'),{attributes:true,attributeFilter:['class']});
  setInterval(ensure,1000);document.addEventListener('visibilitychange',ensure);return {ensure};

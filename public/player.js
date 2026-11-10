@@ -641,7 +641,7 @@
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="archive-item-code font-mono-tech">${item.id}</span>
-                  <span class="text-[10px] font-mono-tech font-bold text-[#9e1b1b]">${item.level}</span>
+                  <span class="scp-status-stamp">${item.level}</span>
                 </div>
 
                 <div class="archive-evidence-strip bg-[#141413] text-[#e8e3d5] p-2 mb-2 font-mono-tech text-[10px] flex items-center justify-between border border-black">
@@ -688,7 +688,7 @@
                 ${currentScp.id} — ${currentScp.codeName}
               </h3>
             </div>
-            <span class="text-xs font-mono-tech font-bold px-2.5 py-1 bg-[var(--inner-crimson)] text-white self-start sm:self-auto">
+            <span class="scp-status-stamp self-start sm:self-auto">
               ${currentScp.level}
             </span>
           </div>
@@ -1416,7 +1416,7 @@
         if(data.market?.code===marketCode&&data.market.period===marketPeriod)marketView=data.market;
         if(data.serverTime)AVEDTime.sync(data.serverTime);
         if(typeof data.balance==='number'){currentUser.balance=data.balance;syncUserHeaderUI();}
-        renderStocks();if(data.stockRisk)economyUI?.updateRisk(data.stockRisk);
+        renderStocks();if(data.stockRisk)economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);
       }
       async function refreshMarket() {
         if(!marketVisible()||marketBusy)return;marketBusy=true;
@@ -1524,8 +1524,8 @@
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
       let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],skyRound=null,skyPollBusy=false;
-      function showToast(message,type='info') {
-        window.AVEDFeedback.toast(message,type);
+      function showToast(message,type='info',options={}) {
+        window.AVEDFeedback.toast(message,type,options);
       }
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
@@ -1543,7 +1543,7 @@
         scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
         forumThreads=data.forum.items;forumDetail=null;forumBrowser.reset();
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));
-        economyUI?.updateRisk(data.stockRisk);
+        economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);
         return currentUser;
       }
       const deferredSections=new Set(),deferredRequests=new Map();
@@ -1563,7 +1563,7 @@
           if(section==='news')companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
           if(section==='containment')scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
           if(section==='forum'){forumBrowser.seed(data.forum);}
-          if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);welfareUI.refresh().catch(()=>{});}
+          if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
           if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
@@ -1586,7 +1586,7 @@
         byId('claim-relief-btn').textContent='余额低于 10,000 可领低保';
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
-      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward));welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
+      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward),'success',{stamp:'今日已归岗'});welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function completeEnterIntranet(emp){
         innerAppView.classList.add('intranet-preparing');
@@ -1716,7 +1716,7 @@
           }else if(id==='cloud-profile-form'){
             const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
             if(file?.size){avatarPreset='';if(file.size>1500000)throw new Error('头像不能超过 1.5 MB。');avatarUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
-            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});showToast('个人资料已保存。');renderProfile();
+            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset}});playerProfile=d.profile;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});renderProfile();showToast('个人资料已保存。','success',{stamp:'档案已修订'});
           }
         });
       },true);
@@ -1729,7 +1729,7 @@
         if(button.dataset.nav==='welcome'){stop(event);showProfile().catch(e=>showToast(e.message));return;}
         if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.game==='doudizhu')initDoudizhu();
-        const handled=['forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','skydive-open-chute-btn','cloud-profile-open'];
+        const handled=['forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','cloud-profile-open'];
         const trade=button.hasAttribute('data-stock-trade-side');
         if(trade&&stockTradeBusy)return;
         if(!handled.includes(id)&&!trade)return;stop(event);
@@ -1757,7 +1757,6 @@
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
-          else if(id==='skydive-open-chute-btn'){if(!skyUI.round())throw new Error('请先登机。');renderSky(await skyUI.jump());}
           else if(trade){
             stockTradeBusy=true;renderTradeTicket();
             try{

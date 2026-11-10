@@ -28,6 +28,7 @@ function harness(){
  const api=async(path,options)=>{calls.push({path,options});if(path.endsWith('/current'))return state;return new Promise((resolve,reject)=>{resolvePost=resolve;rejectPost=reject;});};
  const document={hidden:false,createElement:element,addEventListener(){}};
  const window={AVEDSkyScene:()=>scene,AVEDSkyRules:{multiplier:d=>d/200}};window.AVEDSkyScene.landingDelay=()=>1000;
+ vm.runInNewContext(readFileSync(new URL('../public/game-clock.js',import.meta.url),'utf8'),{window,performance:{now:()=>now}});
  vm.runInNewContext(source,{window,document,performance:{now:()=>now},matchMedia:()=>({matches:false}),MutationObserver:class{observe(){}},ResizeObserver:class{observe(){}},EventSource:class{close(){}},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;},console});
  const ui=window.AVEDSkyUI({api,esc:x=>x,byId,getUser:()=>user,onBalance:b=>{user.balance=b;},showToast(){},playSfx:s=>sounds.push(s)});
  ui.render(state);ui.ensure();
@@ -55,4 +56,19 @@ test('lost confirmation is reconciled with one read and never retries the moneta
  const confirmed={...initial(),serverTime:110600,balance:1080,self:{...person,status:'landed',prize:180,depth:365,settledAt:110600}};confirmed.passengers[0]=confirmed.self;h.setState(confirmed);
  h.reject(Object.assign(Error('timeout'),{code:'TIMEOUT'}));await assert.rejects(pending,/timeout/);h.frame();
  assert.equal(h.calls.filter(x=>x.path.endsWith('/jump')).length,1);assert.equal(h.user.balance,1080);assert.equal(h.paints.at(-1)[0].self.status,'landed');assert.equal(h.sounds.filter(s=>s==='sky-open').length,1);
+});
+
+test('pointer press submits immediately; release after an early reply does not submit again, keyboard still works',async()=>{
+ const h=harness();await Promise.resolve();const button=h.byId('skydive-open-chute-btn'),event=detail=>({button:0,isPrimary:true,currentTarget:button,detail,preventDefault(){},stopPropagation(){}});
+ button.onpointerdown(event(1));assert.equal(h.calls.filter(x=>x.path.endsWith('/jump')).length,1);
+ const confirmed={...initial(),serverTime:110100,self:{...person,status:'landed',prize:180,depth:350}};confirmed.passengers[0]=confirmed.self;
+ h.resolve(confirmed);await new Promise(resolve=>setImmediate(resolve));button.onclick(event(1));
+ assert.equal(h.calls.filter(x=>x.path.endsWith('/jump')).length,1);
+ const k=harness();await Promise.resolve();const kb=k.byId('skydive-open-chute-btn');kb.onclick({...event(0),currentTarget:kb});assert.equal(k.calls.filter(x=>x.path.endsWith('/jump')).length,1);k.resolve(confirmed);await new Promise(resolve=>setImmediate(resolve));
+});
+
+test('each received probe is acknowledged once, without client timing or money fields',async()=>{
+ const h=harness();await Promise.resolve();const next={...initial(),inputProbe:{token:'server-probe'}};h.ui.render(next);h.ui.render(next);
+ const sent=h.calls.filter(x=>x.path.endsWith('/input-sync'));assert.equal(sent.length,1);assert.deepEqual(JSON.parse(JSON.stringify(sent[0].options.body)),{round:1,token:'server-probe'});
+ h.resolve({round:1,compensationMs:100,serverTime:110000});await new Promise(resolve=>setImmediate(resolve));
 });

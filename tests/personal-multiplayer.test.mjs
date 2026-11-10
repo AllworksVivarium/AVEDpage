@@ -93,14 +93,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const replay=spinSlot(1000,()=>createHmac('sha256',Buffer.from(slot.seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296);
  assert.equal(slot.prize,replay.prize);assert.deepEqual(slot.result,{...replay.result,requestKey:'test-slot-once-123456'});assert.equal(slot.balance,scratchRetryFirst.balance-1000+slot.prize-slot.penalty);
  const retrySlot=(await p('/api/player/games/slot','POST',{bet:1000,requestKey:'test-slot-once-123456'})).data;assert.equal(retrySlot.ticketId,slot.ticketId);assert.equal(retrySlot.balance,slot.balance);
- // A pre-upgrade race without a rule snapshot must keep the original odds and zero consolation.
- db.prepare('UPDATE derby_races SET next_at=? WHERE id=?').run(Date.now()-1,race.round);
- let legacy=(await p('/api/player/games/derby/current')).data;
- db.prepare("UPDATE derby_races SET rules_json='',winner=0 WHERE id=?").run(legacy.round);
- legacy=(await p('/api/player/games/derby/current')).data;assert.equal(legacy.partialReturns,false);assert.equal(legacy.runners[1].odds,3.5);
- assert.equal((await p('/api/player/games/derby/bet','POST',{round:legacy.round,runner:1,bet:100})).status,200);
- db.prepare('UPDATE derby_races SET start_at=?,finish_at=?,next_at=? WHERE id=?').run(Date.now()-20000,Date.now()-1000,Date.now()+20000,legacy.round);
- assert.equal((await p('/api/player/games/derby/current')).data.self.prize,0);
+ assert.equal((await p('/api/player/games/derby','POST',{runner:0,bet:100})).status,409,'the removed instant four-runner game cannot accept money');
  const record=(await p('/api/profile')).data.gameRecords.highest;
  await stop();start();await ready();assert.deepEqual((await p('/api/profile')).data.gameRecords.highest,record);
  // Bomb history includes the extra debit; the loss metric includes the paid stake.

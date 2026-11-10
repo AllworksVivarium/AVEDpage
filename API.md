@@ -87,6 +87,7 @@
 - `POST /api/player/games/slot`：`{bet}`；返回完整五轮盘面与结算。
 - `POST /api/player/games/derby`：`{bet,runner}`。
 - `POST /api/player/games/sky/start`：`{bet}`；`GET /api/player/games/sky/current`；`POST /api/player/games/sky/jump`：`{round}`。高度与结算依服务器时间。
+- `POST /api/player/games/sky/input-sync`：`{round,token}`；`POST /api/player/card-table/input-sync`：`{room,scope,token}`。令牌由本人服务器快照签发，返回 `{serverTime,compensationMs}`，最多补偿 250 ms，不接收客户端时间或深度。牌桌快照附 `turnId`，叫分／出牌／不出应与 `revision`、`requestId` 一同提交；同一回合可跨越无关修订，旧回合不可复用。
 - `POST /api/player/games/cards`：`{action:"start"|"bid"|"play"|"pass",round?,cards?:number[]}`。简化电脑对手牌局，服务器持有完整牌堆。
 - `GET/POST /api/player/stocks`：查询 / `{code,action:"buy"|"sell"}`。
 - `GET /api/player/chat/stream?room=sky|derby`：SSE 实时聊天推送。`POST /api/player/chat`：`{room,body}`。
@@ -110,3 +111,10 @@ GET /api/health 返回 {"ok":true,"service":"aved"}，检查应用与数据库�
 - 这里是企划内部证券玩法，不连接现实交易所。红色上涨、绿色下跌。
 - 系统日期在前端按 Asia/Shanghai 自然日显示今天、昨天、前天、N天前；聊天室仅显示时分，不输出真实或虚构年月日。
 - “记住账号和密码”使用浏览器密码管理器；网页只可本地保存用户名，不保存明文密码或业务数据。
+
+### 爱心账户交易税费与记录保留
+
+- GET /api/player/welfare 的 fund 增加 stockFees、stockFeeTrades：全体证券成交的累计手续费及对应成交笔数。fund.balance 包含手续费收入，donated 与爱心榜仅统计主动捐款。
+- GET /api/player/stocks/history 增加 marketFees: {total,trades}；summary.totalFees 继续表示本人的累计手续费。没有额外扣税，现有成交费通过同事务触发器转入爱心账户。
+- 首次启动补入现存 stock_trades.fee 正值，一次性迁移防止重启重复入账。
+- 普通运行日志保留 30 天，可核对原始流水的旧余额日志副本保留 90 天；真实流水、交易、游戏及发言审核记录保留。无线电仍保留 3 天。

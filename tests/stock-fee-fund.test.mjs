@@ -1,0 +1,37 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {installStockFeeFund,stockFeeTotals} from '../server-stock-fees.mjs';
+import {installWelfare} from '../server-welfare.mjs';
+
+test('historical and new fees fund mutual aid once, survive account deletion and exclude donation rankings',async t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());
+ db.exec(`PRAGMA foreign_keys=ON;
+ CREATE TABLE employees(id INTEGER PRIMARY KEY,display_name TEXT,enabled INTEGER DEFAULT 1,is_npc INTEGER DEFAULT 0);
+ CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT);
+ CREATE TABLE balance_ledger(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),delta INTEGER,reason TEXT);
+ CREATE TABLE checkins(employee_id INTEGER,reward INTEGER);
+ CREATE TABLE stock_trades(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,fee INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+ INSERT INTO employees(id,display_name) VALUES(1,'同事甲'),(2,'同事乙');
+ INSERT INTO stock_trades(employee_id,fee,created_at) VALUES(1,45,'2026-01-02 03:04:05'),(2,10,'2026-01-03 03:04:05'),(1,0,'2026-01-04 03:04:05');`);
+ const balanceFor=()=>1000;
+ const welfare=installWelfare({db,balanceFor,requireEmployee:()=>({id:1}),send:(r,status,data)=>Object.assign(r,{status,data})});
+ assert.deepEqual({...stockFeeTotals(db)},{total:55,trades:2});
+ installStockFeeFund(db);assert.equal(stockFeeTotals(db).total,55,'restart never credits the backfill twice');
+ db.exec('BEGIN');db.exec('INSERT INTO stock_trades(employee_id,fee) VALUES(1,25)');assert.equal(stockFeeTotals(db).total,80);db.exec('ROLLBACK');
+ assert.equal(stockFeeTotals(db).total,55,'failed trade rolls back its fund receipt');
+ db.exec('INSERT INTO stock_trades(employee_id,fee) VALUES(2,25)');
+ const latest=db.prepare('SELECT MAX(id) id FROM stock_trades').get().id;
+ db.exec('DELETE FROM employees WHERE id=2');
+ assert.equal(stockFeeTotals(db).total,80,'fees remain after deleting a robot/account');
+ assert.equal(db.prepare('SELECT employee_id FROM company_fund WHERE amount=25').get().employee_id,null);
+ db.prepare('INSERT INTO stock_trades(id,employee_id,fee) VALUES(?,1,25)').run(latest);
+ assert.deepEqual({...stockFeeTotals(db)},{total:105,trades:4},'reused SQLite trade IDs still receive distinct receipts');
+ installStockFeeFund(db);assert.equal(stockFeeTotals(db).total,105);
+ const res={};await welfare.handle({method:'GET'},res,new URL('http://localhost/api/player/welfare'));
+ assert.equal(res.data.fund.balance,105);assert.equal(res.data.fund.stockFees,105);
+ assert.equal(res.data.fund.donated,0);assert.equal(res.data.personal.donated,0);
+ assert.ok(res.data.donors.every(p=>p.donated===0));
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,0,'no second charge to the player');
+ assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
+});

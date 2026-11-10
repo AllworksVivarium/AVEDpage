@@ -33,3 +33,26 @@ test('opening acknowledgements precede coalesced broadcasts; a late body cannot 
  assert.equal(db.prepare('SELECT COUNT(*) n FROM game_tickets').get().n,1);
  assert.equal(ledger.length,1,'client money fields cannot credit the wallet');
 });
+
+test('bounded server calibration rescues in-flight input before reveal, without publishing the line or reopening settled flights',async t=>{
+ const db=new DatabaseSync(':memory:');db.exec(`
+ CREATE TABLE employees(id INTEGER PRIMARY KEY);INSERT INTO employees VALUES(1),(2),(3);
+ CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT,avatar_url TEXT,avatar_preset TEXT);INSERT INTO profiles VALUES(1,'甲','',''),(2,'乙','',''),(3,'丙','','');
+ CREATE TABLE company_robots(employee_id INTEGER PRIMARY KEY,codename TEXT);
+ CREATE TABLE economy_migrations(code TEXT PRIMARY KEY);INSERT INTO economy_migrations VALUES('shared-sky'),('sky-settlement-v2');
+ CREATE TABLE player_rounds(id TEXT,employee_id INTEGER,game TEXT,state_json TEXT);
+ CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);`);
+ let now=1000000,response;const ledger=[];
+ const service=installSky({db,clock:()=>now,send(_res,status,data){assert.equal(status,200,data.error);response=data;},readBody:req=>req.body,requireEmployee:req=>({id:req.user}),sessionEmployee:req=>({id:req.user}),balanceFor:()=>10000,recordLedger:(...args)=>ledger.push(args),economy:{get:defaultEconomy},highlights:{roundEvent:()=>null},companyRobots:{list:()=>[]}});
+ t.after(()=>{service.close();db.close();});
+ const call=async(user,action,body)=>{await service.handle({user,method:body===undefined?'GET':'POST',body},null,new URL('http://test/api/player/games/sky/'+action));return response;};
+ const {round}=await call(1,'current');const first=await call(1,'start',{round,bet:100});await call(2,'start',{round,bet:100});await call(3,'start',{round,bet:100});
+ now+=400;assert.equal((await call(1,'input-sync',{round,token:first.inputProbe.token,compensationMs:999999})).compensationMs,200);
+ const depart=now+1000;db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=200 WHERE id=?').run(depart,round);
+ const lineAt=depart+100/first.speed*1000;
+ now=Math.ceil(lineAt+100);const before=await call(1,'current');assert.equal(before.phase,'DROPPING');assert.ok(!('safetyLine' in before));assert.ok(!('revealedAt' in before));
+ const safe=await call(1,'jump',{round,depth:1,clickedAt:1,prize:999999});assert.equal(safe.self.status,'landed');assert.equal(safe.self.settledAt,now-200);assert.ok(safe.self.depth<200);assert.ok(safe.self.prize>0);assert.ok(!('safetyLine' in safe));
+ const uncalibrated=await call(2,'jump',{round,clickedAt:1});assert.equal(uncalibrated.self.status,'crashed');assert.equal(uncalibrated.self.prize,0);
+ now=Math.ceil(lineAt+301);const late=await call(3,'jump',{round});assert.equal(late.phase,'LANDING');assert.equal(late.safetyLine,200);assert.equal(late.self.status,'crashed');
+ const credits=ledger.length;await call(1,'jump',{round});await call(3,'jump',{round});assert.equal(ledger.length,credits);assert.equal(db.prepare('SELECT COUNT(*) n FROM game_tickets').get().n,3);
+});
