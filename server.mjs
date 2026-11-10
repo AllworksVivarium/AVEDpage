@@ -1,3 +1,4 @@
+import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
 import {installAvatarPresets,storedAvatar,avatarPresets} from './server-default-avatar.mjs';
 import {installRadioRetention} from './server-radio-retention.mjs';
 import {installCompanyRobots} from './server-company-robots.mjs';
@@ -268,6 +269,7 @@ personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceF
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
+const dossierImages=installDossierImages({db,send,requireAdmin});
 const media=installMedia({db,send,requireEmployee});
 const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
@@ -331,6 +333,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(retry)return send(res,429,{error:'操作过于频繁，请稍后重试。',code:'ACTION_LIMITED'},{'Retry-After':String(retry)});
     }
     if(await media.handle(req,res,url))return;
+    if(dossierImages.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;
     if(await highlights.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
@@ -629,9 +632,10 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/admin/dossiers' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const { code,title,department,status,summary } = await readBody(req);
+      const { code,title,department,status,summary,imageData } = await readBody(req,2500000);
+      let image;try{image=await normalizeDossierImage(imageData);}catch(error){return send(res,400,{error:error.message});}
       if (!validText(code,30)||!validText(title,100)||!validText(summary,12000)) return send(res,400,{error:'请填写档案编号、名称和内容。'});
-      try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary) VALUES (?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim()); return send(res,201,{id:Number(result.lastInsertRowid)}); }
+      try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary,image_data) VALUES (?,?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim(),image); return send(res,201,{id:Number(result.lastInsertRowid)}); }
       catch { return send(res,409,{error:'档案编号已存在。'}); }
     }
     if (url.pathname.startsWith('/api/admin/dossiers/') && req.method === 'DELETE') {

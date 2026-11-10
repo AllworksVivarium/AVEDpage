@@ -1410,6 +1410,7 @@
 
       // KARMA INDEX 股市
       function applyMarket(data) {
+        if(data.riskRules)marketRiskRules=data.riskRules;
         if(data.items)stocksData.splice(0,stocksData.length,...data.items);
         if(data.orders)stockOrdersData.splice(0,stockOrdersData.length,...data.orders);
         if(data.market?.code===marketCode&&data.market.period===marketPeriod)marketView=data.market;
@@ -1473,11 +1474,16 @@
           for(const key of ['quantity','leverage','stop','take'])byId('stock-trade-'+key).value=draft[key];
           draftCode=code;
         }
-        byId('stock-trade-position').textContent=stock?'现价 '+fmtMoney(stock.price)+' · 持仓 '+Math.abs(stock.holding).toLocaleString()+(code==='KARMA'?' 份':' 股')+(stock.holding?'（'+(stock.holding<0?'买跌':'买涨')+'）':''):'请选择证券';
+        const longHolding=stock?.longHolding??Math.max(0,stock?.holding||0),shortHolding=stock?.shortHolding??Math.max(0,-(stock?.holding||0));
+        byId('stock-trade-position').textContent=stock?'现价 '+fmtMoney(stock.price)+' · 多仓 '+longHolding.toLocaleString()+' / 空仓 '+shortHolding.toLocaleString()+(code==='KARMA'?' 份':' 股'):'请选择证券';
         const amount=(stock?.price||0)*(Number(byId('stock-trade-quantity').value)||0),leverage=Number(byId('stock-trade-leverage').value)||1;
         byId('stock-est-trade').textContent=fmtMoney(amount);
         byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
-        byId('stock-trade-ticket').querySelectorAll('[data-stock-trade-side]').forEach(button=>button.disabled=!stock||stockTradeBusy||(button.dataset.stockTradeSide==='close'?!stock.holding:stock.holding&&((stock.holding>0)!==(button.dataset.stockTradeSide==='long'))));
+        const thresholds=marketRiskRules?.leverageBalanceThresholds,balance=currentUser?.balance||0;
+        for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=level>1&&(!thresholds||balance<=thresholds[level]);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（余额需超过 '+(thresholds?.[level]/10000||'—')+' 万）':'');}
+        const leverageLocked=leverage>1&&(!thresholds||balance<=thresholds[leverage]);
+        byId('stock-leverage-note').textContent=leverageLocked?'当前余额未达到所选杠杆门槛，请改选可用倍数。':'可用余额超过 100 万解锁 3 倍，超过 500 万解锁 10 倍。';
+        byId('stock-trade-ticket').querySelectorAll('[data-stock-trade-side]').forEach(button=>{button.disabled=!stock||stockTradeBusy||(button.dataset.stockTradeSide==='close'?!(longHolding+shortHolding):leverageLocked);if(button.dataset.stockTradeSide==='close')button.textContent=longHolding&&shortHolding?'选择平仓':'平仓';});
       }
       function selectMarket(code){
         marketCode=code;
@@ -1513,7 +1519,7 @@
       function renderAnonAuditLog(){}
       function renderEmployeeRoster(){}
       let economyUI=null,welfareUI=null,economyRevision=0,directoryRequest=0;
-      let marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
+      let marketRiskRules=null,marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
       let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],skyRound=null,skyPollBusy=false;
@@ -1526,7 +1532,7 @@
       async function loadPlayerData() {
         forumListPosition=null;forumListMarkup='';currentForumThreadId=null;forumReplies.reset();
         deferredSections.clear();deferredRequests.clear();
-        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;playerProfile=data.profile;window.AVEDAppearance?.setEntitlements(playerProfile.appearance);playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
+        const data=await api('/api/player/state?bootstrap=1',{timeoutMs:15000,retries:0});if(!data.employee||!data.profile||!Array.isArray(data.employees)||!Array.isArray(data.departments)||!Array.isArray(data.announcements)||!Array.isArray(data.dossiers)||!Array.isArray(data.stocks)||!Array.isArray(data.history)||!Array.isArray(data.achievements)||!Array.isArray(data.forum?.items))throw new Error('员工资料未完整送达，请重新接入。');AVEDTime.sync(data.serverTime);marketView=data.market;marketRiskRules=data.stockRiskRules;playerProfile=data.profile;window.AVEDAppearance?.setEntitlements(playerProfile.appearance);playerAchievements=data.achievements;playerGameRecords=data.gameRecords||null;playerHistory=data.history;profileFreshAt=Date.now();
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
@@ -1555,7 +1561,7 @@
           if(section==='news')companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
           if(section==='containment')scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
           if(section==='forum'){forumBrowser.seed(data.forum);}
-          if(section==='casino'){marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();welfareUI.refresh().catch(()=>{});}
+          if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
           if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
@@ -1756,6 +1762,7 @@
             const closing=button.dataset.stockTradeSide==='close';
             const long=button.dataset.stockTradeSide==='long';
             const code=byId('stock-trade-symbol').value;
+            if(closing){const selected=stocksData.find(s=>s.code===code);if(selected?.longHolding&&selected?.shortHolding){economyUI.showHoldings();return;}}
             const quantityInput=byId('stock-trade-quantity');
             if(!quantityInput)throw new Error('未找到委托输入框，请刷新后重试。');
             const quantity=Number(quantityInput.value);

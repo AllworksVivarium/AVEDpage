@@ -82,7 +82,7 @@ export function installSocialAchievements(db){
   db.exec(`CREATE TRIGGER IF NOT EXISTS social_achievement_${source}_delete AFTER DELETE ON ${table} BEGIN DELETE FROM social_achievement_events WHERE source='${source}' AND source_id=OLD.id; END;`);
  }
  if(columns('stock_trades').has('realized_pnl_change')){
-  const closing="NEW.holding_before<>0 AND ((NEW.holding_before>0 AND NEW.action='sell') OR (NEW.holding_before<0 AND NEW.action='buy'))";
+  const closing=(columns('stock_trades').has('intent')?"(NEW.intent IN ('close','mixed') OR (NEW.intent='' AND NEW.holding_before<>0 AND ((NEW.holding_before>0 AND NEW.action='sell') OR (NEW.holding_before<0 AND NEW.action='buy'))))": "NEW.holding_before<>0 AND ((NEW.holding_before>0 AND NEW.action='sell') OR (NEW.holding_before<0 AND NEW.action='buy'))");
   db.exec(`DROP TRIGGER IF EXISTS social_achievement_trade;
    CREATE TRIGGER social_achievement_trade AFTER INSERT ON stock_trades WHEN ${human('NEW.employee_id')} BEGIN
     ${inc('stock_trades')}${inc('stock_closes','NEW.employee_id',closing)}

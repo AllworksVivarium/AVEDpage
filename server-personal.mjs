@@ -13,6 +13,8 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  DROP TRIGGER IF EXISTS award_balance;
  DROP TRIGGER IF EXISTS personal_metrics_game;`);
  for(const d of achievementCatalog)db.prepare('INSERT OR IGNORE INTO achievement_definitions(code,title,description,metric,threshold) VALUES(?,?,?,?,?)').run(d.code,d.title,d.description,d.metric,d.threshold);
+ // Correct only unchanged built-in game names; retain custom achievement copy.
+ for(const d of achievementCatalog.filter(d=>d.description.includes('智斗太姥')))db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,d.description.replaceAll('智斗太姥','斗太姥'));
  // One-time historical backfill; subsequent awards use incremental counters.
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='personal-metrics-v1'").get()) {
   db.exec(`BEGIN IMMEDIATE;

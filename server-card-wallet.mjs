@@ -43,7 +43,7 @@ export function installCardWallet({db,balanceFor,recordLedger}){
   for(const p of room.seats)if(!p.bot){checkEntry(p.id);if(balanceFor(p.id)<rules.reserve)throw Error('开局需有 '+rules.reserve.toLocaleString('en-US')+' 可用余额，用于锁定本局筹码。');}
   const id=randomUUID();db.prepare('INSERT INTO card_money_rounds(id,room_id,rules_json) VALUES(?,?,?)').run(id,room.id,JSON.stringify(rules));
   room.money={round:id,rules,participation:{},settlement:null};
-  room.seats.forEach((p,i)=>{db.prepare('INSERT INTO card_money_seats VALUES(?,?,?,?)').run(id,i,p.bot?null:p.id,rules.reserve);if(!p.bot)recordLedger(p.id,-rules.reserve,'斗太姥锁定筹码 #'+id);});
+  room.seats.forEach((p,i)=>{db.prepare('INSERT INTO card_money_seats VALUES(?,?,?,?)').run(id,i,p.bot?null:p.id,rules.reserve);if(!p.bot)recordLedger(p.id,-rules.reserve,'智斗太姥锁定筹码 #'+id);});
  }
  function settle(room){
   if(!room.money||room.game?.phase!=='ended')return;
@@ -62,7 +62,7 @@ export function installCardWallet({db,balanceFor,recordLedger}){
    // Withheld autoplay proceeds are never redistributed to other seats.
    result.bonus=result.players.reduce((total,p)=>total+p.bonus,0);
   }
-  for(const seat of seats){const p=result.players[seat.seat];if(seat.employee_id!=null){recordLedger(seat.employee_id,p.release,'斗太姥结算与释放筹码 #'+saved.id);humanNet+=p.net;
+  for(const seat of seats){const p=result.players[seat.seat];if(seat.employee_id!=null){recordLedger(seat.employee_id,p.release,'智斗太姥结算与释放筹码 #'+saved.id);humanNet+=p.net;
    db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(seat.employee_id,'cards',p.stake,p.reward,'','',JSON.stringify({round:saved.id,seat:seat.seat,winner:g.winner,landlord:g.landlord,bid:g.bid,multiplier:g.multiplier,bonus:p.bonus,autoOnly:!!p.autoOnly}));
   }}
   db.prepare('UPDATE card_money_rounds SET settlement_json=?,system_delta=? WHERE id=? AND settlement_json IS NULL').run(JSON.stringify(result),-humanNet,saved.id);

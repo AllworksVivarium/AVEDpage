@@ -1,3 +1,4 @@
+import {normalizeDossierImage} from './server-dossier-images.mjs';
 import {forumPersonaNameSQL} from './server-forum-social.mjs';
 import {storedAvatar} from './server-default-avatar.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
@@ -113,8 +114,8 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
           log(user.id,'moderator.delete',table+'/'+rid,{record:old,moderatorName:user.displayName});});send(res,200,{ok:true});return true;
       }
       if(dossierEdit&&method==='PUT') {
-        const d=await readBody(req);if(!valid(d.code,80)||!valid(d.title,150)||!valid(d.summary,12000))throw new Error('请填写编号、名称和档案正文。');
-        if(!db.prepare('UPDATE dossiers SET code=?,title=?,department=?,status=?,summary=? WHERE id=?').run(d.code.trim(),d.title.trim(),String(d.department||'').slice(0,80),String(d.status||'观察中').slice(0,80),d.summary.trim(),dossierEdit[1]).changes)throw new Error('档案不存在。');send(res,200,{ok:true});return true;
+        const d=await readBody(req,2500000);const image=d.imageData===undefined?undefined:await normalizeDossierImage(d.imageData);if(!valid(d.code,80)||!valid(d.title,150)||!valid(d.summary,12000))throw new Error('请填写编号、名称和档案正文。');
+        if(!db.prepare('UPDATE dossiers SET code=?,title=?,department=?,status=?,summary=?,image_data=COALESCE(?,image_data) WHERE id=?').run(d.code.trim(),d.title.trim(),String(d.department||'').slice(0,80),String(d.status||'观察中').slice(0,80),d.summary.trim(),image??null,dossierEdit[1]).changes)throw new Error('档案不存在。');send(res,200,{ok:true});return true;
       }
       if(path==='/api/player/life'||path==='/api/admin/life') {
         if(method==='GET') {

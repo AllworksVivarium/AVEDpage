@@ -112,3 +112,5 @@
 @layer aved-type-system{#inner-app-view #game-panel-stocks :is(.portfolio-lot,.portfolio-trade-history) b{font-size:12px!important}#inner-app-view #game-panel-stocks .portfolio-lot dl{font-size:11px!important}#inner-app-view #game-panel-stocks :is(.portfolio-lot,.portfolio-trade-history) small{font-size:10px!important}#inner-app-view #game-panel-stocks .portfolio-compact-heading h3{font-size:13px!important}}
 
 @layer aved-type-system{#inner-app-view #game-panel-stocks .portfolio-footnote{font-size:10px!important;line-height:1.6!important}}
+
+#game-panel-stocks .portfolio-risk-warning{border-color:var(--inner-accent);border-style:dashed}#game-panel-stocks .portfolio-risk-critical{border:2px solid var(--inner-danger,#b02525)}#stock-leverage-note{margin:6px 0;font-size:10px;line-height:1.5}

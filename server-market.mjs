@@ -12,6 +12,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
     INSERT OR IGNORE INTO stock_quote_clock VALUES(1,0);
     INSERT OR IGNORE INTO stock_market_bases SELECT code,price FROM stock_prices WHERE code<>'KARMA';`);
   const bulletins=installMarketBulletins(db);
+  let quoteListener=null;
   const upsert=db.prepare(`INSERT INTO stock_candles(code,bucket,open,high,low,close,quote_seed) VALUES(?,?,?,?,?,?,?)
     ON CONFLICT(code,bucket) DO UPDATE SET high=MAX(high,excluded.high),low=MIN(low,excluded.low),close=excluded.close,quote_seed=excluded.quote_seed`);
   const bucketFor=t=>Math.floor(t/60000)*60000;
@@ -47,6 +48,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       syncIndex(at);
       candle('KARMA',before,indexValue(),seed,at);
       db.prepare('UPDATE stock_quote_clock SET quoted_at=? WHERE id=1').run(at);
+      quoteListener?.();
       if(owned)db.exec('COMMIT');
     } catch(error) {if(owned)db.exec('ROLLBACK');throw error;}
   }
@@ -142,5 +144,5 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
   advance();
   const timer=automatic?setInterval(()=>{try{advance();}catch(error){console.error('Market quote failed:',error.message);}},5000):null;
   timer?.unref();
-  return {advance,items,history,trade,close(){if(timer)clearInterval(timer);}};
+  return {advance,items,history,trade,onQuote(listener){quoteListener=listener;},close(){if(timer)clearInterval(timer);}};
 }

@@ -1,0 +1,6 @@
+.dossier-image-editor{display:grid;gap:8px;min-width:0;padding:10px;border:1px solid var(--inner-border, #727869)}
+.dossier-image-editor small{font-size:11px;line-height:1.6;opacity:.75}
+.dossier-image-editor input[type=file]{max-width:100%;font-size:12px}
+.dossier-image-editor img{display:block;max-width:min(100%,320px);max-height:240px;object-fit:contain;border:1px solid var(--inner-border, #727869)}
+.dossier-image-editor img[hidden]{display:none}
+.dossier-image-editor button{justify-self:start}

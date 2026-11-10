@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -52,6 +53,23 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await p('/api/dossiers')).data.items.find(x=>x.id===doc.data.id).summary,'同步后的档案');
  for(const [path,method] of [['/api/music','GET'],['/api/admin/music','GET'],['/api/admin/music','POST'],['/api/admin/music/1','PUT'],['/api/admin/music/1','DELETE'],['/api/music/original/night-transit.wav','GET']])assert.equal((await a(path,method,method==='POST'||method==='PUT'?{title:'不再支持的曲目',url:'https://example.com/audio.mp3'}:undefined)).status,404,path);
  const imageData='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
+ const validDossierImage='data:image/png;base64,'+(await sharp({create:{width:8,height:8,channels:3,background:'#997744'}}).png().toBuffer()).toString('base64');
+ const picture=await a('/api/admin/dossiers','POST',{code:'TEST-IMAGE',title:'影像卷宗',department:'科研部',status:'观察中',summary:'图片选填',imageData:validDossierImage});assert.equal(picture.status,201);
+ const picturePath='/api/admin/dossiers/'+picture.data.id;
+ assert.equal((await p('/api/admin/dossiers')).status,403);
+ let privateFiles=(await a('/api/admin/dossiers')).data.items;assert.equal(privateFiles.find(x=>x.id===picture.data.id).hasImage,1);assert.equal(privateFiles.find(x=>x.id===doc.data.id).hasImage,0);
+ assert.ok(privateFiles.every(x=>!('imageData' in x)&&!('image_data' in x)),'lists only carry image references');
+ assert.equal((await p(picturePath+'/image')).status,403);
+ const readPicture=async()=>{const r=await fetch(base+picturePath+'/image',{headers:{cookie:admin}});assert.equal(r.status,200);assert.equal(r.headers.get('content-type'),'image/webp');return Buffer.from(await r.arrayBuffer());};
+ const originalPicture=await readPicture();assert.ok(originalPicture.length>0);
+ const updatePicture={code:'TEST-IMAGE',title:'影像卷宗修订',department:'科研部',status:'稳定',summary:'保留配图'};
+ assert.equal((await a(picturePath,'PUT',updatePicture)).status,200);assert.deepEqual(await readPicture(),originalPicture,'omitting image preserves it');
+ assert.equal((await a(picturePath,'PUT',{...updatePicture,imageData:'data:image/png;base64,bm90LWFuLWltYWdl'})).status,400);assert.deepEqual(await readPicture(),originalPicture);
+ assert.equal((await a(picturePath,'PUT',{...updatePicture,imageData:''})).status,200);assert.equal((await a(picturePath+'/image')).status,404);
+ assert.equal((await a(picturePath,'PUT',{...updatePicture,imageData:validDossierImage})).status,200);
+ assert.equal((await p(picturePath,'PUT',{...updatePicture,imageData:''})).status,403);
+ for(const item of (await p('/api/dossiers')).data.items)assert.ok(!('hasImage' in item)&&!('imageUrl' in item)&&!('imageData' in item)&&!('image_data' in item));
+ for(const item of (await p('/api/player/state?page=containment')).data.dossiers)assert.ok(!('imageUrl' in item)&&!('imageData' in item)&&!('image_data' in item));
  const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
  const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData,tags:[]})).data.id;
  const queue=(await a('/api/admin/moderation')).data.items;
@@ -124,6 +142,7 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await a('/api/admin/announcements/'+news.data.id,'PUT',{title:'无效日期',body:'测试',pinned:false,publishedAt:'2026-02-30T08:00'})).status,400);
  await stop();await start();admin=await login('content-admin');playerCookie=await login('content-player');
  assert.equal((await p('/api/announcements')).data.items.find(x=>x.id===news.data.id).createdAt,'2026-11-06T10:14:12.000Z');timeDb.close();
+ assert.deepEqual(await readPicture(),originalPicture,'dossier images survive restart');
  // Delete all defaults as well: they must not be re-seeded on restart.
  for(const item of (await p('/api/dossiers')).data.items)assert.equal((await a('/api/admin/dossiers/'+item.id,'DELETE')).status,200);
  for(const item of (await p('/api/announcements')).data.items)assert.equal((await a('/api/admin/announcements/'+item.id,'DELETE')).status,200);

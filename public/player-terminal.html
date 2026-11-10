@@ -355,7 +355,7 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css?v=sfx-only-1">
   <link rel="stylesheet" href="/community.css?v=sfx-only-1">
-<link rel="stylesheet" href="/economy.css?v=sky-camera-stock-lots-20261110">
+<link rel="stylesheet" href="/economy.css?v=stock-margin-risk-20261110">
 <link rel="stylesheet" href="/welfare.css?v=pixel-thrones-12">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
@@ -1030,7 +1030,7 @@
                 下班竞速
               </a>
               <a href="#/casino/doutailao" data-game="doudizhu" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
-                斗太姥
+                智斗太姥
               </a>
               <a href="#/casino/stocks" data-game="stocks" class="game-tab-btn px-3.5 py-2 text-xs font-bold retro-corner-box opacity-80 hover:opacity-100 cursor-pointer">
                 KARMA指数
@@ -1416,6 +1416,7 @@
                   <label>杠杆倍数<select id="stock-trade-leverage"><option value="1" selected>1x（无杠杆）</option><option value="3">3x</option><option value="10">10x</option></select></label>
                 </div>
                 <details class="stock-order-advanced"><summary>止盈 / 止损（可选）</summary><div class="stock-order-fields"><label>止损价<input id="stock-trade-stop" type="number" min="1" step="1"></label><label>止盈价<input id="stock-trade-take" type="number" min="1" step="1"></label></div></details>
+                <p id="stock-leverage-note" class="portfolio-footnote"></p>
                 <p class="stock-order-estimate">成交额 <b id="stock-est-trade">—</b><span>预计保证金 <b id="stock-est-margin">—</b></span></p>
                 <div class="stock-trade-actions"><button type="button" data-stock-trade-side="long" class="stock-buy-btn">做多开仓</button><button type="button" data-stock-trade-side="short" class="stock-sell-btn">做空开仓</button><button type="button" data-stock-trade-side="close" class="stock-close-btn">平仓</button></div>
               </section>
@@ -1450,9 +1451,9 @@
   <script src="/forum-presence.js?v=company-achievements-20261110" defer></script>
   <script src="/forum-social.js?v=presence-sync-6" defer></script>
 <link rel="stylesheet" href="/forum-social.css?v=forum-sort-size-20261110">
-  <script src="/personal-record.js?v=1" defer></script>
+  <script src="/personal-record.js?v=hedged-dossiers-20261110" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
-  <script src="/jackpot-ticker.js?v=company-achievements-20261110" defer></script>
+  <script src="/jackpot-ticker.js?v=hedged-dossiers-20261110" defer></script>
 <script src="/pixel-game-icons.js?v=1" defer></script>
 <link rel="stylesheet" href="/scratch-ticket-art.css?v=compact-header-2">
 <script src="/scratch-ticket-art.js?v=print-1" defer></script>
@@ -1465,7 +1466,7 @@
   <script src="/sky-scene.js?v=sky-camera-stock-lots-20261110" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
 <script src="/sky-ui.js?v=restored-rules-20261110" defer></script>
-  <script src="/economy-ui.js?v=sky-camera-stock-lots-20261110" defer></script>
+  <script src="/economy-ui.js?v=stock-margin-risk-20261110" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
   <script src="/welfare-ui.js?v=sidebar-copy-12" defer></script>
   <script src="/visual-style.js?v=integrated-flight-market-20261110" defer></script>
@@ -1479,7 +1480,7 @@
 <script src="/player-session.js?v=idle-1" defer></script>
 <link rel="stylesheet" href="/casino-switcher.css?v=game-pages-10">
 <link rel="stylesheet" href="/retro-window-chrome.css?v=integrated-ui-20261109">
-<script src="/casino-switcher.js?v=company-achievements-20261110" defer></script>
+<script src="/casino-switcher.js?v=hedged-dossiers-20261110" defer></script>
 <script src="/player-startup.js?v=company-achievements-20261110" defer></script>
 <link rel="stylesheet" href="/ddz-pixel.css?v=seat-colours-mobile-20261110">
 <link rel="stylesheet" href="/card-reactions.css?v=emoji-only-4">
@@ -1489,18 +1490,18 @@
 <script src="/card-reaction-rules.js?v=emoji-only-4" defer></script>
 <script src="/card-reactions.js?v=action-order-5" defer></script>
 <script src="/card-feedback.js?v=table-layout-7" defer></script>
-<script src="/ddz-ui.js?v=company-achievements-20261110" defer></script>
-<script src="/card-room-lobby.js?v=company-achievements-20261110" defer></script>
+<script src="/ddz-ui.js?v=hedged-dossiers-20261110" defer></script>
+<script src="/card-room-lobby.js?v=hedged-dossiers-20261110" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=center-award-4">
 <script src="/slot-effects.js?v=center-award-4" defer></script>
-<script src="/player.js?v=integrated-flight-market-20261110" defer></script>
+<script src="/player.js?v=stock-margin-risk-20261110" defer></script>
   <script src="/page-headings.js?v=scoped-observer-9" defer></script>
   <script src="/print-signal.js?v=sphere-plain-2" defer></script>
   <script src="/terminal-frame.js?v=game-columns-4" defer></script>
   <script src="/landing-sphere.js?v=ascii-only-2" defer></script>
 <script src="/gateway-effects.js?v=fixed-access-8" defer></script>
 <link rel="stylesheet" href="/gateway-effects.css?v=fixed-access-8">
-<script src="/stock-help.js?v=company-achievements-20261110" defer></script>
+<script src="/stock-help.js?v=stock-margin-risk-20261110" defer></script>
 <link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
 <link rel="stylesheet" href="/market-header-layout.css?v=1">
 <link rel="stylesheet" href="/archive-type-signal.css?v=1">

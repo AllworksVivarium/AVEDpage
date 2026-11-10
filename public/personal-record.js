@@ -1,5 +1,5 @@
 (function(root){
- const games={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'下班竞速',cards:'斗太姥'};
+ const games={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'下班竞速',cards:'智斗太姥'};
  function gate({getUser,storage,now=Date.now}){
   const users=new Map();
   return event=>{

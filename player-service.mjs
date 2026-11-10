@@ -1,3 +1,4 @@
+import {stockRiskRules,requireStockLeverage,stockPositionRisk} from './stock-risk.mjs';
 import {installStockLots} from './server-stock-lots.mjs';
 import {installForumList} from './server-forum-list.mjs';
 import {radioVisibleSQL} from './server-radio-retention.mjs';
@@ -115,7 +116,11 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   db.prepare('UPDATE dossiers SET summary=? WHERE code=? AND summary=?').run('法棍是一只法斗，当前列入观察序列。','AVED-007','法棍是一只法斗。具体收容措施与异常特征由管理员补充。');
   const marketService=installMarket(db);
   const stockLots=installStockLots(db);
-  const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>({...s,lots:lots.filter(l=>l.code===s.code)}));};
+  const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>{
+    const positions=lots.filter(l=>l.code===s.code),longHolding=positions.reduce((n,l)=>n+Math.max(0,l.holding),0),shortHolding=positions.reduce((n,l)=>n+Math.max(0,-l.holding),0);
+    const marginUsed=positions.reduce((n,l)=>n+l.marginUsed,0),positionNotional=positions.reduce((n,l)=>n+l.positionNotional,0),unrealizedPnl=positions.reduce((n,l)=>n+l.unrealizedPnl,0);
+    return {...s,lots:positions,longHolding,shortHolding,holding:longHolding-shortHolding,side:longHolding&&shortHolding?'hedged':longHolding?'long':shortHolding?'short':'flat',marginUsed,costBasis:marginUsed,positionNotional,unrealizedPnl,totalPnl:unrealizedPnl+s.realizedPnl,avgCost:positionNotional/Math.max(1,longHolding+shortHolding),effectiveLeverage:marginUsed?Math.round(positionNotional/marginUsed*100)/100:0};
+  });};
   const normalizeOptionalPrice=value=>{
     if(value==null||value==='')return null;
     const n=Math.round(Number(value));
@@ -137,13 +142,14 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     if(takeProfit!==null&&takeProfit>=price)throw new Error('买跌时止盈需低于现价。');
   };
   const pendingOrders=id=>db.prepare("SELECT id,code,side,quantity,leverage,limit_price AS limitPrice,stop_loss AS stopLoss,take_profit AS takeProfit,created_at AS createdAt FROM stock_orders WHERE employee_id=? AND status='open' ORDER BY id DESC").all(id);
-  function executeStockTrade(id,{stock,delta,leverage=3,stopLoss=null,takeProfit=null,reason='',lotId=null}) {
+  function executeStockTrade(id,{stock,delta,leverage=3,stopLoss=null,takeProfit=null,reason='',lotId=null,intent='auto'}) {
     if(!Number.isSafeInteger(delta)||delta===0)throw new Error('交易指令无效。');
     leverage=normalizeLeverage(leverage);
     const amount=Math.abs(delta)*stock.price;
     if(!Number.isSafeInteger(amount))throw new Error('委托金额超出限额。');
     const position=db.prepare('SELECT cost_basis,realized_pnl FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code);
-    const plan=stockLots.plan(id,stock.code,delta,stock.price,leverage,lotId);
+    const plan=stockLots.plan(id,stock.code,delta,stock.price,leverage,lotId,intent);
+    if(plan.openQuantity)requireStockLeverage(balanceFor(id),leverage);
     const nextRealized=(position?.realized_pnl||0)+plan.pnl;
     for(const n of [plan.next,plan.nextMargin,plan.nextNotional,plan.pnl,nextRealized])if(!Number.isSafeInteger(n))throw new Error('交易结果超出限额。');
     if(plan.nextMargin<0||plan.nextNotional<0)throw new Error('持仓账目无效。');
@@ -155,7 +161,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     stockLots.apply(id,stock.code,delta,leverage,stopLoss,takeProfit,plan);
     const aggregateLeverage=plan.nextMargin?plan.nextNotional/plan.nextMargin:0;
     db.prepare('INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?,NULL,NULL) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity,cost_basis=excluded.cost_basis,position_notional=excluded.position_notional,margin_used=excluded.margin_used,realized_pnl=excluded.realized_pnl,leverage=excluded.leverage,stop_loss=NULL,take_profit=NULL').run(id,stock.code,plan.next,plan.nextMargin,plan.nextNotional,plan.nextMargin,nextRealized,aggregateLeverage);
-    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,actualLeverage,plan.held,plan.next,position?.cost_basis||0,plan.nextMargin,plan.pnl,balanceFor(id));
+    db.prepare('INSERT INTO stock_trades(employee_id,code,action,quantity,price,amount,leverage,holding_before,holding_after,cost_before,cost_after,realized_pnl_change,balance_after,intent,position_side,close_reason) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,stock.code,delta>0?'buy':'sell',Math.abs(delta),stock.price,amount,actualLeverage,plan.held,plan.next,position?.cost_basis||0,plan.nextMargin,plan.pnl,balanceFor(id),plan.closeQuantity?(plan.openQuantity?'mixed':'close'):'open',plan.openQuantity?(delta>0?'long':'short'):(delta>0?'short':'long'),plan.closeQuantity?reason:'');
     marketService.trade(stock.code,delta,stock.price);
   }
   function processStockAutomations(id) {
@@ -170,26 +176,31 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       const shouldFill=order.side==='long'?stock.price<=order.limitPrice:stock.price>=order.limitPrice;
       if(!shouldFill)continue;
       try {
-        executeStockTrade(id,{stock,delta:order.side==='long'?order.quantity:-order.quantity,leverage:order.leverage,stopLoss:order.stopLoss??null,takeProfit:order.takeProfit??null,reason:'限价单成交'});
+        executeStockTrade(id,{stock,delta:order.side==='long'?order.quantity:-order.quantity,leverage:order.leverage,stopLoss:order.stopLoss??null,takeProfit:order.takeProfit??null,reason:'限价单成交',intent:'open'});
         db.prepare("UPDATE stock_orders SET status='filled',filled_at=CURRENT_TIMESTAMP,filled_price=? WHERE id=?").run(stock.price,order.id);
       } catch(error) {
+        if(error.code==='LEVERAGE_LOCKED'){db.prepare("UPDATE stock_orders SET status='cancelled' WHERE id=?").run(order.id);continue;}
         if(error.message!=='可用余额不足。')throw error;
       }
     }
-    const positions=stockLots.list(id).map(p=>({...p,quantity:p.holding}));
+    processProtectedStockLots(id);
+  }
+  function processProtectedStockLots(employeeId=null){
+    const positions=db.prepare(`SELECT l.id,l.employee_id AS employeeId,l.code,l.quantity,l.quantity AS holding,l.position_notional AS positionNotional,l.margin_used AS marginUsed,l.stop_loss AS stopLoss,l.take_profit AS takeProfit,s.price FROM stock_lots l JOIN stock_prices s ON s.code=l.code WHERE l.quantity<>0 AND (l.quantity<0 OR l.position_notional>l.margin_used OR l.stop_loss IS NOT NULL OR l.take_profit IS NOT NULL) AND (? IS NULL OR l.employee_id=?) AND (((l.quantity<0 OR l.position_notional>l.margin_used) AND l.margin_used+CASE WHEN l.quantity>0 THEN l.quantity*s.price-l.position_notional ELSE l.position_notional+l.quantity*s.price END <= (l.margin_used+4)/5) OR (l.take_profit IS NOT NULL AND ((l.quantity>0 AND s.price>=l.take_profit) OR (l.quantity<0 AND s.price<=l.take_profit))) OR (l.stop_loss IS NOT NULL AND ((l.quantity>0 AND s.price<=l.stop_loss) OR (l.quantity<0 AND s.price>=l.stop_loss)))) ORDER BY l.id`).all(employeeId,employeeId);
     for(const p of positions) {
-      let hit='';
-      if(p.quantity>0) {
+      let hit=stockPositionRisk(p).shouldLiquidate?'强制平仓':'';
+      if(!hit&&p.quantity>0) {
         if(p.takeProfit!=null&&p.price>=p.takeProfit)hit='止盈';
         else if(p.stopLoss!=null&&p.price<=p.stopLoss)hit='止损';
-      } else {
+      } else if(!hit) {
         if(p.takeProfit!=null&&p.price<=p.takeProfit)hit='止盈';
         else if(p.stopLoss!=null&&p.price>=p.stopLoss)hit='止损';
       }
       if(!hit)continue;
-      executeStockTrade(id,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit+'自动平仓',lotId:p.id});
+      executeStockTrade(p.employeeId,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit==='强制平仓'?hit:hit+'自动平仓',lotId:p.id,intent:'close'});
     }
   }
+  marketService.onQuote(()=>processProtectedStockLots());
   const forum=installForumList(db);
   const replies=installForumReplies(db);
   return {log,initializeStockLots:stockLots.migrate,close:marketService.close, async handle(req,res,url) {
@@ -205,7 +216,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const include=name=>!bootstrap&&(!section||section===name);
         if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
+        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
@@ -322,16 +333,21 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
               const lotId=data.lotId==null?null:Number(data.lotId);
               if(lotId!==null&&intent!=='close')throw new Error('指定持仓仅用于平仓。');
               if(intent!==undefined&&!['open','close'].includes(intent))throw new Error('交易意图无效。');
-              const held=db.prepare('SELECT quantity FROM stock_holdings WHERE employee_id=? AND code=?').get(id,code)?.quantity||0;
+              const positions=stockLots.list(id).filter(l=>l.code===code);
               if(intent==='close'){
-                if(!held||quantity>Math.abs(held))throw new Error('平仓数量不能超过当前持仓。');
+                const chosen=lotId===null?positions:positions.filter(l=>l.id===lotId);
+                if(!chosen.length)throw new Error('持仓不存在。');
+                if(chosen.some(l=>l.holding>0)&&chosen.some(l=>l.holding<0))throw new Error('同时持有多空仓位，请到我的持仓选择具体仓位平仓。');
+                if(quantity>chosen.reduce((n,l)=>n+Math.abs(l.holding),0))throw new Error('平仓数量不能超过当前持仓。');
+                side=chosen[0].holding>0?'short':'long';
                 if(data.orderType==='limit')throw new Error('平仓请使用市价委托。');
-                side=held>0?'short':'long';
-              }else if(intent==='open'&&held&&((held>0)!==(side==='long')))throw new Error('请先平掉反向持仓，再开仓。');
+
+              }
               const leverage=normalizeLeverage(data.leverage??3);
               const stopLoss=intent==='close'?null:normalizeOptionalPrice(data.stopLoss);
               const takeProfit=intent==='close'?null:normalizeOptionalPrice(data.takeProfit);
               if(orderType==='limit') {
+                requireStockLeverage(balanceFor(id),leverage);
                 if(db.prepare("SELECT COUNT(*) AS n FROM stock_orders WHERE employee_id=? AND status='open'").get(id).n>=100)throw new Error('未成交委托最多 100 笔，请先撤销部分委托。');
                 const limitPrice=normalizeOptionalPrice(data.limitPrice);
                 if(limitPrice===null)throw new Error('限价单需填写触发价格。');
@@ -341,13 +357,13 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
                 processStockAutomations(id);
               } else {
                 if(intent!=='close')validateStopsAgainstPrice(side,stock.price,stopLoss,takeProfit);
-                executeStockTrade(id,{stock,delta:side==='long'?quantity:-quantity,leverage,stopLoss,takeProfit,lotId});
+                executeStockTrade(id,{stock,delta:side==='long'?quantity:-quantity,leverage,stopLoss,takeProfit,lotId,intent:intent||'auto'});
                 award(id);
               }
             }
           }
         });
-        send(res,200,{items:market(id),orders:pendingOrders(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
+        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');

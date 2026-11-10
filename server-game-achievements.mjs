@@ -37,7 +37,7 @@ export const gameplayAchievementCatalog=[
  ['derby-first','先下班一步','下班竞速押中一次第一名。','derby_first_count',1],
  ['derby-last','压轴登场','下班竞速押中一次最后一名。','derby_last_count',1],
  ['derby-both','首尾通吃','下班竞速同一场的第一名与最后一名均押中。','derby_both_count',1],
- ['cards-win','初试牌锋','亲自出过牌，并赢下一局斗太姥。','cards_win_count',1],
+ ['cards-win','初试牌锋','亲自出过牌，并赢下一局智斗太姥。','cards_win_count',1],
  ['cards-landlord','当家做主','亲自出过牌，并以太姥身份获胜。','cards_landlord_count',1],
  ['cards-partner','少姥合伙人','亲自出过牌，并以少姥身份获胜。','cards_partner_count',1],
  ['cards-multiplier','翻倍时刻','亲自出过牌，并赢下一局至少 8 倍的牌局。','cards_multiplier_max',8]
