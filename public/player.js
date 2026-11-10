@@ -500,7 +500,7 @@
         dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
         if(!window.avedDepartmentFilter){dirGrid.replaceChildren();return;}
 
-        const labels = ['力量', '意志', '体质', '智力', '敏捷', '洞察'];
+        const labels = ['力量','意志','洞察','敏捷','智力','体质'];
         const cx = 65, cy = 65, rMax = 44;
         const angles = [-90, -30, 30, 90, 150, 210].map(a => a * Math.PI / 180);
         const outerHex = angles.map(a => `${(cx + rMax * Math.cos(a)).toFixed(1)},${(cy + rMax * Math.sin(a)).toFixed(1)}`).join(' ');
@@ -511,7 +511,7 @@
         const rank=emp=>isHead(emp)?0:emp.isLeadership?1:emp.identityKind?.endsWith('_containment')?3:2;
         const selectedEmployees=employees.filter(emp=>emp.department===window.avedDepartmentFilter).sort((a,b)=>rank(a)-rank(b));
         dirGrid.innerHTML = selectedEmployees.map((emp,index) => {
-          const stats = emp.stats || [80, 85, 80, 85, 80, 85];
+          const stats = emp.stats || [0, 0, 0, 0, 0, 0];
           const polyPoints = stats.map((val, i) => {
             const r = (val / 100) * rMax;
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
@@ -592,10 +592,10 @@
         const kwParts = kw.split(/[\s/]+/).filter(Boolean);
 
         const matching = scpSimulatedEmpty ? [] : scpItemsData.filter(item => {
-          const matchLevel = selectedScpFilter === 'ALL' || item.level === selectedScpFilter;
+          const matchLevel = selectedScpFilter === 'ALL' || item.classification === selectedScpFilter;
           if (!matchLevel) return false;
           if (kwParts.length === 0) return true;
-          const haystack = `${item.id} ${item.codeName} ${item.handlers} ${item.summary} ${item.clues.join(' ')}`.toLowerCase();
+          const haystack = `${item.id} ${item.codeName} ${item.handlers} ${item.summary} ${item.searchText||''} ${item.clues.join(' ')}`.toLowerCase();
           return kwParts.some(part => haystack.includes(part));
         });
 
@@ -688,47 +688,14 @@
                 ${currentScp.id} — ${currentScp.codeName}
               </h3>
             </div>
-            <span class="scp-status-stamp self-start sm:self-auto">
-              ${currentScp.level}
-            </span>
+            <div class="dossier-status-tags">${currentScp.classification?`<span class="dossier-classification">${currentScp.classification}</span>`:''}<span class="scp-status-stamp">${currentScp.level}</span></div>
           </div>
 
-          <div data-scp-image-slot="${currentScp.id}" class="mb-4 p-3 border border-dashed border-[var(--inner-border-soft)] bg-black/5 flex items-center justify-between text-xs font-mono-tech">
-            <span>🖼️ 影像档案 // ${currentScp.id}</span>
-            <span class="opacity-60">IMAGE SLOT RESERVED</span>
-          </div>
-
-          <div class="scp-dossier-meta inner-card-alt p-3 mb-4 text-xs font-mono-tech space-y-1.5">
-            <div class="flex justify-between border-b border-[var(--inner-border-soft)] pb-1">
-              <span class="opacity-70">管辖部门 / 责任人:</span>
-              <strong>${currentScp.department}${currentScp.handlers?` (${currentScp.handlers})`:""}</strong>
-            </div>
-            <div class="flex justify-between border-b border-[var(--inner-border-soft)] pb-1">
-              <span class="opacity-70">收容位置:</span>
-              <span>${currentScp.location}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="opacity-70">特征标签:</span>
-              <span class="text-[var(--inner-crimson)]">${currentScp.clues.join(' / ')}</span>
-            </div>
-          </div>
-
-          <div class="space-y-4 text-xs sm:text-sm leading-relaxed">
-            <div>
-              <h4 class="font-bold font-mono-tech text-xs uppercase tracking-wider text-[var(--inner-crimson)] mb-1">
-                [ SPECIAL CONTAINMENT PROCEDURES // 特殊收容措施 ]
-              </h4>
-              <p class="leading-relaxed">${currentScp.procedure}</p>
-            </div>
-            <div>
-              <h4 class="font-bold font-mono-tech text-xs uppercase tracking-wider text-[var(--inner-crimson)] mb-1">
-                [ INVESTIGATION NOTES // 档案描述 ]
-              </h4>
-              <p class="leading-relaxed">${currentScp.description}</p>
-            </div>
-          </div>
+          ${currentScp.department?`<div class="scp-dossier-meta inner-card-alt p-3 mb-4 text-xs"><span>所属部门：</span><strong>${currentScp.department}</strong></div>`:''}
+          ${AVEDDossierContent.render(currentScp)}
         `;
 
+        AVEDDossierContent.play(detailEl,containmentVisit+':'+currentScp.id,!document.body.classList.contains('effects-off')&&!prefersReducedMotion);
         if (commentsListEl) {
           if (!currentScp.realComments || currentScp.realComments.length === 0) {
             commentsListEl.innerHTML = `<div class="text-xs opacity-60 font-mono-tech py-3 text-center">暂无实名评议记录，可在下方签署发表。</div>`;
@@ -1527,7 +1494,7 @@
       function showToast(message,type='info',options={}) {
         window.AVEDFeedback.toast(message,type,options);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1540,7 +1507,7 @@
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:/^公司直属(?:部|领导)?$/.test(data.employee.department||'')&&data.employee.positionTitle?data.employee.positionTitle:data.employee.department,
           identityKind:data.employee.identityKind,positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
-        scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
+        scpItemsData=data.dossiers.map(d=>AVEDDossierContent.map(d));
         forumThreads=data.forum.items;forumDetail=null;forumBrowser.reset();
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));
         economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);
@@ -1561,7 +1528,7 @@
             });
           }
           if(section==='news')companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
-          if(section==='containment')scpItemsData=data.dossiers.map(d=>({id:esc(d.code),dbId:d.id,codeName:esc(d.title),searchName:d.title,department:esc(d.department),level:esc(d.status),summary:esc(d.summary),description:esc(d.summary),procedure:'收容规程见本卷宗。',handlers:'',location:'',clues:[],pinLabel:'ARCHIVE',polaroidTag:'收容物档案',realComments:[]}));
+          if(section==='containment')scpItemsData=data.dossiers.map(d=>AVEDDossierContent.map(d));
           if(section==='forum'){forumBrowser.seed(data.forum);}
           if(section==='casino'){marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();

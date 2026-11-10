@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=equal-cards-4">
   <link rel="stylesheet" href="/notice-document.css?v=notice-compact-accent-3">
-  <link rel="stylesheet" href="/section-mastheads.css?v=directory-focus-13">
+  <link rel="stylesheet" href="/section-mastheads.css?v=forum-topic-frame-20261111">
   <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
   <link rel="stylesheet" href="/site-refinements.css?v=logo-wordmark-4">
@@ -356,7 +356,7 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css?v=sfx-only-1">
   <link rel="stylesheet" href="/community.css?v=sfx-only-1">
-<link rel="stylesheet" href="/economy.css?v=sky-input-stock-notice-20261110">
+<link rel="stylesheet" href="/economy.css?v=watchlist-layout-20261111b">
 <link rel="stylesheet" href="/welfare.css?v=pixel-thrones-12">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
@@ -375,6 +375,7 @@
   <link rel="stylesheet" href="/forum-emoji.css?v=native-restored-4">
   <script src="/forum-emoji.js?v=native-restored-4" defer></script>
 <link rel="stylesheet" href="/terminal-textures.css?v=1">
+<link rel="stylesheet" href="/archive-content.css?v=archive-effects-20261111">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
 
@@ -801,9 +802,9 @@
 
               <div class="flex flex-wrap gap-1">
                 <button type="button" data-filter="ALL" class="scp-filter-btn px-3 py-1.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold cursor-pointer">全部</button>
-                <button type="button" data-filter="SAFE // 稳态" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">SAFE</button>
-                <button type="button" data-filter="EUCLID // 游离" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">EUCLID</button>
-                <button type="button" data-filter="KETER // 灾变" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">KETER</button>
+                <button type="button" data-filter="SAFE" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">SAFE</button>
+                <button type="button" data-filter="EUCLID" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">EUCLID</button>
+                <button type="button" data-filter="KETER" class="scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer">KETER</button>
               </div>
             </div>
           </div>
@@ -1393,10 +1394,6 @@
               <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX · 指数</small><span class="stock-index-value"><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></span></button>
               <div class="stock-index-actions"><button type="button" id="stock-help-btn" class="terminal-help-trigger" aria-haspopup="dialog" aria-label="股市与指数玩法说明" title="股市与指数玩法说明">玩法说明</button><button id="next-market-tick-btn" type="button">刷新行情</button></div>
             </header>
-            <section class="stock-watchlist" aria-label="股票行情列表">
-              <div class="stock-list-heading"><span>名称 / 代码</span><span>最新价</span><span>涨跌幅</span></div>
-              <div id="stocks-table-body"></div>
-            </section>
             <div class="stock-workspace">
               <section class="market-terminal" aria-label="证券行情">
                 <div class="market-toolbar">
@@ -1407,6 +1404,10 @@
                 <p id="market-candle-details" class="market-candle-details">等待行情。</p>
                 <p id="market-department-line" class="market-department-line"></p>
                 <div id="stock-candles" class="market-chart"></div>
+              </section>
+              <section class="stock-watchlist" aria-label="股票行情列表">
+                <div class="stock-list-heading"><span>名称 / 代码</span><span>最新价</span><span>涨跌幅</span></div>
+                <div id="stocks-table-body"></div>
               </section>
               <section id="stock-trade-ticket" class="stock-trade-ticket" aria-label="股票交易">
                 <header><h3>快捷交易</h3><span>TRADE</span></header>
@@ -1443,7 +1444,7 @@
   <script src="/terminal-time.js?v=notices-1" defer></script>
   <script src="/notices-ui.js?v=real-comments-4" defer></script>
   <script src="/market-chart.js?v=personal-trades-1" defer></script>
-  <script src="/market-atmosphere.js?v=company-achievements-20261110" defer></script>
+  <script src="/market-atmosphere.js?v=wire-layout-20261111" defer></script>
   <link rel="stylesheet" href="/market-atmosphere.css?v=wire-5min-small-1">
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/player-community.js?v=directory-focus-20261110" defer></script>
@@ -1452,7 +1453,7 @@
   <script src="/forum-browser.js?v=paged-4" defer></script>
   <script src="/forum-presence.js?v=company-achievements-20261110" defer></script>
   <script src="/forum-social.js?v=sky-input-stock-notice-20261110" defer></script>
-<link rel="stylesheet" href="/forum-social.css?v=forum-sort-size-20261110">
+<link rel="stylesheet" href="/forum-social.css?v=forum-topic-frame-20261111">
   <script src="/personal-record.js?v=hedged-dossiers-20261110" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
   <script src="/jackpot-ticker.js?v=hedged-dossiers-20261110" defer></script>
@@ -1471,9 +1472,9 @@
   <script src="/stock-risk-notice.js?v=dismissible-1" defer></script>
   <script src="/economy-ui.js?v=paper-tax-20261110" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
-  <script src="/welfare-ui.js?v=paper-tax-20261110" defer></script>
+  <script src="/welfare-ui.js?v=fund-four-cards-20261111" defer></script>
   <script src="/visual-style.js?v=integrated-flight-market-20261110" defer></script>
-  <script src="/personal-hud.js?v=paper-tax-20261110" defer></script>
+  <script src="/personal-hud.js?v=archive-effects-20261111" defer></script>
 <script src="/rewards-ui.js?v=paper-tax-20261110" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=animal-habits-16" defer></script>
@@ -1485,7 +1486,7 @@
 <link rel="stylesheet" href="/retro-window-chrome.css?v=integrated-ui-20261109">
 <script src="/casino-switcher.js?v=hedged-dossiers-20261110" defer></script>
 <script src="/player-startup.js?v=company-achievements-20261110" defer></script>
-<link rel="stylesheet" href="/ddz-pixel.css?v=seat-colours-mobile-20261110">
+<link rel="stylesheet" href="/ddz-pixel.css?v=archive-effects-20261111">
 <link rel="stylesheet" href="/card-reactions.css?v=emoji-only-4">
   <link rel="stylesheet" href="/card-room-lobby.css?v=custom-stakes-7">
 <script src="/card-stakes.js?v=stake-cap-3" defer></script>
@@ -1493,11 +1494,12 @@
 <script src="/card-reaction-rules.js?v=emoji-only-4" defer></script>
 <script src="/card-reactions.js?v=action-order-5" defer></script>
 <script src="/card-feedback.js?v=table-layout-7" defer></script>
-<script src="/ddz-ui.js?v=network-timing-20261110" defer></script>
+<script src="/ddz-ui.js?v=archive-effects-20261111" defer></script>
 <script src="/card-room-lobby.js?v=hedged-dossiers-20261110" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=center-award-4">
 <script src="/slot-effects.js?v=center-award-4" defer></script>
-<script src="/player.js?v=paper-tax-20261110b" defer></script>
+<script src="/dossier-content.js?v=archive-effects-20261111" defer></script>
+<script src="/player.js?v=archive-effects-20261111" defer></script>
   <script src="/page-headings.js?v=scoped-observer-9" defer></script>
   <script src="/print-signal.js?v=sphere-plain-2" defer></script>
   <script src="/terminal-frame.js?v=game-columns-4" defer></script>

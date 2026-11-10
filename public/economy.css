@@ -141,3 +141,13 @@ body.theme-inner .stock-margin-dialog [data-margin-cancel]{background:var(--syst
 @layer aved-type-system{#inner-app-view #game-panel-stocks .stock-margin-preferences p{font-size:11px!important;line-height:1.75!important}#inner-app-view #game-panel-stocks .stock-margin-preferences b{font-size:12px!important}#inner-app-view #game-panel-stocks .stock-margin-preferences small{font-size:10px!important}}
 
 #game-panel-stocks .stock-risk-notice{display:flex;gap:5px;padding:0;align-items:stretch}#game-panel-stocks .stock-risk-notice button{font:11px/1.7 var(--terminal-copy,sans-serif);background:transparent;color:inherit;border:0;padding:7px 9px;cursor:pointer}#game-panel-stocks .stock-risk-open{min-width:0;flex:1;text-align:left}#game-panel-stocks .stock-risk-dismiss{width:28px;flex:none;border-left:1px solid var(--inner-border-soft)!important;font-size:16px!important;align-self:stretch}#casino-switch-window [data-game="stocks"][data-stock-risk-unread=true]::after{width:7px!important;height:7px!important;border-radius:50%;background:var(--inner-danger,#c13c31)!important;opacity:1!important;box-shadow:none!important}
+
+/* Quotes follow the chart on phones and sit above the ticket on desktop. */
+#game-panel-stocks .stock-workspace{grid-template-columns:minmax(0,1fr);grid-template-areas:"chart" "quotes" "trade" "wire";grid-template-rows:auto;align-items:start}
+#game-panel-stocks .stock-workspace>.market-terminal{grid-area:chart}
+#game-panel-stocks .stock-workspace>.stock-watchlist{grid-area:quotes;min-width:0;border:1px solid var(--inner-border-soft);padding:7px}
+#game-panel-stocks .stock-workspace>.stock-trade-ticket{grid-area:trade}
+@media(min-width:901px){#game-panel-stocks .stock-workspace{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);grid-template-areas:"chart quotes" "chart trade" "wire .";grid-template-rows:auto minmax(0,1fr) auto}}
+@layer aved-type-system{#inner-app-view #company-fund-summary .finance-stat-note{display:block;margin-top:5px;font-size:10px!important;line-height:1.5!important;color:var(--inner-text-muted);font-weight:400}}
+
+#game-panel-stocks .stock-workspace>#market-bulletins{grid-area:wire;min-width:0;margin:0;border:1px solid var(--inner-border-soft);padding:10px}

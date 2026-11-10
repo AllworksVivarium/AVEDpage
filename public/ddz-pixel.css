@@ -315,3 +315,6 @@ body.effects-off #game-panel-doudizhu *{animation:none!important;transition:none
 }
 
 #game-panel-doudizhu .ddz-hand{bottom:var(--self-area,48px)}
+
+#game-panel-doudizhu .ddz-watermark{transform:none}
+#game-panel-doudizhu .ddz-watermark img{display:block;width:clamp(110px,24vw,220px);height:auto;opacity:.12;pointer-events:none}

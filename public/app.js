@@ -341,11 +341,13 @@ async function loadReplies(id) {
 
 // ===== 管理端：员工维护与内容管理 =====
 const personnelIdentityNames={player_employee:'玩家成员',player_containment:'玩家收容物',planning_member:'企划组成员',company_containment:'公司提供 · 收容物'};
+function personnelAttributeValues(v){const values=Array.from({length:6},(_,i)=>String(v.get('attribute'+i)??'').trim());return values.every(x=>x==='')?null:values.map(x=>x===''?null:Number(x));}
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
   fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>自定义职位<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
   const department=form.querySelector('[name=department]');department.before(fields);
+  const attributes=document.createElement('fieldset');attributes.className='employee-attributes-fields';attributes.innerHTML='<legend>六维属性</legend><p>从顶部顺时针排列；每项 0–100，全部留空表示未录入。</p><div class="employee-attribute-grid">'+['力量','意志','洞察','敏捷','智力','体质'].map((label,i)=>'<label>'+label+'<input name="attribute'+i+'" type="number" min="0" max="100" step="1" aria-label="六维 '+label+'" value="'+(current?.attributes?.[i]??'')+'"></label>').join('')+'</div>';fields.after(attributes);
   const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
   kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';let wasMinister=false;
   function sync(){
@@ -412,7 +414,7 @@ async function renderAdmin() {
     password: v.get("password"),
     displayName: v.get("displayName"),
     qqNumber: v.get("qqNumber"),
-    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
+    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
     initialBalance: Number(v.get("initialBalance") || 0),
   }));
 
@@ -431,7 +433,7 @@ async function renderAdmin() {
       const payload = {
         displayName: v.get("displayName"),
         qqNumber: v.get("qqNumber"),
-        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
+        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
       };
       if (v.get("password")) payload.password = v.get("password");
       try {

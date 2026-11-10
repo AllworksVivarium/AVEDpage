@@ -4,7 +4,7 @@
  function upgrade(){
   const content=document.getElementById('panel');if(content){for(const title of content.querySelectorAll(':scope > h3,:scope > .section-heading'))title.remove();}
   for(const details of document.querySelectorAll('#dashboard details')){
-   if(!details.isConnected)continue;
+   if(!details.isConnected||details.hasAttribute('data-dossier-section'))continue;
    const summary=details.querySelector(':scope > summary');if(!summary)continue;
    const wrapper=document.createElement('section');
    for(const attr of details.attributes)if(attr.name!=='open')wrapper.setAttribute(attr.name,attr.value);
