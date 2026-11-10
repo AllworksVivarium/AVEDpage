@@ -174,7 +174,7 @@
       let scpItemsData = JSON.parse(JSON.stringify(initialScpItems));
 
       let forumThreads = JSON.parse(JSON.stringify(initialForumThreads));
-      let currentUser = null;
+      let currentUser = null,achievementAlerts=null;
       let isDarkMode = document.documentElement.dataset.savedTheme==='night';
       document.body.classList.toggle('dark-mode',isDarkMode);
       let sidebarNarrow = window.innerWidth < 768;
@@ -1134,7 +1134,7 @@
         listEl.innerHTML = slot5x3State.history.slice(0,20).map((h, i) => `
           <div class="p-2 inner-card-alt flex justify-between items-center">
             <span>#${i + 1} 转 | 投入 ${h.bet.toLocaleString()}</span>
-            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind})}</strong>
+            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind,tax:h.tax})}</strong>
           </div>
         `).join('');
       }
@@ -1396,6 +1396,7 @@
         } finally {marketBusy=false;if(code!==marketCode||period!==marketPeriod)refreshMarket().catch(e=>showToast(e.message));}
       }
       const byId=id=>document.getElementById(id);
+      achievementAlerts=AVEDAchievementAlerts.create({getUser:()=>currentUser,api,onAward:()=>{profileFreshAt=0;}});
       window.AVEDPersonalRecord=AVEDPersonalRecords.create({getUser:()=>currentUser,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden'),playSfx,onRecord:()=>{profileFreshAt=0;}});
       const slotEffects=AVEDSlotEffects({panel:byId('game-panel-slots'),grid:byId('slot5x3-grid'),playSfx});
       function renderStocks() {
@@ -1541,6 +1542,7 @@
         deferredRequests.set(section,task);return task;
       }
       function syncUserHeaderUI() {
+        achievementAlerts?.ensure();
         if(!currentUser)return;
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
         byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
@@ -1646,7 +1648,7 @@
         currentForumThreadId=String(id);forumDetail=forumThreads.find(t=>String(t.id)===String(id))||{id,preview:true};
         return renderForumView(replyId);
       }
-      function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind};});renderSlot5x3History();}
+      function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind,tax:result.tax||0};});renderSlot5x3History();}
 
       function initSkydiveGame(){pollSky().catch(e=>showToast(e.message));}
       function initDoudizhu(){cardTableUI?.ensure();}
@@ -1722,9 +1724,9 @@
             if(!pendingSlotRequest||pendingSlotRequest.owner!==currentUser.id)pendingSlotRequest={owner:currentUser.id,bet:Number(byId('slot5x3-bet-input').value),requestKey:crypto.randomUUID()};
             slotEffects.start();
             let d,showSlotAward=false;try{d=await api('/api/player/games/slot',{method:'POST',body:pendingSlotRequest});pendingSlotRequest=null;showSlotAward=await slotEffects.finish(d);}catch(error){if(error.status>=400&&error.status<500)pendingSlotRequest=null;throw error;}finally{slotEffects.cancel();}
-            slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize,penalty:d.penalty,penaltyKind:d.result.penaltyKind});
+            slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize,penalty:d.penalty,penaltyKind:d.result.penaltyKind,tax:d.tax||d.result.tax||0});
             d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);
-            byId('slot5x3-win-summary').textContent='本局获得 ¤ '+Number(d.prize).toLocaleString();currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
+            byId('slot5x3-win-summary').textContent='本局获得 ¤ '+Number(d.prize-(d.tax||d.result?.tax||0)).toLocaleString();currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
@@ -1775,7 +1777,7 @@
         const draft=activeIssuedTicket,owner=currentUser?.id;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
         try{const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:draft.tier.id,type:draft.gameType.type,cost:draft.cost,revision:draft.revision,requestKey:draft.requestKey}});
           if(currentUser?.id!==owner||activeIssuedTicket!==draft)return false;
-          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 · 刮开查看结果。';byId('scratch-next-ticket').textContent='下一张';return true;
+          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,tax:d.tax||d.result.tax||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 · 刮开查看结果。';byId('scratch-next-ticket').textContent='下一张';return true;
         }catch(e){showToast(e.message);byId('scratch-next-ticket').disabled=false;return false;}finally{scratchActivating=false;}
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
@@ -1817,7 +1819,7 @@
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast,playSfx});
       AVEDVisualStyle({byId});
       const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
-        currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+        currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
         document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
         try{await apiLogout();}catch{}finally{location.reload();}
       }});
@@ -1832,7 +1834,7 @@
           },
           enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
           signedOut:()=>{
-            currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+            currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
             document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           },
           unavailable:()=>{

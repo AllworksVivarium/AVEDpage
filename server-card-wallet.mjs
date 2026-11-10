@@ -22,7 +22,7 @@ export function cardSettlement(size,landlord,winner,bid,multiplier,rules=cardMon
   return {seat,stake,reward,net:reward-stake,release:rules.reserve-stake+reward};
  })};
 }
-export function installCardWallet({db,balanceFor,recordLedger}){
+export function installCardWallet({db,balanceFor,recordLedger,gameTax}){
  db.exec(`CREATE TABLE IF NOT EXISTS card_money_rounds(id TEXT PRIMARY KEY,room_id TEXT NOT NULL,rules_json TEXT NOT NULL,settlement_json TEXT,system_delta INTEGER);
  CREATE TABLE IF NOT EXISTS card_money_seats(round_id TEXT NOT NULL REFERENCES card_money_rounds(id),seat INTEGER NOT NULL,employee_id INTEGER,reserve INTEGER NOT NULL,PRIMARY KEY(round_id,seat));
  DROP TABLE IF EXISTS card_auto_limits;
@@ -62,8 +62,8 @@ export function installCardWallet({db,balanceFor,recordLedger}){
    // Withheld autoplay proceeds are never redistributed to other seats.
    result.bonus=result.players.reduce((total,p)=>total+p.bonus,0);
   }
-  for(const seat of seats){const p=result.players[seat.seat];if(seat.employee_id!=null){recordLedger(seat.employee_id,p.release,'智斗太姥结算与释放筹码 #'+saved.id);humanNet+=p.net;
-   db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(seat.employee_id,'cards',p.stake,p.reward,'','',JSON.stringify({round:saved.id,seat:seat.seat,winner:g.winner,landlord:g.landlord,bid:g.bid,multiplier:g.multiplier,bonus:p.bonus,autoOnly:!!p.autoOnly}));
+  for(const seat of seats){const p=result.players[seat.seat];if(seat.employee_id!=null){recordLedger(seat.employee_id,p.release,'智斗太姥结算与释放筹码 #'+saved.id);const grossReward=p.reward;p.tax=gameTax?.charge({employeeId:seat.employee_id,game:'cards',key:saved.id,cost:p.stake,prize:grossReward})||0;p.reward-=p.tax;p.release-=p.tax;p.net-=p.tax;humanNet+=p.net;
+   db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(seat.employee_id,'cards',p.stake,grossReward,'','',JSON.stringify({round:saved.id,seat:seat.seat,winner:g.winner,landlord:g.landlord,bid:g.bid,multiplier:g.multiplier,bonus:p.bonus,autoOnly:!!p.autoOnly,tax:p.tax}));
   }}
   db.prepare('UPDATE card_money_rounds SET settlement_json=?,system_delta=? WHERE id=? AND settlement_json IS NULL').run(JSON.stringify(result),-humanNet,saved.id);
   room.money.settlement=result;

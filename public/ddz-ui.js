@@ -57,7 +57,7 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   const returns=rules.computerReturns;
   const note=returns?`全人机局：赢时净赚结算投入的 ${returns.winPercent-100}%，输时扣除 ${100-returns.lossPercent}%`:`普通联机局：胜方获得结算投入的 2 倍，另分全桌结算投入的 ${rules.bonusPercent}% 奖金；输时扣除本局结算投入`;
   const receipt=current.money?.settlement;
-  if(receipt)return `本局结算投入 ¤ ${receipt.stake.toLocaleString()} · 获得 ¤ ${receipt.reward.toLocaleString()} · 未使用筹码已释放 · ${note}`;
+  if(receipt)return `本局结算投入 ¤ ${receipt.stake.toLocaleString()} · 获得 ¤ ${receipt.reward.toLocaleString()}${receipt.tax?' · 净收益税 3% ¤ '+receipt.tax.toLocaleString():''} · 未使用筹码已释放 · ${note}`;
   return `${current.money?'本局锁定':'开局锁定'} ¤ ${rules.reserve.toLocaleString()} · 底注 ${rules.base} × 叫分 × 倍率 · 本局结束自动释放剩余筹码 · ${note}`;
  }
  $('[data-ddz-base]').onchange=stakeDraft;$('[data-ddz-custom-base]').oninput=stakeDraft;

@@ -1,3 +1,5 @@
+import {installAchievementAlerts} from './server-achievement-alerts.mjs';
+import {installGameTax} from './server-game-tax.mjs';
 import {installDossierContent,normalizeDossierContent,dossierView} from './server-dossier-content.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
@@ -260,23 +262,25 @@ const adminMutation = (req, res) => {
   return true;
 };
 installAvatarPresets(db);
-let economy,personal,highlights;
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights});
+let economy,personal,highlights,gameTax;
+const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 // Preserve legacy split ordering before migrating independent fills.
 playerService.initializeStockLots();
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
 const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 highlights=installGameHighlights({db,send,requireEmployee});
-const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots});
+gameTax=installGameTax({db,recordLedger});
+const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
-const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots});
+const achievementAlerts=installAchievementAlerts({db,send,readBody,requireEmployee,sessionEmployee});
+const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,gameTax});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
 const logRetention=installLogRetention(db);
 const dossierImages=installDossierImages({db,send,requireAdmin});
 const media=installMedia({db,send,requireEmployee});
-const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights});
+const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,gameTax});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
 db.exec(`
  CREATE INDEX IF NOT EXISTS chat_room_active ON chat_messages(room,id) WHERE deleted_at='';
@@ -341,6 +345,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if(dossierImages.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;
     if(await highlights.handle(req,res,url))return;
+    if(await achievementAlerts.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
     if(await companyRobots.handle(req,res,url))return;
@@ -403,8 +408,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       db.exec('BEGIN IMMEDIATE');
       try { if(balanceFor(employee.id)<cost){db.exec('ROLLBACK');return send(res,400,{error:'余额不足，无法购买刮刮乐。'});}
         recordLedger(employee.id,-cost,'刮刮乐购券');if(prize)recordLedger(employee.id,prize,'刮刮乐奖金');
-        const result={prizeName};const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'scratch',cost,prize,seed,seedHash,JSON.stringify(result));db.exec('COMMIT');
-        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,prizeName,balance:balanceFor(employee.id),seed,seedHash,roll});
+        const tax=gameTax.charge({employeeId:employee.id,game:'scratch',key:seedHash,cost,prize});const result={prizeName,tax};const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'scratch',cost,prize,seed,seedHash,JSON.stringify(result));db.exec('COMMIT');
+        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,tax,prizeName,balance:balanceFor(employee.id),seed,seedHash,roll});
       } catch(error){db.exec('ROLLBACK');throw error;}
     }
     if (url.pathname === '/api/games/slot' && req.method === 'POST') {
@@ -418,8 +423,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       db.exec('BEGIN IMMEDIATE');
       try{if(balanceFor(employee.id)<cost){db.exec('ROLLBACK');return send(res,400,{error:'余额不足，无法启动老虎机。'});}
         recordLedger(employee.id,-cost,'老虎机');if(prize)recordLedger(employee.id,prize,'老虎机奖金');
-        const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'slot',cost,prize,seed,seedHash,JSON.stringify({symbols:result,multiplier}));db.exec('COMMIT');
-        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,multiplier,symbols:result,balance:balanceFor(employee.id),seed,seedHash});
+        const tax=gameTax.charge({employeeId:employee.id,game:'slot',key:seedHash,cost,prize});const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'slot',cost,prize,seed,seedHash,JSON.stringify({symbols:result,multiplier,tax}));db.exec('COMMIT');
+        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,tax,multiplier,symbols:result,balance:balanceFor(employee.id),seed,seedHash});
       }catch(error){db.exec('ROLLBACK');throw error;}
     }
     if (url.pathname === '/api/games/history' && req.method === 'GET') {
@@ -720,7 +725,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   }
 });
 
-server.on('close',()=>{radioRetention.close();logRetention.close();});
+server.on('close',()=>{radioRetention.close();logRetention.close();achievementAlerts.close();});
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 server.listen(port,host,() => console.log(`万业携生收容公司服务已启动：${host}:${port}`));

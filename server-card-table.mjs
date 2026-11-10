@@ -74,14 +74,14 @@ export function tableView(room,employeeId,spectating=false){
   seats:room.seats.map((p,i)=>p?{id:p.id,name:p.name,avatar:p.bot?robotAvatar(p.id):p.avatar||defaultAvatar('slate'),bot:p.bot,auto:p.auto,ready:p.ready,readyDeadline:p.readyDeadline||0,count:g?.hands[i].length||0,role:g?.landlord===i?'landlord':g?.landlord>=0?'farmer':null,last:g?.seatPlays[i]||null}:null),
   hand:g&&!spectating?[...g.hands[seat]].sort((a,b)=>b.val-a.val||a.id-b.id):[],bottom:g?.phase==='bidding'?Array(g.bottom.length).fill(null):g?.bottom||[],turn:g?.turn??-1,landlord:g?.landlord??-1,bid:g?.bid||0,multiplier:g?.multiplier||1,last:g?.last||null,event:g?.event||null,winner:g?.winner||null,spring:!!g?.spring};
 }
-export function installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,clock=()=>Date.now(),schedule=setInterval,cancel=clearInterval}){
+export function installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,gameTax,clock=()=>Date.now(),schedule=setInterval,cancel=clearInterval}){
  installAvatarPresets(db);
  const profileFor=db.prepare('SELECT anonymous_name,avatar_url,avatar_preset FROM profiles WHERE employee_id=?');
  const portraitFor=(p,cache)=>{if(cache?.has(p.id))return cache.get(p.id);const profile=profileFor.get(p.id),url=storedAvatar(p.id,profile?.avatar_url??p.avatar,profile?.avatar_preset,64)||defaultAvatar('slate');cache?.set(p.id,url);return url;};
  db.exec('CREATE TABLE IF NOT EXISTS card_table_rooms(id TEXT PRIMARY KEY,state_json TEXT NOT NULL,updated_at INTEGER NOT NULL)');
  db.exec("DROP TABLE IF EXISTS card_auto_preferences;CREATE TABLE IF NOT EXISTS card_bot_preferences(employee_id INTEGER PRIMARY KEY,level TEXT NOT NULL CHECK(level IN ('easy','standard','smart')))");
  const botLevel=id=>db.prepare('SELECT level FROM card_bot_preferences WHERE employee_id=?').get(id)?.level||'standard';
- const wallet=installCardWallet({db,balanceFor,recordLedger});
+ const wallet=installCardWallet({db,balanceFor,recordLedger,gameTax});
  const rooms=new Map(),streams=new Set(),watchers=new Map(),reactions=createCardReactions({clock}),input=createInputTiming({clock});
  const vacantRoomTimeoutMs=30*60*1000,hostDisconnectGraceMs=30*1000;
  const save=r=>{r.updatedAt=clock();db.prepare('INSERT INTO card_table_rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state_json=excluded.state_json,updated_at=excluded.updated_at').run(r.id,JSON.stringify(r),r.updatedAt);};

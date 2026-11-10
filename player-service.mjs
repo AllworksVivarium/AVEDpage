@@ -20,7 +20,7 @@ import { generateOutcomeTicket, settleGameTicket } from './server-ticket.mjs';
 import {validateGameStake} from './game-stake-limits.mjs';
 
 
-export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights}) {
+export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights,getGameTax=()=>null}) {
   const chatStreams=new Map(),chatRequests=new WeakMap();let chatStatement;
   const chatItems=room=>(chatStatement??=db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`)).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[]){if(response.destroyed||response.writableLength>262144){response.destroy();chatStreams.get(room).delete(response);}else response.write(payload);}}
@@ -95,6 +95,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     BEGIN SELECT RAISE(IGNORE); END;`);
   const award=()=>{}; // Ledger and settlement triggers award achievements atomically.
   for(const d of departmentsData)db.prepare('INSERT OR IGNORE INTO company_departments(code,name,description,motto) VALUES(?,?,?,?)').run(d.code,d.name,d.desc,d.motto);
+  const oldMottos=['以绝对理性构筑牢笼，将不可名状封入几何。', '先于黎明封锁，隐于白雾歼灭。', '秩序始于配给，稳定源于细节。', '解析异常法则，重构现实边界。', '修补躯壳之伤，锚定理智之弦。'];for(let i=0;i<departmentsData.length;i++)db.prepare('UPDATE company_departments SET motto=? WHERE code=? AND motto=?').run(departmentsData[i].motto,departmentsData[i].code,oldMottos[i]);
   for(const s of stocksData)db.prepare('INSERT OR IGNORE INTO stock_prices(code,name,price,tick) VALUES(?,?,?,?)').run(s.code,s.name,s.price,Math.floor(Date.now()/60000));
   if(!db.prepare("SELECT 1 FROM content_initializations WHERE name='aved-007'").get()){
   db.prepare('INSERT OR IGNORE INTO dossiers(code,title,department,status,summary) VALUES(?,?,?,?,?)').run('AVED-007','法棍','收容部','观察中','法棍是一只法斗，当前列入观察序列。');
@@ -107,9 +108,9 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   function rng(seed) {let counter=0;return ()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296;}
   const random=()=>{const seed=randomBytes(32).toString('hex');return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:rng(seed)};};
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS scratch_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='scratch' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
-  function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
+  function settledScratch(id,key){const row=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='scratch' AND json_extract(result_json,'$.requestKey')=?").get(id,key);return row?{ticketId:row.id,cost:row.cost,prize:row.prize,penalty:JSON.parse(row.result_json).penalty||0,tax:JSON.parse(row.result_json).tax||0,balance:balanceFor(id),result:JSON.parse(row.result_json),seed:row.seed,seedHash:row.seed_hash,gameHighlight:getHighlights().event(id,row.id)}:null;}
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS slot_request_once ON game_tickets(employee_id,json_extract(result_json,'$.requestKey')) WHERE game='slot' AND json_extract(result_json,'$.requestKey') IS NOT NULL");
-  const settle=(id,game,cost,prize,result,proof)=>settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof);
+  const settle=(id,game,cost,prize,result,proof)=>settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights,gameTax:getGameTax()},id,game,cost,prize,result,proof);
   const bet=validateGameStake;
   // Only replace the exact system-generated starter copy; preserve authored notices.
   db.prepare('UPDATE announcements SET body=? WHERE title=? AND body=?').run('公司内部通讯已接通。请各部门员工核验个人档案，查阅通告，并依权限使用各项设施。','员工终端已启用','这里发布的公告会保存在服务器数据库中。员工可以在公告下方匿名留言。');
@@ -297,7 +298,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       if(path==='/api/player/games/slot'&&req.method==='POST') {
         if(typeof data.requestKey!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(data.requestKey))throw new Error('请刷新页面后重试本次运转。');
         const previous=db.prepare("SELECT * FROM game_tickets WHERE employee_id=? AND game='slot' AND json_extract(result_json,'$.requestKey')=?").get(id,data.requestKey);
-        if(previous){if(previous.cost!==data.bet)throw Error('运转请求金额不一致。');const result=JSON.parse(previous.result_json);send(res,200,{ticketId:previous.id,cost:previous.cost,prize:previous.prize,penalty:result.penalty||0,result,balance:balanceFor(id)});return true;}
+        if(previous){if(previous.cost!==data.bet)throw Error('运转请求金额不一致。');const result=JSON.parse(previous.result_json);send(res,200,{ticketId:previous.id,cost:previous.cost,prize:previous.prize,penalty:result.penalty||0,tax:result.tax||0,result,balance:balanceFor(id)});return true;}
 
         const cost=bet(data.bet),proof=random(),{prize,result}=spinSlot(cost,proof.random);
         result.requestKey=data.requestKey;send(res,200,settle(id,'slot',cost,prize,result,proof));return true;

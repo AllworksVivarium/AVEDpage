@@ -60,7 +60,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const result=(await p('/api/player/games/derby/current')).data;assert.equal(result.phase,'RESULT');assert.equal(result.winner,winner);assert.ok(result.seed);assert.equal(result.self.settled,1);
  const otherResult=(await request(two,'/api/player/games/derby/current')).data;assert.equal(otherResult.winner,winner);
  await p('/api/player/games/derby/current');assert.equal(db.prepare("SELECT COUNT(*) AS n FROM game_tickets WHERE game='derby'").get().n,2,'restart and repeated reads settle once');
- for(const [runner,prize] of [[0,result.self.prize],[1,otherResult.self.prize]]){if(winner===runner)assert.equal(prize,Math.floor(10000*result.runners[runner].odds));else assert.ok([0,500,1000,1500].includes(prize));}
+ for(const [runner,prize] of [[0,result.self.prize],[1,otherResult.self.prize]]){if(winner===runner){const gross=Math.floor(10000*result.runners[runner].odds);assert.equal(prize,gross-Math.floor(Math.max(0,gross-10000)*.03));}else assert.ok([0,500,1000,1500].includes(prize));}
  assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(first).balance,115000+result.self.prize);
  assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(second).balance,110000+otherResult.self.prize);
  assert.equal((await p('/api/player/history')).data.items.length,1);
@@ -80,7 +80,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
   config.scratch[0].variants[type]=[{multiplier:prize/1000,weight:1}];db.prepare('UPDATE economy_config SET config_json=? WHERE id=1').run(JSON.stringify(config));
   const before=(await p('/api/me')).data.balance;
   const response=await p('/api/player/games/scratch','POST',{tier:'t1',type,cost:1000,revision:rules.revision});assert.equal(response.status,200);
-  assert.equal(response.data.result.totalPayout,response.data.prize);assert.equal(response.data.balance,before-1000+response.data.prize-(response.data.penalty||0));
+  assert.equal(response.data.result.totalPayout,response.data.prize);assert.equal(response.data.balance,before-1000+response.data.prize-(response.data.penalty||0)-(response.data.tax||0));
  }
  const before=(await p('/api/me')).data.balance;
  const scratchRequest={tier:'t1',type:'three_match',cost:1000,revision:rules.revision,requestKey:'test-scratch-once-123456'};
@@ -91,7 +91,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const stale=await p('/api/player/games/scratch','POST',{tier:'t1',type:'three_match',cost:1000,revision:rules.revision-1});assert.equal(stale.data.code,'RULES_CHANGED');assert.equal((await p('/api/me')).data.balance,scratchRetryFirst.balance);
  const slot=(await p('/api/player/games/slot','POST',{bet:1000,requestKey:'test-slot-once-123456'})).data;let counter=0;
  const replay=spinSlot(1000,()=>createHmac('sha256',Buffer.from(slot.seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296);
- assert.equal(slot.prize,replay.prize);assert.deepEqual(slot.result,{...replay.result,requestKey:'test-slot-once-123456'});assert.equal(slot.balance,scratchRetryFirst.balance-1000+slot.prize-slot.penalty);
+ assert.equal(slot.prize,replay.prize);assert.deepEqual(slot.result,{...replay.result,requestKey:'test-slot-once-123456',...(slot.tax?{tax:slot.tax}:{})});assert.equal(slot.balance,scratchRetryFirst.balance-1000+slot.prize-slot.penalty-(slot.tax||0));
  const retrySlot=(await p('/api/player/games/slot','POST',{bet:1000,requestKey:'test-slot-once-123456'})).data;assert.equal(retrySlot.ticketId,slot.ticketId);assert.equal(retrySlot.balance,slot.balance);
  assert.equal((await p('/api/player/games/derby','POST',{runner:0,bet:100})).status,409,'the removed instant four-runner game cannot accept money');
  const record=(await p('/api/profile')).data.gameRecords.highest;

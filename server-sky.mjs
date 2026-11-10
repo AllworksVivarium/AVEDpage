@@ -8,7 +8,7 @@ import {proofRandom,weighted} from './server-economy.mjs';
 // All clients reconstruct the same landing animation from server timestamps.
 export const SKY_LANDING_MS=14000;
 
-export function installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,clock=()=>Date.now()}){
+export function installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax,clock=()=>Date.now()}){
  const input=createInputTiming({clock});
  installAvatarPresets(db);
  db.exec(`CREATE TABLE IF NOT EXISTS sky_flights(id INTEGER PRIMARY KEY,depart_at INTEGER NOT NULL,ended_at INTEGER NOT NULL DEFAULT 0,safety_line INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,rules_json TEXT NOT NULL);
@@ -33,7 +33,8 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   const safe=!expired&&atDepth<=f.safety_line,prize=safe?Math.floor(p.cost*skyMultiplier(atDepth,rules(f))):0;
   const changed=db.prepare("UPDATE sky_passengers SET status=?,depth=?,prize=?,settled_at=? WHERE flight_id=? AND employee_id=? AND status='aboard'").run(safe?'landed':'crashed',atDepth,prize,now,f.id,p.employee_id).changes;
   if(!changed)return;if(prize)recordLedger(p.employee_id,prize,safe?'空投开伞返还':'空投损失结余');
-  db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(p.employee_id,'sky',p.cost,prize,f.seed,f.seed_hash,JSON.stringify({flight:f.id,depth:atDepth,safetyLine:f.safety_line,safe,expired}));
+  const tax=gameTax?.charge({employeeId:p.employee_id,game:'sky',key:f.id+':'+f.seed_hash,cost:p.cost,prize})||0;if(tax)db.prepare('UPDATE sky_passengers SET prize=? WHERE flight_id=? AND employee_id=?').run(prize-tax,f.id,p.employee_id);
+  db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(p.employee_id,'sky',p.cost,prize,f.seed,f.seed_hash,JSON.stringify({flight:f.id,depth:atDepth,safetyLine:f.safety_line,safe,expired,tax}));
  }
  function current(now=clock()){
   let f=db.prepare('SELECT * FROM sky_flights ORDER BY id DESC LIMIT 1').get();

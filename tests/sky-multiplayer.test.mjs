@@ -65,7 +65,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(Date.now()-6000,flight.round);
  const opens=await Promise.all([call(a,'jump','POST',{round:flight.round}),call(a,'jump','POST',{round:flight.round})]);assert.ok(opens.every(x=>x.status===200));assert.equal(opens[0].data.self.status,'landed');
  const prize=opens[0].data.self.prize;assert.equal(opens[1].data.self.prize,prize);assert.equal(opens[1].data.balance,90000+prize);assert.ok(!('safetyLine' in opens[0].data));
- assert.equal(prize,Math.floor(10000*skyMultiplier(opens[0].data.self.depth,opens[0].data.payoutRules)));
+ const gross=Math.floor(10000*skyMultiplier(opens[0].data.self.depth,opens[0].data.payoutRules));assert.equal(prize,gross-Math.floor(Math.max(0,gross-10000)*.03));
  const earlyHistory=(await req(a,'/api/games/history')).data.items.find(x=>x.game==='sky');assert.ok(!('safetyLine' in JSON.parse(earlyHistory.result)),'cashout history must not leak the shared limit');
  await until(()=>flightB.some(x=>x.passengers.some(p=>p.status==='landed')));
  assert.equal((await call(b,'current')).data.self.status,'aboard');assert.equal((await call(a,'current')).data.passengers.filter(p=>p.isRobot).length,0,'two humans need no companion');

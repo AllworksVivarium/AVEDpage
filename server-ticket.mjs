@@ -109,7 +109,7 @@ export function applyScratchBomb(ticket,penaltyMultiplier,random){
 }
 
 // Keep the stake, bomb penalty, prize and immutable ticket in one transaction.
-export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights},id,game,cost,prize,result,proof){
+export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,getHighlights,gameTax},id,game,cost,prize,result,proof){
  return transaction(()=>{
   if(balanceFor(id)<cost)throw new Error('余额不足。');
   const penalty=['scratch','slot'].includes(game)?(result.penalty||0):0;
@@ -119,7 +119,8 @@ export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,g
   if(cost)recordLedger(id,-cost,game+'投入');
   if(penalty)recordLedger(id,-penalty,game==='slot'?'异常回路过载维修费':'刮刮乐炸弹追加扣款');
   if(prize)recordLedger(id,prize,game+'奖金');
+  const tax=gameTax?.charge({employeeId:id,game,key:proof.seedHash,cost,prize,penalty})||0;if(tax)result.tax=tax;
   const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(id,game,cost,prize,proof.seed,proof.seedHash,JSON.stringify(result));
-  award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,penalty,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash,gameHighlight:getHighlights().event(id,Number(row.lastInsertRowid))};
+  award(id);return {ticketId:Number(row.lastInsertRowid),cost,prize,penalty,tax,balance:balanceFor(id),result,seed:proof.seed,seedHash:proof.seedHash,gameHighlight:getHighlights().event(id,Number(row.lastInsertRowid))};
  });
 }

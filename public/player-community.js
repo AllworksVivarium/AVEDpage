@@ -15,7 +15,7 @@ window.AVEDCommunity=function(ctx){
   tabs.addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(!b||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();navigateGame(b.dataset.game);});
   const ticker=document.createElement('div');ticker.className='company-play-ticker';ticker.tabIndex=0;tabs.parentElement.after(ticker);
   const gameHeader=document.createElement('div');gameHeader.className='terminal-game-header';tabs.parentElement.before(gameHeader);gameHeader.append(tabs.parentElement,ticker);
-  function renderTicker(){const message='公司温馨提示：请您劳逸结合，适度娱乐，小赌怡情，大赌伤身。股市有风险，入市需谨慎。';ticker.setAttribute('aria-label',message);const copy='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 21H2Z" fill="none" stroke="currentColor"/><path d="M12 8v6m0 3v1" stroke="currentColor"/></svg><span>'+message+'</span>';ticker.innerHTML='<div class="company-ticker-track" aria-hidden="true"><div class="ticker-copy">'+copy+'</div><div class="ticker-copy">'+copy+'</div></div>';}
+  function renderTicker(){const message='公司温馨提示：请适度娱乐。小游戏每局净利润收取 3% 税费，亏损或回本不收；税款进入公司爱心账户。股票按成交手续费计费。';ticker.setAttribute('aria-label',message);const copy='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 21H2Z" fill="none" stroke="currentColor"/><path d="M12 8v6m0 3v1" stroke="currentColor"/></svg><span>'+message+'</span>';ticker.innerHTML='<div class="company-ticker-track" aria-hidden="true"><div class="ticker-copy">'+copy+'</div><div class="ticker-copy">'+copy+'</div></div>';}
   renderTicker();
   selectGame('home');
   const compactGames=window.AVEDCreateCasinoSwitcher?.({games,tabs,gameHeader,getUser,selectGame:navigateGame});

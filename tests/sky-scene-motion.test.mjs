@@ -33,3 +33,5 @@ test('ground camera slows the wind without resetting its phase at reveal',()=>{
  assert.ok(airMotion(landing,108500).speed<airMotion(landing,108100).speed);
  assert.ok(airMotion(landing,110000).speed<1);
 });
+
+test('eight freefall avatars share a level, keep fixed lanes and draw the current player last',()=>{const people=Array.from({length:8},(_,i)=>({id:i+1}));const layout=context.window.AVEDSkyScene.fallLayout(people,3,420,300);assert.equal(new Set(layout.map(p=>p.startY)).size,1);assert.equal(new Set(layout.map(p=>p.x)).size,8);assert.equal(layout.at(-1).p.id,3);const crowded=context.window.AVEDSkyScene.fallLayout(Array.from({length:60},(_,i)=>({id:i+1})),59,420,300);assert.equal(crowded.length,24);assert.equal(crowded.at(-1).p.id,59);assert.equal(people.length,8);});

@@ -80,7 +80,7 @@ export const departmentsData = [
           code: 'DIV-01 // CONTAINMENT',
           name: '收容部',
           minister: '',
-          motto: '以绝对理性构筑牢笼，将不可名状封入几何。',
+          motto: '交班前请确认门锁、封条和在册数量。',
           desc: '负责全局异常实体收容单元设计、现实扭曲抑制力场维护及高危收容突破应急响应。',
           hasBgCard: false
         },
@@ -88,7 +88,7 @@ export const departmentsData = [
           code: 'DIV-02 // TACTICAL ARMS',
           name: '武装部',
           minister: '',
-          motto: '先于黎明封锁，隐于白雾歼灭。',
+          motto: '装备领用、出勤和回收均需登记。',
           desc: '统辖外勤机动特遣队与重装防卫部队，负责突发超自然现场武力接管、站点防御与高危镇压。',
           hasBgCard: false
         },
@@ -96,7 +96,7 @@ export const departmentsData = [
           code: 'DIV-03 // LOGISTICS',
           name: '后勤部',
           minister: '',
-          motto: '秩序始于配给，稳定源于细节。',
+          motto: '领用物资请登记，缺货可提交补给申请。',
           desc: '负责各收容站点物资调拨、员工考勤薪资与低保发放、娱乐室金库核算及基础设施运维。',
           hasBgCard: false
         },
@@ -104,7 +104,7 @@ export const departmentsData = [
           code: 'DIV-04 // RESEARCH',
           name: '科研部',
           minister: '',
-          motto: '解析异常法则，重构现实边界。',
+          motto: '实验记录请写清条件、过程和结果。',
           desc: '负责异常项目机理剖析、逆向工程开发、认知危害过滤算法研究及跨维度探测实验。',
           hasBgCard: false
         },
@@ -112,7 +112,7 @@ export const departmentsData = [
           code: 'DIV-05 // MEDICAL',
           name: '医疗部',
           minister: '',
-          motto: '修补躯壳之伤，锚定理智之弦。',
+          motto: '身体或精神状态异常，请联系值班人员。',
           desc: '负责外勤伤员战地急救、精神污染净化、记忆消除药剂调配及全员定期心理理智评估。',
           hasBgCard: true // 绑定您上传的第3张医疗部宣发卡
         }

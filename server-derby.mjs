@@ -5,7 +5,7 @@ import {mediaReference} from './server-media.mjs';
 import {robotAvatar} from './server-default-avatar.mjs';
 import {animalRules,animalPlan,animalFrame,animalMotion,animalReturn} from './server-animal-race.mjs';
 
-export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,clock=()=>Date.now(),setTimer=setTimeout,clearTimer=clearTimeout}) {
+export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,gameTax,clock=()=>Date.now(),setTimer=setTimeout,clearTimer=clearTimeout}) {
  db.exec(`CREATE TABLE IF NOT EXISTS derby_races(id INTEGER PRIMARY KEY,start_at INTEGER NOT NULL,finish_at INTEGER NOT NULL,next_at INTEGER NOT NULL,winner INTEGER NOT NULL,seed TEXT NOT NULL,seed_hash TEXT NOT NULL,settled INTEGER NOT NULL DEFAULT 0);`);
  if(!db.prepare('PRAGMA table_info(derby_races)').all().some(c=>c.name==='rules_json'))db.exec("ALTER TABLE derby_races ADD COLUMN rules_json TEXT NOT NULL DEFAULT ''");
  db.exec(`CREATE TABLE IF NOT EXISTS derby_wagers(race_id INTEGER NOT NULL REFERENCES derby_races(id),employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,market TEXT NOT NULL CHECK(market IN ('first','last')),runner INTEGER NOT NULL CHECK(runner BETWEEN 0 AND 4),cost INTEGER NOT NULL,prize INTEGER NOT NULL DEFAULT 0,settled INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(race_id,employee_id,market));
@@ -47,6 +47,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
     if(prize)recordLedger(b.employee_id,prize,'下班竞速返还 #'+race.id+(b.market==='first'?' 第一名':' 最后一名'));
     db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(b.employee_id,'derby',b.cost,prize,race.seed,race.seed_hash,JSON.stringify({round:race.id,winner:race.winner,runner:b.runner,market:b.market,order}));
    }
+   if(gameTax)for(const total of db.prepare('SELECT employee_id,SUM(cost) cost,SUM(prize) prize FROM derby_wagers WHERE race_id=? GROUP BY employee_id').all(race.id)){const tax=gameTax.charge({employeeId:total.employee_id,game:'derby',key:race.id+':'+race.seed_hash,cost:total.cost,prize:total.prize});if(tax){const ticket=db.prepare("SELECT id,result_json FROM game_tickets WHERE employee_id=? AND game='derby' AND json_extract(result_json,'$.round')=? ORDER BY prize DESC,id LIMIT 1").get(total.employee_id,race.id);const result=JSON.parse(ticket.result_json);result.tax=tax;db.prepare('UPDATE game_tickets SET result_json=? WHERE id=?').run(JSON.stringify(result),ticket.id);db.prepare('UPDATE derby_wagers SET prize=prize-? WHERE race_id=? AND employee_id=? AND market=?').run(tax,race.id,total.employee_id,result.market);}}
    db.prepare('UPDATE derby_races SET settled=1 WHERE id=?').run(race.id);race.settled=1;
   });
   if(!race||now>=race.next_at) {

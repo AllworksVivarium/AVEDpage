@@ -44,7 +44,7 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   }
   avatar(p,-8,-8,16);
   if(self){c.strokeStyle='#ffcd7f';c.strokeRect(-10,-10,20,20);label('ui:self','▼ YOU',x,y+(chute&&!grounded?-56:-25),'flight-scene-label flight-scene-label-self');}
-  nameplate(p,x,y);
+  nameplate(p,x,y);if(labels.get(p.id))labels.get(p.id).style.zIndex=self?'3':'1';
   c.restore();
  }
  function ground(t){
@@ -108,23 +108,22 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   const selected=[...state.passengers];if(selected.length>24){const own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];}
   if(board){
    const s=Math.min(1.1,(w-38)/220),x=(w-220*s)/2+14,y=h*.52-50*s+(animated?Math.sin(t/700)*2:0);helicopter(x,y,s,state.passengers.slice(0,8),t,animated);
-   label('ui:passengers',selected.length+' PASSENGERS / 8 VISIBLE SEATS',w*.56,h*.89-7,'flight-scene-label flight-scene-label-manifest');
+   label('ui:passengers',selected.length+' 人入座',w*.56,h*.89-7,'flight-scene-label flight-scene-label-manifest');
   }else{
    const departElapsed=now-state.departAt;
    const heliScale=Math.min(1.1,(w-38)/220),heliX=(w-220*heliScale)/2+14,heliY=h*.52-50*heliScale;
    if(departElapsed<2400){const k=ease(departElapsed/2400);helicopter(heliX+k*30,heliY-k*(h*.75+70),heliScale,departElapsed<180?state.passengers.slice(0,8):[],t,animated);}
-   const shown=selected.slice(0,24),columns=Math.min(4,Math.max(2,shown.length)),rows=Math.ceil(shown.length/columns);
-   for(let i=0;i<shown.length;i++){
-    const p=shown[i],x=48+(i%columns+.5)*(w-53)/columns,row=Math.floor(i/columns),startY=h*.60+(row-(rows-1)/2)*Math.min(43,(h*.30)/Math.max(1,rows-1));
+   const drawOrder=window.AVEDSkyScene.fallLayout(selected,selfId,w,h);
+   for(const {p,i,x,startY} of drawOrder){
     let y=startY,actorX=x,chute=p.status==='landed',grounded=false;
-    if(chute){const entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(seatY,startY,entry),h).y;actorX=mix(seatX,x,entry);
+    if(chute){const entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,openY=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(heliY+42*heliScale,startY,entry),h).y;actorX=x;
      const descent=window.AVEDSkyScene.passengerMotion(state,p,now,openY,h);y=descent.y;grounded=descent.grounded;
      person(p,actorX,y,true,p.id===selfId,t,animated,grounded);
     }else if(p.status==='crashed'){
-     const age=now-p.settledAt,k=clamp(age/650),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,from=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(seatY,startY,entry),h).y;actorX=mix(seatX,x,entry);y=mix(from,h-36,k*k);
+     const age=now-p.settledAt,k=clamp(age/650),entry=ease((p.settledAt-state.departAt-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale,from=window.AVEDSkyScene.freefallMotion(state,p.settledAt,mix(heliY+42*heliScale,startY,entry),h).y;actorX=x;y=mix(from,h-36,k*k);
      if(k<1){rect(actorX-1,y-34,2,18,'#edab7e');person(p,actorX,y,false,p.id===selfId,t,animated);}
      else if(age<1750){for(let n=0;n<7;n++){const spread=Math.max(0,(age-650)/1000);rect(actorX+(n-3)*spread*7,h-30-Math.sin(n+1)*spread*10,3,3,n%2?'#dfae87':'#a08170');}label('ui:lost:'+p.id,'LOST',actorX,h-45,'flight-scene-label flight-scene-label-lost');}
-    }else if(p.status==='aboard'){const entering=ease((departElapsed-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale;const falling=window.AVEDSkyScene.freefallMotion(state,now,mix(seatY,startY,entering),h);if(animated){const seconds=Math.max(0,departElapsed/1000);for(let n=0;n<3;n++)rect(x-11+n*11,falling.y-12-((air.travel+n*13)%38),1,7+Math.min(18,seconds),'#f4d4a488');}person(p,mix(seatX,x,entering),falling.y,false,p.id===selfId,t,animated);}
+    }else if(p.status==='aboard'){const entering=ease((departElapsed-180)/1600),seatX=heliX+(72+(i%4)*24)*heliScale,seatY=heliY+(42+Math.floor(i%8/4)*20)*heliScale;const falling=window.AVEDSkyScene.freefallMotion(state,now,mix(heliY+42*heliScale,startY,entering),h);if(animated){const seconds=Math.max(0,departElapsed/1000);for(let n=0;n<3;n++)rect(x-11+n*11,falling.y-12-((air.travel+n*13)%38),1,7+Math.min(18,seconds),'#f4d4a488');}person(p,x,falling.y,false,p.id===selfId,t,animated);}
    }
    if(selected.length>24)label('ui:more','+'+(selected.length-24)+' / SEE MANIFEST',w*.6,h-16,'flight-scene-label');
   }
@@ -167,3 +166,5 @@ window.AVEDSkyScene.airMotion=function(state,now){
  const reveal=at(state.revealedAt),seconds=Math.max(0,(now-state.revealedAt)/1000),decay=Math.exp(-seconds/.28);
  return {travel:reveal.travel+reveal.speed*.28*(1-decay),speed:reveal.speed*decay};
 };
+
+window.AVEDSkyScene.fallLayout=function(passengers,selfId,width,height){const selected=[...passengers],own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];const shown=selected.slice(0,24),columns=Math.min(8,Math.max(1,shown.length)),rows=Math.ceil(shown.length/columns);return shown.map((p,i)=>({p,i,x:48+(i%columns+.5)*(width-53)/columns,startY:height*.60+(Math.floor(i/columns)-(rows-1)/2)*Math.min(43,height*.30/Math.max(1,rows-1))})).sort((a,b)=>Number(a.p.id===selfId)-Number(b.p.id===selfId));};

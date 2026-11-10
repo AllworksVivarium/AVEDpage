@@ -63,7 +63,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   if(animated()){if(state.el.animate)state.motion=state.el.animate([{opacity:.25,translate:'0 -6px'},{opacity:1,translate:'0 0'}],{duration:240,easing:'ease-out'});else state.el.classList.add('scratch-award-enter');}
   state.timer=setTimeout(()=>{state.el.hidden=true;},penalty>0?3500:multiplier>=10?4000:multiplier>=5?2500:1500);
  }
- function settle(banner,{cost,prize,penalty=0,cells,gameHighlight},mode='manual'){
+ function settle(banner,{cost,prize,penalty=0,tax=0,cells,gameHighlight},mode='manual'){
   if(penalty>0){banner.dataset.scratchFeedback='bomb';banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');if(isActive()&&!document.hidden){showToast({cost,prize,penalty,multiplier:0});playSfx('scratch-bomb-'+(1+penalty/cost));const host=document.getElementById('active-ticket-board-container'),bomb=cells?.find(c=>c.isBomb),source=bomb?host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"] svg')||host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"]'):host;const rect=source?.getBoundingClientRect?.();window.AVEDScratchBomb?.show({host,cost,penalty,origin:rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:undefined,animated:animated()});}return;}
   banner.dataset.scratchFeedback=prize>cost?'profit':prize>0?'return':'empty';
   banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
@@ -72,7 +72,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   const multiplier=cost>0?prize/cost:0;
   if(isActive()&&!document.hidden)window.AVEDPersonalRecord?.show(gameHighlight);
   if(multiplier>=5)banner.dataset.scratchFeedback=multiplier>=50?'supreme':multiplier>=10?'jackpot':'big';
-  if(isActive()&&!document.hidden)showToast({prize,multiplier});
+  if(isActive()&&!document.hidden)showToast({prize:prize-tax,multiplier});
   if(isActive()&&!document.hidden){
    if(prize>cost){playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=20?'scratch-jackpot-major':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':mode==='all'?'scratch-win-all':'scratch-win');burst(multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:multiplier>=5?3:1);if(multiplier>=10)rain(multiplier);}
    else if(prize===0)playSfx('scratch-zero');
