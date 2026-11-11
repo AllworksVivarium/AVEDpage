@@ -37,11 +37,13 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
   return {day,serverTime:clock(),onlineCount:ids.length,guests,cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:drinking.leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
  }
  const state=(id,common=shared())=>({...common,selfId:id,myDrink:currentOrder(id,common.day),balance:balanceFor(id),cheersInvites:cheers.personal(id),barPreferences:preferences.get(id),drinking:drinking.status(id)});
- function emit(response,data){if(response.destroyed||response.writableLength>262144){response.destroy();streams.delete(response);return;}response.write('event: bar\ndata: '+JSON.stringify(data)+'\n\n');}
+ const online=id=>[...streams.values()].some(client=>client.id===id);
+ function detach(response){const client=streams.get(response);if(!client)return false;streams.delete(response);if(!online(client.id))drinking.seen(client.id,{force:true});return true;}
+ function emit(response,data){if(response.destroyed||response.writableLength>262144){detach(response);response.destroy();return;}response.write('event: bar\ndata: '+JSON.stringify(data)+'\n\n');}
  let broadcastTimer=null;
  function broadcast(){if(broadcastTimer||!streams.size)return;broadcastTimer=setTimeout(()=>{broadcastTimer=null;try{if(!streams.size)return;const common=shared();for(const [response,client] of streams)emit(response,state(client.id,common));}catch(error){console.error('Bar update:',error.message);}},200);broadcastTimer.unref();}
- let lastPrune=clock();const timer=setInterval(()=>{try{for(const [response,client] of streams){const actor=sessionEmployee(client.req);if(!actor||actor.id!==client.id){streams.delete(response);response.end();}}if(clock()-lastPrune>3600000){prune();lastPrune=clock();}if(streams.size)broadcast();}catch(error){console.error('Bar heartbeat:',error.message);}},heartbeatMs);timer.unref();prune();
- return {currentOrder,history,prune,refresh:broadcast,close(){clearInterval(timer);if(broadcastTimer)clearTimeout(broadcastTimer);for(const response of streams.keys())response.end();streams.clear();},async handle(req,res,url){
+ let lastPrune=clock();const timer=setInterval(()=>{try{for(const [response,client] of streams){const actor=sessionEmployee(client.req);if(!actor||actor.id!==client.id){detach(response);response.end();}}if(clock()-lastPrune>3600000){prune();lastPrune=clock();}for(const id of new Set([...streams.values()].map(client=>client.id)))drinking.seen(id);if(streams.size)broadcast();}catch(error){console.error('Bar heartbeat:',error.message);}},heartbeatMs);timer.unref();prune();
+ return {currentOrder,history,prune,refresh:broadcast,close(){clearInterval(timer);if(broadcastTimer)clearTimeout(broadcastTimer);for(const id of new Set([...streams.values()].map(client=>client.id)))drinking.seen(id,{force:true});for(const response of [...streams.keys()])response.end();streams.clear();},async handle(req,res,url){
   const path=url.pathname;if(!path.startsWith('/api/player/bar'))return false;
   const cheersReply=path.match(/^\/api\/player\/bar\/cheers\/([a-f0-9-]{36})$/);
   if(!['/api/player/bar','/api/player/bar/events','/api/player/bar/orders','/api/player/bar/messages','/api/player/bar/cheers','/api/player/bar/preferences','/api/player/bar/pour','/api/player/bar/sip','/api/player/bar/coaster','/api/player/bar/ranking'].includes(path)&&!cheersReply){send(res,404,{error:'未找到酒吧接口。'});return true;}
@@ -59,9 +61,9 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
    if(path==='/api/player/bar/events'&&req.method==='GET'){
     if([...streams.values()].filter(x=>x.id===actor.id).length>=4){send(res,429,{error:'酒吧窗口已达上限，请关闭重复页面。'});return true;}
     res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});res.write(': bar connected\n\n');
-    streams.set(res,{id:actor.id,req});res.on('close',()=>{if(streams.delete(res))broadcast();});broadcast();return true;
+    if(!online(actor.id))drinking.visit(actor.id);streams.set(res,{id:actor.id,req});res.on('close',()=>{if(detach(res))broadcast();});broadcast();return true;
    }
-   if(path==='/api/player/bar'&&req.method==='GET'){send(res,200,{...state(actor.id),menu:barDrinks,glassware:barGlassware,features:barFeatures,toleranceOptions:barToleranceOptions.map(({id,label})=>({id,label}))});return true;}
+   if(path==='/api/player/bar'&&req.method==='GET'){if(!online(actor.id))drinking.visit(actor.id);send(res,200,{...state(actor.id),menu:barDrinks,glassware:barGlassware,features:barFeatures,toleranceOptions:barToleranceOptions.map(({id,label})=>({id,label}))});return true;}
    if(path==='/api/player/bar/messages'&&req.method==='GET'){
     const raw=url.searchParams.get('before'),before=raw===null?Number.MAX_SAFE_INTEGER:Number(raw);if(!Number.isSafeInteger(before)||before<1)throw Error('聊天记录页码无效。');send(res,200,history(before));return true;
    }
