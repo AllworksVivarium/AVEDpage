@@ -40,6 +40,15 @@ test('community identity, edits, moderation, search and retained removals',async
  const life=(await p('/api/player/life','POST',{title:'医疗值班画',kind:'art',body:'走廊',tags:['医疗部'],imageData:img})).data;assert.equal(life.pending,true);assert.equal((await p('/api/player/life')).data.items.length,0);
  assert.ok((await a('/api/admin/moderation')).data.items.some(x=>x.kind==='life'&&x.id===life.id));await a('/api/admin/moderation/life/'+life.id,'POST',{action:'approve'});
  const lifeResult=(await p('/api/player/life?kind=art&department='+encodeURIComponent('医疗部')+'&q='+encodeURIComponent('值班'))).data.items;assert.equal(lifeResult.length,1);assert.equal(lifeResult[0].anonymousName,'新代号');
+ assert.equal((await p('/api/admin/life')).status,403);
+ assert.ok((await a('/api/admin/life?q='+encodeURIComponent('值班'))).data.items.some(x=>x.id===life.id));
+ const lifeDelete='/api/admin/speech/life_records/'+life.id;
+ assert.equal((await p(lifeDelete,'DELETE')).status,403);
+ assert.equal((await a(lifeDelete,'DELETE')).status,200);
+ assert.ok(!(await p('/api/player/life')).data.items.some(x=>x.id===life.id));
+ assert.ok(!(await a('/api/admin/life')).data.items.some(x=>x.id===life.id));
+ const deletedLife=(await a('/api/admin/speech-records?sourceType=life')).data.items.find(x=>x.sourceId===life.id);
+ assert.ok(deletedLife.deletedAt);assert.ok(deletedLife.deletedBy);assert.equal(deletedLife.body,'走廊');
  const rules=await a('/api/admin/terminology','POST',{pattern:'收容',replacement:'封存',isRegex:false});assert.equal(rules.status,200);assert.equal((await a('/api/admin/terminology','POST',{pattern:'(a+)+$',replacement:'',isRegex:true})).status,400);
  const donation={amount:1973,requestId:'custom-donation-check-01'};
  const gift=await p('/api/player/donate','POST',donation);assert.equal(gift.status,200);assert.equal(gift.data.personal.balance,98027);assert.equal(gift.data.fund.donated,1973);

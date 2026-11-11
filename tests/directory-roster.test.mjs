@@ -1,6 +1,22 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';import vm from 'node:vm';
 import {directoryEmployees} from '../server-directory.mjs';
 
+test('directory cards show department plus custom title and only the title for unassigned personnel',()=>{
+ const source=readFileSync(new URL('../public/player.js',import.meta.url),'utf8');
+ const start=source.indexOf('function renderDepartmentsAndPersonnel()');
+ const render=source.slice(start,source.indexOf('// ======================================================================',start));
+ const grid={innerHTML:'',parentElement:{classList:{add(){}},hidden:false}},view={dataset:{},append(){}};
+ const nodes={'view-departments':view,'personnel-directory-grid':grid,'directory-unassigned':{},'company-leadership-directory':{}};
+ const employees=[['甲','收容部','部长'],['乙','收容部','部长'],['丙','收容部','档案管理员'],['丁','公司直属','特别顾问']].map(([name,department,positionTitle])=>({name,department,positionTitle,isLeadership:true,stats:[0,0,0,0,0,0],bracketTag:positionTitle,location:'',abilityNote:''}));
+ const context={window:{avedDepartmentFilter:'收容部'},document:{getElementById:id=>nodes[id]||null},byId:id=>nodes[id],employees,departmentsData:[]};
+ vm.runInNewContext(render+';renderDepartmentsAndPersonnel();',context);
+ assert.equal((grid.innerHTML.match(/职务：<strong>部长<\/strong>/g)||[]).length,2);
+ assert.ok(grid.innerHTML.includes('所属部门：<strong>收容部</strong><br>职务：<strong>档案管理员</strong>'));
+ assert.equal((grid.innerHTML.match(/>部长档案</g)||[]).length,1);
+ context.window.avedDepartmentFilter='公司直属';vm.runInNewContext('renderDepartmentsAndPersonnel();',context);
+ assert.ok(grid.innerHTML.includes('职务：<strong>特别顾问</strong>'));assert.ok(!grid.innerHTML.includes('所属部门：'));
+});
+
 test('the public directory excludes company robots while retaining real personnel and planning NPCs',()=>{
  const db=new DatabaseSync(':memory:');
  try{

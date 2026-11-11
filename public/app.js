@@ -110,7 +110,7 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","achievements"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","achievements"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
@@ -339,22 +339,24 @@ function personnelAttributeValues(v){const values=Array.from({length:6},(_,i)=>S
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
-  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label>自定义职位<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
-  const department=form.querySelector('[name=department]');department.before(fields);
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).filter(([kind])=>kind!=='company_containment').map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label data-position-mode>职务类型<select name="positionMode"><option value="member">成员</option><option value="minister">部长（可多人担任）</option><option value="custom">自定义职务</option></select></label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  const department=form.querySelector('[name=department]'),departmentLabel=document.createElement('label');departmentLabel.textContent='所属部门';department.before(fields);fields.querySelector('[data-position-mode]').before(departmentLabel);departmentLabel.append(department);
   const attributes=document.createElement('fieldset');attributes.className='employee-attributes-fields';attributes.innerHTML='<legend>六维属性</legend><p>从顶部顺时针排列；每项 0–100，全部留空表示未录入。</p><div class="employee-attribute-grid">'+['力量','意志','洞察','敏捷','智力','体质'].map((label,i)=>'<label>'+label+'<input name="attribute'+i+'" type="number" min="0" max="100" step="1" aria-label="六维 '+label+'" value="'+(current?.attributes?.[i]??'')+'"></label>').join('')+'</div>';fields.after(attributes);
   const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
-  kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';let wasMinister=false;
+  kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';
+  const mode=fields.querySelector('[name=positionMode]');mode.value=current?.positionTitle==='部长'?'minister':current?.identityKind==='planning_member'&&current.positionTitle!=='成员'?'custom':'member';let customTitle=mode.value==='custom'?position.value:'',lastMode=mode.value;
   function sync(){
    const leader=kind.value==='planning_member',containment=kind.value.endsWith('_containment'),company=kind.value==='company_containment';
    fields.querySelector('[data-archive-only]').hidden=!leader;fields.querySelector('[data-archive-bio]').hidden=!containment;fields.querySelector('[name=archiveBio]').disabled=!containment;
    if(!leader)npc.checked=company;
    if(containment)department.value='公司直属';department.disabled=containment;
-   const minister=leader&&department.value!=='公司直属';
-   if(minister){position.value='部长';}else if(!leader){position.value=containment?'收容物':'成员';}else if(wasMinister||['成员','收容物'].includes(position.value)){position.value='';}
-   wasMinister=minister;position.closest('label').hidden=!leader;position.disabled=!leader;position.readOnly=minister;position.required=leader;position.placeholder='例如：人工智能、监察长、公司顾问';
+   if(lastMode==='custom')customTitle=position.value;
+   if(!leader){position.value=containment?'收容物':'成员';}else{position.value=mode.value==='custom'?customTitle:mode.value==='minister'?'部长':'成员';}
+   lastMode=leader?mode.value:'';mode.closest('label').hidden=!leader;mode.disabled=!leader;
+   position.closest('label').hidden=!leader||mode.value!=='custom';position.disabled=!leader;position.readOnly=mode.value!=='custom';position.required=leader;position.placeholder='例如：档案管理员、人工智能、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
-   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，不设置自定义身份。':leader?'选择公司直属部可填写自定义职位；选择具体部门即担任部长。玩家终端仅展示实际职位，不展示企划组成员分类。此身份不自动授予后台管理权限。':'玩家为部门成员，不设置自定义身份。';
+   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，不设置自定义身份。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。此身份不自动授予后台管理权限。':'玩家为部门成员，不设置自定义身份。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
@@ -374,7 +376,7 @@ async function renderAdmin() {
   const employeeRows = employees.map((e) =>
     '<tr data-roster-department="'+esc(rosterDepartment(e.department))+'"><td>' + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
-    "</td><td>" + esc(e.department==='公司直属'?'公司直属部':e.department || "未填写") +
+    "</td><td>" + esc(e.department==='公司直属'?'无部门归属':e.department || "未填写") + (e.positionTitle?'<small>'+esc(e.positionTitle)+'</small>':'') +
     "</td><td>" + employeeBalanceControl(e) +
     "</td><td>" + (e.isNpc ? "—" : e.role === "admin" ? "管理员" : "员工") +
     "</td><td>" + (e.isNpc ? personnelIdentityNames[e.identityKind] : e.enabled ? "启用" : "停用") +
@@ -396,7 +398,7 @@ async function renderAdmin() {
     employeeRows +
     '</tbody></table></div></section>';
 
-  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name==='公司直属'?'公司直属部':name;select.append(option);}select.value=value;input.replaceWith(select);});
+  document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name==='公司直属'?'无部门归属':name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
   const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
   const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
@@ -520,6 +522,7 @@ async function renderTab(tab) {
   setActive(tab);
   try {
     if(tab === 'forumAdmin')await renderForumAdmin();
+    else if(tab === 'lifeAdmin')await renderLifeAdmin();
     else if(tab === 'forumWorkshop')await renderForumWorkshopAdmin();
     else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();

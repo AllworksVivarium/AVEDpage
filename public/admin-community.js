@@ -16,6 +16,20 @@ function bindAuditDates(form){
  }
 }
 
+async function renderLifeAdmin(){
+ const panel=$('#panel');panel.innerHTML='<div class="section-heading"><h3>生活记录</h3><p>删除后停止公开，管理记录保留。</p></div><form class="community-filters" data-life-search><input name="q" type="search" maxlength="120" aria-label="检索生活记录" placeholder="检索标题或正文"><select name="kind" aria-label="生活记录类型"><option value="">全部类型</option><option value="article">文字档案</option><option value="art">图片档案</option></select><button class="small-action">检索</button></form><div data-life-list></div><button type="button" class="small-action" data-life-more hidden>更早记录</button>';
+ const form=panel.querySelector('[data-life-search]'),list=panel.querySelector('[data-life-list]'),more=panel.querySelector('[data-life-more]');let next=null,busy=false,filters=new URLSearchParams();
+ async function load(append=false){
+  if(busy)return;busy=true;more.disabled=true;
+  try{const q=new URLSearchParams(filters);if(append&&next)q.set('before',next);const data=await api('/api/admin/life?'+q);if(!list.isConnected)return;if(!append)list.replaceChildren();
+   for(const record of data.items){const row=document.createElement('article');row.className='admin-post';row.innerHTML=`<header class="admin-post-head"><h4>#${record.id} ${esc(record.title)}</h4><button type="button" class="small-action danger" data-life-delete>删除记录</button></header><small>${esc(record.anonymousName)} · ${record.kind==='art'?'图片档案':'文字档案'} · ${esc(({approved:'已公开',pending:'待审核',rejected:'已拒绝'})[record.moderation]||record.moderation)} · ${AVEDTime.markup(record.createdAt)}</small><p class="announcement-body">${esc(record.body)}</p>${record.imageData?`<details><summary>查看附图</summary><img class="moderation-image" src="${esc(record.imageData)}" loading="lazy" alt="${esc(record.title)}"></details>`:''}<p>${record.tags.map(esc).join(' / ')}</p>`;
+    row.querySelector('[data-life-delete]').onclick=async e=>{const button=e.currentTarget;if(!await window.AVEDFeedback.confirm(`删除生活记录“${record.title}”？删除后停止公开，管理记录保留。`))return;button.disabled=true;try{await api('/api/admin/speech/life_records/'+record.id,{method:'DELETE'});row.remove();if(!list.children.length)list.textContent=next?'本页记录已删除，可继续调阅更早记录。':'暂无匹配的生活记录。';}catch(error){window.AVEDFeedback.alert(error.message);button.disabled=false;}};list.append(row);
+   }next=data.next;more.hidden=!next;if(!list.children.length)list.textContent='暂无匹配的生活记录。';
+  }finally{busy=false;more.disabled=false;}
+ }
+ form.onsubmit=e=>{e.preventDefault();if(busy)return;filters=new URLSearchParams(new FormData(form));load().catch(error=>window.AVEDFeedback.alert(error.message));};more.onclick=()=>load(true).catch(error=>window.AVEDFeedback.alert(error.message));await load();
+}
+
 async function renderModeration(){
  const {items}=await api('/api/admin/moderation');
  $('#panel').innerHTML='<div class="section-heading"><h3>图文核验</h3><p>待核材料</p></div>'+items.map(x=>`<article class="notice-box"><h4>${esc(x.title)}</h4><small>发布用户：${esc(x.displayName)}（${esc(x.username)} / #${x.employeeId}）<br>来源：${esc(({thread:'匿名聊天论坛 · 主题',reply:'匿名聊天论坛 · 回复',life:'生活记录'})[x.kind]||x.kind)}<br>${AVEDTime.markup(x.createdAt)}</small><p class="announcement-body">${esc(x.body)}</p><img class="moderation-image" src="${esc(x.imageData)}" alt="待核影像"><div class="moderation-actions"><button class="small-action" data-archive-id="${x.archiveId}" data-review="approve" data-kind="${x.kind}" data-id="${x.id}">批准</button><button class="small-action" data-archive-id="${x.archiveId}" data-review="reject" data-kind="${x.kind}" data-id="${x.id}">拒绝</button></div></article>`).join('')+(items.length?'':'<p>暂无待核材料。</p>');

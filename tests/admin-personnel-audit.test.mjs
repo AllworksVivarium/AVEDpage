@@ -32,7 +32,10 @@ test('only planning members have custom titles and can become department ministe
  assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false});
  assert.equal(personnelAssignment({identityKind:'planning_member',department:'公司直属部',positionTitle:'人工智能'}).positionTitle,'人工智能');
  const minister=personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:'人工智能'});
- assert.equal(minister.department,'医疗部');assert.equal(minister.positionTitle,'部长');assert.equal(minister.isLeadership,true);
+ assert.equal(minister.department,'医疗部');assert.equal(minister.positionTitle,'人工智能');assert.equal(minister.isLeadership,true);
+ assert.equal(personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:'成员'}).positionTitle,'成员');
+ assert.equal(personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:'部长'}).positionTitle,'部长');
+ assert.throws(()=>personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:''}),/实际职位/);
  assert.throws(()=>personnelAssignment({identityKind:'planning_member',department:'公司直属部',positionTitle:' '}),/实际职位/);
  const db=new DatabaseSync(':memory:');
  db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,department TEXT,position_title TEXT,is_npc INTEGER,is_leadership INTEGER,role TEXT,identity_kind TEXT);
@@ -59,6 +62,8 @@ test('persistent identities, editable player containment, and lazy categorized a
  const employeeId=await create('player_employee','ordinary',{department:'医疗部'});
  const playerId=await create('player_containment','player-object',{archiveBio:'原始收容简介'});
  const ministerId=await create('planning_member','minister',{department:'医疗部',positionTitle:'部长'});
+ const secondMinisterId=await create('planning_member','minister-two',{department:'医疗部',positionTitle:'部长'});
+ const customId=await create('planning_member','archivist',{department:'收容部',positionTitle:'档案管理员'});
  const leaderId=await create('planning_member','director',{positionTitle:'人工智能'});
  const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介'});
  assert.equal((await a('/api/admin/employees','POST',{identityKind:'player_employee',username:'fake-leader',password,displayName:'普通玩家',positionTitle:'部长'})).status,400);
@@ -82,6 +87,12 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(directory.find(x=>x.id===playerId).bio,'玩家更新简介');
  assert.equal(directory.find(x=>x.id===playerId).identityKind,'player_containment');
  assert.equal(directory.find(x=>x.id===ministerId).isLeadership,1);
+ assert.equal(directory.find(x=>x.id===secondMinisterId).positionTitle,'部长');
+ assert.equal(directory.find(x=>x.id===customId).department,'收容部');assert.equal(directory.find(x=>x.id===customId).positionTitle,'档案管理员');
+ assert.equal((await a('/api/admin/employees/'+customId,'PUT',{displayName:'独立档案管理员',department:'',positionTitle:'档案管理员'})).status,200);
+ let custom=(await player('/api/player/directory')).data.items.find(x=>x.id===customId);assert.equal(custom.department,'公司直属');assert.equal(custom.positionTitle,'档案管理员');
+ assert.equal((await a('/api/admin/employees/'+customId,'PUT',{displayName:'收容部档案管理员',department:'收容部'})).status,200);
+ custom=(await player('/api/player/directory')).data.items.find(x=>x.id===customId);assert.equal(custom.department,'收容部');assert.equal(custom.positionTitle,'档案管理员');
  assert.equal(directory.find(x=>x.id===leaderId).positionTitle,'人工智能');
  assert.equal((await player('/api/admin/employees/'+companyId,'PUT',{displayName:'篡改'})).status,403);
  assert.equal((await player('/api/admin/activity?category=image')).status,403);

@@ -506,7 +506,7 @@
         const outerHex = angles.map(a => `${(cx + rMax * Math.cos(a)).toFixed(1)},${(cy + rMax * Math.sin(a)).toFixed(1)}`).join(' ');
         const midHex = angles.map(a => `${(cx + rMax * 0.6 * Math.cos(a)).toFixed(1)},${(cy + rMax * 0.6 * Math.sin(a)).toFixed(1)}`).join(' ');
 
-        const isHead=emp=>emp.isLeadership&&emp.department!=='公司直属';
+        const isHead=emp=>emp.isLeadership&&emp.department!=='公司直属'&&emp.positionTitle==='部长';
         const group=emp=>isHead(emp)?'部长档案':emp.isLeadership?'职务档案':emp.identityKind?.endsWith('_containment')?'收容物档案':'部门成员';
         const rank=emp=>isHead(emp)?0:emp.isLeadership?1:emp.identityKind?.endsWith('_containment')?3:2;
         const selectedEmployees=employees.filter(emp=>emp.department===window.avedDepartmentFilter).sort((a,b)=>rank(a)-rank(b));
@@ -517,7 +517,7 @@
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = emp.isLeadership?`职务：<strong>${emp.positionTitle}</strong>`:`所属部门：<strong>${emp.department}</strong>${emp.positionTitle?`<br>职务：<strong>${emp.positionTitle}</strong>`:''}`;
+          const deptDisplay = [emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?`所属部门：<strong>${emp.department}</strong>`:'',emp.positionTitle?`职务：<strong>${emp.positionTitle}</strong>`:''].filter(Boolean).join('<br>');
 
           return `
             ${index===0||group(emp)!==group(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+group(emp)+'</h3>':''}
@@ -1507,7 +1507,7 @@
         if(data.economy)applyEconomyRules(data.economy);
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
-        currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:/^公司直属(?:部|领导)?$/.test(data.employee.department||'')&&data.employee.positionTitle?data.employee.positionTitle:data.employee.department,
+        currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:[...new Set([/^公司直属(?:部|领导)?$/.test(data.employee.department||'')?'':data.employee.department,data.employee.positionTitle].filter(Boolean))].join(' '),
           identityKind:data.employee.identityKind,positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>AVEDDossierContent.map(d));
