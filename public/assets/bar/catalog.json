@@ -8,7 +8,14 @@
     "height": 310,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_1.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_1.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      170,
+      310
+    ]
   },
   {
     "id": "grape-fizz",
@@ -19,7 +26,14 @@
     "height": 310,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_3.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_3.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      170,
+      310
+    ]
   },
   {
     "id": "apple-fizz",
@@ -30,7 +44,14 @@
     "height": 310,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_4.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_4.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      170,
+      310
+    ]
   },
   {
     "id": "amber-brew",
@@ -41,7 +62,14 @@
     "height": 310,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_5.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_5.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      170,
+      310
+    ]
   },
   {
     "id": "silver-brew",
@@ -52,7 +80,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_6.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_6.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "red-brew",
@@ -63,7 +98,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_7.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_7.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "gold-brew",
@@ -74,7 +116,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_8.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_8.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "blue-brew",
@@ -85,7 +134,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_9.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_9.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "green-bottle",
@@ -96,7 +152,14 @@
     "height": 480,
     "alpha": true,
     "sourcePack": "meitei",
-    "sourceFile": "宅飲みスターターセット素材_酩酊版_17.png"
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_17.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
   },
   {
     "id": "lemon-highball",
@@ -107,7 +170,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "deisui",
-    "sourceFile": "宅飲みスターターセット素材_泥酔版_10.png"
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_10.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "grape-highball",
@@ -118,7 +188,14 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "deisui",
-    "sourceFile": "宅飲みスターターセット素材_泥酔版_14.png"
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_14.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ]
   },
   {
     "id": "lemon-cocktail",
@@ -129,72 +206,140 @@
     "height": 400,
     "alpha": true,
     "sourcePack": "deisui",
-    "sourceFile": "宅飲みスターターセット素材_泥酔版_40.png"
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_40.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      520,
+      400
+    ]
   },
   {
     "id": "onyx-shot",
-    "name": "黑曜短饮",
+    "name": "透明 shot 杯",
     "image": "/assets/bar/onyx-shot.png",
     "price": 1300,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_A.png"
+    "sourceFile": "ショット_A.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ],
+    "orderable": false
   },
   {
     "id": "amber-shot",
-    "name": "琥珀短饮",
+    "name": "琥珀 shot",
     "image": "/assets/bar/amber-shot.png",
     "price": 1500,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_B.png"
+    "sourceFile": "ショット_B.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ]
   },
   {
     "id": "scarlet-shot",
-    "name": "绯红短饮",
+    "name": "绯红 shot",
     "image": "/assets/bar/scarlet-shot.png",
     "price": 1700,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_C.png"
+    "sourceFile": "ショット_C.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ]
   },
   {
     "id": "lime-shot",
-    "name": "青柠短饮",
+    "name": "青柠 shot",
     "image": "/assets/bar/lime-shot.png",
     "price": 1900,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_D.png"
+    "sourceFile": "ショット_D.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ]
   },
   {
     "id": "azure-shot",
-    "name": "蔚蓝短饮",
+    "name": "蔚蓝 shot",
     "image": "/assets/bar/azure-shot.png",
     "price": 2200,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_E.png"
+    "sourceFile": "ショット_E.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ]
   },
   {
     "id": "amethyst-shot",
-    "name": "紫晶短饮",
+    "name": "紫晶 shot",
     "image": "/assets/bar/amethyst-shot.png",
     "price": 2800,
     "width": 110,
     "height": 185,
     "alpha": true,
     "sourcePack": "familiar",
-    "sourceFile": "ショット_F.png"
+    "sourceFile": "ショット_F.png",
+    "displayScale": 0.4,
+    "contentBox": [
+      5,
+      15,
+      100,
+      160
+    ]
+  },
+  {
+    "id": "mineral-water",
+    "name": "矿泉水",
+    "image": "/assets/bar/mineral-water.png",
+    "price": 0,
+    "width": 153,
+    "height": 451,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "fbba7b77249c2968d9336b7975af39d9.png",
+    "displayScale": 1.1,
+    "contentBox": [
+      0,
+      0,
+      153,
+      451
+    ]
   }
 ]

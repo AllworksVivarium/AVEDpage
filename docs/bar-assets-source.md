@@ -8,6 +8,9 @@
 
 ## 画面分层
 
+- 新增矿泉水来自用户提供的 fbba7b77249c2968d9336b7975af39d9.png。仅去掉与画面边缘连通的白底并裁去外边距，保留瓶内白色高光与原图像素；没有使用 AI 重绘。站内文件为 public/assets/bar/mineral-water.png，153×451，约 23KB。
+- 本轮生成的三款 AI 杯子仅归档在聊天 work/bar-glass-concepts，未接入 public。容器、倒酒接口仍关闭，等待用户认可的新素材。
+
 - background.png、background-with-counter.png、counter.png 均为 2990 × 1685，不透明 RGB/alpha=255。
 - background.png 为无吧台版，适用于背景 → NPC → counter.png → 饮品的层次关系。
 - counter.png 白底不透明，不能直接整图叠加，否则会遮住背景。应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图；本次未改动原图像素。
