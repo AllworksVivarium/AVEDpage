@@ -110,11 +110,11 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","achievements"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","achievements"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(['dossiers','robots','achievements'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
+    if (isAdmin) await renderTab(['dossiers','robots','achievements','barMusic'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
     else await renderTab("files");
   } catch(error) {
     if(generation!==portalGeneration)return;
@@ -519,10 +519,12 @@ async function deleteEmployee(id, displayName, username) {
 
 // ===== Tab 路由分发 =====
 async function renderTab(tab) {
+  window.AVEDStopAdminMusicPreview?.();
   setActive(tab);
   try {
     if(tab === 'forumAdmin')await renderForumAdmin();
     else if(tab === 'lifeAdmin')await renderLifeAdmin();
+    else if(tab === 'barMusic')await renderBarMusicAdmin();
     else if(tab === 'forumWorkshop')await renderForumWorkshopAdmin();
     else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();

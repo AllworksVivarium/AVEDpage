@@ -392,11 +392,14 @@
       // 左侧导航切换 7 大独立分页（切换至收容物页时触发随机黑块乱码闪烁，切换至论坛页时触发骨架屏加载）
       // ======================================================================
       const mainViews = ['news', 'departments', 'containment', 'forum', 'casino'];
+      let barUI=null;
 
       const playerPageTitle=document.title;
       let renderedPlayerRoute='';
       function restorePlayerRoute(initial=false){
         if(!currentUser)return;
+        if(location.hash==='#/bar'){barUI?.enter({fromRoute:true});return;}
+        barUI?.leave({navigation:false});
         const route=AVEDStartup.resolveRoute(location.hash,['profile',...mainViews]);
         switchMainView(route.page,{game:route.game,navigation:initial?'replace':'none'});
         if(route.page==='forum'){
@@ -1808,6 +1811,7 @@
       const skyUI=AVEDSkyUI({api,esc,byId,playSfx,onSettled:()=>{profileFreshAt=0;},getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,navigateGame:game=>switchMainView('casino',{game}),getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumDetail});
+      barUI=AVEDBar({api,esc,getUser:()=>currentUser,onExit:()=>restorePlayerRoute(),onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       forumSocialUI=AVEDForumSocial({api,esc,onStockRisk:data=>economyUI?.updateRisk(data),getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});

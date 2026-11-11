@@ -2,7 +2,7 @@ import {createHmac,randomBytes} from 'node:crypto';
 const secret=process.env.SESSION_SECRET||randomBytes(32);
 export const presenceKey=(id,scope='anonymous')=>Number.isSafeInteger(Number(id))&&Number(id)>0?createHmac('sha256',secret).update(scope+':'+id).digest('hex').slice(0,24):'';
 export const presenceLifetime=75000;
-const activities=new Set(['forum','cards','sky','derby','stocks','slot','scratch','profile','news','departments','containment','life','home']);
+const activities=new Set(['forum','cards','sky','derby','stocks','slot','scratch','profile','news','departments','containment','life','bar','home']);
 
 // Ephemeral public activity only. No history, balance, IP address or database writes.
 export function createForumPresence({clock=Date.now}={}){

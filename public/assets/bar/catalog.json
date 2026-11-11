@@ -1,0 +1,200 @@
+[
+  {
+    "id": "lemon-fizz",
+    "name": "柠檬气泡酒",
+    "image": "/assets/bar/lemon-fizz.png",
+    "price": 350,
+    "width": 170,
+    "height": 310,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_1.png"
+  },
+  {
+    "id": "grape-fizz",
+    "name": "葡萄气泡酒",
+    "image": "/assets/bar/grape-fizz.png",
+    "price": 380,
+    "width": 170,
+    "height": 310,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_3.png"
+  },
+  {
+    "id": "apple-fizz",
+    "name": "青苹果气泡酒",
+    "image": "/assets/bar/apple-fizz.png",
+    "price": 380,
+    "width": 170,
+    "height": 310,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_4.png"
+  },
+  {
+    "id": "amber-brew",
+    "name": "琥珀麦酿",
+    "image": "/assets/bar/amber-brew.png",
+    "price": 500,
+    "width": 170,
+    "height": 310,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_5.png"
+  },
+  {
+    "id": "silver-brew",
+    "name": "银罐清酿",
+    "image": "/assets/bar/silver-brew.png",
+    "price": 600,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_6.png"
+  },
+  {
+    "id": "red-brew",
+    "name": "赤焰麦酿",
+    "image": "/assets/bar/red-brew.png",
+    "price": 650,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_7.png"
+  },
+  {
+    "id": "gold-brew",
+    "name": "金罐麦酿",
+    "image": "/assets/bar/gold-brew.png",
+    "price": 800,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_8.png"
+  },
+  {
+    "id": "blue-brew",
+    "name": "蓝罐麦酿",
+    "image": "/assets/bar/blue-brew.png",
+    "price": 850,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_9.png"
+  },
+  {
+    "id": "green-bottle",
+    "name": "青标瓶啤",
+    "image": "/assets/bar/green-bottle.png",
+    "price": 950,
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_17.png"
+  },
+  {
+    "id": "lemon-highball",
+    "name": "柠檬嗨棒",
+    "image": "/assets/bar/lemon-highball.png",
+    "price": 1000,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_10.png"
+  },
+  {
+    "id": "grape-highball",
+    "name": "葡萄嗨棒",
+    "image": "/assets/bar/grape-highball.png",
+    "price": 1100,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_14.png"
+  },
+  {
+    "id": "lemon-cocktail",
+    "name": "柠檬特调",
+    "image": "/assets/bar/lemon-cocktail.png",
+    "price": 1800,
+    "width": 520,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_40.png"
+  },
+  {
+    "id": "onyx-shot",
+    "name": "黑曜短饮",
+    "image": "/assets/bar/onyx-shot.png",
+    "price": 1300,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_A.png"
+  },
+  {
+    "id": "amber-shot",
+    "name": "琥珀短饮",
+    "image": "/assets/bar/amber-shot.png",
+    "price": 1500,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_B.png"
+  },
+  {
+    "id": "scarlet-shot",
+    "name": "绯红短饮",
+    "image": "/assets/bar/scarlet-shot.png",
+    "price": 1700,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_C.png"
+  },
+  {
+    "id": "lime-shot",
+    "name": "青柠短饮",
+    "image": "/assets/bar/lime-shot.png",
+    "price": 1900,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_D.png"
+  },
+  {
+    "id": "azure-shot",
+    "name": "蔚蓝短饮",
+    "image": "/assets/bar/azure-shot.png",
+    "price": 2200,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_E.png"
+  },
+  {
+    "id": "amethyst-shot",
+    "name": "紫晶短饮",
+    "image": "/assets/bar/amethyst-shot.png",
+    "price": 2800,
+    "width": 110,
+    "height": 185,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "ショット_F.png"
+  }
+]

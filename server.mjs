@@ -1,3 +1,5 @@
+import {installBar} from './server-bar.mjs';
+import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
 import {installGameTax} from './server-game-tax.mjs';
 import {installDossierContent,normalizeDossierContent,dossierView} from './server-dossier-content.mjs';
@@ -274,6 +276,8 @@ gameTax=installGameTax({db,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
 const achievementAlerts=installAchievementAlerts({db,send,readBody,requireEmployee,sessionEmployee});
+const barMusic=installBarMusic({db,send,readBody,requireEmployee,requireAdmin,dataDir,onChange:()=>bar.refresh()});
+const bar=installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,getMusic:()=>barMusic.playlist()});
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,gameTax});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
@@ -346,6 +350,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if(await cardTables.handle(req,res,url))return;
     if(await highlights.handle(req,res,url))return;
     if(await achievementAlerts.handle(req,res,url))return;
+    if(await barMusic.handle(req,res,url))return;
+    if(await bar.handle(req,res,url))return;
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
     if(await companyRobots.handle(req,res,url))return;
@@ -725,7 +731,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   }
 });
 
-server.on('close',()=>{radioRetention.close();logRetention.close();achievementAlerts.close();});
+server.on('close',()=>{bar.close();radioRetention.close();logRetention.close();achievementAlerts.close();});
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 server.listen(port,host,() => console.log(`万业携生收容公司服务已启动：${host}:${port}`));

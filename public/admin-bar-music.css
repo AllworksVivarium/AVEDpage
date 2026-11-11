@@ -1,0 +1,9 @@
+.admin-mode .bar-music-create{grid-template-columns:minmax(0,1fr);max-width:700px;margin:20px 0}
+.admin-mode .bar-music-create label,.bar-music-list .community-form label{display:grid;gap:6px;min-width:0;font-size:12px}
+.admin-mode .bar-music-create select{background:var(--admin-bg,#161c15);color:inherit;border:1px solid var(--admin-line,#788168);padding:9px}
+.bar-music-admin [hidden]{display:none!important}.bar-music-help{font-size:12px;line-height:1.8;opacity:.75;margin:0}
+.bar-music-admin [role=status]{font-size:12px;overflow-wrap:anywhere}.bar-music-admin [role=status]:empty{display:none}
+.bar-music-admin .community-filters label{font-size:12px;display:flex;align-items:center;gap:6px;white-space:normal}
+.bar-music-list{display:grid;gap:12px}.bar-music-list audio{display:block;width:min(100%,460px);height:36px;margin:12px 0}
+.bar-music-list h4{margin:0;font-size:15px}.bar-music-list details{margin-top:12px}.bar-music-list input:not([type=checkbox]){box-sizing:border-box;max-width:100%;width:100%;min-width:0;padding:8px;border:1px solid var(--admin-line,#788168);color:inherit;background:var(--admin-bg,#161c15)}
+.bar-music-list input[type=checkbox]{width:auto}.bar-music-list .community-form{margin-top:12px}
