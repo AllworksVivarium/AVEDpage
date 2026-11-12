@@ -4,6 +4,7 @@ import {createBarCheers} from './server-bar-cheers.mjs';
 import {installBarPreferences,barToleranceOptions,barGlassware,barFeatures} from './server-bar-preferences.mjs';
 import {installBarDrinking,barBusinessDay} from './server-bar-drinking.mjs';
 import {installBarCoasters} from './server-bar-coasters.mjs';
+import {installBarHospitality} from './server-bar-hospitality.mjs';
 
 export const barDay=barBusinessDay;
 const DAY=86400000;
@@ -27,6 +28,7 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
  const name=id=>db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name||'匿名员工';
  const drinking=installBarDrinking({db,clock,preferences,name}),coasters=installBarCoasters({db,clock,dayFor:barDay,name});
  const currentOrder=drinking.currentOrder;
+ const hospitality=installBarHospitality({db,clock,dayFor:barDay,name,isOnline:id=>[...streams.values()].some(client=>client.id===id),balanceFor,recordLedger,drinking});
  const cheers=createBarCheers({db,clock,dayFor:barDay,name,currentOrder,isOnline:id=>[...streams.values()].some(client=>client.id===id)});
  function prune(){db.prepare('DELETE FROM bar_messages WHERE created_at<?').run(new Date(clock()-5*DAY).toISOString());}
  function history(before=Number.MAX_SAFE_INTEGER){const rows=db.prepare('SELECT id,employee_id AS employeeId,alias,identity_mode AS identityMode,body,created_at AS createdAt FROM bar_messages WHERE id<? AND created_at>=? ORDER BY id DESC LIMIT 41').all(before,new Date(clock()-5*DAY).toISOString());return {items:rows.slice(0,40).reverse(),nextBefore:rows.length>40?rows[39].id:null};}
@@ -34,9 +36,9 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
   const ids=[...new Set([...streams.values()].map(x=>x.id))],day=barDay(clock());
   let shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);if(!shift){db.prepare('INSERT OR IGNORE INTO bar_shifts(day,npc_id) VALUES(?,?)').run(day,bartenders[randomInt(bartenders.length)].id);shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);}
   const guests=ids.slice(0,100).map(id=>({employeeId:id,alias:name(id),drink:currentOrder(id,day)}));
-  return {day,serverTime:clock(),onlineCount:ids.length,guests,cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:drinking.leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
+  return {day,serverTime:clock(),onlineCount:ids.length,guests,hostedRound:hospitality.activeRound(),cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:drinking.leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
  }
- const state=(id,common=shared())=>({...common,selfId:id,myDrink:currentOrder(id,common.day),balance:balanceFor(id),cheersInvites:cheers.personal(id),barPreferences:preferences.get(id),drinking:drinking.status(id)});
+ const state=(id,common=shared())=>({...common,selfId:id,myDrink:currentOrder(id,common.day),balance:balanceFor(id),hospitality:hospitality.personal(id),cheersInvites:cheers.personal(id),barPreferences:preferences.get(id),drinking:drinking.status(id)});
  const online=id=>[...streams.values()].some(client=>client.id===id);
  function detach(response){const client=streams.get(response);if(!client)return false;streams.delete(response);if(!online(client.id))drinking.seen(client.id,{force:true});return true;}
  function emit(response,data){if(response.destroyed||response.writableLength>262144){detach(response);response.destroy();return;}response.write('event: bar\ndata: '+JSON.stringify(data)+'\n\n');}
@@ -46,9 +48,16 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
  return {currentOrder,history,prune,refresh:broadcast,close(){clearInterval(timer);if(broadcastTimer)clearTimeout(broadcastTimer);for(const id of new Set([...streams.values()].map(client=>client.id)))drinking.seen(id,{force:true});for(const response of [...streams.keys()])response.end();streams.clear();},async handle(req,res,url){
   const path=url.pathname;if(!path.startsWith('/api/player/bar'))return false;
   const cheersReply=path.match(/^\/api\/player\/bar\/cheers\/([a-f0-9-]{36})$/);
-  if(!['/api/player/bar','/api/player/bar/events','/api/player/bar/orders','/api/player/bar/messages','/api/player/bar/cheers','/api/player/bar/preferences','/api/player/bar/pour','/api/player/bar/sip','/api/player/bar/coaster','/api/player/bar/ranking'].includes(path)&&!cheersReply){send(res,404,{error:'未找到酒吧接口。'});return true;}
+  const hospitalityReply=path.match(/^\/api\/player\/bar\/(gifts|rounds)\/([1-9]\d{0,14})$/);
+  if(!['/api/player/bar','/api/player/bar/events','/api/player/bar/orders','/api/player/bar/messages','/api/player/bar/cheers','/api/player/bar/preferences','/api/player/bar/pour','/api/player/bar/sip','/api/player/bar/coaster','/api/player/bar/ranking','/api/player/bar/gifts','/api/player/bar/rounds'].includes(path)&&!cheersReply&&!hospitalityReply){send(res,404,{error:'未找到酒吧接口。'});return true;}
   const actor=requireEmployee(req,res);if(!actor)return true;
   try{
+   if(req.method==='POST'&&(hospitalityReply||path==='/api/player/bar/gifts'||path==='/api/player/bar/rounds')){
+    const data=await readBody(req);
+    if(hospitalityReply){if(hospitalityReply[1]==='gifts')hospitality.respond(actor,Number(hospitalityReply[2]),data);else hospitality.endRound(actor,Number(hospitalityReply[2]));}
+    else if(path.endsWith('/gifts'))hospitality.invite(actor,data);else hospitality.startRound(actor,data);
+    send(res,200,state(actor.id));broadcast();return true;
+   }
    if(path==='/api/player/bar/sip'&&req.method==='POST'){const result=drinking.sip(actor,await readBody(req));send(res,200,{...state(actor.id),receipt:result.receipt});broadcast();return true;}
    if(path==='/api/player/bar/coaster'&&req.method==='GET'){send(res,200,coasters.read(actor.id,Number(url.searchParams.get('exclude'))||0));return true;}
    if(path==='/api/player/bar/coaster'&&req.method==='POST'){send(res,200,coasters.write(actor,await readBody(req)));return true;}
@@ -76,22 +85,10 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
     send(res,201,{ok:true,id:Number(result.lastInsertRowid)});broadcast();return true;
    }
    if(path==='/api/player/bar/orders'&&req.method==='POST'){
-    const data=await readBody(req),drink=barDrinks.find(x=>x.id===data.drinkId);
-    if(!drink||typeof data.requestId!=='string'||! /^[A-Za-z0-9_-]{16,100}$/.test(data.requestId))throw Error('请选择有效饮品并重新提交点单。');
-    db.exec('BEGIN IMMEDIATE');let receipt;
-    try{
-     const previous=db.prepare('SELECT id,drink_id AS drinkId,price,day,created_at AS createdAt FROM bar_orders WHERE employee_id=? AND request_key=?').get(actor.id,data.requestId);
-     if(previous){if(previous.drinkId!==drink.id)throw Error('点单凭据已使用，请重新选择饮品。');receipt=previous;}
-     else{
-      if(drink.orderable===false)throw Error('这是空杯，不能作为饮品点单。');
-      if(drink.price>0&&balanceFor(actor.id)<drink.price)throw Error('余额不足，换一杯试试吧。');
-      if(drink.price>0)recordLedger(actor.id,-drink.price,'酒吧点单：'+drink.name);
-      const day=barDay(clock()),createdAt=iso(),result=db.prepare('INSERT INTO bar_orders(employee_id,day,drink_id,price,request_key,created_at) VALUES(?,?,?,?,?,?)').run(actor.id,day,drink.id,drink.price,data.requestId,createdAt);receipt={id:Number(result.lastInsertRowid),drinkId:drink.id,price:drink.price,day,createdAt};
-     }db.exec('COMMIT');
-    }catch(error){db.exec('ROLLBACK');throw error;}
-    drinking.invalidate(actor.id);send(res,200,{receipt,myDrink:currentOrder(actor.id),balance:balanceFor(actor.id),...(drink.id==='mineral-water'?{bartenderLine:waterLines[randomInt(waterLines.length)]}:{})});broadcast();return true;
+    const data=await readBody(req),receipt=hospitality.order(actor,data);
+    send(res,200,{...state(actor.id),receipt,...(data.drinkId==='mineral-water'?{bartenderLine:waterLines[randomInt(waterLines.length)]}:{})});broadcast();return true;
    }
    send(res,405,{error:'酒吧不支持这个操作。'});return true;
-  }catch(error){send(res,400,{error:error.message});return true;}
+  }catch(error){send(res,400,{error:error.message});broadcast();return true;}
  }};
 }

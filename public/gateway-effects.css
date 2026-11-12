@@ -107,3 +107,14 @@ body.theme-landing.effects-off::after{display:none!important;animation:none!impo
  body.theme-landing.effects-off #landing-view #cover-logo-slot .company-emblem{filter:brightness(1.04)!important}
  @media(prefers-reduced-motion:reduce){body.theme-landing #landing-view #cover-logo-slot .company-emblem{filter:brightness(1.04)!important}}
 }
+/* A purchased backdrop remains visible when motion/effects are disabled. */
+@layer aved-device-effects {body.theme-landing.landing-sphere.effects-off #landing-sphere-canvas{display:block!important}}
+
+/* Opaque foreground plates occlude the sphere through the vector's negative space. */
+@layer aved-interactions {
+ body.theme-landing.landing-sphere #landing-view #cover-logo-slot{isolation:isolate;opacity:1!important;mix-blend-mode:normal}
+ body.theme-landing.landing-sphere #landing-view #cover-logo-slot::before{content:'';position:absolute;inset:0;z-index:0;background:#040506;clip-path:polygon(50% 0,100% 100%,0 100%);pointer-events:none}
+ body.theme-landing.landing-sphere #landing-view #cover-logo-slot .company-emblem{position:relative;z-index:1;opacity:1!important;mix-blend-mode:normal!important}
+ body.theme-landing.landing-sphere #landing-view .gateway-wordmark{position:relative;isolation:isolate;opacity:1!important;mix-blend-mode:normal}
+ body.theme-landing.landing-sphere #landing-view .gateway-wordmark>div{display:inline-block;padding:3px 8px;background:#040506;color:#f5f5f5!important;opacity:1!important;mix-blend-mode:normal}
+}

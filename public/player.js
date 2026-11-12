@@ -1295,7 +1295,15 @@
         }
       }
 
-      function scratchRulesMarkup(game){return [...game.rules,'四、0.2% 概率出现炸弹，额外扣除票价的 1 / 2 / 4 倍，可产生负余额。'].map(rule=>`<p>${esc(rule)}</p>`).join('');}
+      function scratchRulesMarkup(game,cost=selectedTier.cost){
+        const rules=[...game.rules],risk=scratchBombRules;
+        if(risk){
+          const percent=n=>Number((n*100).toFixed(4))+'%',seal=game.type==='lucky_num'?risk.maxSealMultiplier:1;
+          rules.push('四、炸弹概率 '+percent(risk.chance)+'：'+risk.outcomes.map(x=>percent(x.chance)+' 追加 '+x.penaltyMultiplier+' 倍').join('、')+'票价，可产生负余额。');
+          rules.push('五、'+(seal>1?'核准印也放大追加扣款；':'')+'本档最多损失 '+fmtMoney(cost*(1+Math.max(...risk.outcomes.map(x=>x.penaltyMultiplier))*seal))+'（含票价）。');
+        }else rules.push('四、炸弹会追加扣款，可产生负余额。');
+        return rules.map(rule=>`<p>${esc(rule)}</p>`).join('');
+      }
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
         const g = scratchGameTypes.find(x => x.type === gType);
@@ -1341,7 +1349,7 @@
       }});
       function renderActiveScratchTicketBoard(revealedIndices=[],feedbackOptions={}) {
         if(!activeIssuedTicket)return;const tk=activeIssuedTicket;
-        const rules=scratchRulesMarkup(scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType);
+        const rules=scratchRulesMarkup(scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType,tk.cost??tk.tier.cost);
         if(rules!==lastScratchRules){byId('scratch-play-rules-body').innerHTML=rules;lastScratchRules=rules;}
         const board=byId('active-ticket-board-container');scratchBoard.render(tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
@@ -1492,7 +1500,7 @@
       function renderPendingImagesQueue(){}
       function renderAnonAuditLog(){}
       function renderEmployeeRoster(){}
-      let economyUI=null,welfareUI=null,economyRevision=0,directoryRequest=0;
+      let economyUI=null,welfareUI=null,economyRevision=0,scratchBombRules=null,directoryRequest=0;
       let marketRiskRules=null,marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
@@ -1502,7 +1510,7 @@
       }
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
-      function applyEconomyRules(c){economyRevision=c.revision;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
+      function applyEconomyRules(c){economyRevision=c.revision;scratchBombRules=c.scratchBombs||null;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
         forumListPosition=null;forumListMarkup='';currentForumThreadId=null;forumReplies.reset();
         deferredSections.clear();deferredRequests.clear();
@@ -1547,6 +1555,7 @@
       function syncUserHeaderUI() {
         achievementAlerts?.ensure();
         if(!currentUser)return;
+        welfareUI?.syncBalance();
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
         byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         if(byId('hub-balance'))byId('hub-balance').textContent=fmtMoney(currentUser.balance);
@@ -1709,7 +1718,7 @@
         const trade=button.hasAttribute('data-stock-trade-side');
         if(trade&&stockTradeBusy)return;
         if(!handled.includes(id)&&!trade)return;stop(event);
-        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','无论余额为正数还是负数，重置后都会回到零。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
+        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','正余额会清空；负余额补至零，差额从公司爱心基金扣除。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
           if(id==='forum-refresh-skeleton-btn'){await refreshForum();return;}
@@ -1796,7 +1805,8 @@
           if(activeIssuedTicket&&!activeIssuedTicket.demo&&!activeIssuedTicket.draft&&!activeIssuedTicket.settled){showToast('请先刮完当前票券。');return;}
           const modal=byId('ticket-confirm-modal'),fromModal=!modal.classList.contains('hidden'),gameType=fromModal?pendingTicketType:activeIssuedTicket?.gameType;
           if(!gameType)return;
-          scratchFeedback.clear();activeIssuedTicket=window.AVEDScratchBombDemo.make({tier:selectedTier,gameType,totalLoss:[2,3,5][demoIndex++%3]});
+          const bombs=scratchBombRules?.outcomes;if(!bombs?.length)return;
+          scratchFeedback.clear();activeIssuedTicket=window.AVEDScratchBombDemo.make({tier:selectedTier,gameType,totalLoss:1+bombs[demoIndex++%bombs.length].penaltyMultiplier});
           modal.classList.add('hidden');modal.classList.remove('flex');
           byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
           byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='测试票 · 待刮开';

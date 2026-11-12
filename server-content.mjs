@@ -7,6 +7,16 @@ export const scratchTiers = [
         { id: 't5', name: '董事特批', cost: 50000, internalEv: 0.74, mult: 50 },
         { id: 't6', name: 'O5最高秘钥', cost: 100000, internalEv: 0.80, mult: 100 }
       ];
+// Probabilities are per ticket, before the lucky-number stamp multiplies fees.
+export const scratchBombRules = Object.freeze({
+  chance: .02,
+  maxSealMultiplier: 5,
+  outcomes: Object.freeze([
+    Object.freeze({penaltyMultiplier: 2, chance: .012}),
+    Object.freeze({penaltyMultiplier: 10, chance: .006}),
+    Object.freeze({penaltyMultiplier: 100, chance: .002})
+  ])
+});
 export const scratchGameTypes = [
         {
           type: 'three_match',

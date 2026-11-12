@@ -1,6 +1,6 @@
 import {skyRules} from './server-sky-rules.mjs';
 import {randomBytes,createHash,createHmac} from 'node:crypto';
-import {scratchTiers,scratchGameTypes} from './server-content.mjs';
+import {scratchTiers,scratchGameTypes,scratchBombRules} from './server-content.mjs';
 import {slotRules} from './server-slot.mjs';
 
 export function proofRandom(){const seed=randomBytes(32).toString('hex');let counter=0;return {seed,seedHash:createHash('sha256').update(seed).digest('hex'),random:()=>createHmac('sha256',Buffer.from(seed,'hex')).update(String(counter++)).digest().readUInt32BE(0)/4294967296};}
@@ -8,7 +8,8 @@ export function weighted(items,random){const sum=items.reduce((s,x)=>s+x.weight,
 export const expectedReturn=items=>items.reduce((s,x)=>s+x.weight*(x.multiplier-(x.penaltyMultiplier||0)*(x.sealMultiplier||1)),0)/items.reduce((s,x)=>s+x.weight,0);
 export const scratchPrizeMultipliers=Object.fromEntries(scratchTiers.map(t=>[t.id,[5,10,20,30,50,100]]));
 export const MAX_RETURN_PERCENT=150;
-// Independent draws: 0.2% bombs; lucky seals multiply both payouts and extra deductions, effective RTP 120% after extra deductions.
+// Independent draws: 2% bombs; lucky seals multiply both payouts and extra deductions.
+// More medium prizes compensate the larger losses, keeping effective RTP at 120% before tax.
 // Bomb multiplier is the EXTRA deduction; total loss also includes the paid stake.
 export function returnRatePool(percent,tierId='t1',type='three_match'){
  const sealMean=1.44,nominal=percent;
@@ -19,21 +20,23 @@ export function returnRatePool(percent,tierId='t1',type='three_match'){
  const scale=Math.min(percent/120,1);
  const pool=rows.map(([multiplier,p])=>({multiplier,weight:Math.round(p*1000000*scale)}));
  if(percent>120)pool.at(-1).weight+=Math.round((percent-120)/100/100*1e8);
- pool.push(...[[1,.19],[2,.009],[4,.001]].map(([penaltyMultiplier,p])=>({multiplier:0,penaltyMultiplier,weight:Math.round(p*1000000*(nominal>0?1:0))})));
+ pool.push(...scratchBombRules.outcomes.map(({penaltyMultiplier,chance})=>({multiplier:0,penaltyMultiplier,weight:Math.round(chance*1e8*(nominal>0?1:0))})));
  if(percent<.01){for(const x of pool)x.weight=0;pool[0].weight=Math.round(percent/100*1e8/.03);}
- // Make room for the extra bombs, then transfer probability between two
- // ordinary awards. Total probability stays fixed; the net RTP includes fees.
+ // Keep the advertised bomb odds fixed. Shift small wins to 5x awards instead
+ // of raising jackpots or scaling fees with a player's account balance.
  const overflow=Math.max(0,pool.reduce((n,x)=>n+x.weight,0)-1e8);pool[0].weight-=overflow;
- const missing=percent/100*1e8-pool.reduce((n,x)=>n+(x.multiplier-(x.penaltyMultiplier||0))*x.weight,0);
- const lowCorrection=Math.round(missing/.03),available=1e8-pool.reduce((n,x)=>n+x.weight,0);
- if(lowCorrection<=available&&pool[0].weight+lowCorrection>=0)pool[0].weight+=lowCorrection;
- else{const correction=Math.round(missing/(1.05-.03));pool[0].weight-=correction;pool.find(x=>x.multiplier===1.05).weight+=correction;}
  const base=[{multiplier:0,weight:1e8-pool.reduce((s,x)=>s+x.weight,0)},...pool];
+ let missing=percent/100*1e8-base.reduce((n,x)=>n+(x.multiplier-(x.penaltyMultiplier||0))*x.weight,0);
+ const award=multiplier=>base.find(x=>x.multiplier===multiplier&&!x.penaltyMultiplier);
+ const transfer=(from,to)=>{const difference=to.multiplier-from.multiplier,count=Math.min(from.weight,Math.max(0,Math.floor(missing/difference)));from.weight-=count;to.weight+=count;missing-=count*difference;};
+ if(missing>0){transfer(award(1.05),award(5));transfer(award(0),award(5));}
+ // Fine correction keeps integer weights, exact total mass and <1e-8 RTP error.
+ const correction=Math.round(missing/(1.05-.03));award(.03).weight-=correction;award(1.05).weight+=correction;
  if(type!=='lucky_num')return base;
  return base.flatMap(x=>[[1,70],[2,20],[3,8],[5,2]].map(([sealMultiplier,weight])=>({...x,baseMultiplier:x.multiplier,multiplier:x.multiplier*sealMultiplier,sealMultiplier,weight:x.weight*weight})));
 }
 export function defaultEconomy(){return {scratch:scratchTiers.map(x=>({id:x.id,name:'刮刮乐',cost:x.cost,returnPercent:120,variants:Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(120,x.id,g.type)]))})),sky:skyRules()};}
-function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>128)throw Error('奖池需包含 2 至 128 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>10000000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(![1,2,4].includes(x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
+function checkPool(items){if(!Array.isArray(items)||items.length<2||items.length>128)throw Error('奖池需包含 2 至 128 档。');let sum=0;for(const x of items){if(!Number.isFinite(x.multiplier)||x.multiplier<0||x.multiplier>10000||!Number.isSafeInteger(x.weight)||x.weight<0||x.weight>10000000000)throw Error('倍率应为 0 至 10,000，权重应为非负整数。');if(x.penaltyMultiplier!==undefined&&(!scratchBombRules.outcomes.some(b=>b.penaltyMultiplier===x.penaltyMultiplier)||x.multiplier!==0))throw Error('炸弹追加倍率无效。');sum+=x.weight;}if(!sum)throw Error('奖池总权重必须大于零。');}
 export function validateEconomy(c){
  if(!c||!Array.isArray(c.scratch)||c.scratch.length!==scratchTiers.length)throw Error('票种配置不完整。');
  for(const tier of c.scratch){tier.name='刮刮乐';if(tier.returnPercent===undefined){for(const g of scratchGameTypes)checkPool(tier.variants?.[g.type]);tier.returnPercent=Object.values(tier.variants).reduce((sum,p)=>sum+expectedReturn(p),0)/Object.keys(tier.variants).length*100;}tier.variants=Object.fromEntries(scratchGameTypes.map(g=>[g.type,returnRatePool(tier.returnPercent,tier.id,g.type)]));}
@@ -105,7 +108,7 @@ export function installEconomy({db,send,readBody,requireAdmin,requireEmployee,ba
  // Persist the agreed rules; stored legacy admin edits are no longer authoritative.
  const fixedConfig=JSON.stringify(defaultEconomy());
  if(db.prepare('SELECT config_json FROM economy_config WHERE id=1').get().config_json!==fixedConfig)db.prepare('UPDATE economy_config SET config_json=?,revision=revision+1 WHERE id=1').run(fixedConfig);
- const publicRules=()=>{const c=get();return {revision:c.revision,tiers:c.scratch.map(x=>({id:x.id,name:x.name,cost:x.cost,topPrizes:Object.fromEntries(Object.entries(x.variants).map(([key,pool])=>[key,Math.floor(x.cost*Math.max(...pool.filter(p=>p.weight>0).map(p=>p.multiplier)))]))})),slot:slotRules,sky:{boardingSeconds:c.sky.boardingSeconds,speed:c.sky.speed,breakEvenDepth:c.sky.breakEvenDepth,lossFraction:c.sky.lossFraction}};};
+ const publicRules=()=>{const c=get();return {revision:c.revision,scratchBombs:scratchBombRules,tiers:c.scratch.map(x=>({id:x.id,name:x.name,cost:x.cost,topPrizes:Object.fromEntries(Object.entries(x.variants).map(([key,pool])=>[key,Math.floor(x.cost*Math.max(...pool.filter(p=>p.weight>0).map(p=>p.multiplier)))]))})),slot:slotRules,sky:{boardingSeconds:c.sky.boardingSeconds,speed:c.sky.speed,breakEvenDepth:c.sky.breakEvenDepth,lossFraction:c.sky.lossFraction}};};
  return {get,publicRules,async handle(req,res,url){const path=url.pathname;if(path==='/api/admin/economy'||path.startsWith('/api/admin/economy/')){send(res,404,{error:'此功能已移除。'});return true;}if(!['/api/player/economy','/api/player/games/risk'].includes(path))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
   if(path==='/api/player/economy'&&req.method==='GET'){send(res,200,publicRules());return true;}
   if(path==='/api/player/games/risk'){send(res,410,{error:'该设施已撤销。'});return true;}

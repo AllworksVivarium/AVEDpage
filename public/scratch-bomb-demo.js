@@ -1,6 +1,6 @@
 (() => {
- function make({tier,gameType,totalLoss=2}){
-  if(![2,3,5].includes(totalLoss))throw Error('炸弹倍率无效。');
+ function make({tier,gameType,totalLoss=3}){
+  if(![3,11,101].includes(totalLoss))throw Error('炸弹倍率无效。');
   const money=n=>'¤ '+Number(n).toLocaleString('en-US'),marks=['🔺','👁️','☢️','🧬','⚡','🔒','📁'];
   let cells;
   if(gameType.type==='lucky_num')cells=[...['#18','#36','#72'].map(n=>({role:'LUCKY',label:'领赏号 '+n,sub:'公司核准'})),{role:'MULT',label:'×1 倍',sub:'核准印'},...Array.from({length:9},(_,i)=>({role:'PLAYER',label:'#'+(41+i),sub:money(tier.cost*(i%4+1))}))];

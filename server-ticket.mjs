@@ -1,3 +1,5 @@
+import {scratchBombRules} from './server-content.mjs';
+const validBombMultiplier=multiplier=>scratchBombRules.outcomes.some(x=>x.penaltyMultiplier===multiplier);
 const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
 export function generateOutcomeTicket(tier,game,seed,random,outcome){
  const seal=outcome.sealMultiplier||1,base=outcome.baseMultiplier??outcome.multiplier;
@@ -97,7 +99,7 @@ export function generateOutcomeTicket(tier,game,seed,random,outcome){
 
 // Attach one explicit bomb to a playable cell, never to a reference number.
 export function applyScratchBomb(ticket,penaltyMultiplier,random){
- if(![1,2,4].includes(penaltyMultiplier)||ticket.totalPayout!==0)throw Error('炸弹票据无效。');
+ if(!validBombMultiplier(penaltyMultiplier)||ticket.totalPayout!==0)throw Error('炸弹票据无效。');
  const candidates=ticket.cells.filter(c=>!c.role||['PLAYER','STEP_RIGHT'].includes(c.role));
  const cell=candidates[Math.floor(random()*candidates.length)];
  const seal=ticket.gameType?.type==='lucky_num'?(ticket.sealMultiplier||1):1;
@@ -114,7 +116,7 @@ export function settleGameTicket({db,transaction,balanceFor,recordLedger,award,g
   if(balanceFor(id)<cost)throw new Error('余额不足。');
   const penalty=['scratch','slot'].includes(game)?(result.penalty||0):0;
   const seal=result.gameType?.type==='lucky_num'?(result.sealMultiplier||1):1,baseBomb=result.bomb?.baseMultiplier??result.bomb?.extraMultiplier??penalty/(cost*seal);
-  const validScratchBomb=[1,2,3,5].includes(seal)&&[1,2,4].includes(baseBomb)&&penalty===cost*baseBomb*seal;
+  const validScratchBomb=[1,2,3,5].includes(seal)&&validBombMultiplier(baseBomb)&&penalty===cost*baseBomb*seal;
   if(!Number.isSafeInteger(penalty)||penalty<0||(penalty&&(game==='slot'?penalty!==cost*2||result.penaltyKind!=='overload':!validScratchBomb||prize!==0)))throw new Error('炸弹扣款无效。');
   if(cost)recordLedger(id,-cost,game+'投入');
   if(penalty)recordLedger(id,-penalty,game==='slot'?'异常回路过载维修费':'刮刮乐炸弹追加扣款');

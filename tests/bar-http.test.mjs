@@ -13,7 +13,7 @@ test('two authenticated bar clients receive real presence, purchases and chat ov
  const admin=await login('bar-test-admin');for(const username of ['bar-one','bar-two'])assert.equal((await request(admin,'/api/admin/employees',{username,password,displayName:username,initialBalance:10000})).status,201);
  const first=await login('bar-one'),second=await login('bar-two');
  assert.equal((await fetch(base+'/api/player/bar')).status,401);
- const menu=(await request(first,'/api/player/bar')).data.menu;assert.equal(menu.length,18);assert.ok(menu.every(x=>x.price>=300&&x.price<=3000));
+ const menu=(await request(first,'/api/player/bar')).data.menu;assert.equal(menu.length,19);assert.equal(menu.find(x=>x.id==='mineral-water').price,0);assert.ok(menu.every(x=>x.price===0||x.price>=300&&x.price<=3000));
  async function stream(cookie){const controller=new AbortController();controllers.push(controller);const response=await fetch(base+'/api/player/bar/events',{headers:{cookie},signal:controller.signal});assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/event-stream/);const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
   return {controller,async next(predicate){const timeout=setTimeout(()=>controller.abort(),4000);try{for(;;){let end;while((end=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,end);buffer=buffer.slice(end+2);const line=block.split('\n').find(x=>x.startsWith('data: '));if(line){const data=JSON.parse(line.slice(6));if(predicate(data))return data;}}const chunk=await reader.read();if(chunk.done)throw Error('SSE ended');buffer+=decoder.decode(chunk.value,{stream:true});}}finally{clearTimeout(timeout);}}};
  }

@@ -18,7 +18,7 @@ function setup(t){
  let now=Date.parse('2026-11-11T15:59:50Z');const balanceFor=id=>db.prepare('SELECT balance+COALESCE((SELECT SUM(delta) FROM balance_ledger WHERE employee_id=?),0) AS balance FROM employees WHERE id=?').get(id,id).balance;
  const options={db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:(req,res)=>{if(!req.actor){Object.assign(res,{status:401});return null;}return {id:req.actor};},sessionEmployee:req=>req.actor?{id:req.actor}:null,balanceFor,recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger VALUES(?,?,?)').run(id,delta,reason),clock:()=>now};
  let service=installBar(options);
- const request=async(actor,path='/api/player/bar',method='GET',body)=>{const res=new Response();await service.handle({actor,method,body},res,new URL('http://localhost'+path));return res;};
+ const request=async(actor,path='/api/player/bar',method='GET',body)=>{const res=new Response();await service.handle({actor,method,body},res,new URL('http://localhost'+path));await new Promise(resolve=>setTimeout(resolve,225));return res;};
  t.after(()=>{service.close();db.close();});return {db,request,balanceFor,setTime:value=>now=value,restart(){service.close();service=installBar(options);},get service(){return service;}};
 }
 test('bar purchases use server prices, survive reentry, and never debit a retried request twice',async t=>{
@@ -33,7 +33,8 @@ test('bar purchases use server prices, survive reentry, and never debit a retrie
  assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:'__proto__',requestId:'invalid-drink-0001'})).status,400);
  f.db.exec("CREATE TRIGGER bar_fail BEFORE INSERT ON bar_orders BEGIN SELECT RAISE(ABORT,'fixture failure');END");
  assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:'rollback-order-0001'})).status,400);assert.equal(f.balanceFor(1),10000-drink.price);
- f.setTime(Date.parse('2026-11-11T16:00:01Z'));assert.equal(barDay(Date.parse('2026-11-11T16:00:01Z')),'2026-11-12');assert.equal((await f.request(1)).data.myDrink,null);
+ f.setTime(Date.parse('2026-11-11T16:00:01Z'));assert.equal(barDay(Date.parse('2026-11-11T16:00:01Z')),'2026-11-11');assert.equal((await f.request(1)).data.myDrink.drinkId,drink.id);
+ f.setTime(Date.parse('2026-11-11T20:00:01Z'));assert.equal(barDay(Date.parse('2026-11-11T20:00:01Z')),'2026-11-12');assert.equal((await f.request(1)).data.myDrink,null);
  assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:key})).data.myDrink,null);assert.equal(f.balanceFor(1),10000-drink.price);
 });
 test('bar presence counts distinct connected accounts and broadcasts each real guest order',async t=>{
@@ -41,7 +42,7 @@ test('bar presence counts distinct connected accounts and broadcasts each real g
  assert.equal(first.state().onlineCount,2);assert.equal(duplicate.state().onlineCount,2);
  await f.request(2,'/api/player/bar/orders','POST',{drinkId:barDrinks[1].id,requestId:'other-order-00001'});
  assert.equal(first.state().guests.find(x=>x.employeeId===2).drink.drinkId,barDrinks[1].id);assert.equal(first.state().myDrink,null);assert.equal(other.state().myDrink.drinkId,barDrinks[1].id);
- first.end();assert.equal(other.state().onlineCount,2);duplicate.end();assert.equal(other.state().onlineCount,1);
+ first.end();assert.equal(other.state().onlineCount,2);duplicate.end();await new Promise(resolve=>setTimeout(resolve,225));assert.equal(other.state().onlineCount,1);
 });
 test('bar messages are shared, bounded to five days, paginated, and rate limited per account',async t=>{
  const f=setup(t),one=await f.request(1,'/api/player/bar/events'),two=await f.request(2,'/api/player/bar/events');

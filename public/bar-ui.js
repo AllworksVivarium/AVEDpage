@@ -13,6 +13,9 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  const identity=$('[name=identityMode]');identity.onchange=()=>{const id=getUser()?.id;if(id)try{localStorage.setItem('aved_bar_identity_'+id,identity.value);}catch{}};
  const personal=AVEDBarPersonal({root,api,esc,onChange:data=>{if(!open||!snapshot)return;snapshot.barPreferences=data.barPreferences;if(data.myDrink!==undefined)snapshot.myDrink=data.myDrink;paintGlasses();}});
  const play=AVEDBarPlay({root,api,esc,getSnapshot:()=>snapshot?{...snapshot,menu:drinks}:null,getIdentity:()=>identity.value,apply:data=>receive(data),onError:message=>tell(message)});
+ let giftTarget=null,selectedRoundId=null;
+ const payment=document.createElement('p');payment.className='bar-host-payment';payment.hidden=true;payment.innerHTML='<span></span><label><input type="checkbox" aria-label="使用全场买单" checked>由请客人买单</label>';menu.querySelector('.bar-menu-intro').after(payment);
+ const hospitality=AVEDBarHospitality({root,api,esc,getSnapshot:()=>snapshot?{...snapshot,menu:drinks}:null,getIdentity:()=>identity.value,apply:data=>receive(data),openMenu:person=>openMenu(person),onCheers:person=>inviteCheers(person),onError:message=>tell(message)});
  $('[data-bar-drink-button]').onclick=()=>play.sip();
  const money=n=>'¤ '+Number(n||0).toLocaleString();
  let cheersBusy=false,cheersAsking=false,cheersTimer=0,receivedAt=0;const seenCheers=new Set();
@@ -37,8 +40,8 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
    const drink=drinks.find(x=>x.id===guest.drink.drinkId);if(!drink)return '';const mine=guest.employeeId===selfId,m=metrics(drink),shot=drink.id.endsWith('-shot'),remaining=guest.drink.remainingMl??1,ratio=guest.drink.volumeMl?remaining/guest.drink.volumeMl:1;
    const style=`width:${m.fullWidth}px;height:${m.fullHeight}px;left:${m.x}px;top:${m.y}px`,alt=mine?'你的'+drink.name:guest.alias+'点的'+drink.name;
    const image=`<span class="bar-drink-sprite" style="width:${m.width}px;height:${m.height}px"><img src="${esc(shot?'/assets/bar/onyx-shot.png':drink.image)}" style="${style}" alt="${esc(alt)}">${shot&&remaining>0?`<img src="${esc(drink.image)}" style="${style};clip-path:inset(${15+(1-ratio)*48}% 0 0 0)" alt="" aria-hidden="true">`:''}</span>`;
-   const caption=mine?(remaining>0?'你的这一杯':'已喝完'):guest.alias,enabled=!!own&&own.drink.remainingMl!==0&&remaining>0;
-   return `<figure class="bar-glass ${mine?'own':''}" data-glass-owner="${guest.employeeId}" style="--glass-left:${left+(right-left)*positions[i]}px" title="${esc(alt)}">${mine?`<button type="button" class="bar-glass-action bar-own-action" data-my-drink aria-label="我的饮品">${image}</button>`:`<button type="button" class="bar-glass-action" data-cheers-target="${guest.employeeId}" aria-label="与${esc(guest.alias)}碰杯" ${enabled?'':'disabled'}>${image}</button>`}<figcaption>${esc(caption)}</figcaption></figure>`;
+   const caption=mine?(remaining>0?'你的这一杯':'已喝完'):guest.alias;
+   return `<figure class="bar-glass ${mine?'own':''}" data-glass-owner="${guest.employeeId}" style="--glass-left:${left+(right-left)*positions[i]}px" title="${esc(alt)}">${mine?`<button type="button" class="bar-glass-action bar-own-action" data-my-drink aria-label="我的饮品">${image}</button>`:`<button type="button" class="bar-glass-action" data-cheers-target="${guest.employeeId}" aria-label="与${esc(guest.alias)}互动">${image}</button>`}<figcaption>${esc(caption)}</figcaption></figure>`;
   }).join('');
  }
  function paintCheers(){
@@ -77,12 +80,15 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   $('[data-bar-online]').textContent=data.onlineCount+' 人在座';$('[data-bar-menu]').disabled=false;$('[data-bar-npc]').textContent=data.npc.image?data.npc.name:'今晚营业中';const portrait=$('.bar-npc');portrait.hidden=!data.npc.image;if(data.npc.image)portrait.src=data.npc.image;$('[data-bar-balance]').textContent=money(data.balance);
   if(initial||!paginationStarted&&nextBefore===null){nextBefore=data.nextBefore;$('[data-bar-more]').hidden=!nextBefore;}
   if(dayChanged){layout='';if(data.npc.image)bubble('新的一天开始了。今天想喝点什么？');}
-  paintGlasses();paintMessages(data.items,{initial});paintCheers();animateCheers(data.cheers,{initial});play.receive(data,{initial});
+  paintGlasses();paintMessages(data.items,{initial});paintCheers();animateCheers(data.cheers,{initial});play.receive(data,{initial});hospitality.receive();paintPayment();
  }
  function renderMenu(){
   $('[data-bar-menu-grid]').innerHTML=drinks.filter(drink=>drink.orderable!==false).map((drink,index)=>{const box=drink.contentBox||[0,0,drink.width,drink.height],scale=48*(drink.displayScale??1)/box[3],height=drink.height*scale,bottom=(drink.height-box[1]-box[3])*scale;return `<button type="button" class="bar-menu-item" data-menu-number="${String(index+1).padStart(2,'0')}" data-drink="${esc(drink.id)}" aria-pressed="false"><span class="bar-menu-art"><img src="${esc(drink.image)}" style="height:${height}px;translate:0 ${bottom}px" loading="lazy" alt=""></span><span>${esc(drink.name)}</span><small>${esc(money(drink.price))}</small></button>`;}).join('');
  }
- function selectDrink(drink){selection=drink;if(pendingOrder?.drinkId!==drink.id)pendingOrder=null;$('[data-bar-confirm]').hidden=false;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed',String(button.dataset.drink===drink.id));$('[data-bar-order-text]').textContent=drink.name+' · '+money(drink.price)+(snapshot?.myDrink?' · 替换当前酒杯':'');$('[data-bar-buy]').textContent='确认点单 · '+money(drink.price);}
+ function paintPayment(){const r=snapshot?.hostedRound;payment.hidden=!!giftTarget||!r;payment.querySelector('span').textContent=r?r.alias+' 请全场 · 剩余预算 '+money(r.budget-r.spent):'';}
+ function openMenu(person=null){if(!snapshot||buying)return;giftTarget=person;selection=null;pendingOrder=null;selectedRoundId=null;payment.querySelector('input').checked=true;menu.querySelector('h2').textContent=person?'请 '+person.alias+' 喝一杯':'今晚喝点什么？';$('[data-bar-confirm]').hidden=true;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed','false');paintPayment();menu.showModal();}
+ function selectDrink(drink){selection=drink;pendingOrder=null;selectedRoundId=!giftTarget&&payment.querySelector('input').checked&&drink.price>0?snapshot?.hostedRound?.id??null:null;$('[data-bar-confirm]').hidden=false;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed',String(button.dataset.drink===drink.id));$('[data-bar-order-text]').textContent=drink.name+' · '+money(drink.price)+(giftTarget?' · 对方接受后扣款，邀请保留 5 分钟':selectedRoundId?' · 由 '+snapshot.hostedRound.alias+' 买单':snapshot?.myDrink?' · 替换当前酒杯':'');$('[data-bar-buy]').textContent=giftTarget?'发出请客邀请':selectedRoundId?'请我喝这杯':'确认点单 · '+money(drink.price);}
+ payment.querySelector('input').onchange=()=>{if(selection&&!buying)selectDrink(selection);};
  async function enter({fromRoute=false}={}){
   if(open||!getUser())return;identity.value=stored('aved_bar_identity_'+getUser().id,'anonymous')==='real'?'real':'anonymous';open=true;const visit=++version;if(!fromRoute){returnHash=location.hash||'#/profile';history.pushState({...history.state,avedBar:true},'','#/bar');window.dispatchEvent(new Event('aved-bar-change'));}else returnHash='#/profile';
   root.hidden=false;document.body.classList.add('bar-room-open');document.documentElement.classList.add('bar-room-root-open');document.querySelector('#inner-app-view').inert=true;root.querySelector('[data-bar-exit]').focus();
@@ -95,22 +101,26 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   }catch(error){if(version!==visit)return;tell(error.message);$('[data-bar-online]').textContent='— 人在座';}
  }
  function leave({navigation=true}={}){
-  if(!open)return;open=false;version++;personal.close();play.close();source?.close();source=null;clearTimeout(welcomeTimer);clearTimeout(bubbleTimer);clearTimeout(cheersTimer);clearInterval(chatterTimer);music.stop();if(menu.open)menu.close();root.hidden=true;document.body.classList.remove('bar-room-open');document.documentElement.classList.remove('bar-room-root-open');document.querySelector('#inner-app-view').inert=false;
+  if(!open)return;open=false;version++;personal.close();play.close();hospitality.close();source?.close();source=null;clearTimeout(welcomeTimer);clearTimeout(bubbleTimer);clearTimeout(cheersTimer);clearInterval(chatterTimer);music.stop();if(menu.open)menu.close();root.hidden=true;document.body.classList.remove('bar-room-open');document.documentElement.classList.remove('bar-room-root-open');document.querySelector('#inner-app-view').inert=false;
   if(navigation&&location.hash==='#/bar')history.replaceState(history.state,'',returnHash);if(navigation)onExit?.();window.dispatchEvent(new Event('aved-bar-change'));nav.focus();
  }
  let asking=false;nav.onclick=async()=>{if(!getUser()||asking)return;asking=true;try{if(await window.AVEDFeedback.confirm('进去坐坐？',{title:'Sloper',tone:'info',confirmLabel:'进入酒吧',cancelLabel:'取消'}))enter();}finally{asking=false;}};
  $('[data-bar-exit]').onclick=()=>leave();
  $('[data-bar-glasses]').onclick=async event=>{
   if(event.target.closest('[data-my-drink]')){play.openAction();return;}
-  const button=event.target.closest('[data-cheers-target]');if(!button||cheersBusy||cheersAsking||!snapshot?.myDrink)return;
+  const button=event.target.closest('[data-cheers-target]');if(!button||!snapshot)return;
   const guest=snapshot.guests.find(item=>item.employeeId===Number(button.dataset.cheersTarget));if(!guest)return;
+  hospitality.openGuest(guest);
+ };
+ async function inviteCheers(guest){
+  if(!guest||cheersBusy||cheersAsking||!snapshot?.myDrink)return;
   const visit=version;cheersAsking=true;
   try{
    if(!await AVEDFeedback.confirm('和'+guest.alias+'碰一杯？',{title:'碰杯',confirmLabel:'邀请碰杯',cancelLabel:'取消'}))return;
    if(!open||visit!==version)return;cheersBusy=true;paintCheers();
    await api('/api/player/bar/cheers',{method:'POST',body:{targetId:guest.employeeId,identityMode:identity.value,requestId:crypto.randomUUID()}});if(open&&visit===version)tell('');
   }catch(error){if(open&&visit===version)tell(error.message);}finally{cheersBusy=false;cheersAsking=false;if(open&&visit===version)paintCheers();}
- };
+ }
  $('[data-bar-cheers]').onclick=async event=>{
   const button=event.target.closest('[data-cheers-reply]'),id=button?.closest('[data-cheers-id]')?.dataset.cheersId,invite=snapshot?.cheersInvites?.find(item=>item.id===id);if(!button||!invite||cheersBusy)return;
   const visit=version;cheersBusy=true;paintCheers();
@@ -118,14 +128,14 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   catch(error){if(open&&visit===version)tell(error.message);}finally{cheersBusy=false;if(open&&visit===version)paintCheers();}
  };
  $('[data-bar-music]').onclick=()=>{muted=!muted;try{localStorage.setItem('aved_bar_music_muted',String(muted));}catch{}paintMusic();if(muted)music.stop();else music.play().catch(()=>{muted=true;paintMusic();tell('音乐暂时无法播放。');});};
- $('[data-bar-menu]').onclick=()=>{if(!snapshot)return;menu.showModal();};$('[data-bar-menu-close]').onclick=()=>{if(!buying)menu.close();};
+ $('[data-bar-menu]').onclick=()=>openMenu();$('[data-bar-menu-close]').onclick=()=>{if(!buying)menu.close();};
  $('[data-bar-order-cancel]').onclick=()=>{if(!buying){selection=null;pendingOrder=null;$('[data-bar-confirm]').hidden=true;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed','false');}};
  $('[data-bar-menu-grid]').onclick=e=>{const button=e.target.closest('[data-drink]');if(button&&!buying)selectDrink(drinks.find(x=>x.id===button.dataset.drink));};
  $('[data-bar-buy]').onclick=async()=>{
-  if(!selection||buying)return;const visit=version;buying=true;pendingOrder??={drinkId:selection.id,requestId:crypto.randomUUID()};$('[data-bar-buy]').disabled=true;$('[data-bar-menu-close]').disabled=true;
-  try{const data=await api('/api/player/bar/orders',{method:'POST',body:pendingOrder});pendingOrder=null;if(!open||visit!==version)return;snapshot.myDrink=data.myDrink;snapshot.balance=data.balance;onBalance(data.balance);paintGlasses();play.receive({...snapshot,menu:drinks});$('[data-bar-balance]').textContent=money(data.balance);menu.close();tell('');if(data.bartenderLine)bubble(data.bartenderLine,5000);}
+  if(!selection||buying)return;const visit=version;buying=true;pendingOrder??={drinkId:selection.id,requestId:crypto.randomUUID(),...(giftTarget?{recipientId:giftTarget.employeeId,identityMode:identity.value}:{roundId:selectedRoundId})};$('[data-bar-buy]').disabled=true;$('[data-bar-menu-close]').disabled=true;payment.querySelector('input').disabled=true;
+  try{const data=await api('/api/player/bar/'+(giftTarget?'gifts':'orders'),{method:'POST',body:pendingOrder});pendingOrder=null;if(!open||visit!==version)return;receive(data);menu.close();tell(giftTarget?'请客邀请已送出。':'');if(data.bartenderLine)bubble(data.bartenderLine,5000);}
   catch(error){if(visit!==version)return;$('[data-bar-order-text]').textContent=error.message+(['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code)?' 可点击重试，使用同一凭据不会重复扣款。':'');if(!['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code))pendingOrder=null;}
-  finally{buying=false;$('[data-bar-buy]').disabled=false;$('[data-bar-menu-close]').disabled=false;}
+  finally{buying=false;$('[data-bar-buy]').disabled=false;$('[data-bar-menu-close]').disabled=false;payment.querySelector('input').disabled=false;}
  };
  $('.bar-chat-form').onsubmit=async e=>{e.preventDefault();if(chatBusy||!snapshot)return;const field=e.currentTarget.elements.message,body=field.value.trim();if(!body)return;const identityMode=identity.value;chatBusy=true;const visit=version,button=e.currentTarget.querySelector('button');button.disabled=true;
   try{await api('/api/player/bar/messages',{method:'POST',body:{body,identityMode}});if(open&&version===visit){field.value='';tell('');log.scrollTop=log.scrollHeight;}}

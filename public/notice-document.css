@@ -5,12 +5,12 @@
  #view-news .notice-signature {display:block;margin:32px 0 8px auto;text-align:right;color:var(--inner-text-main)}
  #view-news .notice-signature p {margin:4px 0;text-indent:0;line-height:1.8}
  #view-news .notice-comment-total {display:inline-block;margin-left:12px;color:var(--inner-text-muted)}
- #view-news .notice-conduct {display:flex;align-items:center;gap:12px;min-width:0;padding:6px 10px!important;border:1px solid var(--inner-accent)!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
+ #view-news .notice-conduct {display:flex;align-items:center;gap:10px;min-width:0;width:min(100%,440px);box-sizing:border-box;margin-inline:auto;padding:4px 8px!important;border:1px solid var(--inner-accent)!important;background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
  #view-news .notice-conduct * {color:inherit!important}
  #view-news .notice-discipline-label {flex:none;font-weight:600;white-space:nowrap}
- #view-news .notice-discipline-window {height:3.2em;overflow:hidden;flex:1;min-width:0}
- #view-news .notice-discipline-track {animation:noticeDiscipline 18s infinite}
- #view-news .notice-discipline-track>span {display:flex;align-items:center;height:3.2em;line-height:1.6}
+ #view-news .notice-discipline-window {height:2.8em;overflow:hidden;flex:1;min-width:0}
+ #view-news .notice-discipline-track {animation:noticeDiscipline 15s infinite}
+ #view-news .notice-discipline-track>span {display:flex;align-items:center;height:2.8em;line-height:1.4}
  #view-news .notice-conduct:is(:hover,:focus-within) .notice-discipline-track {animation-play-state:paused}
  #view-news #news-detail-comment-form {display:grid!important;grid-template-columns:minmax(0,1fr) 54px;gap:8px;align-items:stretch}
  #view-news #news-detail-comment-input {min-width:0;width:100%;height:44px;box-sizing:border-box}
@@ -35,6 +35,6 @@
  #view-news #news-detail-comment-count {font-size:calc(var(--type-prose-size,16px) * .875)!important;line-height:1.5!important}
  #view-news #news-comment-identity-label {font-size:calc(var(--type-prose-size,16px) * .75)!important}
 }
-@keyframes noticeDiscipline {0%,28% {transform:translateY(0)}33%,61% {transform:translateY(-25%)}66%,94% {transform:translateY(-50%)}99%,100% {transform:translateY(-75%)}}
+@keyframes noticeDiscipline {0%,31.333% {transform:translateY(0)}33.333%,64.666% {transform:translateY(-25%)}66.666%,98% {transform:translateY(-50%)}100% {transform:translateY(-75%)}}
 
 @layer aved-type-system {#view-news .notice-recipient,#view-news .notice-recipient * {font-size:var(--type-prose-size,16px)!important;line-height:1.9!important;text-align:left!important;text-indent:0!important}}

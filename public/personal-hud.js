@@ -2,13 +2,14 @@
 window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,getRecords=()=>null,welfare,onBalance,onDailyCheckin,showToast}){
  let cleanup=()=>{},version=0;const typedProgress=new Map();
  const money=n=>'¤ '+Number(n||0).toLocaleString(),games={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'异常竞速',cards:'牌桌'};
+ const backgrounds=[['image','建筑背景',0],['sphere','信号球体',50000]],patterns=[['plain','无纹理',0],['halftone','波纹网点',10000],['fade','渐隐网点',10000],['grain','磨砂纸纹',10000]];
  const paths={fx:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z',sound:'M11 4 6 8H3v8h3l5 4Z M16 8l5 8 M21 8l-5 8',soundOn:'M11 4 6 8H3v8h3l5 4Z M15 8q5 4 0 8 M18 5q8 7 0 14',tools:'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M9 15v6',edit:'m15 4 5 5-11 11H4v-5Z M12 7l5 5',clock:'M12 6v6l4 2',check:'m5 12 4 4L19 6'};
  const icon=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">${n==='clock'?'<circle cx="12" cy="12" r="9"/>':''}<path d="${paths[n]}"/></svg>`;
  function render(){
   cleanup();const u=getUser(),p=getProfile(),root=byId('view-profile');if(!u||!root)return;
   const serial=++version,uid=u.id,earned=getAchievements()||[],records=getRecords(),highest=records?.highest;
   root.classList.add('personal-hud');
-  const dialogCaptions={'hud-palette':'DISPLAY / PALETTE','hud-palette-preview':'COLOR PROFILE / PREVIEW','hud-edit':'PERSONNEL DOSSIER','hud-tools':'TERMINAL / SURFACE','hud-account':'PERSONNEL LEDGER'};
+  const dialogCaptions={'hud-palette':'DISPLAY / PALETTE','hud-palette-preview':'COLOR PROFILE / PREVIEW','hud-edit':'PERSONNEL DOSSIER','hud-tools':'BACKGROUND / COLLECTION','hud-account':'PERSONNEL LEDGER'};
   const dialog=(id,title,body)=>`<dialog id="${id}" class="hud-dialog" aria-labelledby="${id}-title"><header><span id="${id}-title">${title}</span><button type="button" data-hud-close aria-label="关闭${title}">×</button></header><div class="hud-dialog-body">${dialogCaptions[id]?`<div class="hud-dialog-kicker" lang="en" aria-hidden="true">${dialogCaptions[id]}</div>`:''}${body}</div></dialog>`;
   const radarVertices=[[70,18],[115,44],[115,96],[70,122],[25,96],[25,44]],radarPoints=Array.isArray(p.attributes)?p.attributes.map((v,i)=>[70+(radarVertices[i][0]-70)*v/100,70+(radarVertices[i][1]-70)*v/100]):null;
   const radarShape=radarPoints?'<polygon class="hud-radar-values" points="'+radarPoints.map(p=>p.join(',')).join(' ')+'"/>'+radarPoints.map(([x,y])=>'<circle class="hud-radar-point" cx="'+x+'" cy="'+y+'" r="2"/>').join(''):'';
@@ -35,8 +36,8 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
    ${dialog('hud-palette','界面配色',`<div class="hud-palette-options">${Object.entries(window.AVEDAppearance?.palettes||{}).map(([key,palette])=>`<div class="hud-palette-choice"><button type="button" data-hud-palette="${key}"><span>${esc(palette.name)}</span><span class="hud-colors" aria-hidden="true">${palette[document.body.classList.contains('dark-mode')?'night':'day'].map(c=>`<i style="--chip:${c}"></i>`).join('')}</span><b aria-hidden="true"></b></button><button type="button" data-hud-preview="${key}" aria-label="预览${esc(palette.name)}">预览</button></div>`).join('')}</div>`)}
    ${dialog('hud-palette-preview','配色预览',`<div class="palette-preview-board">${['day','night'].map(mode=>`<section class="palette-preview-sample" data-preview-mode="${mode}"><header>员工终端 <small>${mode==='day'?'日间':'夜间'}</small></header><div><p>内网 ID <strong>夜航员</strong></p><p>账户余额 <strong>¤ 20,000</strong></p><button type="button" disabled>每日签到</button></div></section>`).join('')}</div><p class="palette-preview-note">预览中，尚未应用。</p><div class="hud-dialog-actions"><button type="button" data-preview-back>返回配色选择</button></div>`)}
    ${dialog('hud-edit','编辑个人档案',`<form id="cloud-profile-form"><label>内网 ID<input name="anonymousName" maxlength="32" required value="${esc(p.anonymousName||'')}" autocomplete="off"></label><label class="hud-upload">头像<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp"><img data-avatar-preview alt="头像预览" hidden></label><label>默认头像<select name="avatarMode"><option value="current">保持当前头像</option><option value="none">NOINFO</option><option value="pixel">黑色西装 · 像素证件照</option></select></label><fieldset class="avatar-preset-options" hidden><legend>头像底色</legend>${[['slate','灰蓝'],['moss','苔绿'],['wine','暗红'],['sand','沙金'],['dusk','烟紫']].map(([key,label])=>`<label><input type="radio" name="avatarPreset" value="${key}" ${key===(p.avatarPreset||'slate')?'checked':''}><img src="/assets/avatar-pixel-${key}.debac0c8de54.svg" alt="${label}" width="40" height="40" loading="lazy"><span>${label}</span></label>`).join('')}</fieldset>${u.identityKind==='player_containment'?`<label>个人简介<textarea name="bio" maxlength="500" rows="4">${esc(p.bio||'')}</textarea></label>`:''}<div class="hud-dialog-actions"><button type="button" data-hud-close>取消</button><button type="submit">保存</button></div></form>`)}
-   ${dialog('hud-tools','背景设置',`<fieldset class="hud-patterns"><legend>背景纹理</legend>${[['halftone','波纹网点'],['fade','渐隐网点'],['grain','磨砂纸纹'],['plain','无纹理']].map(([key,label])=>`<button type="button" data-hud-pattern="${key}" aria-pressed="false"><i class="hud-pattern-sample hud-pattern-${key}" aria-hidden="true"></i><span>${label}</span></button>`).join('')}</fieldset>`)}
-   ${dialog('hud-account','账户操作',`<p>员工编号：${esc(String(u.id).padStart(4,'0'))}</p><p>将账户余额归零至 0 A 币。</p><button type="button" class="hud-danger" data-hud-zero>清零</button>`)}
+   ${dialog('hud-tools','背景商城',`<fieldset class="hud-backgrounds"><legend>未登录页</legend>${backgrounds.map(([key,label])=>`<button type="button" data-hud-background="${key}" aria-pressed="false"><img class="hud-background-cover" src="/assets/${key==='image'?'entrance-clean.1cb8cb71ca1d.webp':'gateway-sphere-preview.svg'}" alt="" loading="lazy"><span>${label}</span><b data-hud-shop-state></b></button>`).join('')}</fieldset><fieldset class="hud-patterns hud-shop-patterns"><legend>个人面板</legend>${patterns.map(([key,label])=>`<button type="button" data-hud-pattern="${key}" aria-pressed="false"><i class="hud-pattern-sample hud-pattern-${key}" aria-hidden="true"></i><span>${label}</span><b data-hud-shop-state></b></button>`).join('')}</fieldset><p class="hud-shop-note">解锁后可自由切换，当前选择由此浏览器记住。</p>`)}
+   ${dialog('hud-account','账户操作',`<p>员工编号：${esc(String(u.id).padStart(4,'0'))}</p><p>将账户余额归零至 0 A 币；负债由公司爱心基金承担。</p><button type="button" class="hud-danger" data-hud-zero>清零</button>`)}
    ${dialog('hud-confirm','确认操作',`<p data-hud-confirm-copy></p><div class="hud-dialog-actions"><button type="button" data-hud-close autofocus>取消</button><button type="button" class="hud-danger" data-hud-confirm>确认</button></div>`)}
   `;
   const identityBlock=document.createElement('div');identityBlock.className='hud-identity-block';
@@ -50,7 +51,7 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
   const matrixStrip=document.createElement('div');matrixStrip.className='hud-matrix-strip';matrixStrip.innerHTML='<span class="hud-system-copy" aria-hidden="true"><span lang="en">ARCHIVE INTERFACE</span><small lang="en">INDEX / SIGNAL PATTERNS</small></span>';matrixStrip.append(matrix);root.querySelector('.hud-log-grid').after(matrixStrip);
   root.querySelector('.hud-telemetry').remove();
   const active=()=>serial===version&&getUser()?.id===uid&&root.isConnected,visible=()=>active()&&!document.hidden&&!root.classList.contains('hidden');
-  let rewards=null,received=0,lastRead=0,reading=false,claiming=false,confirmAction=null,avatarURL='';
+  let rewards=null,received=0,lastRead=0,reading=false,claiming=false,confirmAction=null,avatarURL='',shopReading=false;
   function open(id,trigger){sync();const d=byId(id);d._trigger=trigger||document.activeElement;d.showModal();}
   function close(d){d.close();d._trigger?.focus?.();}
   function confirm(copy,task,label='确认'){confirmAction=task;byId('hud-confirm').querySelector('[data-hud-confirm]').textContent=label;byId('hud-confirm').querySelector('[data-hud-confirm-copy]').textContent=copy;open('hud-confirm');}
@@ -63,7 +64,25 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
    const sound=root.querySelector('[data-hud-sound]');sound.setAttribute('aria-pressed',String(!muted));sound.setAttribute('aria-label',muted?'开启音效':'关闭音效');root.querySelector('[data-hud-sound-label]').textContent=muted?'音效关闭':'音效开启';
    const soundIcon=root.querySelector('[data-hud-sound-icon]');if(soundIcon.dataset.state!==String(muted)){soundIcon.innerHTML=icon(muted?'sound':'soundOn');soundIcon.dataset.state=String(muted);}
    root.querySelectorAll('[data-hud-palette]').forEach(b=>{const key=b.dataset.hudPalette,selected=key===document.documentElement.dataset.palettePreview,owned=window.AVEDAppearance?.entitlements?.owned.includes(key)||key==='oxblood';b.setAttribute('aria-pressed',String(selected));b.querySelector('b').textContent=selected?'✓':owned?'已解锁':'20,000 点';const palette=window.AVEDAppearance?.palettes[key];b.setAttribute('aria-label',palette.name+(owned?'，已解锁':'，购买解锁 20,000 点'));palette?.[document.body.classList.contains('dark-mode')?'night':'day'].forEach((c,i)=>b.querySelectorAll('i')[i].style.setProperty('--chip',c));});
-   root.querySelectorAll('[data-hud-pattern]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.hudPattern===document.body.dataset.terminalPattern)));
+   for(const [kind,catalog] of [['background',backgrounds],['pattern',patterns]])for(const [key,name,fallbackPrice] of catalog){
+    const button=root.querySelector(`[data-hud-${kind}="${key}"]`),state=window.AVEDAppearance?.entitlements?.[kind==='background'?'backgrounds':'patterns'];
+    const owned=fallbackPrice===0||state?.owned.includes(key),price=state?.prices[key]??fallbackPrice,selected=owned&&key===(kind==='background'?window.AVEDGateway?.selected:document.body.dataset.terminalPattern);
+    button.disabled=shopReading;button.setAttribute('aria-pressed',String(Boolean(selected)));
+    button.querySelector('[data-hud-shop-state]').textContent=selected?'使用中':owned?(fallbackPrice===0?'免费 · 使用':'已解锁 · 使用'):money(price);
+    button.setAttribute('aria-label',name+(selected?'，使用中':owned?'，点击使用':'，购买解锁 '+price.toLocaleString()+' A 币'));
+   }
+  }
+  async function readShop(){if(shopReading)return;shopReading=true;sync();try{const d=await api('/api/player/appearance');if(!active())return;getProfile().appearance=d.appearance;window.AVEDAppearance.setEntitlements(d.appearance);onBalance(d.balance);}catch(e){if(active())showToast(e.message);}finally{shopReading=false;sync();}}
+  function selectShopItem(kind,key){if(kind==='background'){const result=window.AVEDGateway.select(key);if(!result)throw Error('请先解锁这个背景。');if(!result.saved)showToast('背景已切换，但浏览器未允许保存设置。');}else window.AVEDAppearance.setPattern(key);sync();}
+  function chooseShopItem(kind,key){
+   if(shopReading)return;const catalog=kind==='background'?backgrounds:patterns,item=catalog.find(x=>x[0]===key);if(!item)return;
+   const [,name,fallbackPrice]=item,state=window.AVEDAppearance.entitlements?.[kind==='background'?'backgrounds':'patterns'];
+   if(fallbackPrice===0||state?.owned.includes(key)){selectShopItem(kind,key);return;}
+   const price=state?.prices[key]??fallbackPrice;
+   confirm(`花费 ${price.toLocaleString()} A 币解锁「${name}」并使用？`,async()=>{
+    const d=await api('/api/player/appearance',{method:'POST',body:{[kind]:key}});if(!active())return;
+    getProfile().appearance=d.appearance;window.AVEDAppearance.setEntitlements(d.appearance);onBalance(d.balance);selectShopItem(kind,key);
+   },'购买并使用');
   }
   async function readRewards(){if(reading||!visible())return;reading=true;lastRead=Date.now();try{const d=await api('/api/player/rewards');if(active()){rewards=d;received=performance.now();paintRewards();}}catch{if(active())for(const kind of ['daily','hourly']){root.querySelector(`[data-hud-${kind}-label]`).textContent='重试';root.querySelector(`[data-hud-${kind}]`).disabled=false;}}finally{reading=false;}}
   const duration=ms=>{const n=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(n/3600)).padStart(2,'0')}:${String(Math.floor(n/60)%60).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;};
@@ -71,15 +90,16 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
   async function claim(kind){if(claiming)return;if(!rewards){await readRewards();return;}claiming=true;paintRewards();try{if(kind==='daily')await onDailyCheckin();else{const d=await api('/api/player/rewards/hourly',{method:'POST'});if(active()){onBalance(d.balance);showToast(d.reward?'整点补给已入账 '+money(d.reward):'本时段已领取。',d.reward?'success':'info',d.reward?{stamp:'补给已签收'}:{});}}if(active()){await readRewards();window.AVEDRewardsRefresh?.().catch(()=>{});}}catch(e){if(active())showToast(e.message);}finally{claiming=false;paintRewards();}}
   root.onclick=e=>{const b=e.target.closest('button');if(!b||!root.contains(b))return;
    if(b.hasAttribute('data-hud-close'))return close(b.closest('dialog'));
-   if(b.dataset.hudOpen){open(b.dataset.hudOpen,b);if(b.hasAttribute('data-hud-alias'))byId('cloud-profile-form').elements.anonymousName.focus();return;}
+   if(b.dataset.hudOpen){open(b.dataset.hudOpen,b);if(b.dataset.hudOpen==='hud-tools')void readShop();if(b.hasAttribute('data-hud-alias'))byId('cloud-profile-form').elements.anonymousName.focus();return;}
    if(b.dataset.hudPreview){const key=b.dataset.hudPreview,palette=window.AVEDAppearance.palettes[key];byId('hud-palette-preview-title').textContent=palette.name+' · 配色预览';for(const sample of root.querySelectorAll('[data-preview-mode]')){const mode=sample.dataset.previewMode,colors=palette[mode];sample.style.setProperty('--sample-base',colors[0]);sample.style.setProperty('--sample-ink',mode==='night'?colors[1]:colors[3]);sample.style.setProperty('--sample-accent',colors[2]);sample.style.setProperty('--sample-face',mode==='night'?'color-mix(in srgb,'+colors[0]+' 88%,'+colors[1]+' 12%)':colors[1]);}close(byId('hud-palette'));open('hud-palette-preview');return;}
    if(b.hasAttribute('data-preview-back')){close(byId('hud-palette-preview'));open('hud-palette');return;}
    if(b.dataset.hudPalette){const key=b.dataset.hudPalette,appearance=window.AVEDAppearance;close(byId('hud-palette'));if(appearance.entitlements?.owned.includes(key)||key==='oxblood'){appearance.setPalette(key);sync();return;}const name=appearance.palettes[key].name;confirm(`花费 20,000 点永久解锁「${name}」？解锁后可自由切换日间与夜间模式。`,async()=>{const d=await api('/api/player/appearance',{method:'POST',body:{palette:key}});if(!active())return;getProfile().appearance=d.appearance;onBalance(d.balance);appearance.setEntitlements(d.appearance);appearance.setPalette(key);sync();showToast('已解锁「'+name+'」。');},'购买解锁');return;}
-   if(b.dataset.hudPattern){window.AVEDAppearance.setPattern(b.dataset.hudPattern);sync();return;}
+   if(b.dataset.hudBackground){chooseShopItem('background',b.dataset.hudBackground);return;}
+   if(b.dataset.hudPattern){chooseShopItem('pattern',b.dataset.hudPattern);return;}
    if(b.hasAttribute('data-hud-fx')){window.AVEDSetEffects(!window.AVEDEffectsEnabled());sync();return;}
    if(b.hasAttribute('data-hud-sound')){byId('audio-sfx-btn').click();sync();return;}
    if(b.hasAttribute('data-hud-daily'))return void claim('daily');if(b.hasAttribute('data-hud-hourly'))return void claim('hourly');
-   if(b.hasAttribute('data-hud-zero')){confirm(`将账户余额归零至 0 A 币。此操作不可撤销。`,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});if(active()){onBalance(d.balance);close(byId('hud-account'));showToast('账户余额已归零。');}},'确认清零');return;}
+   if(b.hasAttribute('data-hud-zero')){confirm(`将账户余额归零至 0 A 币。正余额会清空，负债由公司爱心基金承担。此操作不可撤销。`,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});if(active()){onBalance(d.balance);close(byId('hud-account'));showToast('账户余额已归零。');}},'确认清零');return;}
    if(b.hasAttribute('data-hud-confirm')){const task=confirmAction;if(!task||b.disabled)return;b.disabled=true;Promise.resolve().then(task).then(()=>{if(active())close(byId('hud-confirm'));}).catch(e=>showToast(e.message)).finally(()=>{b.disabled=false;});}
   };
   const avatarForm=byId('cloud-profile-form'),mode=avatarForm.elements.avatarMode;mode.onchange=()=>{root.querySelector('.avatar-preset-options').hidden=mode.value!=='pixel';};

@@ -32,8 +32,8 @@
  #view-forum :is(.forum-card-title,.forum-detail-title){font-family:var(--type-heading)!important;font-size:16px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:0!important}
  #view-forum .forum-detail-title{font-size:20px!important}
  #view-forum :is(.forum-card-excerpt,.forum-detail-body,.forum-post-content),
- #view-forum #forum-detail-replies-list article>p,
- #view-news :is(.notice-comment-body,.notice-comment-body p){font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
+ #view-forum #forum-detail-replies-list article>p{font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
+ #view-news :is(.notice-comment-body,.notice-comment-body p){font-family:var(--type-archive)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
  #view-forum :is(.forum-post-meta,.forum-author-balance,.forum-post-meta time),
  #view-news :is(.notice-meta,.notice-comment-heading time,.notice-comment-department){font-family:var(--type-ui)!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important}
  #view-forum .forum-author b,#view-news .notice-comment-author{font-family:var(--type-ui)!important;font-size:13px!important;line-height:1.5!important;font-weight:600!important;letter-spacing:0!important}
@@ -52,16 +52,19 @@
  #view-forum #forum-detail-reply-form .forum-reply-actions{gap:6px!important}
 
  /* Archive prose keeps its paper character. Headings use a real heavier face. */
- #view-news :is(.notice-title,.notice-detail-title,.notice-title-secondary),
  #view-containment :is(.scp-item-card h3,.scp-entry-title),
  #view-departments :is(.department-sheet h3,.personnel-name),#view-life .life-record h3{font-family:var(--type-heading)!important;font-size:18px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:.015em!important}
  #view-news :is(.notice-body,.notice-body p,.notice-summary),
  #view-containment :is(.scp-document-body,.scp-document-body p,.scp-detail-content,.scp-entry-body),
  #view-life .life-record>p.whitespace-pre-wrap{font-family:var(--type-archive)!important;font-size:16px!important;line-height:1.85!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
- #view-news :is(.notice-drafter,.notice-signature,.notice-conduct),
+ #view-news :is(.notice-drafter,.notice-conduct),
  #view-containment :is(.scp-item-card p,.scp-item-card small,.scp-document-kicker),
  #view-departments :is(.department-meta,.department-sheet footer),
  #view-life :is(.life-record time,.life-record small){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.65!important;font-weight:400!important;letter-spacing:0!important}
+ /* A notice reads as one printed document, including its title and issuer. */
+ #view-news :is(.notice-title,.notice-detail-title,.notice-title-secondary,.notice-signature,.notice-signature p){font-family:var(--type-archive)!important;font-weight:400!important;letter-spacing:0!important;color:var(--inner-text-main)!important}
+ #view-news :is(.notice-title,.notice-detail-title,.notice-title-secondary){font-size:18px!important;line-height:1.5!important}
+ #view-news :is(.notice-signature,.notice-signature p){font-size:16px!important;line-height:1.85!important}
  #view-departments .department-summary p{font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important}
  #view-containment #scp-detail-container>div.space-y-4 p{font-family:var(--type-archive)!important;font-size:16px!important;line-height:1.85!important;font-weight:400!important;letter-spacing:0!important}
  #view-containment :is(.scp-dossier-heading,.scp-dossier-meta,#scp-detail-container h4){font-family:var(--type-ui)!important;font-size:12px!important;line-height:1.65!important;letter-spacing:0!important}

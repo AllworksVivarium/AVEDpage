@@ -2,9 +2,6 @@
 (function(){
   const landing=document.getElementById('landing-view'),logo=document.getElementById('cover-logo-slot');
   if(!landing||!logo)return;
-  const controls=document.createElement('div');controls.className='landing-variant-switch';controls.setAttribute('role','group');controls.setAttribute('aria-label','开屏版本');
-  controls.innerHTML='<button type="button" data-landing-scene="image">建筑影像</button><button type="button" data-landing-scene="sphere">信号球体</button>';
-  landing.querySelector('.landing-edge-line').after(controls);
   landing.dataset.spherePattern='ascii';
   try{localStorage.removeItem('aved_sphere_pattern_v1');}catch{}
   const canvas=document.createElement('canvas');canvas.id='landing-sphere-canvas';canvas.setAttribute('aria-hidden','true');landing.prepend(canvas);
@@ -21,7 +18,7 @@
     for(let i=0;i<count;i++){x[i]=(sine[i]*a+cosine[i]*b)*latitude[i]*radius;y[i]=height[i]*radius;vx[i]=0;vy[i]=0;}
     paint(1,false);
   }
-  function active(){return ctx&&!document.body.classList.contains('effects-off')&&variant==='sphere'&&document.body.classList.contains('theme-landing')&&!document.hidden;}
+  function active(){return ctx&&variant==='sphere'&&document.body.classList.contains('theme-landing')&&!document.hidden;}
   function paint(step,moving){
     if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=document.body.classList.contains('radix-terminal')?'#eeeeee':'#ffffff';ctx.globalAlpha=.78;
     const a=Math.cos(angle),b=Math.sin(angle),damping=Math.pow(.9,step);
@@ -37,25 +34,24 @@
     if(moving)angle+=.01*step;
   }
   function tick(now){
-    frame=0;if(!active()||reduced.matches)return;
+    frame=0;if(!active()||reduced.matches||document.body.classList.contains('effects-off'))return;
     if(now-painted>=30){const step=Math.min(2,Math.max(.5,(now-last)/16.667));last=now;painted=now;paint(step,true);}
     frame=requestAnimationFrame(tick);
   }
   function sync(){
     if(frame){cancelAnimationFrame(frame);frame=0;}
-    if(active()){if(reduced.matches)paint(1,false);else{last=performance.now();painted=0;frame=requestAnimationFrame(tick);}}
+    if(active()){if(reduced.matches||document.body.classList.contains('effects-off'))paint(1,false);else{last=performance.now();painted=0;frame=requestAnimationFrame(tick);}}
   }
   function choose(value){
     variant=value==='sphere'?'sphere':'image';document.body.classList.toggle('landing-sphere',variant==='sphere');
-    controls.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.landingScene===variant)));
-    resize();sync();try{localStorage.setItem('aved_landing_scene_v1',variant);}catch{}
+    resize();sync();
   }
-  controls.addEventListener('click',event=>{const button=event.target.closest('[data-landing-scene]');if(button)choose(button.dataset.landingScene);});
+  document.addEventListener('aved-gateway-change',()=>choose(window.AVEDGateway?.selected));
   function point(event){const bounds=canvas.getBoundingClientRect();pointer={active:true,x:event.clientX-bounds.left-centerX,y:event.clientY-bounds.top-centerY};}
   landing.addEventListener('pointermove',point,{passive:true});landing.addEventListener('pointerdown',point,{passive:true});landing.addEventListener('pointerleave',()=>pointer.active=false);landing.addEventListener('pointerup',event=>{if(event.pointerType!=='mouse')pointer.active=false;});
   addEventListener('resize',()=>{resize();sync();},{passive:true});document.addEventListener('visibilitychange',sync);reduced.addEventListener('change',sync);
   new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
   new ResizeObserver(()=>{resize();sync();}).observe(landing);
   document.fonts?.ready.then(()=>{resize();sync();});
-  let saved='image';try{saved=localStorage.getItem('aved_landing_scene_v1')||'image';}catch{}choose(saved);
+  choose(window.AVEDGateway?.selected);
 })();

@@ -16,6 +16,7 @@ test('removed admin routes cannot change fixed rules; restart and legacy storage
  const callerCopy=service.get();callerCopy.scratch[0].returnPercent=1;assert.equal(service.get().scratch[0].returnPercent,120);
  service=installEconomy(dependencies);assert.equal(service.get().revision,stored.revision);
  const res={};await service.handle({method:'GET'},res,new URL('/api/player/economy','http://test'));assert.equal(res.status,200);assert.equal(res.data.tiers.length,6);
+ assert.equal(res.data.scratchBombs.chance,.02);assert.deepEqual(res.data.scratchBombs.outcomes.map(x=>x.penaltyMultiplier),[2,10,100]);assert.equal(res.data.scratchBombs.maxSealMultiplier,5);
  db.close();
 });
 test('admin navigation exposes robot settings and removes economy editor',()=>{

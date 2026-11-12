@@ -4,7 +4,8 @@
  function clear(){for(const el of active){clearTimeout(el.timer);el.remove();}active.clear();}
  function show({host,cost,penalty,origin,animated=true}){
   clear();if(!penalty||!animated)return;
-  const total=1+penalty/cost,el=document.createElement('div'),rect=host?.getBoundingClientRect?.();
+  // Monetary multipliers can reach 500x; keep particle sizes and counts bounded.
+  const total=Math.min(5,Math.max(2,1+penalty/cost)),el=document.createElement('div'),rect=host?.getBoundingClientRect?.();
   const x=Number.isFinite(origin?.x)?origin.x:rect?rect.left+rect.width/2:innerWidth/2,y=Number.isFinite(origin?.y)?origin.y:rect?rect.top+rect.height/2:innerHeight/2;
   el.className='scratch-bomb-blast';el.dataset.level=total;el.setAttribute('aria-hidden','true');el.setAttribute('data-type-ignore','');
   const duration=total===5?2600:total===3?2100:1600;el.style.setProperty('--blast-duration',duration+'ms');el.style.setProperty('--origin-x',x+'px');el.style.setProperty('--origin-y',y+'px');

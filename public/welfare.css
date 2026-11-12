@@ -56,6 +56,10 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
 #inner-app-view .donation-entry-row button{height:32px;min-height:32px;min-width:54px;padding:5px 10px;white-space:nowrap;font-size:12px!important;line-height:1.4!important;border-radius:0}
 #inner-app-view .donation-presets{gap:6px}
 #inner-app-view .donation-presets button{min-height:28px;padding:4px 6px;font-size:10px!important;line-height:1.5!important}
+#inner-app-view .donation-form [hidden]{display:none!important}
+#inner-app-view .donation-debt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;grid-column:2/-1;font-size:13px}
+#inner-app-view .donation-debt .community-button{min-height:32px;padding:5px 10px}
+@media(max-width:849px){#inner-app-view .donation-debt{grid-column:1}}
 #inner-app-view .donation-status:empty{display:none}
 @layer aved-site {
  #inner-app-view #company-fund-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}

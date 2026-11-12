@@ -2,14 +2,15 @@
 <html lang="zh-CN" data-entry-state="checking">
 <head>
   <link rel="stylesheet" href="/paper-stamps.css?v=paper-tax-20261110b">
-  <link rel="stylesheet" href="/typography.css?v=forum-sort-size-20261110">
+  <link rel="stylesheet" href="/typography.css?v=notice-comment-type-20261112">
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
   <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
-  <link rel="stylesheet" href="/personal-hud.css?v=sidebar-copy-12">
+  <link rel="stylesheet" href="/personal-hud.css?v=background-shop-20261112">
   <script src="terminal-preferences.js?v=theme-owned-3"></script>
+  <script src="/gateway-preferences.js?v=background-shop-20261112"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=pixel-a-2">
   <link rel="stylesheet" href="/scratch-bomb.css?v=adaptive-ticker-3">
   <link rel="stylesheet" href="/scratch-feedback.css?v=single-action-row-5">
@@ -17,7 +18,7 @@
   <link rel="stylesheet" href="/player-art-restoration.css?v=frameless-ticket-3">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=equal-cards-4">
-  <link rel="stylesheet" href="/notice-document.css?v=notice-compact-accent-3">
+  <link rel="stylesheet" href="/notice-document.css?v=notice-compact-5sec-20261112">
   <link rel="stylesheet" href="/section-mastheads.css?v=tax-achievements-20261111">
   <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
@@ -357,7 +358,7 @@
   <link rel="stylesheet" href="/player-layout.css?v=sfx-only-1">
   <link rel="stylesheet" href="/community.css?v=sfx-only-1">
 <link rel="stylesheet" href="/economy.css?v=watchlist-layout-20261111b">
-<link rel="stylesheet" href="/welfare.css?v=pixel-thrones-12">
+<link rel="stylesheet" href="/welfare.css?v=debt-transfer-20261112">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
 <link rel="stylesheet" href="/page-headings.css?v=warm-1">
@@ -381,6 +382,7 @@
 <script src="/achievement-alerts.js?v=profit-tax-20261111" defer></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
+  <script>window.AVEDGateway?.apply();</script>
 
   <!-- 全局顶部轻提示 (Toast) -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
@@ -427,7 +429,7 @@
     </div>
 
     <div class="gateway-hero-copy w-full max-w-6xl my-auto py-6 flex flex-col items-center z-10">
-      <div class="landing-float text-center mb-5 sm:mb-7 space-y-1">
+      <div class="landing-float gateway-wordmark text-center mb-5 sm:mb-7 space-y-1">
 <div class="text-[10px] sm:text-xs font-mono-tech tracking-[0.45em] text-white/45">
           [ A . V . E . D . ]
         </div>
@@ -1465,8 +1467,8 @@
 <script src="/scratch-ticket-art.js?v=print-1" defer></script>
 <script src="/scratch-board.js?v=read-render-upload-20261111" defer></script>
 <script src="/scratch-symbols.js?v=game-balance-1" defer></script>
-<script src="/scratch-bomb.js?v=seal-audio-3" defer></script>
-<script src="/scratch-bomb-demo.js?v=bomb-inline-2" defer></script>
+<script src="/scratch-bomb.js?v=debt-odds-20261112" defer></script>
+<script src="/scratch-bomb-demo.js?v=debt-odds-20261112" defer></script>
 <script src="/scratch-feedback.js?v=tax-achievements-20261111" defer></script>
   <script src="/currency-symbol.js?v=linear-batch-3" defer></script>
   <script src="/sky-scene.js?v=tax-achievements-20261111" defer></script>
@@ -1475,9 +1477,9 @@
   <script src="/stock-risk-notice.js?v=dismissible-1" defer></script>
   <script src="/economy-ui.js?v=tax-achievements-20261111" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
-  <script src="/welfare-ui.js?v=tax-achievements-20261111" defer></script>
-  <script src="/visual-style.js?v=bar-sidebar-cocktail-20261111" defer></script>
-  <script src="/personal-hud.js?v=personnel-roles-20261111" defer></script>
+  <script src="/welfare-ui.js?v=debt-transfer-20261112" defer></script>
+  <script src="/visual-style.js?v=background-shop-20261112" defer></script>
+  <script src="/personal-hud.js?v=background-shop-20261112" defer></script>
 <script src="/rewards-ui.js?v=paper-tax-20261110" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=animal-habits-16" defer></script>
@@ -1508,18 +1510,20 @@
 <script src="/bar-personal.js?v=bar-tolerance-20261111" defer></script>
 <link rel="stylesheet" href="/bar-play.css?v=bar-rank-board-dark-20261111">
 <script src="/bar-play.js?v=bar-recovery-20261111" defer></script>
-<script src="/bar-ui.js?v=bar-rank-board-20261111" defer></script>
-<script src="/player.js?v=local-bar-20261111" defer></script>
+<link rel="stylesheet" href="/bar-hospitality.css?v=bar-host-20261112">
+<script src="/bar-hospitality.js?v=bar-host-20261112" defer></script>
+<script src="/bar-ui.js?v=bar-host-20261112" defer></script>
+<script src="/player.js?v=bar-host-debt-transfer-20261112" defer></script>
   <script src="/page-headings.js?v=scoped-observer-9" defer></script>
   <script src="/print-signal.js?v=sphere-plain-2" defer></script>
   <script src="/terminal-frame.js?v=game-columns-4" defer></script>
-  <script src="/landing-sphere.js?v=ascii-only-2" defer></script>
+  <script src="/landing-sphere.js?v=background-shop-20261112" defer></script>
 <script src="/gateway-effects.js?v=fixed-access-8" defer></script>
-<link rel="stylesheet" href="/gateway-effects.css?v=opaque-logo-crt-20261110">
+<link rel="stylesheet" href="/gateway-effects.css?v=opaque-sphere-20261112">
 <script src="/stock-help.js?v=sky-input-stock-notice-20261110" defer></script>
 <link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
 <link rel="stylesheet" href="/market-header-layout.css?v=1">
-<link rel="stylesheet" href="/archive-type-signal.css?v=1">
+<link rel="stylesheet" href="/archive-type-signal.css?v=notice-comments-20261112">
 <link rel="stylesheet" href="/desktop-game-layout.css?v=restored-rules-20261110">
 </body>
 </html>

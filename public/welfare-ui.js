@@ -1,7 +1,7 @@
 window.AVEDWelfareUI=function({api,esc,byId,getUser,getProfile,onBalance,onPreferences,showToast}){
  const home=byId('game-panel-home'),area=document.createElement('section');area.className='welfare-dashboard';home.append(area);
  area.innerHTML='<header class="welfare-heading"><div><span class="section-kicker">COMPANY MUTUAL AID / BALANCE REGISTER</span><h3>公司爱心账户</h3></div><button class="community-button" id="welfare-refresh" type="button">刷新</button></header><div id="company-fund-summary" class="finance-grid"></div><div class="fund-donation-slot"></div><div class="balance-rankings"><section><h4>公司财神榜 <small>HIGHEST BALANCES</small></h4><ol id="highest-balances"></ol></section><section><h4>公司破产榜 <small>LOWEST BALANCES</small></h4><ol id="lowest-balances"></ol></section><section><h4>公司爱心榜 <small>LIFETIME DONATIONS</small></h4><ol id="company-donation-ranking"></ol></section></div>';
- let overview=null,request=0,prefUser=null;const money=n=>'¤ '+Number(n).toLocaleString();
+ let overview=null,request=0,prefUser=null,balanceRevision=0;const money=n=>'¤ '+Number(n).toLocaleString(),donationForms=new Map();
  const fundPanel=document.createElement('section');fundPanel.className='company-fund-panel';
  for(const child of [...area.children])if(!child.matches('.balance-rankings'))fundPanel.append(child);
  const rankingPanel=document.createElement('section');rankingPanel.className='company-ranking-panel';rankingPanel.innerHTML='<header class="welfare-heading"><h3>公司荣誉榜</h3></header>';rankingPanel.append(area.querySelector('.balance-rankings'));area.append(fundPanel,rankingPanel);
@@ -17,7 +17,7 @@ window.AVEDWelfareUI=function({api,esc,byId,getUser,getProfile,onBalance,onPrefe
  selectRanking(0);
  const rankingControl=document.createElement('div');rankingControl.className='ranking-preferences';rankingControl.innerHTML="<label>上榜身份 <select aria-label=\"排行榜身份\"><option value=\"anonymous\">内网 ID</option><option value=\"real\">实名</option></select></label><details class=\"ranking-help\"><summary>身份说明</summary><small>仅影响榜单姓名显示，不影响排名。</small></details>";rankingTabs.before(rankingControl);
  rankingControl.querySelector('select').onchange=async e=>{const select=e.target,old=getProfile().rankingIdentity||'anonymous';select.disabled=true;try{const d=await api('/api/player/preferences',{method:'PUT',body:{rankingIdentity:select.value}});onPreferences(d);await refresh();}catch(err){select.value=old;showToast(err.message);}finally{select.disabled=false;}};
- function confirmPayment(message){return new Promise(resolve=>{const d=document.createElement('dialog');d.className='welfare-confirm';d.innerHTML='<header>确认捐款</header><p></p><div><button type="button" data-cancel>取消</button><button type="button" data-confirm>确认捐款</button></div>';d.querySelector('p').textContent=message;area.append(d);let accepted=false;d.querySelector('[data-cancel]').onclick=()=>d.close();d.querySelector('[data-confirm]').onclick=()=>{accepted=true;d.close();};d.onclose=()=>{d.remove();resolve(accepted);};d.showModal();d.querySelector('[data-cancel]').focus();});}
+ function confirmPayment(message,title='确认捐款'){return new Promise(resolve=>{const d=document.createElement('dialog');d.className='welfare-confirm';d.innerHTML='<header></header><p></p><div><button type="button" data-cancel>取消</button><button type="button" data-confirm></button></div>';d.querySelector('header').textContent=d.querySelector('[data-confirm]').textContent=title;d.querySelector('p').textContent=message;area.append(d);let accepted=false;d.querySelector('[data-cancel]').onclick=()=>d.close();d.querySelector('[data-confirm]').onclick=()=>{accepted=true;d.close();};d.onclose=()=>{d.remove();resolve(accepted);};d.showModal();d.querySelector('[data-cancel]').focus();});}
  const transfer=document.createElement('dialog');transfer.className='welfare-transfer-dialog';transfer.setAttribute('aria-labelledby','welfare-transfer-title');transfer.innerHTML='<header><h3 id="welfare-transfer-title">一对一捐赠</h3><button type="button" data-transfer-close aria-label="关闭捐赠窗口">×</button></header><form><div data-transfer-entry><p>捐赠给 <strong data-transfer-name></strong></p><label>捐赠金额<input name="amount" type="number" min="1" step="1" required inputmode="numeric"></label><p>从本人账户扣除，同额转入对方账户。</p><button type="submit">下一步</button></div><div data-transfer-review hidden><p data-transfer-copy></p><div class="transfer-actions"><button type="button" data-transfer-back>返回修改</button><button type="button" data-transfer-confirm>确认捐赠</button></div></div><p role="status" data-transfer-status></p></form>';area.append(transfer);
  let recipient=null,transferAmount=0,transferKey='',transferBusy=false;
  transfer.querySelector('[data-transfer-close]').onclick=()=>{if(!transferBusy)transfer.close();};transfer.addEventListener('cancel',e=>{if(transferBusy)e.preventDefault();});
@@ -28,12 +28,55 @@ window.AVEDWelfareUI=function({api,esc,byId,getUser,getProfile,onBalance,onPrefe
  transfer.querySelector('[data-transfer-confirm]').onclick=async e=>{if(transferBusy)return;transferBusy=true;e.target.disabled=true;try{const d=await api('/api/player/donate/employee',{method:'POST',body:{recipientId:recipient.id,amount:transferAmount,requestId:transferKey}});onBalance(d.personal.balance);draw(d);transfer.close();showToast('已向'+recipient.name+'捐赠 '+money(transferAmount)+'。');transferKey='';}catch(err){transfer.querySelector('[data-transfer-status]').textContent=err.message;}finally{transferBusy=false;e.target.disabled=false;}};
 
  function stat(label,value,note=''){return '<article><span>'+label+'</span><strong>'+esc(value)+'</strong>'+(note?'<small class="finance-stat-note">'+esc(note)+'</small>':'')+'</article>';}
- function donationForm(target){const form=document.createElement('form');form.className='donation-form';form.innerHTML='<h4>向爱心账户捐款</h4><div class="donation-entry-row"><input name="amount" type="number" min="1" step="1" required inputmode="numeric" placeholder="金额" aria-label="自定义捐款金额"><button type="submit" class="community-button">捐款</button></div><div class="donation-presets"><button type="button" data-trim="100">捐出百位以下尾数</button><button type="button" data-trim="1000">捐出千位以下尾数</button></div><p class="donation-status" role="status"></p>';target.append(form);let key='',lastAmount=0;
-  form.querySelectorAll('[data-trim]').forEach(b=>b.onclick=()=>{const amount=Math.max(0,getUser()?.balance||0)%Number(b.dataset.trim);form.elements.amount.value=amount||'';form.querySelector('.donation-status').textContent=amount?'':'当前余额没有可捐尾数。';});
-  form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');if(button.disabled)return;const amount=Number(form.elements.amount.value);button.disabled=true;if(!await confirmPayment('确认向公司爱心账户捐出 '+money(amount)+'？')){button.disabled=false;return;}if(amount!==lastAmount||!key){key=globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(36).slice(2);lastAmount=amount;}try{const d=await api('/api/player/donate',{method:'POST',body:{amount,requestId:key}});key='';onBalance(d.personal.balance);draw(d);form.reset();form.querySelector('.donation-status').textContent='已捐款 '+money(amount)+'。';await refreshProfile();}catch(err){form.querySelector('.donation-status').textContent=err.message;}finally{button.disabled=false;}};
+ function syncBalance(){balanceRevision++;for(const [form,paint] of donationForms){if(!form.isConnected)donationForms.delete(form);else paint();}}
+ async function actionBalance(){const owner=getUser()?.id,d=await api('/api/player/finance');if(getUser()?.id!==owner)throw Error('账户已切换，请重试。');onBalance(d.balance);syncBalance();return d.balance;}
+ function donationForm(target){
+  const form=document.createElement('form');form.className='donation-form';
+  form.innerHTML='<h4>向爱心账户捐款</h4><div class="donation-entry-row"><input name="amount" type="number" min="1" step="1" required inputmode="numeric" placeholder="金额" aria-label="自定义捐款金额"><button type="submit" class="community-button">捐款</button></div><div class="donation-presets"><button type="button" data-trim="100">捐出百位以下尾数</button><button type="button" data-trim="1000">捐出千位以下尾数</button></div><div class="donation-debt" hidden><span data-debt-amount></span><button type="button" class="community-button" data-transfer-debt>捐出负债</button></div><p class="donation-status" role="status"></p>';
+  target.append(form);let key='',lastAmount=0,busy=false,debtKey='',lastDebt=0,paintedBalance=null;
+  const status=form.querySelector('.donation-status'),input=form.elements.amount;
+  function paint(){
+   const balance=Number(getUser()?.balance||0),debt=balance<0;
+   if(paintedBalance!==null&&paintedBalance!==balance&&!busy)status.textContent='';paintedBalance=balance;
+   form.dataset.mode=debt?'debt':'donation';form.querySelector('h4').textContent=debt?'把账单交给公司':'向爱心账户捐款';
+   form.querySelector('.donation-entry-row').hidden=form.querySelector('.donation-presets').hidden=debt;form.querySelector('.donation-debt').hidden=!debt;
+   form.querySelector('[data-debt-amount]').textContent=debt?'当前负债 '+money(-balance):'';
+   input.disabled=busy||balance<=0;input.max=String(Math.max(0,balance));
+   form.querySelector('[type=submit]').disabled=busy||balance<=0;
+   form.querySelectorAll('[data-trim]').forEach(b=>b.disabled=busy||balance<=0);
+   form.querySelector('[data-transfer-debt]').disabled=busy||!debt;
+  }
+  donationForms.set(form,paint);paint();
+  form.querySelectorAll('[data-trim]').forEach(b=>b.onclick=async()=>{
+   if(busy)return;busy=true;paint();
+   try{const balance=await actionBalance(),amount=Math.max(0,balance)%Number(b.dataset.trim);input.value=amount||'';status.textContent=balance<0?'负债可以交给公司承担。':amount?'':'当前余额没有可捐尾数。';}
+   catch(err){status.textContent=err.message;}finally{busy=false;paint();}
+  });
+  form.onsubmit=async e=>{
+   e.preventDefault();if(busy)return;const amount=Number(input.value);
+   if(!Number.isSafeInteger(amount)||amount<1){status.textContent='请输入正整数捐款金额。';return;}
+   busy=true;paint();
+   try{
+    const balance=await actionBalance();if(balance<amount){status.textContent=balance<0?'负债可以交给公司承担。':'可用余额不足。';return;}
+    if(!await confirmPayment('确认向公司爱心账户捐出 '+money(amount)+'？'))return;
+    if(amount!==lastAmount||!key){key=crypto.randomUUID();lastAmount=amount;}
+    const d=await api('/api/player/donate',{method:'POST',body:{amount,requestId:key}});key='';onBalance(d.personal.balance);draw(d);form.reset();status.textContent='已捐款 '+money(amount)+'。';await refreshProfile();
+   }catch(err){status.textContent=err.message;}finally{busy=false;paint();}
+  };
+  form.querySelector('[data-transfer-debt]').onclick=async()=>{
+   if(busy)return;busy=true;paint();
+   try{
+    const balance=await actionBalance();if(balance>=0){debtKey='';status.textContent='当前没有需要转交的负债。';return;}
+    const debt=-balance;if(!await confirmPayment('将 '+money(debt)+' 的负债交给公司爱心账户承担，你的余额归零。','确认转交负债'))return;
+    if(debt!==lastDebt||!debtKey){debtKey=crypto.randomUUID();lastDebt=debt;}
+    const d=await api('/api/player/debt/transfer',{method:'POST',body:{expectedDebt:debt,requestId:debtKey}});debtKey='';onBalance(d.personal.balance);draw(d);form.reset();
+    status.textContent=d.personal.balance<0?'上一笔已处理，当前仍有负债。':'账单已交给公司，负债已清零。';await refreshProfile();
+   }catch(err){status.textContent=err.message;if(err.code==='BALANCE_CHANGED')await actionBalance().catch(()=>{});}
+   finally{busy=false;paint();}
+  };
  }
  donationForm(area.querySelector('.fund-donation-slot'));
- function draw(d){overview=d;rankingControl.querySelector('select').value=d.personal.rankingIdentity||'anonymous';const f=d.fund;byId('company-fund-summary').innerHTML=stat('爱心账户余额',money(f.balance))+stat('员工累计捐款',money(f.donated))+stat('累计低保支出',money(f.reliefAmount),'累计 '+Number(f.reliefCount||0).toLocaleString()+' 次')+stat('累计税费',money(f.totalTaxes??f.stockFees??0),Number(f.taxPayments??f.stockFeeTrades??0).toLocaleString()+' 笔税费');
+ function draw(d){overview=d;syncBalance();rankingControl.querySelector('select').value=d.personal.rankingIdentity||'anonymous';const f=d.fund;byId('company-fund-summary').innerHTML=stat('爱心账户余额',money(f.balance))+stat('员工累计捐款',money(f.donated))+stat('累计低保支出',money(f.reliefAmount),'累计 '+Number(f.reliefCount||0).toLocaleString()+' 次')+stat('负债归零支出',money(f.debtReliefAmount||0),'累计 '+Number(f.debtReliefCount||0).toLocaleString()+' 次')+stat('累计税费',money(f.totalTaxes??f.stockFees??0),Number(f.taxPayments??f.stockFeeTrades??0).toLocaleString()+' 笔税费');
 
   for(const [key,id,mode] of [['highest','highest-balances','wealth'],['lowest','lowest-balances','bankrupt'],['donors','company-donation-ranking','kindness']])byId(id).innerHTML=(d[key]||[]).slice(0,10).map((x,i)=>{
    const place=i+1,top=place<=3,name=esc(x.name)+(x.identityMode==='real'?'<small>实名</small>':''),amount='<strong class="rank-amount '+(key!=='donors'&&x.balance<0?'loss':'')+'">'+money(key==='donors'?x.donated:x.balance)+'</strong>',donate=key==='lowest'&&x.id!==Number(getUser()?.id)?'<button type="button" class="rank-donate" data-donate-employee="'+x.id+'">捐赠</button>':'';
@@ -41,7 +84,7 @@ window.AVEDWelfareUI=function({api,esc,byId,getUser,getProfile,onBalance,onPrefe
    return '<li class="'+(top?'rank-top rank-top-'+place+' ':'rank-standard ')+(x.id===Number(getUser()?.id)?'ranking-self':'')+'">'+(top?'<div class="rank-scene" aria-hidden="true">'+(window.AVEDRankingArt?.render(mode,place)||'')+'<span class="rank-podium-number">'+String(place).padStart(2,'0')+'</span></div><div class="rank-copy"><span class="rank-seat-label">'+title+'</span><span class="rank-person">'+name+'</span>'+amount+'</div>':'<span class="rank-number">'+String(place).padStart(2,'0')+'</span><span class="rank-person">'+name+'</span>'+amount)+donate+'</li>';
   }).join('')||'<li>暂无在册人员。</li>';
  }
- async function refresh(){if(!getUser())return;const serial=++request;const d=await api('/api/player/welfare');if(serial!==request)return;draw(d);if(prefUser!==getUser().id){prefUser=getUser().id;configurePreferences();}}
+ async function refresh(){if(!getUser())return;const serial=++request,owner=getUser().id,revision=balanceRevision;const d=await api('/api/player/welfare');if(serial!==request||owner!==getUser()?.id)return;if(revision===balanceRevision)onBalance(d.personal.balance);draw(d);if(prefUser!==getUser().id){prefUser=getUser().id;configurePreferences();}}
  byId('welfare-refresh').onclick=async e=>{e.target.disabled=true;try{await refresh();}catch(err){showToast(err.message);}finally{e.target.disabled=false;}};
  function configurePreferences(){document.querySelectorAll('select[name=identityMode]').forEach(select=>{if(select.closest('#speech-edit-dialog'))return;select.value='anonymous';const toggle=select.closest('form')?.querySelector('[data-forum-real]');if(toggle)toggle.checked=false;});}
  function profile(){const container=byId('view-profile');if(!container)return;container.querySelector('#personal-finance')?.remove();const section=document.createElement('section');section.id='personal-finance';section.className='personal-finance';section.innerHTML='<header><span class="section-kicker">PERSONAL LEDGER / IDENTITY</span><h3>个人账目与公开身份</h3></header><div id="personal-finance-summary" class="finance-grid"></div><form id="profile-identity-form" class="community-form"><label>排行榜公开身份<select name="rankingIdentity"><option value="anonymous">使用内网 ID</option><option value="real">使用员工实名</option></select></label><label>论坛默认发言身份<select name="forumIdentity"><option value="anonymous">匿名发言</option><option value="real">实名发言</option></select></label><button class="community-button">保存身份选择</button><p role="status"></p></form><div class="profile-donation-slot"></div><details id="personal-ledger-drawer"><summary>最近收支流水</summary><div id="personal-ledger"></div><button id="personal-ledger-more" type="button" hidden>更多记录</button></details>';container.append(section);donationForm(section.querySelector('.profile-donation-slot'));const f=byId('profile-identity-form'),p=getProfile();f.elements.rankingIdentity.value=p.rankingIdentity||'anonymous';f.elements.forumIdentity.value=p.forumIdentity||'anonymous';f.onsubmit=async e=>{e.preventDefault();const button=f.querySelector('button');button.disabled=true;try{const d=await api('/api/player/preferences',{method:'PUT',body:Object.fromEntries(new FormData(f))});onPreferences(d);configurePreferences();f.querySelector('[role=status]').textContent='已保存。';await refresh();}catch(err){f.querySelector('[role=status]').textContent=err.message;}finally{button.disabled=false;}};bindLedger(section);refreshProfile().catch(err=>showToast(err.message));}
@@ -49,5 +92,5 @@ window.AVEDWelfareUI=function({api,esc,byId,getUser,getProfile,onBalance,onPrefe
  function bindLedger(section){let loaded=false,busy=false,cursor=null;const drawer=section.querySelector('#personal-ledger-drawer'),more=section.querySelector('#personal-ledger-more');async function load(){if(busy)return;busy=true;more.disabled=true;try{const d=await api('/api/player/ledger'+(cursor?'?before='+cursor:''));if(!section.isConnected)return;const box=section.querySelector('#personal-ledger');if(!loaded)box.replaceChildren();box.insertAdjacentHTML('beforeend',d.items.map(x=>'<article><span>'+esc(x.reason)+'</span><strong class="'+(x.delta<0?'loss':'')+'">'+(x.delta>0?'+':'')+money(x.delta)+'</strong><small>'+AVEDTime.markup(x.createdAt)+'</small></article>').join('')||'<p>暂无收支记录。</p>');loaded=true;cursor=d.next;more.hidden=!cursor;}catch(err){showToast(err.message);}finally{busy=false;more.disabled=false;}}drawer.addEventListener('toggle',()=>{if(drawer.open&&!loaded)load();});more.onclick=load;}
 
  setInterval(()=>{if(!getUser()||document.hidden)return;if(!byId('view-casino').classList.contains('hidden')&&!home.classList.contains('hidden'))refresh().catch(()=>{});else if(!byId('view-profile').classList.contains('hidden'))refreshProfile().catch(()=>{});},30000);
- return {refresh,profile,configurePreferences};
+ return {refresh,profile,configurePreferences,syncBalance};
 };
