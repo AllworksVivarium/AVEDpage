@@ -10,7 +10,7 @@ export const funAchievementCatalog=[
  ['fun-charity','慈善事业的双向奔赴','北京时间同一天既向爱心账户捐款，又领取低保。公司和你都尽力了。'],
  ['fun-arrived','来都来了','速降在 100 至 120 米处安全开伞。来过高空，也算出差。'],
  ['fun-alive','活着就是盈利','连续三次安全开伞，但这三次合计仍亏损。至少统计口径很乐观。'],
- ['fun-participation','我买的是参与感','连续五场下班竞速，支持的选手均未押中。陪伴也是一种成绩。'],
+ ['fun-participation','我买的是参与感','连续五场随便跑跑，支持的选手均未押中。陪伴也是一种成绩。'],
  ['fun-last-round','《最后一把》','十五分钟内完成十局有投入的小游戏。最后一把的解释权归本人所有。']
 ].map(([code,title,description])=>({code,title,description,metric:code.replaceAll('-','_'),threshold:1}));
 

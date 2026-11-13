@@ -7,7 +7,7 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
  const row=document.createElement('div');row.className='aved-jackpot-row';const text=document.createElement('span');text.className='aved-jackpot-text';row.append(text);viewport.append(row);strip.append(title,viewport);anchor.after(strip);
  const notice='暂无好彩消息';
  text.textContent=notice;strip.dataset.outcome='notice';
- const names={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'下班竞速',cards:'智斗太姥'};
+ const names={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'随便跑跑',cards:'智斗太姥'};
  const isBomb=x=>x.game==='scratch'&&Number(x.penalty)>0;
  const eligible=x=>x.game!=='derby'&&Object.hasOwn(names,x.game)&&(isBomb(x)||Number(x.cost)>0&&Number(x.prize)>=Number(x.cost)*5);
  let items=[],pending=[],cursor=0,busy=false,shownUntil=0,offset=0,lastFetch=-Infinity,loopIndex=0,geometry='';

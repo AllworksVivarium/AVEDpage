@@ -26,7 +26,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
    for(let i=0;i<count;i++){
     const [robot]=candidates.splice(randomInt(candidates.length),1),market=randomInt(2)?'first':'last',runner=randomInt(5),cost=100;
     if(balanceFor(robot.id)<cost)continue;
-    recordLedger(robot.id,-cost,'下班竞速投入 #'+race.id+' 机器人陪玩');
+    recordLedger(robot.id,-cost,'随便跑跑投入 #'+race.id+' 机器人陪玩');
     db.prepare('INSERT INTO derby_wagers(race_id,employee_id,market,runner,cost) VALUES(?,?,?,?,?)').run(race.id,robot.id,market,runner,cost);
    }
   });
@@ -46,7 +46,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
     const prize=animalReturn(b.cost,b.runner,b.market,order,config.returnPercent);
     const params=[prize,race.id,b.employee_id,b.market];
     if(!db.prepare('UPDATE derby_wagers SET settled=1,prize=? WHERE race_id=? AND employee_id=? AND settled=0 AND market=?').run(...params).changes)continue;
-    if(prize)recordLedger(b.employee_id,prize,'下班竞速返还 #'+race.id+(b.market==='first'?' 第一名':' 最后一名'));
+    if(prize)recordLedger(b.employee_id,prize,'随便跑跑返还 #'+race.id+(b.market==='first'?' 第一名':' 最后一名'));
     db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(b.employee_id,'derby',b.cost,prize,race.seed,race.seed_hash,JSON.stringify({round:race.id,winner:race.winner,runner:b.runner,market:b.market,order}));
    }
    if(gameTax)for(const total of db.prepare('SELECT employee_id,SUM(cost) cost,SUM(prize) prize FROM derby_wagers WHERE race_id=? GROUP BY employee_id').all(race.id)){const tax=gameTax.charge({employeeId:total.employee_id,game:'derby',key:race.id+':'+race.seed_hash,cost:total.cost,prize:total.prize});if(tax){const ticket=db.prepare("SELECT id,result_json FROM game_tickets WHERE employee_id=? AND game='derby' AND json_extract(result_json,'$.round')=? ORDER BY prize DESC,id LIMIT 1").get(total.employee_id,race.id);const result=JSON.parse(ticket.result_json);result.tax=tax;db.prepare('UPDATE game_tickets SET result_json=? WHERE id=?').run(JSON.stringify(result),ticket.id);db.prepare('UPDATE derby_wagers SET prize=prize-? WHERE race_id=? AND employee_id=? AND market=?').run(tax,race.id,total.employee_id,result.market);}}
@@ -107,7 +107,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
      const existing=db.prepare('SELECT runner,cost FROM derby_wagers WHERE race_id=? AND employee_id=? AND market=?').get(...key);if(existing){if(existing.runner!==d.runner||existing.cost!==d.bet)throw Error('这个位次的委托已封存，不可更改。');return;}
      const committed=db.prepare('SELECT COALESCE(SUM(cost),0) AS total FROM derby_wagers WHERE race_id=? AND employee_id=?').get(race.id,employee.id).total;
      if(committed+d.bet>MAX_SHARED_GAME_STAKE)throw Error('本场第一名与最后一名合计最多投入 500,000。');
-     if(balanceFor(employee.id)<d.bet)throw Error('余额不足。');recordLedger(employee.id,-d.bet,'下班竞速投入 #'+race.id+' '+(market==='first'?'第一名':'最后一名'));
+     if(balanceFor(employee.id)<d.bet)throw Error('余额不足。');recordLedger(employee.id,-d.bet,'随便跑跑投入 #'+race.id+' '+(market==='first'?'第一名':'最后一名'));
      db.prepare('INSERT INTO derby_wagers(race_id,employee_id,market,runner,cost) VALUES(?,?,?,?,?)').run(race.id,employee.id,market,d.runner,d.bet);
     });send(res,200,snapshot(employee.id,race));queueBroadcast();return true;
    }

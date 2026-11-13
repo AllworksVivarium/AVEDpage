@@ -40,7 +40,7 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
   rect(c,0,330,W,30,'#263d43');rect(c,0,330,W,2,'#91a08a');
   label(c,'A.V.E.D. / AFTER HOURS',15,349,9);label(c,'EXIT  >',535,349,9,'#e4bb7e','right');
   rect(c,11,15,147,26,'#263d43');rect(c,13,17,143,22,'#7b8b78');rect(c,15,19,139,18,'#263d43');
-  label(c,'AFTER HOURS DERBY',24,32,10,'#e7c391');
+  label(c,'JUST RUNNING',24,32,10,'#e7c391');
   label(c,'START',58,96,7,'#e6d8be');label(c,'FINISH',501,96,7,'#e6d8be');
   // A tiny vending machine and a tired office plant establish the company yard.
   rect(c,202,54,22,42,'#a16d5b');rect(c,205,58,14,20,'#263d43');rect(c,207,61,4,5,'#d8bf85');rect(c,213,61,4,5,'#a7b7a0');rect(c,207,70,10,3,'#d8bf85');rect(c,208,84,11,4,'#384d4b');
@@ -51,7 +51,7 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
   // Double-resolution pixels leave room for whiskers and small coat details.
   const im=document.createElement('canvas');im.width=80;im.height=66;const c=im.getContext('2d');c.imageSmoothingEnabled=false;c.scale(2,2);
   const mask=document.createElement('canvas');mask.width=80;mask.height=66;const m=mask.getContext('2d');m.scale(2,2);
-  const dog=kind==='frenchie',pig=kind==='pig',sleep=pose==='sleep',ink=pig?'#79594f':'#111512';
+  const dog=kind==='frenchie',pig=kind==='pig',sleep=pose==='sleep'||pose==='doze',ink=pig?'#79594f':'#111512';
   const fur={orange:'#dbab70',black:'#555b69',cow:'#ece8d8',pig:'#f7cda9',frenchie:'#c9baa0'}[kind]||'#dbab70';
   const shade={orange:'#b78352',black:'#3a414e',cow:'#bfbfae',pig:'#c88e8d',frenchie:'#a4937d'}[kind];
   const light={orange:'#f1d5a2',black:'#89909b',cow:'#fff6df',pig:'#f5d4c4',frenchie:'#e9dfc6'}[kind];
@@ -68,8 +68,12 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
   const pigY=sleep?5:bob;
   // One solid mask gives every animal the same crisp, stepped black outline.
   if(pig){
-   oval(m,7,12+pigY,27,sleep?12:16,ink);oval(m,24,14+pigY,14,sleep?10:13,ink);
-   oval(m,23,10+pigY,6,7,ink);oval(m,32,12+pigY,6,6,ink);
+   // A flatter back/belly and a narrow far ear keep the three-quarter view coherent.
+   oval(m,33,11+pigY,3.5,5,ink);
+   shape(10,14+pigY,21,sleep?10:12);shape(8,16+pigY,24,sleep?7:9);
+   shape(12,13.5+pigY,16,1);shape(12,25+pigY,17,sleep?1:2);
+   oval(m,24,14+pigY,14,sleep?10:13,ink);
+   oval(m,23.5,10+pigY,5.5,7,ink);
    if(!sleep){shape(11+step,25,4,5);shape(28-step,25,4,5);}
    shape(5,17+pigY,4,2);shape(3,14+pigY,2,4);shape(4,13+pigY,3,2);shape(6,14+pigY,2,2);
   }else if(sleep){
@@ -100,19 +104,20 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
   m.globalCompositeOperation='source-in';m.fillStyle=fur;m.fillRect(0,0,40,33);c.drawImage(mask,0,0,40,33);
   const faceInk=kind==='black'?'#f7efd8':ink;
   if(pig){
-   // Peach round body, folded rose ears and an oval pink snout from the reference.
-   oval(c,10,22+pigY,20,sleep?5:6,'#e6ac98');
-   r(14,13+pigY,10,.5,'#ffe0bd');
-   oval(c,23.5,10.5+pigY,5,6,'#ce6b92');oval(c,24.5,11+pigY,3.5,4,'#f7cda9');
-   oval(c,32.5,12.5+pigY,5,5,'#ce6b92');oval(c,33,13+pigY,3.5,3.5,'#f7cda9');
-   r(25,15+pigY,2,.5,'#ce6b92');r(34,16.5+pigY,2,.5,'#ce6b92');
+   // Rounded ear tips remain, with the far ear compressed and its root behind the head.
+   r(11,24+pigY,18,sleep?1:2,'#e6ac98');r(14,26+pigY,13,.5,'#e6ac98');
+   r(12,14+pigY,12,.5,'#ffe0bd');
+   oval(c,33.5,11.5+pigY,2.5,4,'#ce6b92');r(34,12+pigY,1,2,light);
+   r(33,15+pigY,4,1.5,fur);
+   oval(c,24,10.5+pigY,4.5,6,'#ce6b92');oval(c,24.5,11+pigY,3,4,light);
+   r(24.5,15+pigY,3,1,fur);r(25,16+pigY,2,.5,'#c88e8d');
    if(sleep){r(27,20+pigY,2,1,'#423631');r(34,20+pigY,1.5,1,'#423631');}
    else{oval(c,26.5,18+pigY,2.5,3,'#352f2b');oval(c,33,18.5+pigY,2,2.5,'#352f2b');}
    oval(c,29.5,21+pigY,7.5,5,'#ed8191');r(31.5,21.5+pigY,2.5,.5,'#ffa4ae');
    oval(c,31,22.5+pigY,1,1.5,'#51362f');oval(c,34,23+pigY,1,1.5,'#51362f');
    if(!sleep){r(12+step,29,2,.5,'#e6ac98');r(29-step,29,2,.5,'#e6ac98');}
   }else if(sleep){
-   r(12,26,14,3,shade);r(15,21,10,1,light);r(28,24,2,1,faceInk);r(34,23.5,1,1,faceInk);r(32,26,1,1,'#b47e7d');
+   r(12,26,14,3,shade);r(15,21,10,1,light);r(28,24,2,1,faceInk);r(34,23.5,1,1,faceInk);r(32,dog?26:25,1,1,'#b47e7d');
    if(!dog&&!pig){r(25,25,3,.5,faceInk);r(25,27,3,.5,faceInk);r(35,25,1.5,.5,faceInk);r(35,26.5,1.5,.5,faceInk);}
   }
   else{
@@ -131,21 +136,52 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
     r(25,15+bob,3,4,'#625d58');r(33,15+bob,3,4,'#625d58');r(29,14+bob,2,6,light);
     r(27,18+bob,1.5,1.5,ink);r(34,18+bob,1.5,1.5,ink);r(27,18+bob,.5,.5,'#fff5db');r(34,18+bob,.5,.5,'#fff5db');
     r(29,20+bob,8,3,'#69615a');r(31,20+bob,3,1.5,ink);r(32,22+bob,1,1,ink);r(29,23+bob,2,.5,ink);r(34,23+bob,2,.5,ink);
+    // Single source-pixel accents refine the Frenchie without smoothing the sprite.
+    r(25,12+bob,1,.5,light);r(34,12+bob,1,.5,light);
+    r(25.5,14+bob,.5,2,shade);r(34.5,14+bob,.5,2,shade);
+    r(28,16+bob,1,.5,shade);r(32,16+bob,1,.5,shade);
+    r(29.5,19+bob,1,1,light);r(35.5,19+bob,1,.5,light);
+    r(31,20+bob,1,.5,'#918578');r(29,22+bob,1,.5,light);r(35,22+bob,1,.5,light);
+    r(13,18+bob,9,.5,light);r(9,21+bob,.5,3,shade);r(23,23+bob,1,2,shade);
+    r(11+step,28,2,.5,light);r(28-step,28,2,.5,light);
+    r(12+step,29,.5,.5,ink);r(29-step,29,.5,.5,ink);
    }else{
     r(26,12+bob,1,2,'#c18c89');r(33,12+bob,1,2,'#c18c89');
     // The far eye and cheek compress toward the right-facing muzzle.
     r(28,17+bob,1.5,2,faceInk);r(34,16.5+bob,1,1.5,faceInk);r(28,17+bob,.5,.5,light);r(34,16.5+bob,.5,.5,light);
-    r(29,20+bob,6,3,light);r(32,20+bob,1.5,1,'#a87576');r(32.5,21+bob,.5,1,ink);r(31,22+bob,1.5,.5,ink);r(33,21.5+bob,1,.5,ink);
+    r(29,19+bob,6,3,light);r(32,19+bob,1.5,1,'#a87576');r(32.5,20+bob,.5,1,ink);r(31,21+bob,1.5,.5,ink);r(33,20.5+bob,1,.5,ink);
     for(const dy of [0,2])r(23,20+bob+dy,5,.5,faceInk);
     for(const dy of [0,1.5])r(35,20+bob+dy,2,.5,faceInk);
    }
    if(pose==='groom'){r(30,21-frame%2,4,4,ink);r(31,21-frame%2,2,3,fur);}
+   if(pose==='scratch'){
+    // Alternate two raised forepaws against the box, with tiny exposed claws.
+    const paw=frame%2;
+    r(29,23,8,3,ink);r(29,23.5,7,2,fur);
+    r(32,20+paw*2,6,2,ink);r(32,20.5+paw*2,5,1,fur);
+    r(37,20+paw*2,1,.5,light);r(36,24,1,.5,light);
+   }
+   if(pose==='stretch'){
+    // Forepaws reach forward; the torso no longer looks vertically crushed.
+    r(29,26,8,3,ink);r(29,26.5,7,2,fur);r(34,28,2,.5,light);
+   }
+   if(pose==='yawn'){
+    const gape=frame===1||frame===2?3:1.5;
+    r(31,21+bob,3.5,gape,ink);r(32,22+bob,1.5,Math.max(.5,gape-1),'#c18c89');
+   }
   }
+  if(pig&&pose==='yawn'){r(31,25+pigY,3,frame%2?2:1,'#51362f');r(32,25.5+pigY,1,1,'#ed8191');}
   sprites.set(key,im);return im;
  }
  function box(x,y,open=false){
   rect(ctx,x-10,y-13,23,18,'#364541');rect(ctx,x-9,y-12,21,16,'#b79361');rect(ctx,x-9,y-12,21,3,'#ddbb83');rect(ctx,x+1,y-11,3,14,'#d5b681');rect(ctx,x-7,y-4,5,4,'#75644b');
-  if(open){rect(ctx,x-9,y-14,21,3,'#3b4540');rect(ctx,x-14,y-17,12,3,'#c5a574');rect(ctx,x+5,y-18,11,3,'#c5a574');}else{rect(ctx,x-11,y-15,23,3,'#c5a574');}
+  if(open){
+   // Dark opening and short stepped flaps share an edge with the box rim.
+   rect(ctx,x-9,y-14,21,3,'#3b4540');
+   rect(ctx,x-14,y-15,8,2,'#ddbb83');rect(ctx,x-11,y-13,5,2,'#c5a574');
+   rect(ctx,x+10,y-15,7,2,'#ddbb83');rect(ctx,x+9,y-13,5,2,'#c5a574');
+   rect(ctx,x-9,y-12,3,1,'#75644b');rect(ctx,x+9,y-12,3,1,'#75644b');
+  }else{rect(ctx,x-11,y-15,23,3,'#c5a574');rect(ctx,x,y-15,2,3,'#ddbb83');}
  }
  backdrop();
  return {
@@ -162,19 +198,23 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
     const boxProgress=point.boxProgress??r.boxProgress??45,bx=starts+(finish-starts)*boxProgress/100;
     const phase=Math.max(0,Math.min(1,point.actionPhase??0)),wave=animated?Math.sin(now/170+r.id):0;
     const pickup=pose==='carry'?Math.max(0,Math.min(1,(phase-.4)/.4)):0,carried=pose==='carry'&&pickup>0;
-    if(!carried)box(bx+(pose==='nudge'&&animated?frame%2:0),y+7,pose==='box'||pose==='sniff'||pose==='peek');
+    if(!carried)box(bx+(pose==='nudge'&&animated?frame%2:0),y+7,pose==='box'||pose==='peek');
     rect(ctx,x-10,y+13,24,3,'#283f4266');
     const hidden=pose==='box'&&phase>.25&&!['frenchie','pig'].includes(r.kind);
     if(!hidden){
      const lift=pose==='jump'?Math.sin(phase*Math.PI)*22:0;
      ctx.save();ctx.translate(Math.round(x),y+13-lift);
      if(pose==='roll'&&animated){ctx.translate(0,-10);ctx.rotate(phase*Math.PI*2);ctx.translate(0,10);}
-     if(pose==='stretch')ctx.scale(1.14,.76);
+     if(pose==='stretch'){const reach=Math.sin(phase*Math.PI);ctx.scale(1+reach*.08,1-reach*.06);}
+     if(pose==='doze')ctx.scale(1.04,.95);
+     if(pose==='shake'&&animated){ctx.translate(wave*1.5,0);ctx.rotate(wave*.055);}
+     if(pose==='scratch'){ctx.translate(2,0);ctx.rotate(animated?wave*.025:0);}
+     if(pose==='yawn')ctx.rotate(-.04);
      if(pose==='peek'){ctx.translate(3+wave,0);ctx.rotate(-.07);}
      if(pose==='box')ctx.translate(-12*(1-Math.min(1,phase/.25)),0);
      if(pose==='groom'&&animated)ctx.rotate(wave*.035);
      if(pose==='nudge'||pose==='sniff'||pose==='carry'&&pickup===0){ctx.translate(wave*.75,1);ctx.rotate(.035);}
-     if(pose==='sleep'&&animated)ctx.scale(1,1+Math.sin(now/350+r.id)*.025);
+     if((pose==='sleep'||pose==='doze')&&animated)ctx.scale(1,1+Math.sin(now/350+r.id)*.025);
      ctx.drawImage(sprite(r.kind,frame,pose==='finished'?'idle':pose),-20,-29,40,33);ctx.restore();
     }
     else{
@@ -182,13 +222,20 @@ window.AVEDDerbyScene=function(canvas,{onFinish=()=>{}}={}){
      rect(ctx,bx-6,y-13,3,4,colors[r.id]);rect(ctx,bx+5,y-13,3,4,colors[r.id]);
      rect(ctx,bx-15,y+2,6,2,colors[r.id]);rect(ctx,bx-17,y-2-(animated?frame%2:0),2,5,colors[r.id]);
     }
-    if(carried)box(bx,y+7-pickup*10+(animated?frame%2:0),true);
+    if(carried)box(bx,y+7-pickup*10+(animated?frame%2:0),false);
     if(pose==='sniff'||pose==='carry'&&pickup===0){rect(ctx,x+19,y+1+(animated?frame%2:0),2,1,'#e4d3ae');rect(ctx,x+22,y-2,2,1,'#e4d3ae');}
     if(pose==='peek'){
      rect(ctx,bx-7,y-5+(animated?frame%2:0),4,3,'#fff6df');rect(ctx,bx+5,y-5,4,3,'#fff6df');
      rect(ctx,bx+2,y-17-Math.abs(wave)*2,1,3,'#e4d3ae');
     }
-    if(pose==='sleep'||hidden)label(ctx,'z Z',x-5,y-23-(animated?frame:0),8,'#ecd6ad');
+    if(pose==='sleep'||pose==='doze'||hidden)label(ctx,'Zzzz',x-4,y-23-(animated?frame:0),9,'#ecd6ad');
+    if(pose==='scratch'){
+     // Short bright strokes travel down the cardboard, followed by paper flecks.
+     const claw=animated?frame:1;
+     for(let i=0;i<3;i++)rect(ctx,bx-8+i*3,y-10+claw,1,3,'#f0d5a0');
+     if(animated){rect(ctx,bx-13-claw,y+6+claw,2,1,'#ddbb83');rect(ctx,bx-10,y+10,2,1,'#ddbb83');}
+    }
+    if(pose==='shake'&&animated){rect(ctx,x-14,y-13-frame%2,1,3,'#e4d3ae');rect(ctx,x+20,y-12+frame%2,1,3,'#e4d3ae');}
     if(pose==='groom'&&animated){rect(ctx,x+16,y-6-frame%2,2,2,'#f0d5ac');rect(ctx,x+20,y-9,1,2,'#f0d5ac');}
     if((pose==='push'||pose==='nudge')&&animated){rect(ctx,bx+12+frame,y+12,3,1,'#b2b299');rect(ctx,bx+16,y+10,2,1,'#b2b299');}
     if(pose==='roll'&&animated){rect(ctx,x-16-frame,y+12,3,1,'#c3b5a0');rect(ctx,x+15+frame,y+10,2,2,'#c3b5a0');}

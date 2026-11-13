@@ -29,12 +29,14 @@ test('five equal lanes, first/last 125% return, reproducible monotonic finishes 
 });
 
 test('distinct box interactions and stationary habits preserve all five finish times',()=>{
- const seen=Array.from({length:5},()=>new Set());
+ const seen=Array.from({length:5},()=>new Set()),counts=new Set();
  for(let i=0;i<100;i++){
   const plan=animalPlan(createHash('sha256').update('habits-'+i).digest('hex'));
   for(const actor of plan.actors){
-   assert.equal(actor.events.length,2);
-   assert.equal(actor.events.find(e=>e.box).pose,['jump','box','peek','nudge','carry'][actor.id]);
+   assert.ok(actor.events.length>=1&&actor.events.length<=3);counts.add(actor.events.length);
+   assert.equal(new Set(actor.events.map(e=>e.pose)).size,actor.events.length);
+   assert.ok(actor.events.filter(e=>e.box).length<=1);
+   for(const event of actor.events.filter(e=>e.box))assert.ok([['jump','scratch','box'],['box','scratch','peek'],['peek','scratch','jump'],['nudge','sniff'],['carry','sniff']][actor.id].includes(event.pose));
    for(const event of actor.events){
     seen[actor.id].add(event.pose);
     const a=animalFrame(plan,event.at+100)[actor.id],b=animalFrame(plan,event.at+event.duration-100)[actor.id];
@@ -44,6 +46,7 @@ test('distinct box interactions and stationary habits preserve all five finish t
    assert.equal(animalFrame(plan,actor.finish)[actor.id].progress,100);
   }
  }
+ assert.deepEqual([...counts].sort(),[1,2,3]);
  for(const [id,pose] of ['jump','box','peek','nudge','carry'].entries())assert.ok(seen[id].has(pose));
  assert.ok(seen[1].has('sleep'));assert.ok(seen[2].has('stretch'));assert.ok(seen[3].has('roll'));assert.ok(seen[4].has('sniff'));
 });

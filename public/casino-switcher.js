@@ -25,8 +25,8 @@ window.AVEDCreateCasinoSwitcher=function({games,tabs,gameHeader,getUser,selectGa
  toggle.onclick=()=>{if(panel.matches(':popover-open')){close();return;}panel.showPopover();position();tabs.querySelector('[aria-pressed="true"]')?.focus();};
  panel.querySelector('header button').onclick=close;
  panel.addEventListener('toggle',()=>toggle.setAttribute('aria-expanded',String(panel.matches(':popover-open'))));
- const lines={skydive:['高空','速降'],slots:['异常','回路'],scratch:['刮刮','彩票'],derby:['下班','竞速'],doudizhu:['智斗','太姥'],stocks:['KARMA','指数']};
- tabs.querySelectorAll('[data-game]').forEach(button=>{const text=button.dataset.game==='scratch'?'刮刮彩票':button.textContent.trim();button.setAttribute('aria-label',text);button.dataset.typeIgnore='';button.replaceChildren(...(lines[button.dataset.game]||[text]).map(line=>{const span=document.createElement('span');span.textContent=line;return span;}));});
+ const lines={skydive:['高空','速降'],slots:['异常','回路'],scratch:['刮刮','彩票'],derby:['随便','跑跑'],doudizhu:['智斗','太姥'],stocks:['KARMA','指数']};
+ tabs.querySelectorAll('[data-game]').forEach(button=>{const text=button.textContent.trim();button.setAttribute('aria-label',text);button.dataset.typeIgnore='';button.replaceChildren(...(lines[button.dataset.game]||[text]).map(line=>{const span=document.createElement('span');span.textContent=line;return span;}));});
 
  function sync(){home.classList.add('casino-lobby-link');const selected=tabs.querySelector('[aria-pressed="true"]')||(home.getAttribute('aria-pressed')==='true'?home:null);if(selected)title.textContent=selected===home?'公司大厅':selected.getAttribute('aria-label')||selected.textContent.trim();home.hidden=selected===home;const balance=getUser()?.balance;bar.querySelector('[data-casino-balance]').textContent=Number.isFinite(balance)?'¤ '+Number(balance).toLocaleString():'—';}
  tabs.addEventListener('click',e=>{if(!e.defaultPrevented||!e.target.closest('[data-game]'))return;sync();close();toggle.focus();});
