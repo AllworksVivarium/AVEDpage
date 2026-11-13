@@ -1,4 +1,5 @@
 import {expandedAchievementCatalog} from './achievement-expansion.mjs';
+import {funAchievementCatalog} from './server-fun-achievements.mjs';
 import {socialAchievementCatalog} from './server-social-achievements.mjs';
 import {gameplayAchievementCatalog} from './server-game-achievements.mjs';
 // Definitions stay on the server. Only earned entries are sent to employees.
@@ -16,4 +17,4 @@ export const achievementCatalog = [
  ['hourly-24','整点守望','累计领取二十四次整点补给。','hourly_count',24],
  ['jackpot','异常进账','单局返还达到五十万。','prize_max',500000],
  ['loss-100k','风险备忘录','单局净亏损达到十万。','loss_max',100000]
-].map(([code,title,description,metric,threshold])=>({code,title,description,metric,threshold})).concat(gameplayAchievementCatalog,expandedAchievementCatalog,socialAchievementCatalog);
+].map(([code,title,description,metric,threshold])=>({code,title,description,metric,threshold})).concat(gameplayAchievementCatalog,expandedAchievementCatalog,socialAchievementCatalog,funAchievementCatalog);

@@ -42,16 +42,18 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.el.style?.setProperty?.('--result-left',(railEnd+(width-railEnd)/2)+'px');
   state.el.style?.setProperty?.('--result-width',Math.min(340,width-railEnd-24)+'px');
  }
- function showToast({prize,multiplier,cost=0,penalty=0}){
+ function showToast({prize,multiplier,cost=0,penalty=0,tax=0}){
   let state=window.AVEDScratchToast;
   if(!state){
    const el=document.createElement('section'),bar=document.createElement('div'),caption=document.createElement('span'),close=document.createElement('button'),body=document.createElement('div'),label=document.createElement('div'),amount=document.createElement('div');
    el.className='scratch-award-toast';bar.className='scratch-award-titlebar';caption.className='scratch-award-caption';caption.textContent='A.V.E.D. / RESULT';close.className='scratch-award-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','关闭开奖结果');body.className='scratch-award-body';label.className='scratch-award-label';amount.className='scratch-award-amount';
    el.setAttribute('aria-label','开奖结果');el.setAttribute('data-type-ignore','');label.setAttribute('role','status');label.setAttribute('aria-live','polite');amount.setAttribute('aria-live','polite');
    close.addEventListener('click',()=>{hideToast();clear();});el.addEventListener('keydown',e=>{if(e.key==='Escape'){hideToast();clear();}});
-   bar.append(caption);bar.append(close);body.append(label);body.append(amount);el.append(bar);el.append(body);document.body.append(el);state=window.AVEDScratchToast={el,label,amount,close,caption,timer:null};
+   bar.append(caption);bar.append(close);body.append(label);body.append(amount);el.append(bar);el.append(body);document.body.append(el);state=window.AVEDScratchToast={el,label,amount,body,close,caption,timer:null};
   }
   clearTimeout(state.timer);
+  if(!state.taxNote&&tax>0){state.taxNote=document.createElement('small');state.taxNote.className='game-tax-note';state.taxNote.setAttribute('data-type-ignore','');state.body.append(state.taxNote);}
+  if(state.taxNote){state.taxNote.textContent='已扣税 ¤ '+Number(tax).toLocaleString();state.taxNote.hidden=!(tax>0);}
   const category=multiplier>=50?'刮出超级大奖了！':multiplier>=5?'刮出大奖了！':'开奖结果';
   const special=penalty>0||multiplier>=5;
   state.el.dataset.tone='inverse';if(state.caption)state.caption.textContent='A.V.E.D. / RESULT';
@@ -72,7 +74,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   const multiplier=cost>0?prize/cost:0;
   if(isActive()&&!document.hidden)window.AVEDPersonalRecord?.show(gameHighlight);
   if(multiplier>=5)banner.dataset.scratchFeedback=multiplier>=50?'supreme':multiplier>=10?'jackpot':'big';
-  if(isActive()&&!document.hidden)showToast({prize:prize-tax,multiplier});
+  if(isActive()&&!document.hidden)showToast({prize,tax,multiplier});
   if(isActive()&&!document.hidden){
    if(prize>cost){playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=20?'scratch-jackpot-major':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':mode==='all'?'scratch-win-all':'scratch-win');burst(multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:multiplier>=5?3:1);if(multiplier>=10)rain(multiplier);}
    else if(prize===0)playSfx('scratch-zero');

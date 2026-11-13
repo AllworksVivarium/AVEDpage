@@ -50,7 +50,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   if(!result.hidden){
    const won=!state.spectating&&((state.winner==='landlord')===(state.seat===state.landlord)),receipt=state.money?.settlement;
    result.classList.toggle('is-win',won);
-   result.innerHTML=`<small>${state.spectating?'ROUND COMPLETE':won?'YOU WIN':'NEXT TIME'}</small><strong>${state.spectating?(state.winner==='landlord'?'太姥获胜':'少姥获胜'):won?'你赢了！':'下次一定……'}</strong>${receipt?`<b class="ddz-result-net">净变化 ${receipt.net>0?'+':''}${receipt.net.toLocaleString()}</b><span>投入 ${receipt.stake.toLocaleString()} · 返还 ${receipt.reward.toLocaleString()}</span>${receipt.autoOnly?'<span>'+ (state.money.rules.autoProfitPolicy==='manual-play-v1'?'旧局规则 · 托管不计正收益':'托管 · 正常结算')+'</span>':''}`:'<span>本局结束</span>'}`;
+   result.innerHTML=`<small>${state.spectating?'ROUND COMPLETE':won?'YOU WIN':'NEXT TIME'}</small><strong>${state.spectating?(state.winner==='landlord'?'太姥获胜':'少姥获胜'):won?'你赢了！':'下次一定……'}</strong>${receipt?`<b class="ddz-result-net">本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()}</b>${window.AVEDGameResults.taxNote(receipt.tax)}${receipt.autoOnly?'<span>'+ (state.money.rules.autoProfitPolicy==='manual-play-v1'?'旧局规则 · 托管不计正收益':'托管 · 正常结算')+'</span>':''}`:'<span>本局结束</span>'}`;
   }
   round.hidden=!waiting;panel.classList.toggle('ddz-intermission',!!waiting);
   if(waiting)round.after($('[data-ddz-actions]'));else $('.ddz-selection').after($('[data-ddz-actions]'));

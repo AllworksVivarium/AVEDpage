@@ -23,6 +23,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
  let radioSeen=new Set(),radioStarted=false,queue=[],laneFree=[0,0,0],bullets=new Set();
  const textValues=new WeakMap();
  const setText=(el,value)=>{value=String(value);if(textValues.get(el)!==value){el.textContent=value;textValues.set(el,value);}};
+ const setResult=(el,value)=>{value=String(value);if(textValues.get(el)!==value){el.innerHTML=window.AVEDGameResults.markup(value);textValues.set(el,value);}};
  // Hard-edged 12px glyphs enlarged with nearest-neighbor sampling; no full font download.
  const pixelLabels=new Map();
  function pixelLabel(value){if(pixelLabels.has(value))return pixelLabels.get(value);const glyph=document.createElement('canvas');glyph.width=value.length*12;glyph.height=14;const ctx=glyph.getContext('2d');ctx.font='12px sans-serif';ctx.fillStyle='#fff';ctx.textBaseline='top';[...value].forEach((ch,i)=>ctx.fillText(ch,i*12,0));const pixels=ctx.getImageData(0,0,glyph.width,glyph.height);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=110?255:0;ctx.putImageData(pixels,0,0);const url=glyph.toDataURL();pixelLabels.set(value,url);return url;}
@@ -32,7 +33,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
  const money=n=>'¤ '+Number(n).toLocaleString(),motion=()=>window.AVEDEffectsEnabled?.()!==false&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
  const visible=()=>!!getUser()&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!panel.classList.contains('hidden');
  const avatar=p=>p.avatar?`<img src="${esc(p.avatar)}" alt="" loading="lazy">`:'<small class="avatar-noinfo">NOINFO</small>';
- const resultText=p=>window.AVEDGameResults?AVEDGameResults.text({...p,cancelled:p.status==='cancelled'}):'返还 '+money(p.prize);
+ const resultText=p=>window.AVEDGameResults?AVEDGameResults.text({...p,prize:p.grossPrize??p.prize,cancelled:p.status==='cancelled'}):'返还 '+money(p.prize);
  const scene=window.AVEDSkyScene(byId('flight-pixel-canvas'),byId('flight-nameplates'));
  const ticks=Array.from({length:11},()=>{const el=document.createElement('span');byId('flight-ticks').append(el);return el;});
  let soundRound=0,soundSelf=null,landingSound=false,lastWind=0;
@@ -52,10 +53,10 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
   setText(byId('skydive-flight-no-label'),'FLIGHT / '+String(next.round).padStart(5,'0'));setText(byId('flight-phase'),({BOARDING:'登机中 / BOARDING',DROPPING:'自由落体 / FREEFALL',LANDING:'安全线已揭晓 / REVEALED'})[next.phase]);
   setText(byId('flight-current-wait'),next.boardingSeconds);
   const sig=JSON.stringify([next.phase,next.passengers]);if(sig!==lastSignature){lastSignature=sig;setText(byId('skydive-passenger-stats'),`本班 ${next.passengers.length} 人 · ${next.passengers.filter(p=>p.status==='landed').length} 人开伞`);
-   byId('skydive-passengers-list').innerHTML=next.passengers.map(p=>`<article class="flight-passenger ${p.id===Number(getUser()?.id)?'is-self':''}" data-passenger="${p.id}" data-status="${p.status}"><div class="flight-avatar">${avatar(p)}</div><div><b>${esc(p.alias||'员工')}${p.id===Number(getUser()?.id)?' <em>你</em>':''}</b><small>${statusText(p)}</small></div><strong>${p.status==='aboard'?money(p.cost):esc(resultText(p))}</strong></article>`).join('')||'<p class="flight-empty">机舱还很安静。<br>登机后，你的头像会出现在座位上。</p>';
+   byId('skydive-passengers-list').innerHTML=next.passengers.map(p=>`<article class="flight-passenger ${p.id===Number(getUser()?.id)?'is-self':''}" data-passenger="${p.id}" data-status="${p.status}"><div class="flight-avatar">${avatar(p)}</div><div><b>${esc(p.alias||'员工')}${p.id===Number(getUser()?.id)?' <em>你</em>':''}</b><small>${statusText(p)}</small></div><strong>${p.status==='aboard'?money(p.cost):AVEDGameResults.markup(resultText(p))}</strong></article>`).join('')||'<p class="flight-empty">机舱还很安静。<br>登机后，你的头像会出现在座位上。</p>';
   }
   if(visible()&&next.self?.status==='landed')window.AVEDPersonalRecord?.show(next.gameHighlight);
-  const prev=next.previous;setText(byId('flight-last-result'),prev?'上一班 #'+prev.round+' · 安全线 '+prev.safetyLine+' m'+(prev.self?' · '+resultText(prev.self):''):'');
+  const prev=next.previous;setResult(byId('flight-last-result'),prev?'上一班 #'+prev.round+' · 安全线 '+prev.safetyLine+' m'+(prev.self?' · '+resultText(prev.self):''):'');
   byId('flight-safety').hidden=next.safetyLine==null;setText(byId('flight-safety-label'),next.safetyLine==null?'':'安全线 '+next.safetyLine+' m / LIMIT');panel.dataset.flightPhase=next.phase;panel.dataset.instantCrash=String(next.phase==='LANDING'&&next.revealedAt-next.departAt<1200);schedule();
  }
  function paint(){raf=0;if(!active||!visible())return;const t=performance.now();if(motion()&&t-lastFrame<32){schedule();return;}lastFrame=t;if(!state){scene.preview();return;}const age=t-receivedAt,fresh=age<3000;
@@ -67,7 +68,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
   const board=byId('skydive-board-btn'),jump=byId('skydive-open-chute-btn');board.hidden=!boarding;jump.hidden=boarding;board.disabled=!fresh||!!self||!!board.dataset.busy;controlText(board,!fresh?'同步中':self?'已登机':board.dataset.busy?'登机中':'登机');
   jump.disabled=openingPending||!fresh||state.phase!=='DROPPING'||self?.status!=='aboard'||!!jump.dataset.busy;controlText(jump,!fresh?'同步中':openingPending||jump.dataset.busy?'开伞中':!self?'旁观中':self.status==='landed'?'已开伞':self.status==='crashed'?'已坠落':'开伞');byId('skydive-bet-input').disabled=!!board.dataset.busy;for(const id of ['flight-double','flight-quintuple'])byId(id).disabled=byId('skydive-bet-input').disabled;
   setText(byId('skydive-bottom-left-hint'),!fresh?'信号中断，正在重接':self?'本班锁定 '+money(self.cost)+' · 可预设下班金额':'金额可随时调整，登机时生效 · 最低 100');
-  const elapsed=state.revealedAt==null?0:now-state.revealedAt,result=byId('flight-result');result.hidden=state.phase!=='LANDING'||elapsed<(state.revealedAt-state.departAt<1200?250:2200);setText(result,self?(self.status==='crashed'?(state.revealedAt-state.departAt<1200?'刚出舱就坠落 · 本班返还 ¤ 0':'坠落 · 本班返还 ¤ 0'):self.status==='landed'?'开伞成功 · '+resultText(self):'本班结束'):'安全线 '+state.safetyLine+' m · 等待乘员落地');
+  const elapsed=state.revealedAt==null?0:now-state.revealedAt,result=byId('flight-result');result.hidden=state.phase!=='LANDING'||elapsed<(state.revealedAt-state.departAt<1200?250:2200);setResult(result,self?(self.status==='crashed'?(state.revealedAt-state.departAt<1200?'刚出舱就坠落 · 本班返还 ¤ 0':'坠落 · 本班返还 ¤ 0'):self.status==='landed'?'开伞成功 · '+resultText(self):'本班结束'):'安全线 '+state.safetyLine+' m · 等待乘员落地');
   if(fresh&&visible()){if(self?.status==='landed'&&state.phase==='DROPPING'&&t-lastWind>4000){playSfx('sky-wind');lastWind=t;}if(state.phase==='LANDING'&&!landingSound&&elapsed>=(self?.status==='landed'?window.AVEDSkyScene.landingDelay(state,self):650)){landingSound=true;if(self)playSfx(self.status==='landed'?'sky-land':'sky-crash');}}
   scene.paint(opening.view(state,Number(getUser()?.id)),now,d,motion(),Number(getUser()?.id));paintRadio(t);schedule();
  }

@@ -15,7 +15,8 @@ test('sixty market readers share public candles without quote writes; returned d
  const f=marketFixture();try{const before=f.market.history('TEST.A');f.calls.length=0;
  for(let i=0;i<60;i++){const value=f.market.history('TEST.A');assert.deepEqual(value,before);value.candles[0].close=-1;value.quote.price=-1;}
  assert.equal(f.calls.filter(c=>/stock_candles|stock_prices/.test(c.sql)).length,0);assert.equal(f.calls.filter(c=>c.method==='run').length,0);
- f.tick();f.market.advance();assert.notDeepEqual(f.market.history('TEST.A').candles,before.candles);
+ // Advance a full candle: a single random tick is allowed to keep the same price.
+ f.tick(60000);f.market.advance();assert.notDeepEqual(f.market.history('TEST.A').candles,before.candles);
  }finally{f.close();}
 });
 test('trade volume, direct edits and rollback invalidate public snapshots without leaking uncommitted state',()=>{

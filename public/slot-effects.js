@@ -38,11 +38,11 @@ window.AVEDSlotEffects=function({panel,grid,playSfx=()=>{}}){
  }
  function show(result){
   if(!visible())return;clearAward();
-  const {cost,prize:rawPrize,penalty=0}=result,prize=rawPrize-(result.tax||result.result?.tax||0),profit=prize>cost+penalty,multiplier=cost?prize/cost:0;
+  const {cost,prize,penalty=0}=result,profit=prize>cost+penalty,multiplier=cost?prize/cost:0;
   const tier=penalty?'overload':!profit?'return':multiplier>=50?'supreme':multiplier>=10?'jackpot':multiplier>=5?'big':'profit';
   const titles={overload:'回路过载',return:'本局返还',profit:'回路接通',big:'组合大奖',jackpot:'能量爆发',supreme:'极限大奖'};
   const layer=document.createElement('section');layer.className='slot-award-layer';layer.dataset.tier=tier;layer.setAttribute('data-type-ignore','');
-  layer.innerHTML='<div class="slot-award-card" role="status" aria-live="polite"><strong>'+titles[tier]+'</strong><b>¤ '+Number(prize).toLocaleString()+'</b>'+((result.tax||result.result?.tax)?'<span>净收益税 3% · ¤ '+Number(result.tax||result.result.tax).toLocaleString()+'</span>':'')+(penalty?'<span>额外维修费 ¤ '+penalty.toLocaleString()+'</span>':'')+'<button type="button" aria-label="关闭回路结果">×</button></div>';
+  layer.innerHTML='<div class="slot-award-card" role="status" aria-live="polite"><strong>'+titles[tier]+'</strong><b>¤ '+Number(prize).toLocaleString()+'</b>'+window.AVEDGameResults.taxNote(result.tax||result.result?.tax)+(penalty?'<span>额外维修费 ¤ '+penalty.toLocaleString()+'</span>':'')+'<button type="button" aria-label="关闭回路结果">×</button></div>';
   layer.querySelector('button').onclick=clearAward;
   if(motion()&&(profit||penalty)){
    panel.classList.add(penalty?'slot-overloaded':'slot-power-up');

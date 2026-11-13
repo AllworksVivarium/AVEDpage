@@ -29,7 +29,8 @@ function harness(){
  const document={hidden:false,createElement:element,addEventListener(){}};
  const window={AVEDSkyScene:()=>scene,AVEDSkyRules:{multiplier:d=>d/200}};window.AVEDSkyScene.landingDelay=()=>1000;
  vm.runInNewContext(readFileSync(new URL('../public/game-clock.js',import.meta.url),'utf8'),{window,performance:{now:()=>now}});
- vm.runInNewContext(source,{window,document,performance:{now:()=>now},matchMedia:()=>({matches:false}),MutationObserver:class{observe(){}},ResizeObserver:class{observe(){}},EventSource:class{close(){}},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;},console});
+ const resultScope={};vm.runInNewContext(readFileSync(new URL('../public/game-results.js',import.meta.url),'utf8'),resultScope);window.AVEDGameResults=resultScope.AVEDGameResults;
+ vm.runInNewContext(source,{window,AVEDGameResults:window.AVEDGameResults,document,performance:{now:()=>now},matchMedia:()=>({matches:false}),MutationObserver:class{observe(){}},ResizeObserver:class{observe(){}},EventSource:class{close(){}},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;},console});
  const ui=window.AVEDSkyUI({api,esc:x=>x,byId,getUser:()=>user,onBalance:b=>{user.balance=b;},showToast(){},playSfx:s=>sounds.push(s)});
  ui.render(state);ui.ensure();
  return {ui,paints,calls,sounds,user,byId,frame(){frames.shift()?.();},setState(next){state=next;},resolve(next){resolvePost(next);},reject(error){rejectPost(error);},advance(ms){now+=ms;}};

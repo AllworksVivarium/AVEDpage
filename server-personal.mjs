@@ -1,10 +1,11 @@
 import {installSocialAchievements,socialMetrics} from './server-social-achievements.mjs';
 import {achievementCatalog} from './achievement-catalog.mjs';
+import {installFunAchievements,funAchievementCatalog} from './server-fun-achievements.mjs';
 import {installGameplayAchievements,gameplayRules,gameplayAwardsSQL} from './server-game-achievements.mjs';
 
 export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights}) {
  const personalMetrics=['zero_count','relief_count','peak','debt','donated','checkin_count','hourly_count','prize_max','loss_max'];
- const metrics=[...personalMetrics,...gameplayRules.map(r=>r.metric),...socialMetrics.map(r=>r.metric)];
+ const metrics=[...personalMetrics,...gameplayRules.map(r=>r.metric),...socialMetrics.map(r=>r.metric),...funAchievementCatalog.map(r=>r.metric)];
  db.exec(`CREATE TABLE IF NOT EXISTS achievement_definitions(code TEXT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL,metric TEXT NOT NULL,threshold INTEGER NOT NULL,enabled INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS personal_metrics(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,balance INTEGER NOT NULL DEFAULT 0,peak INTEGER NOT NULL DEFAULT 0,debt INTEGER NOT NULL DEFAULT 0,zero_count INTEGER NOT NULL DEFAULT 0,relief_count INTEGER NOT NULL DEFAULT 0,donated INTEGER NOT NULL DEFAULT 0,checkin_count INTEGER NOT NULL DEFAULT 0,hourly_count INTEGER NOT NULL DEFAULT 0,prize_max INTEGER NOT NULL DEFAULT 0,loss_max INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS hourly_claims(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,hour INTEGER NOT NULL,reward INTEGER NOT NULL,PRIMARY KEY(employee_id,hour));
@@ -42,6 +43,7 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  END;${awardSQL()}`);
  installGameplayAchievements(db);
  installSocialAchievements(db);
+ installFunAchievements(db);
  const earned=id=>db.prepare(`SELECT d.code,d.title,d.description,a.created_at AS createdAt FROM earned_achievements a JOIN achievement_definitions d ON d.code=a.code WHERE a.employee_id=? AND d.enabled=1 ORDER BY a.created_at DESC,d.rowid`).all(id);
  function rewards(id) {const now=Date.now(),hour=Math.floor(now/3600000),daily=!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today());return {serverTime:now,balance:balanceFor(id),dailyClaimed:daily,dailyReward:10000,dailyResetAt:(Math.floor((now+28800000)/86400000)+1)*86400000-28800000,hourlyClaimed:!!db.prepare('SELECT 1 FROM hourly_claims WHERE employee_id=? AND hour=?').get(id,hour),hourlyResetAt:(hour+1)*3600000,hourlyReward:5000};}
  db.exec(`INSERT INTO personal_metrics(employee_id,balance) SELECT e.id,COALESCE(SUM(l.delta),0) FROM employees e LEFT JOIN balance_ledger l ON l.employee_id=e.id GROUP BY e.id ON CONFLICT(employee_id) DO UPDATE SET balance=excluded.balance;`);

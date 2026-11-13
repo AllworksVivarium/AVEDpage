@@ -16,7 +16,8 @@ function fixture(t,initialize=true){
  let service;
  const install=()=>service=installPersonal({db});
  const add=(id,game,result={},prize=200,cost=100)=>db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,result_json) VALUES(?,?,?,?,?)').run(id,game,cost,prize,JSON.stringify(result));
- const codes=id=>service.earned(id).map(a=>a.code);
+ // This fixture checks the original gameplay awards; fun awards have their own coverage.
+ const codes=id=>service.earned(id).map(a=>a.code).filter(code=>!code.startsWith('fun-'));
  const metric=(id,name)=>db.prepare('SELECT value FROM gameplay_achievement_metrics WHERE employee_id=? AND metric=?').get(id,name)?.value||0;
  if(initialize)install();return {db,install,add,codes,metric};
 }

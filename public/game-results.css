@@ -1,0 +1,17 @@
+/* Gross awards lead; the actual withheld tax remains a separate quiet receipt. */
+@layer aved-typography {
+ body #inner-app-view #view-casino .game-tax-note,
+ body .scratch-award-toast .game-tax-note,
+ body .scratch-award-toast .game-tax-note *,
+ body #inner-app-view #view-casino .game-tax-note * {
+  font-size:9px!important;font-style:italic!important;font-synthesis:style!important;
+  font-weight:400!important;line-height:1.4!important;letter-spacing:0!important;
+  opacity:.75;text-shadow:none!important;margin:4px 0 0!important;
+ }
+ body #inner-app-view #view-casino .game-tax-note,body .scratch-award-toast .game-tax-note{display:block!important;white-space:nowrap!important}
+ body #inner-app-view #view-casino .game-tax-note[hidden],body .scratch-award-toast .game-tax-note[hidden]{display:none!important}
+ body .scratch-award-toast .game-tax-note{padding:0 12px 8px!important;text-align:center}
+}
+@layer aved-section-ui {
+ #inner-app-view #view-casino #active-ticket-result-banner:has(.game-tax-note){height:auto!important;max-height:none!important;min-height:48px!important;padding:8px!important;overflow:visible!important;line-height:1.5!important}
+}

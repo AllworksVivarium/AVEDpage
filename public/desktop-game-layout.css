@@ -95,3 +95,36 @@ body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:afte
 
 /* Keep restored flight instructions below the mobile controls and radio. */
 @media(max-width:999px){#game-panel-skydive .flight-protocol{order:5}}
+
+/* Desktop page width is independent of the playable scene. Mobile stays above. */
+@media(min-width:1000px){
+ #inner-app-view #view-casino{
+  box-sizing:border-box;width:100%;max-width:1360px;margin-inline:auto;
+ }
+ #inner-app-view #view-casino>.terminal-game-header,
+ #inner-app-view #view-casino>.player-section-masthead{
+  width:100%;max-width:none;box-sizing:border-box;
+ }
+ .terminal-next #game-panel-slots>.grid,
+ #game-panel-derby .animal-race-layout,
+ .terminal-next #game-panel-skydive .flight-layout{
+  width:100%;max-width:none;margin:0;gap:24px;
+  grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);
+ }
+ #game-panel-skydive .flight-main,
+ #game-panel-derby .race-main,
+ #game-panel-slots .slot-main{width:100%;max-width:720px;justify-self:center}
+ #game-panel-skydive .flight-console,
+ #game-panel-derby .animal-stage,
+ #game-panel-slots .slot-machine{
+  width:100%;max-width:720px;height:420px;max-height:420px;
+ }
+ #game-panel-skydive .flight-sidebar,
+ #game-panel-derby .race-sidebar,
+ #game-panel-slots .slot-controls{width:100%;min-width:0}
+ #game-panel-skydive .flight-sidebar{display:flex;flex-direction:column}
+ #game-panel-derby .race-sidebar .race-slip{display:block}
+ #game-panel-skydive .flight-scene{min-height:0}
+ #game-panel-skydive .flight-protocol,
+ #game-panel-derby .race-rules{padding:16px 18px}
+}

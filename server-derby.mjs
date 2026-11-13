@@ -1,4 +1,5 @@
 import {proofRandom} from './server-economy.mjs';
+import {installFunDerbyAchievements} from './server-fun-achievements.mjs';
 import {MAX_SHARED_GAME_STAKE,validateGameStake} from './game-stake-limits.mjs';
 import {randomInt} from 'node:crypto';
 import {mediaReference} from './server-media.mjs';
@@ -10,6 +11,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
  if(!db.prepare('PRAGMA table_info(derby_races)').all().some(c=>c.name==='rules_json'))db.exec("ALTER TABLE derby_races ADD COLUMN rules_json TEXT NOT NULL DEFAULT ''");
  db.exec(`CREATE TABLE IF NOT EXISTS derby_wagers(race_id INTEGER NOT NULL REFERENCES derby_races(id),employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,market TEXT NOT NULL CHECK(market IN ('first','last')),runner INTEGER NOT NULL CHECK(runner BETWEEN 0 AND 4),cost INTEGER NOT NULL,prize INTEGER NOT NULL DEFAULT 0,settled INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(race_id,employee_id,market));
  CREATE INDEX IF NOT EXISTS derby_wagers_pending ON derby_wagers(race_id) WHERE settled=0;`);
+ installFunDerbyAchievements(db);
  db.exec("CREATE INDEX IF NOT EXISTS derby_races_version ON derby_races((CASE WHEN json_valid(rules_json) THEN json_extract(rules_json,'$.version') END),id DESC)");
  let rulesJson,cachedRules;
  const raceRules=race=>{if(rulesJson!==race.rules_json){rulesJson=race.rules_json;cachedRules=JSON.parse(rulesJson);}return cachedRules;};
@@ -71,9 +73,13 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
     entrants:db.prepare('SELECT COUNT(DISTINCT employee_id) AS n FROM derby_wagers WHERE race_id=?').get(race.id).n};
   }
  }
+ let taxRace=null;const taxDetails=new Map();
  function snapshot(id,race=current(),shared=null,context=null){
   if(!shared)shared=sharedSnapshot(race);
-  const bets=context?(context.bets.get(id)||[]):db.prepare('SELECT market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? AND employee_id=? ORDER BY market').all(race.id,id);
+  const rawBets=context?(context.bets.get(id)||[]):db.prepare('SELECT market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? AND employee_id=? ORDER BY market').all(race.id,id);
+  if(taxRace!==race.id){taxDetails.clear();taxRace=race.id;}
+  if(gameTax&&rawBets.some(b=>b.settled)&&!taxDetails.has(id))taxDetails.set(id,db.prepare("SELECT json_extract(result_json,'$.market') market,COALESCE(json_extract(result_json,'$.tax'),0) tax FROM game_tickets WHERE employee_id=? AND game='derby' AND json_extract(result_json,'$.round')=?").all(id,race.id));
+  const taxes=taxDetails.get(id)||[],bets=rawBets.map(b=>{const tax=taxes.find(t=>t.market===b.market)?.tax||0;return {...b,tax,grossPrize:b.prize+tax};});
   const self=bets.find(b=>b.market==='first')||bets[0]||null;
   return {...shared,self,bets,balance:balanceFor(id),gameHighlight:context?.events?context.events.get(id)||null:highlights.roundEvent(id,'derby',race.id)};
  }

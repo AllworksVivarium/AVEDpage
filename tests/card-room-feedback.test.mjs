@@ -34,7 +34,7 @@ test('playing and settled copy uses the saved round values instead of inferring 
  let view=tableView(r,1);assert.match(moneyText(view),/全人机局.*80%.*40%/);
  assert.doesNotMatch(moneyText(view),/普通联机|90%|50%|25%/);
  r.money.settlement={players:[{stake:2000,reward:3600}]};
- view=tableView(r,1);assert.match(moneyText(view),/本局结算投入 ¤ 2,000.*获得 ¤ 3,600.*80%.*40%/);
+ view=tableView(r,1);assert.match(moneyText(view),/本局获得 ¤ 3,600.*80%.*40%/);
 });
 
 test('nickname pool excludes the rejected choices and mixes ordinary names with retained jokes',()=>{

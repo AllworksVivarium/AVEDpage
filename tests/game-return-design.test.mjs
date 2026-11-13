@@ -55,6 +55,9 @@ test('main result shows actual total received, including principal, without clai
  const scope={};vm.runInNewContext(readFileSync(new URL('../public/game-results.js',import.meta.url),'utf8'),scope);
  const show=scope.AVEDGameResults.text;
  assert.equal(show({cost:1000,prize:1650}),'本局获得 ¤ 1,650');
+ assert.equal(show({cost:1000,prize:100000,tax:2970}),'本局获得 ¤ 100,000\n已扣税 ¤ 2,970');
+ assert.match(scope.AVEDGameResults.html({cost:1000,prize:100000,tax:2970}),/100,000\n<small class="game-tax-note">已扣税 ¤ 2,970<\/small>/);
+ assert.doesNotMatch(scope.AVEDGameResults.markup('<script>'),/<script>/);
  assert.equal(show({cost:1000,prize:650}),'本局获得 ¤ 650');
  assert.equal(show({cost:1000,prize:1000}),'本局获得 ¤ 1,000');
  assert.equal(show({cost:1000,prize:0}),'本局返还 ¤ 0');

@@ -151,3 +151,9 @@ body.theme-inner .stock-margin-dialog [data-margin-cancel]{background:var(--syst
 @layer aved-type-system{#inner-app-view #company-fund-summary .finance-stat-note{display:block;margin-top:5px;font-size:10px!important;line-height:1.5!important;color:var(--inner-text-muted);font-weight:400}}
 
 #game-panel-stocks .stock-workspace>#market-bulletins{grid-area:wire;min-width:0;margin:0;border:1px solid var(--inner-border-soft);padding:10px}
+.stock-margin-preferences details{margin-top:3px}.stock-margin-preferences details>summary{cursor:pointer;font-size:10px;color:var(--inner-text-muted);width:max-content}.stock-trade-ticket>.stock-margin-preferences{margin:12px 0 0;border-inline:0;border-bottom:0;padding-inline:0}#stock-holdings-page>.stock-margin-preferences{margin:0 0 12px}
+#game-panel-stocks .stock-margin-preferences{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;padding:6px 0;background:transparent;border:0;margin:6px 0 0}
+#game-panel-stocks .stock-margin-preferences label{display:flex;flex-direction:row;align-items:center;gap:5px;margin:0;padding:0;min-height:24px;justify-content:flex-start}
+#game-panel-stocks .stock-margin-preferences input[type=checkbox]{appearance:auto;width:13px;height:13px;min-height:0;min-width:0;padding:0;margin:0;flex:0 0 13px}
+#game-panel-stocks .stock-margin-preferences b{font-weight:400}#game-panel-stocks .stock-margin-preferences small{margin-left:3px;white-space:nowrap}
+#game-panel-stocks .stock-margin-preferences details{display:contents}#game-panel-stocks .stock-margin-preferences summary{font-size:10px;margin:0;white-space:nowrap}#game-panel-stocks .stock-margin-preferences details p{grid-column:1/-1;margin:2px 0 0}

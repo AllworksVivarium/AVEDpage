@@ -66,6 +66,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  const opens=await Promise.all([call(a,'jump','POST',{round:flight.round}),call(a,'jump','POST',{round:flight.round})]);assert.ok(opens.every(x=>x.status===200));assert.equal(opens[0].data.self.status,'landed');
  const prize=opens[0].data.self.prize;assert.equal(opens[1].data.self.prize,prize);assert.equal(opens[1].data.balance,90000+prize);assert.ok(!('safetyLine' in opens[0].data));
  const gross=Math.floor(10000*skyMultiplier(opens[0].data.self.depth,opens[0].data.payoutRules));assert.equal(prize,gross-Math.floor(Math.max(0,gross-10000)*.03));
+ assert.equal(opens[0].data.self.grossPrize,gross);assert.equal(opens[0].data.self.tax,gross-prize);
  const earlyHistory=(await req(a,'/api/games/history')).data.items.find(x=>x.game==='sky');assert.ok(!('safetyLine' in JSON.parse(earlyHistory.result)),'cashout history must not leak the shared limit');
  await until(()=>flightB.some(x=>x.passengers.some(p=>p.status==='landed')));
  assert.equal((await call(b,'current')).data.self.status,'aboard');assert.equal((await call(a,'current')).data.passengers.filter(p=>p.isRobot).length,0,'two humans need no companion');
@@ -79,6 +80,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  await stop();start();await ready();const restored=(await call(a,'current')).data;assert.equal(restored.round,flight.round);assert.equal(restored.phase,'LANDING');assert.equal(restored.self.prize,prize);assert.equal(restored.balance,90000+prize);assert.equal(count(),2);
  db.prepare('UPDATE sky_flights SET ended_at=? WHERE id=?').run(Date.now()-1,flight.round);
  const next=(await call(a,'current')).data;assert.notEqual(next.round,flight.round);assert.equal(next.previous.safetyLine,600);assert.ok(!('safetyLine' in next));
+ assert.equal(next.previous.self.grossPrize,gross);assert.equal(next.previous.self.tax,gross-prize);
  db.prepare('UPDATE sky_flights SET depart_at=?,safety_line=600 WHERE id=?').run(Date.now()+12000,next.round);
  await call(a,'start','POST',{round:next.round,bet:100});
  assert.equal(db.prepare('SELECT COUNT(*) n FROM sky_companion_arrivals WHERE flight_id=?').get(next.round).n,0,'no companions before the final four seconds');

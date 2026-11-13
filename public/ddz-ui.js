@@ -57,7 +57,7 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   const returns=rules.computerReturns;
   const note=returns?`全人机局：赢时净赚结算投入的 ${returns.winPercent-100}%，输时扣除 ${100-returns.lossPercent}%`:`普通联机局：胜方获得结算投入的 2 倍，另分全桌结算投入的 ${rules.bonusPercent}% 奖金；输时扣除本局结算投入`;
   const receipt=current.money?.settlement;
-  if(receipt)return `本局结算投入 ¤ ${receipt.stake.toLocaleString()} · 获得 ¤ ${receipt.reward.toLocaleString()}${receipt.tax?' · 净收益税 3% ¤ '+receipt.tax.toLocaleString():''} · 未使用筹码已释放 · ${note}`;
+  if(receipt)return `本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()} · 未使用筹码已释放 · ${note}${receipt.tax?'\n已扣税 ¤ '+receipt.tax.toLocaleString():''}`;
   return `${current.money?'本局锁定':'开局锁定'} ¤ ${rules.reserve.toLocaleString()} · 底注 ${rules.base} × 叫分 × 倍率 · 本局结束自动释放剩余筹码 · ${note}`;
  }
  $('[data-ddz-base]').onchange=stakeDraft;$('[data-ddz-custom-base]').oninput=stakeDraft;
@@ -147,8 +147,7 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   $('[data-ddz="leave"]').hidden=!state;$('[data-ddz="leave"]').textContent=state?.spectating?'退出旁观':'退出牌桌';panel.querySelectorAll('[data-size]').forEach(b=>{b.disabled=!!state;b.setAttribute('aria-pressed',String(Number(b.dataset.size)===size));});
   panel.querySelectorAll('.ddz-entry button').forEach(b=>b.disabled=!!state||busy);
   $('[data-ddz-bid]').textContent=state?.bid||'—';$('[data-ddz-mult]').textContent='×'+(state?.multiplier||1);
-  const receipt=state?.money?.settlement;$('[data-ddz-money]').textContent=moneyText(state);
-  if(receipt?.autoOnly)$('[data-ddz-money]').textContent+=state.money.rules.autoProfitPolicy==='manual-play-v1'?' · 旧局规则：整局托管不计正收益':' · 托管按正常规则结算';
+  const receipt=state?.money?.settlement,moneyCopy=moneyText(state)+(receipt?.autoOnly?(state.money.rules.autoProfitPolicy==='manual-play-v1'?' · 旧局规则：整局托管不计正收益':' · 托管按正常规则结算'):'');$('[data-ddz-money]').innerHTML=window.AVEDGameResults.markup(moneyCopy);
   if(receipt&&visible())window.AVEDPersonalRecord?.show(state.gameHighlight);
   if(receipt&&previous?.money?.round===state.money.round&&!previous.money.settlement&&receipt.net>0)playSfx('win');
   $('[data-ddz-bottom]').innerHTML=state?.bottom.map(c=>card(c)).join('')||'';

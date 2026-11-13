@@ -259,18 +259,8 @@
       // 日间模式 / 夜间模式 切换（去掉“复古”二字）
       const themeToggleBtn = document.getElementById('theme-toggle-btn');
       themeToggleBtn.addEventListener('click', () => {
-        isDarkMode = !isDarkMode;
-        document.documentElement.dataset.savedTheme=isDarkMode?'night':'day';
-        try{localStorage.setItem('aved_theme_v1',isDarkMode?'night':'day');}catch{}
-        if (isDarkMode) {
-          document.body.classList.add('dark-mode');
-          themeToggleBtn.textContent = '☀️ 日间模式';
-          showToast('已切换至：夜间模式');
-        } else {
-          document.body.classList.remove('dark-mode');
-          themeToggleBtn.textContent = '🌙 夜间模式';
-          showToast('已切换至：日间模式');
-        }
+        const modes=['system','day','night'];
+        window.AVEDTheme.setMode(modes[(modes.indexOf(window.AVEDTheme.mode)+1)%modes.length]);
       });
 
 
@@ -1137,7 +1127,7 @@
         listEl.innerHTML = slot5x3State.history.slice(0,20).map((h, i) => `
           <div class="p-2 inner-card-alt flex justify-between items-center">
             <span>#${i + 1} 转 | 投入 ${h.bet.toLocaleString()}</span>
-            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.text({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind,tax:h.tax})}</strong>
+            <strong class="${h.win > h.bet ? 'text-[#9e1b1b]' : 'opacity-60'}">${AVEDGameResults.html({cost:h.bet,prize:h.win,penalty:h.penalty,penaltyKind:h.penaltyKind,tax:h.tax})}</strong>
           </div>
         `).join('');
       }
@@ -1354,7 +1344,7 @@
         const board=byId('active-ticket-board-container');scratchBoard.render(tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
-          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').textContent=(tk.demo?'测试 · ':'')+AVEDGameResults.text(tk);
+          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'测试 · ':'')+AVEDGameResults.html(tk);
           scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
         }
       }
@@ -1738,7 +1728,7 @@
             let d,showSlotAward=false;try{d=await api('/api/player/games/slot',{method:'POST',body:pendingSlotRequest});pendingSlotRequest=null;showSlotAward=await slotEffects.finish(d);}catch(error){if(error.status>=400&&error.status<500)pendingSlotRequest=null;throw error;}finally{slotEffects.cancel();}
             slot5x3State.board=d.result.board;slot5x3State.winningCells=new Set(d.result.winningCells);slot5x3State.history.unshift({bet:d.cost,win:d.prize,penalty:d.penalty,penaltyKind:d.result.penaltyKind,tax:d.tax||d.result.tax||0});
             d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);
-            byId('slot5x3-win-summary').textContent='本局获得 ¤ '+Number(d.prize-(d.tax||d.result?.tax||0)).toLocaleString();currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
+            byId('slot5x3-win-summary').innerHTML=AVEDGameResults.html(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
@@ -1794,7 +1784,7 @@
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         const ticket=activeIssuedTicket;ticket.settled=true;
-        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').textContent=(ticket.demo?'测试 · ':'')+AVEDGameResults.text(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'测试 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
         finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');

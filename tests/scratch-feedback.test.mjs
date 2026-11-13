@@ -30,7 +30,7 @@ test('one shared toast replaces previous awards and uses tier-specific expiry',(
  const ctx={window:{AVEDEffectsEnabled:()=>false},document,matchMedia:()=>({matches:false,addEventListener(){}}),innerWidth:1200,innerHeight:800,clearTimeout:id=>cancelled.push(id),setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;}};
  vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
  const fx=ctx.window.AVEDScratchFeedback(),other=ctx.window.AVEDScratchFeedback(),banner=element();banner.textContent='本局获得';
- fx.settle(banner,{cost:1000,prize:1250});assert.equal(timers.at(-1).ms,1500);
+ fx.settle(banner,{cost:1000,prize:1250,tax:7});assert.equal(timers.at(-1).ms,1500);assert.match(ctx.window.AVEDScratchToast.label.textContent,/1,250/);assert.match(ctx.window.AVEDScratchToast.taxNote.textContent,/7/);
  other.settle(banner,{cost:1000,prize:5000});assert.equal(ctx.window.AVEDScratchToast.label.textContent,'刮出大奖了！');assert.equal(ctx.window.AVEDScratchToast.amount.hidden,false);assert.equal(timers.at(-1).ms,2500);assert.ok(cancelled.includes(1));
  fx.settle(banner,{cost:1000,prize:20000});assert.equal(timers.at(-1).ms,4000);
  let forwarded;ctx.window.AVEDPersonalRecord={show:event=>{forwarded=event;}};

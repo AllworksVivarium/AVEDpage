@@ -82,16 +82,27 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
   if(!f||f.ended_at&&now>=f.ended_at){const p=proofRandom(),s=economy.get().sky,range=weighted(s.ranges,p.random),line=range.min+Math.floor(p.random()*(range.max-range.min+1));const row=db.prepare('INSERT INTO sky_flights(depart_at,safety_line,seed,seed_hash,rules_json) VALUES(?,?,?,?,?)').run(now+s.boardingSeconds*1000,line,p.seed,p.seedHash,JSON.stringify(s));f=db.prepare('SELECT * FROM sky_flights WHERE id=?').get(row.lastInsertRowid);}
   return f;
  }
+ const payoutDetails=new Map();
+ function withPayout(id,f,p){
+  if(!p)return p;
+  let tax=0;
+  if(gameTax&&p.status==='landed'){
+   const key=f.id+':'+id;
+   if(!payoutDetails.has(key)){if(payoutDetails.size>=512)payoutDetails.clear();payoutDetails.set(key,db.prepare("SELECT tax FROM game_tax_receipts WHERE employee_id=? AND game='sky' AND settlement_key=?").get(id,f.id+':'+f.seed_hash)?.tax||0);}
+   tax=payoutDetails.get(key);
+  }
+  return {...p,tax,grossPrize:p.prize+tax};
+ }
  function snapshot(id,f=current(),sharedPassengers=null,context=null){
   const now=clock(),phase=f.ended_at?'LANDING':now<f.depart_at?'BOARDING':'DROPPING';
   const passengers=sharedPassengers||passengersFor(f);
   const prior=context?context.prior:db.prepare('SELECT * FROM sky_flights WHERE id<? AND ended_at>0 AND ended_at<=? ORDER BY id DESC LIMIT 1').get(f.id,now);
-  let previous=null;if(prior){const mine=context?context.previous.get(id):db.prepare('SELECT status,cost,depth,prize FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(prior.id,id);previous={round:prior.id,safetyLine:prior.safety_line,seed:prior.seed,seedHash:prior.seed_hash,self:mine||null};}
+  let previous=null;if(prior){const mine=context?context.previous.get(id):db.prepare('SELECT status,cost,depth,prize FROM sky_passengers WHERE flight_id=? AND employee_id=?').get(prior.id,id);previous={round:prior.id,safetyLine:prior.safety_line,seed:prior.seed,seedHash:prior.seed_hash,self:withPayout(id,prior,mine)||null};}
   // Never disclose the safety line OR its timestamp while decisions remain open.
   const reveal=f.ended_at?{safetyLine:f.safety_line,revealedAt:revealTime(f),seed:f.seed}:{};
   return {inputProbe:passengers.some(p=>p.id===id&&p.status==='aboard')&&!f.ended_at?input.issue(id,f.id):null,round:f.id,gameHighlight:context?.events?context.events.get(id)||null:highlights.roundEvent(id,'sky',f.id),phase,departAt:f.depart_at,endedAt:f.ended_at,serverTime:now,depth:f.ended_at?f.safety_line:depth(f,now),speed:rules(f).speed,payoutRules:{curve:rules(f).curve,ranges:rules(f).ranges,breakEvenDepth:rules(f).breakEvenDepth},breakEvenDepth:rules(f).breakEvenDepth,boardingSeconds:rules(f).boardingSeconds,landingMs:SKY_LANDING_MS,...reveal,expectedSafety:rules(f).ranges.reduce((sum,x)=>sum+(x.min+x.max)/2*x.weight,0)/rules(f).ranges.reduce((sum,x)=>sum+x.weight,0),lossFraction:rules(f).lossFraction,remaining:Math.max(0,Math.ceil((f.depart_at-now)/1000)),seedHash:f.seed_hash,passengers,self:passengers.find(p=>p.id===id)||null,balance:balanceFor(id),previous};
  }
- function passengersFor(f){return db.prepare(`SELECT s.employee_id AS id,COALESCE(r.codename,p.anonymous_name,'员工') AS alias,p.avatar_url AS avatar,p.avatar_preset AS avatarPreset,r.employee_id IS NOT NULL AS isRobot,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s LEFT JOIN profiles p ON p.employee_id=s.employee_id LEFT JOIN company_robots r ON r.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...p,avatar:p.isRobot?robotAvatar(p.id):storedAvatar(p.id,p.avatar,p.avatarPreset,64)}));}
+ function passengersFor(f){return db.prepare(`SELECT s.employee_id AS id,COALESCE(r.codename,p.anonymous_name,'员工') AS alias,p.avatar_url AS avatar,p.avatar_preset AS avatarPreset,r.employee_id IS NOT NULL AS isRobot,s.cost,s.status,s.depth,s.prize,s.settled_at AS settledAt FROM sky_passengers s LEFT JOIN profiles p ON p.employee_id=s.employee_id LEFT JOIN company_robots r ON r.employee_id=s.employee_id WHERE s.flight_id=? ORDER BY s.rowid`).all(f.id).map(p=>({...withPayout(p.id,f,p),avatar:p.isRobot?robotAvatar(p.id):storedAvatar(p.id,p.avatar,p.avatarPreset,64)}));}
  function write(stream,f,passengers,context){if(stream.res.destroyed||stream.res.writableLength>262144){stream.res.destroy();streams.delete(stream);return;}stream.res.write('data: '+JSON.stringify(snapshot(stream.id,f,passengers,context))+'\n\n');}
  function broadcast(){const f=current();
   // One shared wake-up for the next arrival/departure/reveal, never a timer per client.

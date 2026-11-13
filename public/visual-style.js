@@ -27,10 +27,9 @@ window.AVEDVisualStyle=function({byId}){
   const selected=Object.hasOwn(palettes,value)&&(!entitlements||entitlements.owned.includes(value))?value:'oxblood';
   document.documentElement.dataset.palettePreview=selected;
   const night=document.documentElement.dataset.savedTheme==='night';document.body.classList.toggle('dark-mode',night);
-  const button=byId('theme-toggle-btn');if(button){button.disabled=false;button.title=night?'切换为日间模式':'切换为夜间模式';button.setAttribute('aria-label',button.title);}
+  const button=byId('theme-toggle-btn');if(button){button.disabled=false;button.title='选择日夜模式';button.setAttribute('aria-label',button.title);}
   window.AVEDSaveAppearance?.();document.dispatchEvent(new Event('aved-appearance-change'));
  }
- byId('theme-toggle-btn')?.addEventListener('click',()=>queueMicrotask(()=>applyPalette(document.documentElement.dataset.palettePreview)));
  applyPalette(document.documentElement.dataset.palettePreview);
  document.body.classList.add('signal-preview','red-topbar','crt-unified');document.body.classList.remove('paper-texture');
  try{localStorage.setItem('aved_visual_style_v1','signal');localStorage.removeItem('aved_paper_texture_v1');localStorage.setItem('aved_header_layout_v1','red');}catch{}
