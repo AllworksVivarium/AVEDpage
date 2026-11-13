@@ -63,7 +63,7 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
 #inner-app-view .donation-status:empty{display:none}
 @layer aved-site {
  #inner-app-view #company-fund-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
- @media(min-width:1000px){#inner-app-view #company-fund-summary{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+ @media(min-width:1000px){#inner-app-view #company-fund-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 }
 @layer aved-type-system {
  #inner-app-view #company-fund-summary span{font-size:11px!important;line-height:1.4!important}
