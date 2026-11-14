@@ -1831,9 +1831,10 @@
       document.addEventListener('visibilitychange',()=>idleSession.check());
       window.addEventListener('storage',event=>{if(event.key==='aved_last_activity_v1')idleSession.check();});
       (async()=>{
+        window.AVEDEntryBoot?.begin();
         const entryState=await AVEDStartup.restoreSession({
           load:async()=>{
-            if(idleSession.stale()){await apiLogout();throw Object.assign(new Error('员工会话已过期。'),{status:401,code:'SESSION_EXPIRED'});}
+            if(idleSession.stale()){await api('/api/logout',{method:'POST',timeoutMs:10000,retries:0});throw Object.assign(new Error('员工会话已过期。'),{status:401,code:'SESSION_EXPIRED'});}
             return loadPlayerData();
           },
           enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
@@ -1850,9 +1851,10 @@
             retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);
           }
         });
+        window.AVEDEntryBoot?.done();
         document.documentElement.dataset.entryState=entryState;signalOverlay.setAttribute('aria-busy','false');
         if(entryState!=='checking'){signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');delete signalOverlay.dataset.assetLoading;}
-      })();
+      })().catch(()=>window.AVEDEntryBoot?.fail());
       function marketVisible(){return !!currentUser&&!document.hidden&&!byId('view-casino').classList.contains('hidden')&&!byId('game-panel-stocks').classList.contains('hidden');}
       const marketVisibility=new MutationObserver(()=>{if(marketVisible())refreshMarket().catch(()=>{});});
       for(const el of [byId('view-casino'),byId('game-panel-stocks')])marketVisibility.observe(el,{attributes:true,attributeFilter:['class']});

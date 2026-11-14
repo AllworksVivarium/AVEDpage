@@ -1,20 +1,50 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-entry-state="checking">
 <head>
+  <meta charset="UTF-8">
+  <link rel="preload" as="image" href="/assets/entrance-clean.1cb8cb71ca1d.webp" fetchpriority="high">
+  <script>
+  // Independent of the application bundle: the gateway stays visible if a dependency fails.
+  (function(){
+    let ready=false,failed=false,requested=false;
+    const byId=id=>document.getElementById(id);
+    function show(){
+      const overlay=byId('signal-Connecting-overlay');if(!overlay)return;
+      overlay.classList.remove('hidden');overlay.classList.add('flex');
+      overlay.setAttribute('aria-busy',String(!failed));
+      if(!failed)return;
+      byId('signal-status-title').textContent='连接暂未完成';
+      const message=document.createElement('div'),retry=document.createElement('button');
+      message.textContent='加载未完成，请重试连接。';
+      retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
+      retry.addEventListener('click',()=>location.reload());
+      byId('signal-log-lines').replaceChildren(message,retry);
+    }
+    const timer=setTimeout(()=>{if(!ready){failed=true;if(requested)show();}},25000);
+    document.addEventListener('click',event=>{
+      if(ready||!event.target.closest?.('#open-login-btn'))return;
+      event.preventDefault();event.stopImmediatePropagation();requested=true;show();
+    },true);
+    window.AVEDEntryBoot={
+      begin(){requested=true;show();},
+      done(){ready=true;clearTimeout(timer);},
+      fail(){failed=true;requested=true;clearTimeout(timer);show();}
+    };
+  })();
+  </script>
   <link rel="stylesheet" href="/paper-stamps.css?v=paper-tax-20261110b">
   <link rel="stylesheet" href="/typography.css?v=notice-comment-type-20261112">
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
-  <link rel="stylesheet" href="/entry-layout-stability.css?v=unified-entry-4">
+  <link rel="stylesheet" href="/entry-layout-stability.css?v=visible-gateway-20261114">
   <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
   <link rel="stylesheet" href="/personal-hud.css?v=system-theme-margin-20261113">
-  <script src="terminal-preferences.js?v=system-theme-margin-20261113"></script>
-  <script src="/gateway-preferences.js?v=background-shop-20261112"></script>
+  <script src="terminal-preferences.js?v=system-theme-margin-20261113" defer></script>
+  <script src="/gateway-preferences.js?v=background-shop-20261112" defer></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=pixel-a-2">
   <link rel="stylesheet" href="/scratch-bomb.css?v=adaptive-ticker-3">
   <link rel="stylesheet" href="/scratch-feedback.css?v=single-action-row-5">
-  <meta charset="UTF-8">
   <link rel="stylesheet" href="/player-art-restoration.css?v=frameless-ticket-3">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=equal-cards-4">
@@ -1516,7 +1546,7 @@
 <link rel="stylesheet" href="/bar-hospitality.css?v=bar-host-20261112">
 <script src="/bar-hospitality.js?v=bar-host-20261112" defer></script>
 <script src="/bar-ui.js?v=local-greetings-20261114" defer></script>
-<script src="/player.js?v=system-theme-cycle-20261113" defer></script>
+<script src="/player.js?v=visible-gateway-20261114" defer></script>
   <script src="/page-headings.js?v=scoped-observer-9" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>
