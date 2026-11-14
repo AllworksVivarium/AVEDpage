@@ -282,7 +282,7 @@ const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balan
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
 const logRetention=installLogRetention(db);
-const dossierImages=installDossierImages({db,send,requireAdmin});
+const dossierImages=installDossierImages({db,send,requireAdmin,requireEmployee});
 const media=installMedia({db,send,requireEmployee});
 const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,gameTax});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
@@ -544,7 +544,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare('SELECT id,code,title,department,status,summary,classification,procedures,sections_json FROM dossiers ORDER BY id DESC').all().map(dossierView) });
+      return send(res, 200, { items:db.prepare('SELECT id,code,title,department,status,summary,classification,procedures,sections_json,length(image_data)>0 AS hasImage FROM dossiers ORDER BY id DESC').all().map(dossierView) });
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;

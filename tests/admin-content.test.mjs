@@ -61,6 +61,10 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.ok(privateFiles.every(x=>!('imageData' in x)&&!('image_data' in x)),'lists only carry image references');
  assert.equal((await p(picturePath+'/image')).status,403);
  const readPicture=async()=>{const r=await fetch(base+picturePath+'/image',{headers:{cookie:admin}});assert.equal(r.status,200);assert.equal(r.headers.get('content-type'),'image/webp');return Buffer.from(await r.arrayBuffer());};
+ const playerImagePath='/api/dossiers/'+picture.data.id+'/image';
+ assert.equal((await fetch(base+playerImagePath)).status,401);
+ const playerImage=await fetch(base+playerImagePath,{headers:{cookie:playerCookie}});assert.equal(playerImage.status,200);assert.equal(playerImage.headers.get('content-type'),'image/webp');
+ assert.equal((await p('/api/player/state?page=containment')).data.dossiers.find(x=>x.id===picture.data.id).imageUrl,playerImagePath);
  const originalPicture=await readPicture();assert.ok(originalPicture.length>0);
  const updatePicture={code:'TEST-IMAGE',title:'影像卷宗修订',department:'科研部',status:'稳定',summary:'保留配图'};
  assert.equal((await a(picturePath,'PUT',updatePicture)).status,200);assert.deepEqual(await readPicture(),originalPicture,'omitting image preserves it');
@@ -68,8 +72,8 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await a(picturePath,'PUT',{...updatePicture,imageData:''})).status,200);assert.equal((await a(picturePath+'/image')).status,404);
  assert.equal((await a(picturePath,'PUT',{...updatePicture,imageData:validDossierImage})).status,200);
  assert.equal((await p(picturePath,'PUT',{...updatePicture,imageData:''})).status,403);
- for(const item of (await p('/api/dossiers')).data.items)assert.ok(!('hasImage' in item)&&!('imageUrl' in item)&&!('imageData' in item)&&!('image_data' in item));
- for(const item of (await p('/api/player/state?page=containment')).data.dossiers)assert.ok(!('imageUrl' in item)&&!('imageData' in item)&&!('image_data' in item));
+ for(const item of (await p('/api/dossiers')).data.items)assert.ok(!('hasImage' in item)&&!('imageData' in item)&&!('image_data' in item));
+ for(const item of (await p('/api/player/state?page=containment')).data.dossiers)assert.ok(!('imageData' in item)&&!('image_data' in item));
  const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
  const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData,tags:[]})).data.id;
  const queue=(await a('/api/admin/moderation')).data.items;

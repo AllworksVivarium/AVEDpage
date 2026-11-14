@@ -137,3 +137,23 @@
 }
 
 @layer aved-personal { .forum-inbox-list button[data-unread="true"] {border-left:3px solid var(--accent, #700909)} .forum-inbox-list button[data-unread="false"] strong {font-weight:400} }
+
+/* Topic rows: shared left edge for reading; date and statistics align to the right. */
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-thread-link{display:block!important;height:auto!important;min-height:0!important;white-space:normal!important;padding:12px 14px!important;text-decoration:none!important}
+ body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-thread-row{margin-bottom:8px!important;background:var(--inner-card-bg)!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-heading{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:16px!important;align-items:baseline!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-date{white-space:nowrap!important;text-align:right!important;color:var(--inner-text-muted)!important;font:11px/1.5 var(--type-ui)!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-footer{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px 16px!important;flex-wrap:wrap!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-footer .forum-post-meta{flex:1 1 160px!important;min-width:0!important;margin:0!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-counts{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:14px!important;margin-left:auto!important;white-space:nowrap!important;font:11px/1.5 var(--type-ui)!important;color:var(--inner-text-muted)!important}
+ body.theme-inner #inner-app-view #view-forum .forum-thread-counts b{font-weight:600!important;font-variant-numeric:tabular-nums}
+ body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-author{flex-wrap:wrap!important;gap:5px!important}
+ body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-author-activity{display:none!important}
+ body.theme-inner #inner-app-view #view-forum #forum-threads-list-container .forum-author-avatar{width:18px!important;height:18px!important;flex:0 0 18px!important}
+}
+@layer aved-typography {
+ #view-forum #forum-threads-list-container .forum-card-title{font-family:var(--type-heading)!important;font-size:16px!important;line-height:1.5!important;font-weight:600!important;white-space:normal!important;margin:0!important}
+ #view-forum #forum-threads-list-container .forum-card-excerpt{font-family:var(--type-ui)!important;font-size:13px!important;line-height:1.6!important;margin:5px 0 10px!important;color:var(--inner-text-muted)!important;-webkit-line-clamp:1!important}
+ #view-forum #forum-threads-list-container .forum-author b{font-family:var(--type-ui)!important;font-size:11px!important;font-weight:600!important}
+}

@@ -7,7 +7,7 @@ export function installDossierContent(db){
   db.exec("UPDATE dossiers SET classification=status WHERE classification='' AND status IN ('SAFE','EUCLID','KETER');INSERT INTO dossier_content_migrations VALUES('classification-v1')");
  }
 }
-export function dossierView(row){const {sections_json,...rest}=row;let sections=[];try{sections=JSON.parse(sections_json||'[]');}catch{}return {...rest,sections:Array.isArray(sections)?sections:[]};}
+export function dossierView(row){const {sections_json,hasImage,...rest}=row;let sections=[];try{sections=JSON.parse(sections_json||'[]');}catch{}return {...rest,...(hasImage?{imageUrl:`/api/dossiers/${row.id}/image`}:{}),sections:Array.isArray(sections)?sections:[]};}
 export function normalizeDossierContent(data,previous={}){
  const classification=data.classification??previous.classification??'';
  if(!['','SAFE','EUCLID','KETER'].includes(classification))throw Error('请选择有效的收容物分类。');
