@@ -20,6 +20,13 @@ window.AVEDImageUpload=(()=>{
    throw Error('图片仍然过大，请先缩小后重试。');
   }finally{image.close?.();if(canvas){canvas.width=canvas.height=1;}}
  }
- async function read(file,options){const blob=await prepare(file,options);return blob?data(blob):'';}
- return {prepare,read};
+ // Preview and save reuse the same compressed avatar without decoding the original twice.
+ const avatarCache=new WeakMap();
+ function cachedPrepare(file,options={}){
+  if(options.kind!=='avatar'||!file)return prepare(file,options);
+  if(!avatarCache.has(file)){const task=prepare(file,options).catch(error=>{avatarCache.delete(file);throw error;});avatarCache.set(file,task);}
+  return avatarCache.get(file);
+ }
+ async function read(file,options){const blob=await cachedPrepare(file,options);return blob?data(blob):'';}
+ return {prepare:cachedPrepare,read};
 })();

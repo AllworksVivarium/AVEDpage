@@ -40,7 +40,7 @@
       const elapsed = Math.min(250, now - previous || 100); previous = now;
       context.clearRect(0, 0, width, height);
       const gateway=landing();
-      if(gateway && grainPattern){context.globalAlpha=.25+.025*Math.sin(now/900);context.fillStyle=grainPattern;context.fillRect(0,0,width,height);context.globalAlpha=1;}
+      // Gateway grain is rendered by gateway-effects.js; retain the floating motes here.
       const night = gateway || document.body.classList.contains('dark-mode');
       for (const mote of motes) {
         mote.y = (mote.y - elapsed * mote.speed / 120 + height) % height;
