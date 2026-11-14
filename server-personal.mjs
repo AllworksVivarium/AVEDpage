@@ -16,6 +16,16 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  for(const d of achievementCatalog)db.prepare('INSERT OR IGNORE INTO achievement_definitions(code,title,description,metric,threshold) VALUES(?,?,?,?,?)').run(d.code,d.title,d.description,d.metric,d.threshold);
  // Correct only unchanged built-in game names; retain custom achievement copy.
  for(const d of achievementCatalog.filter(d=>d.description.includes('智斗太姥')))db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,d.description.replaceAll('智斗太姥','斗太姥'));
+ // Update built-in wording only when it still matches the previous default.
+ for(const d of achievementCatalog){
+  let previous=d.description;
+  if(['forum-first','forum-five','forum-twenty'].includes(d.code))previous=previous.replace('主题帖','通过审核的主题帖');
+  if(['reply-first','reply-twenty','reply-hundred','forum-water'].includes(d.code))previous=previous.replace('回复','通过审核的回复');
+  if(d.code==='forum-night')previous=previous.replace('在 0','在北京时间 0');
+  if(['fun-money-visited','fun-charity'].includes(d.code))previous='北京时间'+previous;
+  if(d.code==='fun-smiling')previous=previous.replace('至少刮得很熟练。','刮开的是涂层，也是嘴角。');
+  if(previous!==d.description)db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,previous);
+ }
  // One-time historical backfill; subsequent awards use incremental counters.
  if(!db.prepare("SELECT 1 FROM economy_migrations WHERE code='personal-metrics-v1'").get()) {
   db.exec(`BEGIN IMMEDIATE;

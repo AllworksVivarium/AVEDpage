@@ -1,20 +1,20 @@
 import {gameplayAwardsSQL} from './server-game-achievements.mjs';
 
 export const socialAchievementCatalog=[
- ['forum-first','茶水间开张','发布第一篇通过审核的主题帖。','forum_topics',1],
- ['forum-five','话题供应商','累计发布 5 篇通过审核的主题帖。','forum_topics',5],
- ['forum-twenty','本栏常驻撰稿','累计发布 20 篇通过审核的主题帖。','forum_topics',20],
- ['reply-first','路过留个字','发布第一条通过审核的回复。','forum_replies',1],
- ['reply-twenty','茶水间熟客','累计发布 20 条通过审核的回复。','forum_replies',20],
- ['reply-hundred','键盘已热身','累计发布 100 条通过审核的回复。','forum_replies',100],
- ['forum-water','一直在水贴','在 60 秒内连续发布 3 条通过审核的回复。','forum_rapid',1],
+ ['forum-first','茶水间开张','发布第一篇主题帖。','forum_topics',1],
+ ['forum-five','话题供应商','累计发布 5 篇主题帖。','forum_topics',5],
+ ['forum-twenty','本栏常驻撰稿','累计发布 20 篇主题帖。','forum_topics',20],
+ ['reply-first','路过留个字','发布第一条回复。','forum_replies',1],
+ ['reply-twenty','茶水间熟客','累计发布 20 条回复。','forum_replies',20],
+ ['reply-hundred','键盘已热身','累计发布 100 条回复。','forum_replies',100],
+ ['forum-water','一直在水贴','在 60 秒内连续发布 3 条回复。','forum_rapid',1],
  ['forum-self','我补充一句','在自己的主题帖下回复一次。','forum_self_thread',1],
  ['forum-self-reply','内部讨论','使用回复功能，回复自己的评论一次。','forum_self_reply',1],
  ['forum-talk','这句我接了','使用回复功能，回复其他员工的评论一次。','forum_conversation',1],
  ['forum-talk-ten','接话专业户','累计回复其他员工的评论 10 次。','forum_conversation',10],
  ['forum-image','有图有交代','发表一次通过审核的附图主题或回复。','forum_image',1],
  ['forum-long','附件见正文','发表一次不少于 300 字符的主题或回复。','forum_long',1],
- ['forum-night','夜班茶水间','在北京时间 0 点至 5 点之间发表一次主题或回复。','forum_night',1],
+ ['forum-night','夜班茶水间','在 0 点至 5 点之间发表一次主题或回复。','forum_night',1],
  ['forum-real','工牌摆桌上','使用实名身份发表一次主题或回复。','forum_real',1],
  ['forum-response','有人接话了','自己的主题帖第一次收到其他员工的回复。','forum_received',1],
  ['forum-response-ten','这桌挺热闹','自己的主题帖累计收到其他员工的回复 10 条。','forum_received',10],
@@ -31,9 +31,9 @@ export const socialAchievementCatalog=[
  ['stock-loss','学费已签收','完成一笔实现亏损的平仓成交。','stock_losses',1]
 ].map(([code,title,description,metric,threshold])=>({code,title,description,metric,threshold}));
 export const socialMetrics=Object.entries({
- forum_topics:'通过审核的主题帖数',forum_replies:'通过审核的回复数',forum_rapid:'触发一分钟三条回复的次数',
+ forum_topics:'主题帖数',forum_replies:'回复数',forum_rapid:'触发一分钟三条回复的次数',
  forum_self_thread:'回复自己主题帖的次数',forum_self_reply:'直接回复自己评论的次数',forum_conversation:'直接回复其他员工评论的次数',
- forum_image:'通过审核的附图发言数',forum_long:'不少于 300 字符的发言数',forum_night:'北京时间 0 至 5 点的发言数',forum_real:'实名发言数',
+ forum_image:'通过审核的附图发言数',forum_long:'不少于 300 字符的发言数',forum_night:'0 至 5 点的发言数',forum_real:'实名发言数',
  forum_received:'主题帖收到其他员工回复数',forum_direct_received:'评论收到其他员工直接回复数',
  stock_trades:'股票及指数成交笔数',stock_closes:'平仓成交笔数',stock_wins:'盈利平仓笔数',stock_flat:'零盈亏平仓笔数',stock_losses:'亏损平仓笔数'
 }).map(([metric,label])=>({metric,label}));

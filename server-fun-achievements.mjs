@@ -3,11 +3,11 @@ import {gameplayAwardsSQL} from './server-game-achievements.mjs';
 // Private definitions: the profile endpoint only returns earned achievements.
 export const funAchievementCatalog=[
  ['fun-startup','工资只是启动资金','首次完成一局有投入的小游戏。财务已了解你的职业规划。'],
- ['fun-smiling','谢谢，已经在笑了','连续三张刮刮乐没有盈利。刮开的是涂层，也是嘴角。'],
- ['fun-money-visited','钱来过','北京时间同一天，单局返还至少五十万，之后出现负债。有流水为证。'],
+ ['fun-smiling','谢谢，已经在笑了','连续三张刮刮乐没有盈利。至少刮得很熟练。'],
+ ['fun-money-visited','钱来过','同一天，单局返还至少五十万，之后出现负债。有流水为证。'],
  ['fun-company-backup','公司是我坚强的后盾','首次将负债转交公司基金。这句话终于有了具体金额。'],
  ['fun-relief','从哪里跌倒，就在哪里领低保','小游戏亏损后，当天领取低保。已完成业务闭环。'],
- ['fun-charity','慈善事业的双向奔赴','北京时间同一天既向爱心账户捐款，又领取低保。公司和你都尽力了。'],
+ ['fun-charity','慈善事业的双向奔赴','同一天既向爱心账户捐款，又领取低保。公司和你都尽力了。'],
  ['fun-arrived','来都来了','速降在 100 至 120 米处安全开伞。来过高空，也算出差。'],
  ['fun-alive','活着就是盈利','连续三次安全开伞，但这三次合计仍亏损。至少统计口径很乐观。'],
  ['fun-participation','我买的是参与感','连续五场随便跑跑，支持的选手均未押中。陪伴也是一种成绩。'],

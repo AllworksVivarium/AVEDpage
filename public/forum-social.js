@@ -21,8 +21,8 @@
    if(existing){existing.hidden=!existing.hidden;q.setAttribute('aria-expanded',String(!existing.hidden));return;}
    q.disabled=true;try{const item=await getContext(Number(q.dataset.forumQuote));if(!item||!q.isConnected)return;const box=document.createElement('div');box.className='forum-quote-context';box.innerHTML=`<b>${esc(item.anonymousName)} · ${item.floor} 楼</b><p>${esc(item.body)}</p><button type="button" class="forum-reply-action" data-forum-reply="${item.id}">回复此楼</button>`;q.after(box);q.setAttribute('aria-expanded','true');}catch(error){showToast(error.message,'warn');}finally{q.disabled=false;}
   });
-  async function reveal(id){if(!view.querySelector(`[data-reply-id="${id}"]`))await getReply(id,true);const target=view.querySelector(`[data-reply-id="${id}"]`);if(target){target.scrollIntoView({block:'center',behavior:'smooth'});target.classList.remove('forum-reply-highlight');requestAnimationFrame(()=>target.classList.add('forum-reply-highlight'));}}
-  function paintInbox(){const count=inbox.unread;inboxButton.textContent=count?'回复提醒 ('+(count>99?'99+':count)+')':'回复提醒';inboxButton.dataset.unread=String(count>0);dot.hidden=!count;nav.setAttribute('aria-label',count?'匿名论坛，'+count+' 条新回复':'匿名论坛');dialog.querySelector('.forum-inbox-list').innerHTML=inbox.items.map(n=>`<button type="button" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId}"><strong>${esc(n.authorName||'新回复')} · ${n.kind==='reply'?'回复了你的评论':'回复了你的主题'}</strong><span>${esc(n.excerpt||n.title)}</span><small>${esc(n.title)} · ${n.floor||''} 楼 →</small></button>`).join('')||'<p>暂时没有新回复。</p>';}
+  async function reveal(id){if(!view.querySelector(`[data-reply-id="${id}"]`))await getReply(id,true);const target=view.querySelector(`[data-reply-id="${id}"]`);if(target){target.scrollIntoView({block:'center',behavior:'smooth'});seenReplies(getThread()?.id,[id]);target.classList.remove('forum-reply-highlight');requestAnimationFrame(()=>target.classList.add('forum-reply-highlight'));}}
+  function paintInbox(){const count=inbox.unread;inboxButton.textContent=count?'回复提醒 ('+(count>99?'99+':count)+')':'回复提醒';inboxButton.dataset.unread=String(count>0);dot.hidden=!count;nav.setAttribute('aria-label',count?'匿名论坛，'+count+' 条新回复':'匿名论坛');dialog.querySelector('.forum-inbox-list').innerHTML=inbox.items.map(n=>`<button type="button" data-unread="${n.unread!==0}" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId}"><strong>${esc(n.authorName||'新回复')} · ${n.kind==='reply'?'回复了你的评论':'回复了你的主题'}</strong><span>${esc(n.excerpt||n.title)}</span><small>${n.unread===0?'已读':'新回复'} · ${esc(n.title)} · ${n.floor||''} 楼 →</small></button>`).join('')||'<p>暂无回复提醒。</p>';}
   async function poll(force=false){const user=getUser();if(uid!==(user?.id??null)){uid=user?.id??null;inbox={unread:0,items:[]};people=[];capability=false;lastPoll=0;readPositions.clear();presence?.reset();onStockRisk(null);cancelReply();paintInbox();renderPeople();if(!user){dialog.close();workshopDialog?.close();}}if(!user||document.hidden&&!force||busy||!force&&Date.now()-lastPoll<30000)return;busy=true;const id=user.id;lastPoll=Date.now();try{
    const threadId=!document.hidden&&!view.classList.contains('hidden')?getThread()?.id||0:0;
    const body=presence?{...presence.request(),threadId,revision:getReplyRevision()}:null;
@@ -44,7 +44,7 @@
    catch{}finally{readBusy=false;if(readWanted)flushRead();}
   }
   function seenReplies(thread,ids){
-   const owner=getUser()?.id;if(!owner||!thread||document.hidden||view.classList.contains('hidden'))return;
+   const owner=getUser()?.id;if(!owner||!thread||dialog.open||document.hidden||view.classList.contains('hidden'))return;
    const unseen=ids.filter(id=>!readPositions.has(thread+':'+id));if(!unseen.length)return;
    if(!readWanted||readWanted.thread!==thread||readWanted.owner!==owner)readWanted={thread,owner,ids:new Set()};
    for(const id of unseen)if(readWanted.ids.size<20)readWanted.ids.add(id);

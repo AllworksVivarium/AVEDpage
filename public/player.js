@@ -1615,7 +1615,7 @@
       const forumBrowser=AVEDForumBrowser({api,getUser:()=>currentUser,onError:message=>showToast(message,'warn'),onData:data=>{forumThreads=data.items;renderForumView();}});
       const forumReplies=AVEDForumReplies({api,container:byId('forum-detail-replies-list'),count:byId('forum-detail-reply-count'),
         enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
-        onError:message=>showToast(message,'warn'),onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},onSeen:ids=>forumSocialUI?.seenReplies(currentForumThreadId,ids),
+        onError:message=>showToast(message,'warn'),onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},onSeen:ids=>forumSocialUI?.seenReplies(currentForumThreadId,ids),
         renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} · ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>`});
       function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
       let forumListPosition=null,forumListMarkup='',forumRestoring=false;
@@ -1638,7 +1638,7 @@
         const th=currentForumThreadId?(forumDetail||forumThreads.find(t=>String(t.id)===String(currentForumThreadId))):null;
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
         byId('forum-skeleton-container')?.classList.add('hidden');for(const id of ['forum-global-back','forum-toolbar-back'])if(byId(id))byId(id).hidden=!th;byId('forum-refresh-skeleton-btn').hidden=false;
-        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box p-5 space-y-2"><div class="forum-post-meta"><span>${forumAuthor(t)}${forumBalance(t)}</span>${AVEDTime.markup(t.createdAt)}</div><h3 class="font-bold text-lg forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt whitespace-pre-wrap">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><button data-cloud-thread="${t.id}" class="inner-btn-primary px-3 py-2">进入帖子 (${t.replyCount}) →</button></article>`).join('')||'<p class="p-5">暂无帖子。</p>');
+        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box forum-thread-row"><a href="#/forum" data-cloud-thread="${t.id}" class="forum-thread-link"><h3 class="forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><p class="forum-card-excerpt">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><div class="forum-thread-footer"><div class="forum-post-meta"><span>${forumAuthor(t)}</span>${AVEDTime.markup(t.createdAt)}</div><div class="forum-thread-counts"><span>回帖 <b>${Number(t.replyCount)||0}</b></span><span>浏览 <b>${Number(t.viewCount)||0}</b></span><span aria-hidden="true">›</span></div></div></a></article>`).join('')||'<p class="p-5">暂无帖子。</p>');
           if(markup!==forumListMarkup){forumListMarkup=markup;byId('forum-threads-list-container').innerHTML=markup;}
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
@@ -1654,7 +1654,12 @@
           history.pushState({...history.state,avedForum:{owner:currentUser.id,thread:String(id),reply:replyId||null}},'',location.href);
         }
         currentForumThreadId=String(id);forumDetail=forumThreads.find(t=>String(t.id)===String(id))||{id,preview:true};
-        return renderForumView(replyId);
+        await renderForumView(replyId);
+        if(String(currentForumThreadId)!==String(id)||!forumDetail||forumDetail.preview)return;
+        api('/api/player/forum/'+encodeURIComponent(id)+'/view',{method:'POST',body:{}}).then(data=>{
+          const preview=forumThreads.find(t=>String(t.id)===String(id));if(preview)preview.viewCount=data.viewCount;
+          if(String(forumDetail?.id)===String(id))forumDetail.viewCount=data.viewCount;
+        }).catch(()=>{});
       }
       function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind,tax:result.tax||0};});renderSlot5x3History();}
 

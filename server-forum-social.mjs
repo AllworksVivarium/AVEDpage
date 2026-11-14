@@ -102,8 +102,9 @@ export function installForumSocial(db){
  function target(thread,value){if(value==null||value==='')return null;if(!Number.isSafeInteger(value)||!db.prepare("SELECT id FROM forum_replies WHERE id=? AND thread_id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(value,thread))throw Error('回复对象不存在或不在本帖中。');return value;}
  const visible=`FROM forum_notifications n JOIN forum_threads t ON t.id=n.thread_id JOIN forum_replies r ON r.id=n.reply_id
  LEFT JOIN forum_notification_reads v ON v.employee_id=n.employee_id AND v.thread_id=n.thread_id
- WHERE n.employee_id=? AND n.read_at='' AND n.id>COALESCE(v.last_notification_id,0) AND r.employee_id<>n.employee_id
+ WHERE n.employee_id=? AND r.employee_id<>n.employee_id
  AND t.status='published' AND t.moderation='approved' AND t.deleted_at='' AND r.status='published' AND r.moderation='approved' AND r.deleted_at=''`;
+ const unread="n.read_at='' AND n.id>COALESCE(v.last_notification_id,0)";
  return {allowed,persona,target,
   list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
   create(id){requireWorkshop(id);throw Error('请在管理端的公司机器人中新增或修改演绎身份。');},
@@ -124,10 +125,10 @@ export function installForumSocial(db){
     const result={threadId,replyIds};db.prepare('INSERT INTO forum_workshop_requests VALUES(?,?,?)').run(id,data.requestId,JSON.stringify(result));db.exec('COMMIT');return result;
    }catch(e){db.exec('ROLLBACK');throw e;}
   },
-  inbox(id){return {unread:db.prepare('SELECT COUNT(*) AS n '+visible).get(id).n,items:db.prepare(`SELECT n.thread_id AS threadId,t.title,1 AS count,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
+  inbox(id){return {unread:db.prepare('SELECT COUNT(*) AS n '+visible+' AND '+unread).get(id).n,items:db.prepare(`SELECT n.id AS notificationId,(${unread}) AS unread,n.thread_id AS threadId,t.title,1 AS count,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
    CASE WHEN EXISTS(SELECT 1 FROM forum_replies q WHERE q.id=r.reply_to_id AND q.employee_id=n.employee_id) THEN 'reply' ELSE 'thread' END AS kind,
    (SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor
-   ${visible} ORDER BY n.id DESC LIMIT 20`).all(id)};},
+   ${visible} AND ${unread} ORDER BY n.id DESC LIMIT 20`).all(id).concat(db.prepare(`SELECT n.id AS notificationId,0 AS unread,n.thread_id AS threadId,t.title,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,CASE WHEN EXISTS(SELECT 1 FROM forum_replies q WHERE q.id=r.reply_to_id AND q.employee_id=n.employee_id) THEN 'reply' ELSE 'thread' END AS kind,(SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor ${visible} AND NOT (${unread}) ORDER BY n.id DESC LIMIT 5`).all(id))};},
   readReplies(id,thread,ids){
    if(!Array.isArray(ids)||ids.length>20||ids.some(n=>!Number.isSafeInteger(n)||n<1))throw Error('无效的已读楼层。');
    if(ids.length)db.prepare(`UPDATE forum_notifications SET read_at=CURRENT_TIMESTAMP WHERE employee_id=? AND thread_id=? AND reply_id IN (${ids.map(()=>'?').join(',')})`).run(id,thread,...ids);

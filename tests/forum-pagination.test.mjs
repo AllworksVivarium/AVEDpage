@@ -35,6 +35,13 @@ test('forum paging, searching and comment-targeted unread receipts',async t=>{
  const search=(await as(reader,'/api/player/forum?q='+encodeURIComponent('长正文'))).data;
  assert.equal(search.total,1);assert.equal(search.items[0].id,oldest);assert.ok(search.items[0].body.length<=100);assert.equal(search.items[0].preview,true);assert.equal('imageData' in search.items[0],false);
  assert.equal((await as(reader,'/api/player/forum?sort=bogus')).status,400);
+ assert.equal(search.items[0].viewCount,0,'old topics start with no fabricated views');
+ assert.equal((await as(reader,'/api/player/forum/'+oldest+'/view','POST',{})).data.viewCount,1);
+ assert.equal((await as(reader,'/api/player/forum/'+oldest+'/view','POST',{})).data.viewCount,1,'repeat opens are deduplicated');
+ assert.equal((await as(owner,'/api/player/forum/'+oldest+'/view','POST',{})).data.viewCount,2,'another reader counts');
+ assert.equal((await as(reader,'/api/player/forum/'+oldest)).data.thread.viewCount,2,'polling does not count');
+ assert.equal((await as(reader,'/api/player/forum?q='+encodeURIComponent('长正文'))).data.items[0].viewCount,2);
+ assert.equal((await as(reader,'/api/player/forum/999999/view','POST',{})).status,400);
  const parent=(await post(reader,oldest,'我在别人主题里的评论')).data.id;
  for(let i=0;i<24;i++)await post(owner,oldest,'普通回复 '+i);
  const addressed=(await post(planner,oldest,'回复你的楼层',{replyToId:parent})).data.id;
@@ -53,6 +60,11 @@ test('forum paging, searching and comment-targeted unread receipts',async t=>{
  inbox=(await as(reader,'/api/player/forum/notifications')).data;assert.equal(inbox.unread,1);assert.equal(inbox.items[0].replyId,later);
  await as(owner,'/api/player/forum/'+oldest+'/read','POST',{replyIds:[later]});assert.equal((await as(reader,'/api/player/forum/notifications')).data.unread,1);
  await as(reader,'/api/player/forum/'+oldest+'/read','POST',{replyIds:[later]});assert.equal((await as(reader,'/api/player/forum/notifications')).data.unread,0);
+ inbox=(await as(reader,'/api/player/forum/notifications')).data;assert.equal(inbox.items.length,2);assert.ok(inbox.items.every(x=>x.unread===0),'read replies remain in history');
+ for(let i=0;i<6;i++){const id=(await post(planner,oldest,'历史回复 '+i,{replyToId:parent})).data.id;await as(reader,'/api/player/forum/'+oldest+'/read','POST',{replyIds:[id]});}
+ inbox=(await as(reader,'/api/player/forum/notifications')).data;assert.equal(inbox.items.length,5);assert.equal(inbox.unread,0);
+ const fresh=(await post(planner,oldest,'新回复仍须单独阅读',{replyToId:parent})).data.id;
+ inbox=(await as(reader,'/api/player/forum/notifications')).data;assert.equal(inbox.unread,1);assert.equal(inbox.items.length,6);assert.equal(inbox.items[0].replyId,fresh);assert.equal(inbox.items.filter(x=>x.unread===0).length,5);
  const db=new DatabaseSync(join(folder,'wanyehui.db'));db.prepare("UPDATE forum_replies SET created_at='2099-01-01 00:00:00' WHERE id=?").run(addressed);db.close();
  assert.equal((await as(reader,'/api/player/forum?sort=activity')).data.items[0].id,oldest);
  assert.notEqual((await as(reader,'/api/player/forum?sort=newest')).data.items[0].id,oldest);
