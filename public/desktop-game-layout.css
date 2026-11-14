@@ -128,3 +128,38 @@ body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:afte
  #game-panel-skydive .flight-protocol,
  #game-panel-derby .race-rules{padding:16px 18px}
 }
+
+/* Shared radio presentation; message channels remain specific to each game. */
+#view-casino .game-radio{box-sizing:border-box;min-width:0;padding:0;border:1px solid var(--inner-border-soft);border-radius:0;background:var(--inner-card-bg);color:var(--inner-text-main)}
+#view-casino .game-radio-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;margin:0;border-bottom:1px solid var(--inner-border-soft)}
+#view-casino .game-radio-heading h3{margin:0;padding:0;border:0;font:600 14px/1.5 var(--terminal-copy,sans-serif)}
+#view-casino .game-radio-heading small{font:10px/1.5 monospace;opacity:.65}
+#view-casino .game-radio :is(#skydive-chat-list,#derby-chat-messages){box-sizing:border-box;height:180px;margin:0;padding:10px 12px;overflow-y:auto;overflow-wrap:anywhere;font:12px/1.7 var(--terminal-copy,sans-serif);scrollbar-width:thin}
+#view-casino .game-radio :is(#skydive-chat-list,#derby-chat-messages)>div{padding:6px 0;border-bottom:1px solid var(--inner-border-soft)}
+#view-casino .game-radio :is(#skydive-chat-list,#derby-chat-messages) p{margin:3px 0}
+#view-casino .game-radio form{display:flex;gap:6px;margin:0;padding:10px;border-top:1px solid var(--inner-border-soft)}
+#view-casino .game-radio form input{box-sizing:border-box;min-width:0;flex:1;border:1px solid var(--inner-border-soft);border-radius:0;padding:8px;background:var(--inner-card-alt);color:inherit;font:14px/1.5 var(--terminal-copy,sans-serif)}
+#view-casino .game-radio form button{padding:8px 12px;border:1px solid var(--inner-accent);border-radius:0;background:var(--inner-accent);color:var(--inner-accent-text);font:600 12px/1.5 var(--terminal-copy,sans-serif);white-space:nowrap}
+#view-casino .game-radio .flight-radio-tools{margin:0;padding:0 10px 10px}
+@media(max-width:999px){
+ #view-casino{--game-panel-gap:12px}
+ .terminal-next #game-panel-skydive .flight-layout,#game-panel-derby .animal-race-layout,.terminal-next #game-panel-slots>.grid,#game-panel-slots .slot-controls{gap:var(--game-panel-gap)}
+ #game-panel-skydive :is(.flight-console,.flight-quick-chat,.flight-stake-panel,.flight-manifest,.card-rankings,.flight-radio,.flight-protocol),
+ #game-panel-derby :is(.animal-stage,.race-slip,.card-rankings,.race-rules,.animal-radio),
+ #game-panel-slots :is(.slot-machine,.slot-controls,.game-rule-card),#game-panel-slots .slot-controls>div{margin-block:0}
+ #view-casino .game-radio form input{font-size:16px}
+ #game-panel-doudizhu>.card-room-lobby,#game-panel-doudizhu>.card-rankings{margin-block:12px}
+}
+@layer aved-type-system{
+ #inner-app-view .card-rankings .rank-heading{justify-content:center;text-align:center;font-family:var(--terminal-copy,sans-serif)!important;font-size:15px!important;font-weight:600!important;line-height:1.6!important;letter-spacing:.08em}
+ #inner-app-view .card-rankings h4{text-align:center;font-family:var(--terminal-copy,sans-serif)!important;font-size:13px!important;font-weight:600!important;line-height:1.6!important}
+ #inner-app-view .card-rankings li{font-family:var(--terminal-copy,sans-serif)!important;font-size:12px!important;text-align:left}
+ #inner-app-view .game-radio-heading h3{font-family:var(--terminal-copy,sans-serif)!important;font-size:14px!important;font-weight:600!important;line-height:1.5!important}
+}
+#view-casino .card-rankings .rank-heading:before{display:none}
+#view-casino .card-rankings .rank-heading:after{content:none}
+
+@media(max-width:999px){
+ #game-panel-scratch> :not([hidden])~ :not([hidden]){margin-top:12px;margin-bottom:0}
+ #game-panel-stocks>section+section{margin-top:12px}
+}

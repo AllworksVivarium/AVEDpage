@@ -19,17 +19,40 @@
  #inner-app-view .card-room-lobby :is(small,p,article>span){font-size:11px!important;line-height:1.5!important}
 }
 
-.card-rankings{margin-top:12px;border-top:1px solid var(--inner-border-soft);padding-top:8px}
-.card-rankings summary{cursor:pointer;font-weight:600;padding:4px 0}
-.card-rankings>p{font-size:11px;color:var(--inner-text-muted)}
-.card-rankings [data-rank-content]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card-rankings section{background:var(--inner-card-bg);padding:10px;border:1px solid var(--inner-border-soft);min-width:0}
-.card-rankings h4{font-size:14px;margin:0 0 8px}
+/* Arcade honor boards share geometry, with a palette for each game. */
+.card-rankings{--rank-bg:#20383c;--rank-head:#152b30;--rank-line:#526a69;--rank-gold:#d8bd85;--rank-text:#ece2cc;--rank-muted:#b5c5c4;--rank-winner:#34483f;--rank-shadow:#142629;box-sizing:border-box;min-width:0;margin:12px 0;padding:10px;border:2px solid var(--rank-line);border-radius:0;background:var(--rank-bg);color:var(--rank-text);box-shadow:3px 3px 0 var(--rank-shadow)}
+#game-panel-doudizhu .card-rankings{--rank-bg:#19382c;--rank-head:#10291f;--rank-line:#4c6b52;--rank-winner:#304b35;--rank-shadow:#0d2118;--rank-muted:#b6c8b7;--rank-gold:#d4b779}
+#game-panel-skydive .card-rankings{--rank-bg:#203740;--rank-head:#142a35;--rank-line:#4d6d78;--rank-winner:#344b4d;--rank-shadow:#10212b;--rank-muted:#b3c9d0;--rank-gold:#ddc796}
+#game-panel-derby .card-rankings{--rank-bg:#293d36;--rank-head:#1b302a;--rank-line:#66765a;--rank-winner:#43513a;--rank-shadow:#192820;--rank-muted:#c3c9b2;--rank-gold:#dfbc7f}
+.card-rankings .rank-marquee{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:104px;padding:19px 12px;box-sizing:border-box;background:var(--rank-head);border:3px solid var(--rank-gold);outline:1px solid var(--rank-line);outline-offset:-9px;clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,100% 3px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) 100%,6px 100%,6px calc(100% - 3px),0 calc(100% - 3px),0 6px,6px 6px)}
+.card-rankings .rank-heading{margin:0;padding:0;border:0;text-align:center;color:var(--rank-text);text-shadow:2px 2px var(--rank-shadow)}
+.card-rankings .rank-crown{display:block;width:28px;height:20px;background:var(--rank-gold);clip-path:polygon(0 0,14% 0,14% 25%,29% 25%,29% 40%,43% 40%,43% 0,57% 0,57% 40%,71% 40%,71% 25%,86% 25%,86% 0,100% 0,100% 75%,86% 75%,86% 100%,14% 100%,14% 75%,0 75%)}
+.card-rankings .rank-ribbon{width:88px;height:3px;background:linear-gradient(to right,#a97667 0 30%,transparent 30% 35%,var(--rank-gold) 35% 65%,transparent 65% 70%,#78988a 70%)}
+.card-rankings .rank-lamps{position:absolute;height:4px;left:16px;right:16px;background:repeating-linear-gradient(to right,var(--rank-gold) 0 4px,transparent 4px 22px);opacity:.65;animation:rank-lights 3s steps(2,end) infinite}
+.card-rankings .rank-lamps-top{top:9px}.card-rankings .rank-lamps-bottom{bottom:9px;animation-delay:-1.5s}
+@keyframes rank-lights{50%{opacity:.3}}
+.card-rankings [data-rank-content]{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
+.card-rankings [data-rank-content]>section{min-width:0;padding:0;border:0;background:transparent}
+.card-rankings h4{text-align:center;margin:0 0 10px;font-size:13px}
 .card-rankings ol{list-style:none;padding:0;margin:0}
-.card-rankings li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;padding:6px 0;border-top:1px solid var(--inner-border-soft);font-size:12px}
-.card-rankings li b{overflow-wrap:anywhere;font-weight:500}.card-rankings li>span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
-@media(max-width:420px){.card-rankings [data-rank-content]{grid-template-columns:1fr}}
-
-@layer aved-personal { #inner-app-view .card-rankings section {background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important} #inner-app-view .card-rankings section :is(h4,p,b,span){color:var(--inner-text-main)!important} #inner-app-view .card-rankings>p{color:inherit!important;opacity:.8} }
-
-.card-rankings{padding:10px 12px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft)}
+.card-rankings li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:6px;padding:10px 6px;border-top:1px solid var(--rank-line);font-size:12px;text-align:left}
+.card-rankings li.rank-first{background:var(--rank-winner)}
+.card-rankings .rank-number{font-family:monospace;font-weight:bold;color:var(--rank-gold)}
+.card-rankings .rank-person{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.card-rankings .rank-person b{font-weight:500;overflow-wrap:anywhere;min-width:0}
+.card-rankings .rank-stamp{flex:none;font:normal 10px/1.5 var(--terminal-copy,sans-serif);white-space:nowrap;color:#e5ad96;border:1px solid #b57866;padding:0 3px;box-shadow:1px 1px 0 #b5786655}
+.card-rankings .rank-value{color:var(--rank-muted);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.card-rankings .rank-first .rank-value{color:var(--rank-gold)}
+.card-rankings p{font-size:12px;text-align:center;color:var(--rank-muted);padding:10px 0;margin:0}
+#game-panel-derby .card-rankings [data-rank-content]{grid-template-columns:1fr}
+@layer aved-personal{
+ #inner-app-view .card-rankings{background:var(--rank-bg)!important;color:var(--rank-text)!important;border-color:var(--rank-line)!important}
+ #inner-app-view .card-rankings [data-rank-content]>section{background:transparent!important;color:var(--rank-text)!important}
+ #inner-app-view .card-rankings :is(h3,h4,b){color:var(--rank-text)!important}
+ #inner-app-view .card-rankings .rank-number,#inner-app-view .card-rankings .rank-first .rank-value{color:var(--rank-gold)!important}
+ #inner-app-view .card-rankings .rank-value,#inner-app-view .card-rankings p{color:var(--rank-muted)!important}
+ #inner-app-view .card-rankings .rank-stamp{color:#e5ad96!important}
+}
+@media(max-width:999px){#game-panel-skydive .card-rankings{order:3;width:100%}#game-panel-derby .card-rankings{order:2;width:100%;margin:0}}
+@media(prefers-reduced-motion:reduce){.card-rankings .rank-lamps{animation:none;opacity:.65}}
+body.effects-off .card-rankings .rank-lamps{animation:none;opacity:.65}

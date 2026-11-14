@@ -8,13 +8,17 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
   if(parent===home)document.getElementById('daily-allocation').after(root);else parent.prepend(root);
   return root;
  });
- function addBoard(parent,url,groups){
-  const board=document.createElement('details');board.className='card-rankings';board.innerHTML='<summary>战绩榜</summary><div data-rank-content></div>';parent.append(board);let busy=false;
-  board.ontoggle=async()=>{if(!board.open||busy)return;busy=true;const content=board.querySelector('[data-rank-content]'),owner=getUser()?.id;content.textContent='正在读取…';try{const data=await api(url);if(getUser()?.id!==owner){content.textContent='';return;}content.innerHTML=groups.map(([title,key,unit])=>'<section><h4>'+title+'</h4>'+(data[key]?.length?'<ol>'+data[key].map(r=>'<li><span>'+r.rank+'</span><b>'+esc(r.name)+'</b><span>'+Number(r.wins??r.value).toLocaleString()+' '+unit+'</span></li>').join('')+'</ol>':'<p>暂无战绩</p>')+'</section>').join('');}catch(e){content.textContent=e.message;}finally{busy=false;}};
+ const boards=[];
+ function addBoard(panel,url,groups,after){
+  const board=document.createElement('section');board.className='card-rankings';board.setAttribute('aria-label','战绩榜');board.innerHTML='<header class="rank-marquee"><span class="rank-lamps rank-lamps-top" aria-hidden="true"></span><span class="rank-crown" aria-hidden="true"></span><h3 class="rank-heading">战绩榜</h3><span class="rank-ribbon" aria-hidden="true"></span><span class="rank-lamps rank-lamps-bottom" aria-hidden="true"></span></header><div data-rank-content></div>';if(after)after.after(board);else panel.append(board);
+  const content=board.querySelector('[data-rank-content]');let busy=false,activeOwner=null;
+  const render=data=>{content.innerHTML=groups.map(([title,key,unit])=>'<section><h4>'+title+'</h4>'+(data[key]?.length?'<ol>'+data[key].map(r=>'<li'+(Number(r.rank)===1?' class="rank-first"':'')+'><span class="rank-number">'+r.rank+'</span><div class="rank-person"><b>'+esc(r.name)+'</b>'+(Number(r.rank)===1?'<em class="rank-stamp">榜首</em>':'')+'</div><span class="rank-value">'+Number(r.wins??r.value).toLocaleString()+' '+unit+'</span></li>').join('')+'</ol>':'<p>暂无战绩</p>')+'</section>').join('');};render({});
+  boards.push(()=>{const owner=getUser()?.id,visible=owner&&!casino.classList.contains('hidden')&&!panel.classList.contains('hidden');if(!visible){activeOwner=null;return;}if(busy||activeOwner===owner)return;activeOwner=owner;busy=true;api(url).then(data=>{if(getUser()?.id===owner)render(data);}).catch(()=>{content.textContent='战绩暂时无法读取';activeOwner=null;}).finally(()=>{busy=false;});});
  }
+ const sky=document.getElementById('game-panel-skydive'),derby=document.getElementById('game-panel-derby');
  addBoard(table,'/api/player/card-table/rankings',[['最强太姥榜','landlord','胜'],['最强少姥榜','farmers','胜']]);
- addBoard(document.getElementById('game-panel-skydive'),'/api/player/recreation-rankings',[['安全落地榜','skySafe','次'],['最深开伞榜','skyDepth','米']]);
- addBoard(document.getElementById('game-panel-derby'),'/api/player/recreation-rankings',[['竞猜命中榜','derby','次']]);
+ addBoard(sky,'/api/player/recreation-rankings',[['安全落地榜','skySafe','次'],['最深开伞榜','skyDepth','米']],sky.querySelector('.flight-manifest'));
+ addBoard(derby,'/api/player/recreation-rankings',[['竞猜命中榜','derby','次']],derby.querySelector('.race-slip'));
  let current=null,items=[],busy=false,inflight=null,owner=null,lastFetch=0;
  const visible=()=>!!getUser()&&!document.hidden&&!casino.classList.contains('hidden')&&(!home.classList.contains('hidden')||!table.classList.contains('hidden')&&table.dataset.cardPhase==='idle');
  function status(text){for(const root of roots){const el=root.querySelector('[data-room-status]');el.textContent=text;el.hidden=!text;}}
@@ -50,9 +54,9 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
    if(button.dataset.roomAction==='refresh')refresh(true);
   };
  }
- function ensure(){roots[1].hidden=table.dataset.cardPhase!=='idle';if(visible())refresh();}
+ function ensure(){boards.forEach(ensureBoard=>ensureBoard());roots[1].hidden=table.dataset.cardPhase!=='idle';if(visible())refresh();}
  const observer=new MutationObserver(ensure);
- for(const element of [casino,home,table])observer.observe(element,{attributes:true,attributeFilter:['class','data-card-phase']});
+ for(const element of [casino,home,table,sky,derby])observer.observe(element,{attributes:true,attributeFilter:['class','data-card-phase']});
  document.addEventListener('aved-card-room-change',()=>{lastFetch=0;if(visible())refresh(true);});
  document.addEventListener('visibilitychange',ensure);setInterval(ensure,15000);ensure();
  return {refresh};

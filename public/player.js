@@ -1823,7 +1823,6 @@
       economyUI=AVEDEconomyUI({api,esc,byId,getUser:()=>currentUser,onBalance:balance=>{currentUser.balance=balance;syncUserHeaderUI();},showToast,stocks:()=>stocksData,refreshMarket});
       const communityUI=AVEDCommunity({api,esc,byId,showToast,mainViews,switchMainView,navigateGame:game=>switchMainView('casino',{game}),getUser:()=>currentUser,getProfile:()=>playerProfile,departments:()=>departmentsData,renderDepartments:renderDepartmentsAndPersonnel,renderScp:renderScpArchives,refreshForum,backForum:returnForumList,getReply:id=>forumReplies.get(id),getThread:()=>forumDetail});
       barUI=AVEDBar({api,esc,getUser:()=>currentUser,onExit:()=>restorePlayerRoute(),onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
-      AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       forumSocialUI=AVEDForumSocial({api,esc,onStockRisk:data=>economyUI?.updateRisk(data),getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
@@ -1832,6 +1831,7 @@
       window.AVEDRefreshPersonal=()=>{if(currentUser&&!byId('view-profile').classList.contains('hidden'))renderProfile();};
       AVEDRewardsUI({api,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast});
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast,playSfx});
+      AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       AVEDVisualStyle({byId});
       const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
         currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
