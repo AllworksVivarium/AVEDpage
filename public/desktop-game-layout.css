@@ -184,3 +184,6 @@ body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:afte
  #game-panel-slots .slot-paytable-wrap td:first-child>div{min-width:0;flex-wrap:wrap}
  #game-panel-slots .slot-line-paths{width:100%;grid-template-columns:repeat(5,minmax(0,1fr))}
 }
+
+#inner-app-view .portfolio-trading-style .trading-style-tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+#inner-app-view .portfolio-trading-style .trading-style-tags span{display:inline-block;padding:3px 8px;border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);color:var(--inner-text-main);font-size:11px;line-height:1.5}

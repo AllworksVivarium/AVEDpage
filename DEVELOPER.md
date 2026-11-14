@@ -1,82 +1,63 @@
-# AVED 开发与维护说明
+# AVED 开发与维护
 
-更新：2026-11-08。本文描述当前源码；线上版本以服务器部署提交为准。历史交接文件仅供追溯，不作为当前规则。
+更新：2026-11-15。源码进展见 [更新记录](LOCAL-CHANGES.md)，线上状态通过部署提交和实际资源版本核对。
 
-## 架构与运行
+## 架构
 
-- Node.js 24、原生 HTTP、SQLite WAL，单进程运行。运行前 `npm ci`，启动 `node server.mjs`；Windows 可用 `local-preview.mjs`。
-- 玩家入口 `public/player-terminal.html`；管理入口 `public/admin-terminal.html`。`aved.space` 和 `authority.aved.space` 使用同一后端，权限由会话和角色校验。
-- `server.mjs` 组合业务模块、鉴权和路由。`player-service.mjs` 提供页面分段数据、论坛、交易与部分游戏接口。
-- 上传影像通过授权媒体接口返回；头像派生小尺寸缓存。静态文本支持压缩和 ETag，带内容哈希的素材长期缓存。
-- `.env`、数据库、头像原件、真实员工资料和密钥不入 Git。预览数据库必须与生产隔离。
+- Node.js 24、原生 HTTP、SQLite WAL，单进程提供业务服务。
+- `server.mjs` 组合路由、会话和业务模块；`player-service.mjs` 提供页面数据与玩家接口。
+- `public/player-terminal.html` 与 `public/player.js` 为玩家入口；管理入口为 `public/admin-terminal.html`。
+- 个人面板当前使用 `public/personal-hud.js`。
+- 联机房间通过 SSE 同步，客户端负责动画、排版和交互反馈。
+- 账户余额、交易和游戏结算由服务端事务维护。
 
-## 页面与模块
+## 功能索引
 
 | 功能 | 主要模块 |
 | --- | --- |
-| 登录、页面进入和懒加载 | player.js、player-startup.js、http-client.js、server-auth.mjs |
-| 个人主页、配色和签到 | personal-hud.js、rewards-ui.js、server-personal.mjs、server-appearance.mjs |
-| 公告与评论 | notices-ui.js、admin-community.js、server.mjs、server-community.mjs |
-| 论坛与生活记录 | player-community.js、forum-replies.js、server-forum-replies.mjs、server-community.mjs |
-| 收容档案 | archive-board.js、archive-room-restoration.css、server-personnel.mjs |
-| 刮刮乐 | server-ticket.mjs、server-economy.mjs、scratch-feedback.js |
-| 异常回路 | server-slot.mjs、slot-effects.js |
-| 下班竞速 | server-derby.mjs、server-animal-race.mjs、derby-ui.js、derby-scene.js |
-| 共享速降 | server-sky.mjs、server-sky-rules.mjs、sky-ui.js、sky-scene.js |
-| 斗太姥 | server-card-table.mjs、server-card-wallet.mjs、ddz-ui.js、ddz-rules.js |
-| 证券与账目 | server-market.mjs、market-chart.js、economy-ui.js、welfare-ui.js |
-| 大奖与个人纪录 | server-game-highlights.mjs、jackpot-ticker.js、personal-record.js |
+| 论坛 | server-forum-replies.mjs、forum-browser.js、forum-replies.js |
+| 收容图片 | server-dossier-images.mjs、server-dossier-content.mjs、dossier-content.js |
+| Sloper | server-bar.mjs、server-bar-drinking.mjs、server-bar-coasters.mjs、server-bar-hospitality.mjs |
+| 速降 | server-sky.mjs、sky-ui.js、sky-scene.js |
+| 竞速 | server-derby.mjs、derby-ui.js、derby-scene.js |
+| 牌桌 | server-card-table.mjs、server-card-wallet.mjs、server-card-rankings.mjs |
+| 转轮与协议收藏 | server-slot.mjs、server-recreation-records.mjs |
+| 股市 | server-stock-lots.mjs、stock-trading-style.mjs、economy-ui.js |
+| 榜单界面 | card-room-lobby.js、card-room-lobby.css |
+| 桌面布局与辅助文字 | desktop-game-layout.css、ui-help-notes.css |
 
-当前个人主页加载 personal-hud.js；personal-ui.js 是旧版保留文件，不应误当成当前界面入口。
+表中的客户端文件位于 `public/`。
 
-## 已确认的行为与边界
+## 本地运行
 
-- 玩家资料按页面异步读取，首屏 bootstrap 不下载完整论坛、目录或游戏历史。余额和交易状态不使用长期前端缓存。
-- 论坛主题每页 10 条；回复按 ID 顺序每页 20 条。`GET /api/player/forum/:id?after=ID` 加载后续回复；`?since=REVISION` 最多返回 20 条变化和移除编号。返回 `changesCursor`、`moreChanges`，首次及分页读取另有 `next`。定时同步不重建未变化的回复节点，草稿表单保持原位。
-- `forum_reply_clock` 和 `forum_reply_versions` 由回复写入触发器更新。每条回复仅保留最新版本号，删除保留编号，不额外复制正文或图片。旧数据首次读取建立客户端同步基线。
-- 股票仅在娱乐室与股票子面板同时可见、页面处于前台时轮询。切回时补一次刷新；已有请求使用 busy 锁合并。
-- 登录后先解码 `AVEDCriticalArt` 中的轻量侧栏、页头及常用背景图片，最多并行 3 项、总等待上限 4.5 秒；首次过渡至少 1.6 秒，进度条为视觉动效。成功后按资源清单写本机标记，实际图片仍使用浏览器 HTTP 缓存。资源变化、加载失败时重新检查；缓存命中的刷新不额外播放加载框，超过 350ms 才显示等待提示。字体、头像、用户内容不加入这份预加载清单。
-- 财神榜、破产榜、爱心榜仅展示前 10 名，含公司机器人；前三名突出展示，第一名有皇冠。爱心榜按捐款降序，未捐款者为 0。榜单没有内部滚动区，使用页面正常滚动。
-- 余额及货币单位使用 `currency-symbol.js` 统一转换，图案为 `assets/currency-coin.svg` 的金色像素 A 币；无需字体或位图，不修改输入框内的数值。
-- MACD(12,26,9)、KDJ(9,3,3) 仅用已有 K 线在前端计算，绘制在成交量下方，不新增 API 请求或服务端指标任务。
-- 好彩时刻按文字和窗口实测宽度决定滚动距离及 5–8 秒的展示时长，先停留左侧署名，最后停留金额，再向下换条；字体和窗口尺寸变化会重新测量。
-- 竞速仅在角色实际冲线后公布该角色位次，第一名冲断彩带并获得皇冠与一次欢呼，关闭特效时保留静态皇冠。
-- 联机速降、竞速和牌桌使用真实服务端状态和 SSE；切离对应玩法时关闭连接。单进程广播尚未扩展为多实例消息总线。
-- 牌桌为三人一副 54 张、四人两副 108 张。牌型规则适配自 Tongzhuo 的 MIT 代码，牌桌界面为本站实现；大小王以“小王／大王”和像素王冠区分。服务端统一执行 30 秒超时托管（含纯人机的叫分和出牌），重启沿用已保存的截止时间；前端用服务端时间校准倒计时，若 SSE 漏掉到期更新，最多每 4 秒补一次状态读取，仅在牌桌可见且逾期时触发。
-- 所有下注、扣款、返还和结算由服务端处理。客户端提交操作和金额意向，不能上传最终余额或自算奖金。
-- 图文发帖先审核，普通文字直接发表。管理员公告每次 10 条摘要，展开后加载正文和评论；公告评论可修改发布时间。
-- 管理端“公司直属部”为部门分类，含玩家成员、玩家收容物和企划组成员；内部部门值保留“公司直属”以兼容旧数据。仅企划组成员可自定义职位，选择具体部门时职务为部长。玩家成员固定为“成员”，玩家收容物固定为“收容物”，旧自定义值在初始化时归一化。
-- “企划组成员”仅用于管理端分类，玩家终端只展示实际职位；公司直属的企划组成员不附加部门名或分类名。
-- 收容页面进入时短暂遮蔽部分文字，约 45ms 更换乱码、95ms 恢复；普通点击、检索和评论更新不重播进入效果。
-- 三套配色、日夜模式、特效开关保留；论坛表情按需加载本地资源，无搜索框。
-- 管理端记录筛选年份固定为 2026、2027，这是明确产品设定，不自动扩展。
-- 像素西装人默认头像仅做过概念预览，已明确取消实装。
+安装 Node.js 24，执行 `npm ci`，然后运行 `node local-preview.mjs`；Windows 也可使用 `启动预览.bat`。访问地址以启动窗口为准，保持服务进程运行即可持续预览。
 
-## 游戏规则与反馈
+运行配置与账号信息由环境配置和本地初始化流程提供。预览使用独立数据目录，生产配置通过部署环境管理。
 
-概率与结算以对应服务端模块为准，修改时同步模拟测试；下述回报率为长期统计口径，不保证个人收益。
+## 记录与查询
 
-- 刮刮乐保持现有六档票价与三种刮票样式，约 120% 平均返还；炸弹机制和追加医疗费保留。首次实际刮开时服务端购票结算，展示结果后才触发本人反馈。下一张保留仍在播放的礼花。
-- 异常回路使用五列转轮、组合奖、稀有大奖和过载维修费；当前模拟平均返还约 122%。转轮停稳后再播放结果。
-- 五选手竞速包含三只猫、小猪、法斗法棍；可分别押第一名和最后一名。各选手各位次概率 20%，命中返还 6.25 倍；15 秒下注、25 秒比赛、6 秒结果。赛道事件由服务器结果驱动，客户端不能控制选手。
-- 速降各架次共享隐藏安全线，服务器记录每人开伞时间和返还。允许早开伞亏本；新架次采用 bell-v2 无倍率封顶曲线，875 米约 30 倍，280 米后的可开伞深度维持约 125% 理论返还。既有架次使用自身保存规则，新架次才使用新参数。
-- 斗太姥支持三人和四人真实牌桌、电脑补位。底注快捷档为 1,000 / 10,000 / 50,000，也支持 100 至 1,000,000 的自定义整数；每人开局锁定 max(10,000, 底注 × 10)，按底注 × 叫分 × 倍率结算，剩余筹码结算后释放，系统提供胜方额外奖金。离桌托管只完成当前局，不自动开下一局。当前新局策略 `normal-v2`：托管正常获得输赢和系统奖金；全电脑对手时自己的托管与电脑使用同一已选难度，有其他真人时自己的托管固定 smart。旧局按保存的 `autoProfitPolicy` 结算。联机每局结束重置所有真人（含房主）的准备状态，60 秒未准备者自动离桌；优先移交房主给已准备真人。全员就绪后房主须在 60 秒内确认开局，否则自动离桌并移交；倒计时持久化，SSE 会通知已离桌玩家清空牌桌。`soloRoom` 创建待开局的电脑房，补电脑但不发牌或锁筹码；网页使用“开联机房 / 开电脑房”明确入口。`fillBots` 仅由房主补齐空位，不受其他真人准备状态影响，不锁钱、不发牌；`start` 独立检查全员准备并开局。
-- 好彩时刻展示近 30 分钟满足门槛的真实结算；个人破纪录独立处理。只有本人、`personalBest===1`、实际盈利且五分钟内的事件可以触发个人提示。按账号和 ticketId 保存最多 128 个已播编号，重复 SSE、重连和刷新不重复庆祝。所有五种游戏接入同一个提示，关闭特效或减少动态效果时保留静态金额。
-- 各玩法分别保存个人最高奖金并触发破纪录反馈；个人主页从中展示最高单局奖金。不能用世界播报触发他人的破纪录礼花；证券收益不计入小游戏纪录。
+- 牌桌胜场在结算事务中写入，按最近 5 天查询。
+- 速降、竞速榜单复用游戏票据，按最近 3 天查询，服务端缓存 30 秒。
+- 隐藏协议写入独立账号解锁表，初始化时补录保留票据中的协议记录。
+- 交易风格使用有界的近期开仓样本，输出方向、杠杆倾向和趣味行为标签。
+- 页面读取与实时订阅按当前玩法启停。
+
+## 界面约定
+
+- 手机与桌面布局以 1000px 为主要分界，桌面游戏画面保持适中的显示尺寸。
+- 榜单主标题居中，姓名左对齐，数值右对齐。
+- 辅助说明通过 `ui-help-note` 显式标记，统一为 11px 斜体。
+- 结算区保持获奖金额突出、税费说明轻量的现有表现。
+- 动效适配特效开关与系统减少动态效果设置。
 
 ## 验证与发布
 
-运行 `node --test --test-timeout=30000 tests/*.test.mjs`，维护脚本另运行 `python tests/daily-maintenance_test.py`。HTTP 集成测试使用独立临时数据库和端口，不访问生产玩家资料。
+根据变更范围执行语法检查、相关测试与界面核对。发布时确认提交范围，制作数据库一致性备份，推送代码，检查更新服务、部署提交、接口和静态资源版本。
 
-发布顺序：确认当前改动与远端 main → 测试 → 生产一致性备份 → 推送已验证提交至 main → 执行 aved-auto-update.service → 检查部署提交、容器、两站首页/API、静态资源和数据库完整性。生产目录 `/root/AVED`，容器 `aved-web-1`。保留服务器 `.env`、数据目录以及经单独配置的 compose.override.yaml。
+共享工作区编辑前核对差异，按文件暂存当次确认内容。用户数据与运行配置通过专用存储和部署渠道维护。
 
-不要通过热拷贝分别保存运行中的 DB/WAL/SHM。使用 SQLite backup 或 VACUUM INTO，并验证备份；需要回滚时同时评估代码、数据库迁移和已有业务写入。
+## 后续维护
 
-## 仍需跟进
-
-- 管理端图片审核目前仍整体读取待审列表，分页与进一步懒加载按产品要求暂缓。
-- 自动化功能测试不能代替二核 2G、30～40 人同时在线的压力测试和低端实体手机帧率验证。
-- 不直接多开 SQLite 容器扩容；若将来使用多个服务实例，需要设计共享广播与数据一致性。
-- 多个 Codex 窗口可能共享同一工作目录。编辑前重读目标段落，禁止整文件回滚覆盖别人的修改；发布使用固定快照并再次确认差异。
-
-异常回路常见组合奖励已提高：记忆血清 3/4/5 连为 3/6/11 倍每线投入，理智稳定剂为 4/6/10 倍；稀有符号大奖、小额返还与过载概率保持。固定种子 100 万局、扣除维修费的模拟平均返还约 129.00%，这是长期样本均值。
+- 结合实际并发与设备表现，持续观察响应时间、数据库查询和动画帧率。
+- 管理端长列表逐步完善分页与按需加载。
+- 新素材接入时复核来源记录、手机构图与像素比例。

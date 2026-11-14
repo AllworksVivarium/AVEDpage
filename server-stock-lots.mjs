@@ -1,3 +1,4 @@
+import {tradingStyle} from './stock-trading-style.mjs';
 import {stockPositionRisk} from './stock-risk.mjs';
 // Each fill is independent. Aggregate holdings remain a compatible account summary.
 export function installStockLots(db){
@@ -66,9 +67,8 @@ export function installStockLots(db){
   const summary=db.prepare(`SELECT COUNT(*) AS closedCount,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)>0),0) AS wins,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)=0),0) AS draws FROM stock_trades WHERE employee_id=? AND ${closed}`).get(id);
   Object.assign(summary,db.prepare('SELECT COALESCE(SUM(realized_pnl_change),0) AS realizedPnl,COALESCE(SUM(fee),0) AS totalFees FROM stock_trades WHERE employee_id=?').get(id));
   const opening="(intent IN ('open','mixed') OR (intent='' AND (holding_before=0 OR (holding_before>0 AND action='buy') OR (holding_before<0 AND action='sell'))))";
-  const style=db.prepare(`SELECT COUNT(*) AS opens,COALESCE(SUM(action='buy'),0) AS longs,COALESCE(SUM(action='sell'),0) AS shorts,COALESCE(SUM(leverage=1),0) AS cash,COALESCE(SUM(leverage=3),0) AS triple,COALESCE(SUM(leverage=10),0) AS tenfold,AVG(leverage) AS averageLeverage FROM stock_trades WHERE employee_id=? AND ${opening}`).get(id);
-  style.favorites=db.prepare('SELECT code,COUNT(*) AS count FROM stock_trades WHERE employee_id=? GROUP BY code ORDER BY count DESC,code LIMIT 3').all(id);
-  style.label=style.opens<5?'样本积累中':style.tenfold/style.opens>=.6?'高杠杆偏好':style.cash/style.opens>=.7?'低杠杆偏好':style.longs/style.opens>=.7?'偏多操作':style.shorts/style.opens>=.7?'偏空操作':'双向操作';
+  const recentOpens=db.prepare(`SELECT action,code,leverage FROM stock_trades WHERE employee_id=? AND created_at>=datetime('now','-5 days') AND ${opening} ORDER BY id DESC LIMIT 50`).all(id);
+  const style=tradingStyle(recentOpens);
   return {style,items:rows.slice(0,20),nextCursor:rows.length>20?rows[19].id:null,summary:{...summary,winRate:summary.closedCount?summary.wins/summary.closedCount:null}};
  }
  function riskSummary(id){const items=list(id).filter(l=>l.liquidationEligible&&['warning','critical'].includes(l.riskLevel));return {count:items.length,criticalCount:items.filter(l=>l.riskLevel==='critical').length,items:items.sort((a,b)=>a.equityPercent-b.equityPercent).slice(0,5).map(l=>({lotId:l.id,code:l.code,name:l.name,equityPercent:l.equityPercent,riskLevel:l.riskLevel,positionEquity:l.positionEquity,marginUsed:l.marginUsed}))};}
