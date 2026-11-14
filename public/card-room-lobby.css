@@ -53,6 +53,6 @@
  #inner-app-view .card-rankings .rank-value,#inner-app-view .card-rankings p{color:var(--rank-muted)!important}
  #inner-app-view .card-rankings .rank-stamp{color:#e5ad96!important}
 }
-@media(max-width:999px){#game-panel-skydive .card-rankings{order:3;width:100%}#game-panel-derby .card-rankings{order:2;width:100%;margin:0}}
+@media(max-width:999px){#game-panel-skydive .card-rankings{order:4;width:100%}#game-panel-derby .card-rankings{order:2;width:100%;margin:0}}
 @media(prefers-reduced-motion:reduce){.card-rankings .rank-lamps{animation:none;opacity:.65}}
 body.effects-off .card-rankings .rank-lamps{animation:none;opacity:.65}

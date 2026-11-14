@@ -1,0 +1,15 @@
+/* Explicit opt-in only: excludes settlements, status text and gameplay rules. */
+@layer aved-type-system {
+ body #inner-app-view .ui-help-note,
+ body .hud-dialog .ui-help-note,
+ body .welfare-transfer-dialog .ui-help-note {
+  font-family:var(--terminal-copy,sans-serif)!important;
+  font-size:11px!important;
+  font-style:italic!important;
+  font-weight:400!important;
+  line-height:1.6!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+ }
+}
+.ui-help-note{color:var(--inner-text-muted,var(--inner-text-main));}

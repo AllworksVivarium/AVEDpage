@@ -163,3 +163,24 @@ body.effects-off #game-panel-skydive[data-instant-crash=true] .flight-scene:afte
  #game-panel-scratch> :not([hidden])~ :not([hidden]){margin-top:12px;margin-bottom:0}
  #game-panel-stocks>section+section{margin-top:12px}
 }
+
+/* Desktop slots: a full-width paytable within the left column, no nested split. */
+@media(min-width:1000px){
+ .terminal-next #game-panel-slots>.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+ #game-panel-slots .slot-main{max-width:none;justify-self:stretch;display:flex;flex-direction:column;gap:24px}
+ #game-panel-slots .slot-main>.slot-machine,#game-panel-slots .slot-main>.game-rule-card{width:100%;max-width:none;margin:0;box-sizing:border-box}
+ #game-panel-slots .slot-controls{display:grid;grid-template-rows:auto minmax(140px,1fr);gap:24px;min-height:420px;align-content:stretch}
+ #game-panel-slots .slot-controls>div{margin:0;min-width:0;box-sizing:border-box;padding:18px 20px}
+ #game-panel-slots .slot-controls>div:last-child{display:flex;flex-direction:column}
+ #game-panel-slots #slot5x3-history-list{min-height:0;max-height:240px;overflow-y:auto}
+ #game-panel-slots #slot5x3-bet-input{min-width:0;width:100%}
+ #game-panel-slots .game-rule-card>.grid{display:flex;flex-direction:column;gap:20px}
+ #game-panel-slots .game-rule-card>.grid>div{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+ #game-panel-slots .slot-paytable-wrap{overflow:visible}
+ #game-panel-slots .slot-paytable-wrap table{width:100%;min-width:0;table-layout:fixed}
+ #game-panel-slots .slot-paytable-wrap :is(th,td){padding:10px 4px;white-space:normal;overflow-wrap:anywhere;vertical-align:middle}
+ #game-panel-slots .slot-paytable-wrap :is(th,td):first-child{width:40%;padding-left:0}
+ #game-panel-slots .slot-paytable-wrap :is(th,td):last-child{padding-right:0}
+ #game-panel-slots .slot-paytable-wrap td:first-child>div{min-width:0;flex-wrap:wrap}
+ #game-panel-slots .slot-line-paths{width:100%;grid-template-columns:repeat(5,minmax(0,1fr))}
+}

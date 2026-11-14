@@ -412,6 +412,7 @@
 <script src="/image-upload.js?v=avatar-large-pixels-20261114" defer></script>
 <link rel="stylesheet" href="/social-economy-refinements.css?v=profit-tax-20261111">
 <script src="/achievement-alerts.js?v=profit-tax-20261111" defer></script>
+  <link rel="stylesheet" href="/ui-help-notes.css?v=20261114">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
   <script>window.AVEDGateway?.apply();</script>
@@ -955,7 +956,7 @@
               <textarea id="new-topic-content" rows="4" maxlength="3000" placeholder="在此输入正文内容..." required
                 class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
 
-              <p class="forum-upload-note">附图经管理员审核后展示。</p>
+              <p class="forum-upload-note ui-help-note">附图经管理员审核后展示。</p>
               <!-- 单一合并的图片上传交互按钮 -->
               <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                 <div class="flex items-center gap-3">
@@ -964,7 +965,7 @@
                   <button id="new-topic-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
                     上传图片（需审核）
                   </button>
-                  <span id="new-topic-image-hint" class="forum-image-filename"></span>
+                  <span id="new-topic-image-hint" class="forum-image-filename ui-help-note"></span>
                 </div>
               </div>
             </form>
@@ -1037,7 +1038,7 @@
                   <button id="reply-upload-trigger-btn" type="button" title="上传图片需管理员审核" class="inner-card-alt">本地附图</button>
                   <button type="submit" class="press-cta inner-btn-primary">回贴</button>
                 </div>
-                <span id="reply-image-selected-hint" class="forum-image-filename"></span>
+                <span id="reply-image-selected-hint" class="forum-image-filename ui-help-note"></span>
               </form>
             </div>
           </div>
@@ -1365,7 +1366,7 @@
                     ↻ 启动回路
                     <span id="slot5x3-spin-subtext" class="block text-[10px] font-normal mt-0.5">押 500 五线</span>
                   </button>
-                  <p class="slot-overload-rule">0.75% 概率过载 · 另扣投入的 2 倍维修费，最多损失投入的 3 倍，可产生负余额。</p>
+                  <p class="slot-overload-rule ui-help-note">过载概率 0.75%，维修费为投入的 2 倍。</p>
                 </div>
 
                 <div class="retro-corner-box p-4 space-y-2.5">
@@ -1455,7 +1456,7 @@
                   <label>杠杆倍数<select id="stock-trade-leverage"><option value="1" selected>1x（无杠杆）</option><option value="3">3x</option><option value="10">10x</option></select></label>
                 </div>
                 <details class="stock-order-advanced"><summary>止盈 / 止损（可选）</summary><div class="stock-order-fields"><label>止损价<input id="stock-trade-stop" type="number" min="1" step="1"></label><label>止盈价<input id="stock-trade-take" type="number" min="1" step="1"></label></div></details>
-                <p id="stock-leverage-note" class="portfolio-footnote"></p>
+                <p id="stock-leverage-note" class="portfolio-footnote ui-help-note"></p>
                 <p class="stock-order-estimate">成交额 <b id="stock-est-trade">—</b><span>预计保证金 <b id="stock-est-margin">—</b></span><span>预计手续费 <b id="stock-est-fee">—</b></span></p>
                 <div class="stock-trade-actions"><button type="button" data-stock-trade-side="long" class="stock-buy-btn">做多开仓</button><button type="button" data-stock-trade-side="short" class="stock-sell-btn">做空开仓</button><button type="button" data-stock-trade-side="close" class="stock-close-btn">平仓</button></div>
               </section>
@@ -1506,17 +1507,17 @@
   <script src="/currency-symbol.js?v=linear-batch-3" defer></script>
   <script src="/sky-scene.js?v=tax-achievements-20261111" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=game-panels-20261114" defer></script>
+<script src="/sky-ui.js?v=help-notes-20261114" defer></script>
   <script src="/stock-risk-notice.js?v=dismissible-1" defer></script>
-  <script src="/economy-ui.js?v=system-theme-margin-20261113" defer></script>
+  <script src="/economy-ui.js?v=help-notes-20261114" defer></script>
   <script src="/ranking-pixel-art.js?v=3" defer></script>
-  <script src="/welfare-ui.js?v=fund-six-cards-20261113" defer></script>
+  <script src="/welfare-ui.js?v=help-notes-20261114" defer></script>
   <script src="/visual-style.js?v=system-theme-cycle-20261113" defer></script>
-  <script src="/personal-hud.js?v=avatar-compress-20261114" defer></script>
+  <script src="/personal-hud.js?v=help-notes-20261114" defer></script>
 <script src="/rewards-ui.js?v=paper-tax-20261110" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=casual-race-20261113" defer></script>
-<script src="/derby-ui.js?v=game-panels-20261114" defer></script>
+<script src="/derby-ui.js?v=help-notes-20261114" defer></script>
 <script src="/interaction-motion.js?v=motion-1" defer></script>
 <script src="/archive-board.js?v=entry-glitch-2" defer></script>
 <script src="/player-session.js?v=idle-1" defer></script>
@@ -1526,14 +1527,14 @@
 <script src="/player-startup.js?v=company-achievements-20261110" defer></script>
 <link rel="stylesheet" href="/ddz-pixel.css?v=table-no-logo-20261111">
 <link rel="stylesheet" href="/card-reactions.css?v=emoji-only-4">
-  <link rel="stylesheet" href="/card-room-lobby.css?v=arcade-ranks-20261114">
+  <link rel="stylesheet" href="/card-room-lobby.css?v=arcade-ranks-left-20261114">
 <script src="/card-stakes.js?v=stake-cap-3" defer></script>
 <script src="/ddz-rules.js?v=card-table-1" defer></script>
 <script src="/card-reaction-rules.js?v=emoji-only-4" defer></script>
 <script src="/card-reactions.js?v=action-order-5" defer></script>
 <script src="/card-feedback.js?v=gross-awards-20261113" defer></script>
 <script src="/ddz-ui.js?v=gross-awards-20261113" defer></script>
-<script src="/card-room-lobby.js?v=arcade-ranks-20261114" defer></script>
+<script src="/card-room-lobby.js?v=help-notes-20261114" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=award-coin-size-20261113">
 <script src="/slot-effects.js?v=gross-awards-20261113" defer></script>
 <script src="/dossier-content.js?v=player-images-20261114" defer></script>
@@ -1557,6 +1558,6 @@
 <link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
 <link rel="stylesheet" href="/market-header-layout.css?v=1">
 <link rel="stylesheet" href="/archive-type-signal.css?v=notice-comments-20261112">
-<link rel="stylesheet" href="/desktop-game-layout.css?v=game-panels-20261114">
+<link rel="stylesheet" href="/desktop-game-layout.css?v=desktop-slots-20261114">
 </body>
 </html>

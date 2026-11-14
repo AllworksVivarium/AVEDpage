@@ -129,7 +129,7 @@ window.AVEDDerbyUI=function({api,byId,esc,getUser,onBalance,showToast,playSfx=()
     return '<div class="race-supporter-faces" aria-label="'+esc(r.name+'支持者')+'">'+supporters.slice(0,3).map(p=>'<span class="race-supporter-avatar" role="img" aria-label="'+marketName(p.market)+'下注头像"><img src="'+esc(p.avatar||'/assets/avatar-pixel-slate.debac0c8de54.svg')+'" alt="" width="22" height="22" loading="lazy"><b aria-hidden="true">'+(p.market==='first'?'1':'5')+'</b></span>').join('')+(extra>0?'<span class="race-supporter-overflow" aria-label="另有 '+extra+' 笔下注">+'+extra+'</span>':'')+'</div>';
    }).join('');
   }
-  const receipt=JSON.stringify(d.bets);if(receipt!==ticketsKey){ticketsKey=receipt;byId('derby-self-result').innerHTML=d.bets.map(b=>`<p>${marketName(b.market)} · ${esc(d.runners[b.runner].name)}<br>投入 ${money(b.cost)}${b.settled?' / 本局获得 '+money(b.grossPrize??b.prize):' / 已封存'}${window.AVEDGameResults.taxNote(b.tax)}</p>`).join('')||'<p>可只选一项，也可两项都下注。</p>';}
+  const receipt=JSON.stringify(d.bets);if(receipt!==ticketsKey){ticketsKey=receipt;byId('derby-self-result').innerHTML=d.bets.map(b=>`<p>${marketName(b.market)} · ${esc(d.runners[b.runner].name)}<br>投入 ${money(b.cost)}${b.settled?' / 本局获得 '+money(b.grossPrize??b.prize):' / 已封存'}${window.AVEDGameResults.taxNote(b.tax)}</p>`).join('')||'<p class="ui-help-note">可只选一项，也可两项都下注。</p>';}
 
   const status=byId('derby-commentary');status.classList.toggle('is-profit',d.phase==='RESULT'&&totalPrize>totalCost);
   if(d.phase!=='RACING')commentaryPhase=d.phase;
