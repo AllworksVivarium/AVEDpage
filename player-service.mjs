@@ -1,3 +1,4 @@
+import {installRecreationRecords} from './server-recreation-records.mjs';
 import {dossierView} from './server-dossier-content.mjs';
 import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
 import {stockFeeTotals} from './server-stock-fees.mjs';
@@ -21,6 +22,7 @@ import {validateGameStake} from './game-stake-limits.mjs';
 
 
 export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights,getGameTax=()=>null}) {
+ const recreationRecords=installRecreationRecords(db);
   const chatStreams=new Map(),chatRequests=new WeakMap();let chatStatement;
   const chatItems=room=>(chatStatement??=db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`)).all(room).reverse();
   function emitChat(room){const payload='data: '+JSON.stringify({items:chatItems(room)})+'\n\n';for(const response of chatStreams.get(room)||[]){if(response.destroyed||response.writableLength>262144){response.destroy();chatStreams.get(room).delete(response);}else response.write(payload);}}
@@ -218,6 +220,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     const id=employee.id;let data={};
     try {
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,path==='/api/player/forum/notifications'?8192:2500000);
+      if(path==='/api/player/recreation-rankings'&&req.method==='GET'){send(res,200,recreationRecords.rankings());return true;}
       if(path==='/api/player/state'&&req.method==='GET') {
         const bootstrap=url.searchParams.get('bootstrap')==='1',section=url.searchParams.get('section');
         if(section&&!['news','departments','containment','forum','casino','life'].includes(section))throw new Error('未知页面。');
@@ -227,7 +230,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
-          achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
+          slotProtocols:recreationRecords.unlocks(id),achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
           history:[],
           employees:!include('departments')?[]:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:!(include('departments')||include('life'))?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),

@@ -1,3 +1,4 @@
+import {installCardRankings} from './server-card-rankings.mjs';
 import {createInputTiming} from './server-input-timing.mjs';
 import {randomInt,randomUUID} from 'node:crypto';
 import './public/ddz-rules.js';
@@ -81,6 +82,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  db.exec('CREATE TABLE IF NOT EXISTS card_table_rooms(id TEXT PRIMARY KEY,state_json TEXT NOT NULL,updated_at INTEGER NOT NULL)');
  db.exec("DROP TABLE IF EXISTS card_auto_preferences;CREATE TABLE IF NOT EXISTS card_bot_preferences(employee_id INTEGER PRIMARY KEY,level TEXT NOT NULL CHECK(level IN ('easy','standard','smart')))");
  const botLevel=id=>db.prepare('SELECT level FROM card_bot_preferences WHERE employee_id=?').get(id)?.level||'standard';
+ const rankings=installCardRankings(db,clock);
  const wallet=installCardWallet({db,balanceFor,recordLedger,gameTax});
  const rooms=new Map(),streams=new Set(),watchers=new Map(),reactions=createCardReactions({clock}),input=createInputTiming({clock});
  const vacantRoomTimeoutMs=30*60*1000,hostDisconnectGraceMs=30*1000;
@@ -117,6 +119,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  // All mutations (including automatic turns) persist together with money. Restore memory on rollback.
  function mutate(r,fn,deferBroadcast=false){const previous=r?structuredClone(r):null,existed=r&&rooms.has(r.id);db.exec('BEGIN IMMEDIATE');try{
   const result=fn();if(r){wallet.settle(r);if(r.game?.phase==='ended'&&previous?.game?.phase!=='ended'){
+    rankings.record(r);
     r.readyCycle=r.mode==='online';r.hostStartDeadline=0;
     r.seats=r.seats.map(p=>p?.detached?null:p);
     r.seats.forEach(p=>{if(p){p.ready=!!p.bot||r.mode==='solo';p.readyDeadline=!p.ready&&r.readyCycle?clock()+cardReadyTimeoutMs:0;}});
@@ -175,6 +178,7 @@ export function installCardTables({db,send,readBody,requireEmployee,sessionEmplo
  return {close(){input.clear();clearImmediate(broadcastTask);pendingBroadcasts.clear();cancel(timer);cancel(cleanup);reactions.close();for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/card-table'))return false;
   const actor=requireEmployee(req,res);if(!actor)return true;
+  if(url.pathname==='/api/player/card-table/rankings'&&req.method==='GET'){send(res,200,rankings.list());return true;}
   if(url.pathname==='/api/player/card-table/rooms'&&req.method==='GET'){
    const current=roomFor(actor.id),items=[...rooms.values()].filter(r=>r.mode==='online'&&humans(r).length).map(r=>{const phase=r.game?.phase||'waiting',players=r.seats.filter(p=>p&&(!p.detached||playing(r))).length;
     return {id:r.id,size:r.size,players,hostName:r.seats.find(p=>p?.id===r.host)?.name||'员工',phase,base:r.base||100,spectators:[...watchers.values()].filter(w=>w.roomId===r.id).length,canWatch:true,canJoin:players<r.size&&['waiting','ended'].includes(phase),updatedAt:r.updatedAt};

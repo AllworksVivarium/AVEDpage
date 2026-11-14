@@ -18,3 +18,18 @@
  #inner-app-view .card-room-lobby :is(button,select,strong,[data-room-current]){font-size:12px!important;line-height:1.4!important}
  #inner-app-view .card-room-lobby :is(small,p,article>span){font-size:11px!important;line-height:1.5!important}
 }
+
+.card-rankings{margin-top:12px;border-top:1px solid var(--inner-border-soft);padding-top:8px}
+.card-rankings summary{cursor:pointer;font-weight:600;padding:4px 0}
+.card-rankings>p{font-size:11px;color:var(--inner-text-muted)}
+.card-rankings [data-rank-content]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card-rankings section{background:var(--inner-card-bg);padding:10px;border:1px solid var(--inner-border-soft);min-width:0}
+.card-rankings h4{font-size:14px;margin:0 0 8px}
+.card-rankings ol{list-style:none;padding:0;margin:0}
+.card-rankings li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;padding:6px 0;border-top:1px solid var(--inner-border-soft);font-size:12px}
+.card-rankings li b{overflow-wrap:anywhere;font-weight:500}.card-rankings li>span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:420px){.card-rankings [data-rank-content]{grid-template-columns:1fr}}
+
+@layer aved-personal { #inner-app-view .card-rankings section {background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important} #inner-app-view .card-rankings section :is(h4,p,b,span){color:var(--inner-text-main)!important} #inner-app-view .card-rankings>p{color:inherit!important;opacity:.8} }
+
+.card-rankings{padding:10px 12px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft)}

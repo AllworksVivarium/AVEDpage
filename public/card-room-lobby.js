@@ -8,6 +8,13 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
   if(parent===home)document.getElementById('daily-allocation').after(root);else parent.prepend(root);
   return root;
  });
+ function addBoard(parent,url,groups){
+  const board=document.createElement('details');board.className='card-rankings';board.innerHTML='<summary>战绩榜</summary><div data-rank-content></div>';parent.append(board);let busy=false;
+  board.ontoggle=async()=>{if(!board.open||busy)return;busy=true;const content=board.querySelector('[data-rank-content]'),owner=getUser()?.id;content.textContent='正在读取…';try{const data=await api(url);if(getUser()?.id!==owner){content.textContent='';return;}content.innerHTML=groups.map(([title,key,unit])=>'<section><h4>'+title+'</h4>'+(data[key]?.length?'<ol>'+data[key].map(r=>'<li><span>'+r.rank+'</span><b>'+esc(r.name)+'</b><span>'+Number(r.wins??r.value).toLocaleString()+' '+unit+'</span></li>').join('')+'</ol>':'<p>暂无战绩</p>')+'</section>').join('');}catch(e){content.textContent=e.message;}finally{busy=false;}};
+ }
+ addBoard(table,'/api/player/card-table/rankings',[['最强太姥榜','landlord','胜'],['最强少姥榜','farmers','胜']]);
+ addBoard(document.getElementById('game-panel-skydive'),'/api/player/recreation-rankings',[['安全落地榜','skySafe','次'],['最深开伞榜','skyDepth','米']]);
+ addBoard(document.getElementById('game-panel-derby'),'/api/player/recreation-rankings',[['竞猜命中榜','derby','次']]);
  let current=null,items=[],busy=false,inflight=null,owner=null,lastFetch=0;
  const visible=()=>!!getUser()&&!document.hidden&&!casino.classList.contains('hidden')&&(!home.classList.contains('hidden')||!table.classList.contains('hidden')&&table.dataset.cardPhase==='idle');
  function status(text){for(const root of roots){const el=root.querySelector('[data-room-status]');el.textContent=text;el.hidden=!text;}}
