@@ -18,7 +18,9 @@
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');let frame=0,last=0;
  // Fine, low-amplitude screen-space grain. GPU path has no repeated image tiles.
  let gl=null,paintGrain=null,clearGrain=()=>{};
- try{gl=snow.getContext('webgl',{alpha:true,premultipliedAlpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});}catch{}
+ const appleTouch=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+ // Keep the same grain on touch Apple devices without a transparent WebGL compositing layer.
+ try{if(!appleTouch)gl=snow.getContext('webgl',{alpha:true,premultipliedAlpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});}catch{}
  if(gl){
   const compile=(type,code)=>{const shader=gl.createShader(type);gl.shaderSource(shader,code);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error('grain shader');return shader;};
   try{
@@ -38,6 +40,7 @@
    paintGrain=now=>{gl.viewport(0,0,snow.width,snow.height);gl.uniform1f(seed,Math.floor(now/(1000/45))%4096);gl.uniform1f(strength,innerWidth<768?.064:.078);gl.drawArrays(gl.TRIANGLES,0,6);};
    clearGrain=()=>{gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);};
    snow.dataset.grainRenderer='webgl';
+   snow.addEventListener('webglcontextlost',()=>{snow.style.display='none';paintGrain=clearGrain=()=>{};});
    gl.deleteShader(vertex);gl.deleteShader(fragment);
   }catch{gl=null;}
  }

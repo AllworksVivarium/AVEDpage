@@ -301,7 +301,7 @@
       });
 
 
-      const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const nextPaint=()=>AVEDStartup.within(new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))),500,()=>undefined);
       const terminalArtCache=AVEDStartup.assetCache({urls:window.AVEDCriticalArt});
       async function prepareTerminalArt(){
         const cached=terminalArtCache.cached;let shown=false;
@@ -1567,17 +1567,23 @@
         const art=await prepareTerminalArt();
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
-        document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
-        landingView.classList.add('hidden');innerAppView.classList.remove('hidden');
+        // Prepare behind the connection screen; keep the gateway until rendering succeeds.
+        innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
         renderScratchTiersAndLobby();initSlot5x3Game();restorePlayerRoute(true);
         communityUI.refresh();
 
         // Chat streams open only while their game panel is visible.
         startChatStreams();
+        document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
+        landingView.classList.add('hidden');innerAppView.classList.remove('intranet-preparing');
         await nextPaint();
         if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
+        }catch(error){
+          currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+          document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
+          throw error;
         }finally{innerAppView.classList.remove('intranet-preparing');}
       }
       function renderCompanyNewsView(){
