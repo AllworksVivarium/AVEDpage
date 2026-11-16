@@ -163,17 +163,20 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(indexClose.status,200);assert.equal(indexClose.data.items.find(s=>s.code==='KARMA').holding,0);
   const indexCosts=fee(indexBuy.data.items.find(s=>s.code==='KARMA').positionNotional)+fee(shortLot.positionNotional)+fee(shortExit.data.items.find(s=>s.code==='KARMA').price*2)+fee(indexClose.data.items.find(s=>s.code==='KARMA').price*2);
   assert.equal(indexClose.data.balance,10000000-indexCosts,'closing releases margin and both directions pay their actual notional fees');
-  for(const side of ['long','short']){
+  for(const leverage of [1,10])for(const side of ['long','short']){
     const before=(await player('/api/me')).data.balance;
-    const opened=await player('/api/player/stocks',{code:'KARMA',intent:'open',side,quantity:2,leverage:1,price:1});
+    const opened=await player('/api/player/stocks',{code:'KARMA',intent:'open',side,quantity:2,leverage,price:1});
     assert.equal(opened.status,200);
     const position=opened.data.items.find(s=>s.code==='KARMA');
     assert.equal(position.holding,side==='long'?2:-2);
-    assert.equal(position.marginUsed,position.positionNotional,'1x reserves the full server-priced notional');
-    assert.equal(position.effectiveLeverage,1);
+    assert.equal(position.marginUsed,Math.ceil(position.positionNotional/leverage),'reserves the server-priced margin');
+    assert.equal(position.effectiveLeverage,leverage);
     assert.equal(opened.data.balance,before-position.marginUsed-fee(position.positionNotional));
-    const closed=await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:2,leverage:1});
+    const incomeCursor=(await player('/api/player/income-events')).data.cursor;
+    const closed=await player('/api/player/stocks',{code:'KARMA',intent:'close',quantity:2,leverage});
     assert.equal(closed.status,200);
+    const income=(await player('/api/player/income-events?after='+incomeCursor)).data;
+    assert.equal(income.items.reduce((sum,row)=>sum+row.amount,0),closed.data.balance-opened.data.balance,'spoken stock credit equals the cash balance increase, including released margin and exit fees');
     const exit=closed.data.items.find(s=>s.code==='KARMA');
     const pnl=(side==='long'?1:-1)*(exit.price*2-position.positionNotional);
     assert.equal(closed.data.balance,before+pnl-fee(position.positionNotional)-fee(exit.price*2),'1x returns margin and settles actual PnL minus both fees');

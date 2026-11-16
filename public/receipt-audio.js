@@ -60,6 +60,14 @@
   });
   return out.slice(0,end);
  }
+ // Start speech 200 ms after the coin attack, with a softer tail under the words.
+ function mixReceipt(chime,samples,rate){
+  const voiceStart=Math.round(.2*rate),voiceLength=Math.ceil(samples.length/1.05),output=new Float32Array(Math.max(chime.length,voiceStart+voiceLength));
+  for(let i=0;i<chime.length;i++){const duck=Math.min(1,Math.max(0,(i/rate-.12)/.08));output[i]=chime[i]*(1-duck*.65);}
+  for(let i=0;i<voiceLength;i++){const position=i*1.05,left=Math.floor(position),right=Math.min(samples.length-1,left+1),mix=position-left;output[voiceStart+i]+=samples[left]*(1-mix)+samples[right]*mix;}
+  let peak=1;for(const value of output)peak=Math.max(peak,Math.abs(value));if(peak>1)for(let i=0;i<output.length;i++)output[i]/=peak;
+  return output;
+ }
  function create({AudioContext=root.AudioContext||root.webkitAudioContext,fetcher=root.fetch?.bind(root)}={}){
   const cache=new Map();let context=null,source=null,finish=null,serial=0;
   function unlock(){
@@ -82,10 +90,7 @@
    if(context.state!=='running')throw Error('请点击试听以启用音频播放。');
    const [parts,chime]=await Promise.all([Promise.all(sequence(amount).map(load)),load(amount<100?'chime-small':'chime-large')]);if(token!==serial)return;
    const rate=context.sampleRate,samples=stitch(parts,rate);if(!samples.length)throw Error('音频为空，请重新加载页面。');
-   const voiceStart=Math.round(Math.max(.25,chime.length/rate*.88)*rate),length=Math.max(chime.length,voiceStart+Math.ceil(samples.length/1.05));
-   // Chime retains its original pitch; the spoken phrase follows at the original 88% cue.
-   const output=new Float32Array(length);output.set(chime);
-   for(let i=0;i<Math.ceil(samples.length/1.05);i++){const position=i*1.05,left=Math.floor(position),right=Math.min(samples.length-1,left+1),mix=position-left;output[voiceStart+i]+=samples[left]*(1-mix)+samples[right]*mix;}
+   const output=mixReceipt(chime,samples,rate);
    const buffer=context.createBuffer(1,output.length,rate);buffer.copyToChannel(output,0);
    const gain=context.createGain();gain.gain.value=Math.min(1,Math.max(0,volume));gain.connect(context.destination);
    const node=context.createBufferSource();source=node;node.buffer=buffer;node.connect(gain);
@@ -98,5 +103,5 @@
 
   return {available:!!AudioContext&&!!fetcher,unlock,speak,cancel,close(){cancel();cache.clear();if(context){context.close();context=null;}}};
  }
- root.AVEDReceiptAudio={create,sequence,trim,stitch};
+ root.AVEDReceiptAudio={create,sequence,trim,stitch,mixReceipt};
 })(globalThis);

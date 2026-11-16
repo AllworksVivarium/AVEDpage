@@ -2,11 +2,29 @@
  const KEY='aved_contamination_v1',EVENT='aved-contamination-change',PREVIEW='aved-contamination-preview';
  let requested=false,entitled=false,mountId=0;try{requested=root.localStorage.getItem(KEY)==='on';}catch{}
  const enabled=()=>entitled&&requested;
+ // Shared leases count effect kinds across all three renderers, not individual glyphs.
+ function createEffectBudget(limit=4){
+  const leases=new Set();let bursting=false;
+  const kinds=()=>new Set([...leases].map(lease=>lease.kind));
+  return {get bursting(){return bursting;},get kinds(){return [...kinds()];},
+   acquire(kind,stop=()=>{},{conditional=false}={}){
+    if(conditional)return()=>{};
+    const current=kinds();if(!bursting&&!current.has(kind)&&current.size>=limit)return null;
+    const lease={kind,stop};leases.add(lease);return()=>leases.delete(lease);
+   },
+   setBurst(value){bursting=!!value;if(bursting)return;
+    const ordered=[...kinds()],keep=new Set(['ambient',...ordered.filter(kind=>kind!=='ambient')].slice(0,limit));
+    // Remove the whole kind before callbacks so restoration cannot re-enter the budget.
+    const excess=[...leases].filter(lease=>!keep.has(lease.kind));for(const lease of excess)leases.delete(lease);for(const lease of excess)lease.stop();
+   },
+  };
+ }
+ const budget=createEffectBudget();
  function apply(){const active=enabled();if(root.document.body.classList.contains('signal-contaminated')!==active)root.document.body.classList.toggle('signal-contaminated',active);}
  function changed(){apply();root.document.dispatchEvent(new Event(EVENT));}
  function setEnabled(value){if(value===true&&!entitled)return false;requested=value===true;try{root.localStorage.setItem(KEY,requested?'on':'off');}catch{}changed();return true;}
  function setEntitled(value){const next=value===true;if(next===entitled)return;entitled=next;changed();}
- function preview(kind='zalgo'){if(!enabled())return false;const event=new Event(PREVIEW);event.effect=['zalgo','glitch','background','tear','whisper','cluster','apparition','pointer'].includes(kind)?kind:'zalgo';root.document.dispatchEvent(event);return true;}
+ function preview(kind='zalgo'){if(!enabled())return false;const event=new Event(PREVIEW);event.effect=['zalgo','glitch','background','tear','whisper','cluster','apparition','pointer','portrait-mask','portrait-scribble','presence-away','presence-typing','presence-tracking','presence-repeat','presence-drain','presence-arrival','presence-rename','presence-gaze'].includes(kind)?kind:'zalgo';root.document.dispatchEvent(event);return true;}
  // Random upper / middle / lower combining marks, grouped by Unicode combining class.
  // Generator reference: https://docs.rs/zalgo/latest/src/zalgo/lib.rs.html
  const MARKS=Object.freeze({
@@ -45,12 +63,32 @@
   const filterId='hud-source-displace-'+(++mountId),svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('aria-hidden','true');svg.setAttribute('width','0');svg.setAttribute('height','0');svg.setAttribute('focusable','false');svg.classList.add('hud-pollution-filter');
   svg.innerHTML='<defs><filter id="'+filterId+'" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0 .065" numOctaves="1" seed="7" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 1 0 0  0 0 0 1 0" result="bands"/><feDisplacementMap in="SourceGraphic" in2="bands" scale="12" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="'+filterId+'-type" x="-3%" y="-12%" width="106%" height="124%"><feTurbulence type="fractalNoise" baseFrequency="0 .14" numOctaves="1" seed="19" result="bands"/><feColorMatrix in="bands" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 1 0 0  0 0 0 1 0" result="horizontal"/><feDisplacementMap in="SourceGraphic" in2="horizontal" scale="2.3" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="'+filterId+'-world" x="-4%" y="-3%" width="108%" height="106%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".008 .022" numOctaves="1" seed="11" result="warp"/><feGaussianBlur in="SourceGraphic" stdDeviation="0" result="soft"/><feDisplacementMap in="soft" in2="warp" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
-  shell.append(svg);panel.style.setProperty('--pollution-type-filter','url("#'+filterId+'-type")');panel.style.setProperty('--pollution-source-filter','url("#'+filterId+'")');
-  let timer=0,backgroundTimer=0,backgroundActive=false,stopBurst=()=>{},stopBackground=()=>{},quietUntil=0,disposed=false,wasActive=false;const targets=new Map(),instruments=new Set();
+  svg.querySelector('defs').insertAdjacentHTML('beforeend','<filter id="'+filterId+'-ambient" x="-8%" y="-18%" width="116%" height="136%"><feTurbulence type="fractalNoise" baseFrequency="0 .17" numOctaves="1" seed="23" result="bands"/><feColorMatrix in="bands" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 1 0 0  0 0 0 1 0" result="horizontal"/><feDisplacementMap in="SourceGraphic" in2="horizontal" scale="1.1" xChannelSelector="R" yChannelSelector="G"/></filter>');
+  shell.append(svg);panel.style.setProperty('--pollution-type-filter','url("#'+filterId+'-type")');panel.style.setProperty('--pollution-source-filter','url("#'+filterId+'")');panel.style.setProperty('--pollution-ambient-filter','url("#'+filterId+'-ambient")');
+  let surgeTimer=0,surgeEnd=0,releaseAmbient=null,releaseText=null,releaseWarp=null,releaseChart=null;
+  let timer=0,backgroundTimer=0,backgroundActive=false,backgroundFrame=0,warp=null,ambientTimer=0,ambientScan=0,lastZalgoAt=0,stopBurst=()=>{},stopBackground=()=>{},quietUntil=0,disposed=false,wasActive=false;const targets=new Map(),instruments=new Set();
   const getPane=()=>doc.querySelector('.terminal-content-pane');
-  const allowed=()=>!disposed&&enabled()&&visible()&&!doc.hidden&&!reduced.matches&&root.AVEDEffectsEnabled?.()!==false;
+  const modeAllowed=()=>!disposed&&enabled()&&visible()&&!reduced.matches&&root.AVEDEffectsEnabled?.()!==false;
+  const allowed=()=>modeAllowed()&&!doc.hidden;
+  function scanAmbient(){
+   ambientScan=0;if(!allowed())return;
+   const walker=doc.createTreeWalker(panel,root.NodeFilter.SHOW_TEXT),nodes=[];let node;
+   while((node=walker.nextNode())){
+    const el=node.parentElement;if(!el||!node.nodeValue.trim()||el.closest(excluded+',.hud-ambient-shear'))continue;
+    if(el.checkVisibility&&!el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))continue;
+    const r=el.getBoundingClientRect();if(!r.width||!r.height||r.bottom<0||r.top>root.innerHeight||r.right<0||r.left>root.innerWidth)continue;nodes.push(node);
+   }
+   for(const text of nodes){if(!text.parentNode)continue;const span=doc.createElement('span');span.className='hud-ambient-shear';text.before(span);span.append(text);}
+  }
+  function queueAmbient(){if(allowed()&&!ambientScan)ambientScan=setTimeout(scanAmbient,100);}
+  function ambientTick(){
+   ambientTimer=0;if(!allowed())return;releaseAmbient??=budget.acquire('ambient',clearAmbient);if(!releaseAmbient)return;scanAmbient();const map=svg.querySelector('[id="'+filterId+'-ambient"] feDisplacementMap');
+   const from=Number(map.getAttribute('scale'))||1.1,to=.65+Math.random()*(root.innerWidth<650?1:1.7),start=Date.now(),duration=3500+Math.random()*5500;
+   const step=()=>{ambientTimer=0;if(!allowed())return;const p=Math.min(1,(Date.now()-start)/duration),ease=p*p*(3-2*p);map.setAttribute('scale',String(from+(to-from)*ease));ambientTimer=setTimeout(p<1?step:ambientTick,p<1?250:900+Math.random()*1400);};step();
+  }
+  function clearAmbient(){releaseAmbient?.();releaseAmbient=null;clearTimeout(ambientTimer);clearTimeout(ambientScan);ambientTimer=ambientScan=0;for(const span of panel.querySelectorAll('.hud-ambient-shear'))span.replaceWith(...span.childNodes);}
   function clearText(echo=false){
-   stopBurst();stopBurst=()=>{};
+   stopBurst();stopBurst=()=>{};releaseText?.();releaseText=null;releaseChart?.();releaseChart=null;
    for(const [target,state] of targets){
     if(echo&&target.isConnected)root.AVEDHaunt?.textEcho(state.original,target.getBoundingClientRect(),root.getComputedStyle(target));
     if(target.firstChild===state.run)target.replaceWith(...state.nodes);
@@ -109,21 +147,26 @@
     }
    }
   }
-  async function warpBackground(){
-   if(backgroundActive||!allowed())return;const pane=doc.querySelector('.bar-room:not([hidden])')||getPane();if(!pane)return;
-   backgroundActive=true;const duration=30000+Math.random()*30000,jobs=[];
-   const world=svg.querySelector('[id="'+filterId+'-world"]'),map=world.querySelector('feDisplacementMap'),blur=world.querySelector('feGaussianBlur');
-   world.querySelector('feTurbulence').setAttribute('seed',String(3+Math.floor(Math.random()*20)));
-   pane.style.setProperty('--pollution-world-filter','url("#'+filterId+'-world")');pane.classList.add('hud-world-warp');
-   const restore=()=>{backgroundActive=false;map.setAttribute('scale','0');blur.setAttribute('stdDeviation','0');pane.classList.remove('hud-world-warp');pane.removeAttribute('data-contamination-warp');pane.style.removeProperty('--pollution-world-filter');pane.style.removeProperty('--pollution-background-mask');pane.style.removeProperty('--pollution-original-mask');};
-   const strength=root.innerWidth<650?14:25;
-   const paint=progress=>{const wave=Math.sin(Math.PI*progress),amount=wave*(.75+.25*Math.sin(progress*13));map.setAttribute('scale',String(strength*amount));blur.setAttribute('stdDeviation',String(wave*.25));pane.setAttribute('data-contamination-warp',String(Math.round(amount*5)));if(progress>.75)pane.style.setProperty('--pollution-background-mask','var(--pollution-original-mask)');};
-   paint(.04);const frames=Math.ceil(duration/100);for(let n=1;n<frames;n++)jobs.push(setTimeout(()=>paint(n/frames),duration*n/frames));jobs.push(setTimeout(()=>{paint(1);restore();},duration));stopBackground=()=>{jobs.forEach(clearTimeout);restore();};
-   pane.style.setProperty('--pollution-original-mask',root.getComputedStyle(pane,'::before').maskImage);pane.style.setProperty('--pollution-background-mask','var(--pollution-original-mask)');
+  function detachWarp(pane){if(!pane)return;pane.classList.remove('hud-world-warp');for(const name of ['data-contamination-warp','data-contamination-start','data-contamination-until'])pane.removeAttribute(name);for(const name of ['--pollution-world-filter','--pollution-background-mask','--pollution-original-mask'])pane.style.removeProperty(name);}
+  function paintWarp(){
+   clearTimeout(backgroundFrame);backgroundFrame=0;if(!warp)return;
+   const now=Date.now(),world=svg.querySelector('[id="'+filterId+'-world"]'),map=world.querySelector('feDisplacementMap'),blur=world.querySelector('feGaussianBlur');
+   if(now>=warp.until||!modeAllowed()){stopBackground();return;}if(doc.hidden)return;
+   const pane=doc.querySelector('.bar-room:not([hidden])')||getPane();
+   if(pane!==warp.pane){detachWarp(warp.pane);warp.pane=pane;if(pane){pane.style.setProperty('--pollution-world-filter','url("#'+filterId+'-world")');pane.classList.add('hud-world-warp');pane.setAttribute('data-contamination-start',String(warp.start));pane.setAttribute('data-contamination-until',String(warp.until));pane.style.setProperty('--pollution-original-mask',root.getComputedStyle(pane,'::before').maskImage);pane.style.setProperty('--pollution-background-mask','var(--pollution-original-mask)');}}
+   const progress=Math.min(1,(now-warp.start)/(warp.until-warp.start)),wave=Math.sin(Math.PI*Math.max(.025,progress)),amount=wave*(.75+.25*Math.sin(progress*13));
+   map.setAttribute('scale',String(warp.strength*amount));blur.setAttribute('stdDeviation',String(wave*.25));pane?.setAttribute('data-contamination-warp',String(Math.round(amount*5)));backgroundFrame=setTimeout(paintWarp,100);
+  }
+  function warpBackground(){
+   if(!allowed())return;if(backgroundActive){paintWarp();return;}
+   releaseWarp=budget.acquire('warp',()=>stopBackground());if(!releaseWarp)return;
+   const start=Date.now();warp={start,until:start+30000+Math.random()*30000,strength:root.innerWidth<650?14:25,pane:null};backgroundActive=true;
+   const world=svg.querySelector('[id="'+filterId+'-world"]');world.querySelector('feTurbulence').setAttribute('seed',String(3+Math.floor(Math.random()*20)));
+   stopBackground=()=>{releaseWarp?.();releaseWarp=null;clearTimeout(backgroundFrame);backgroundFrame=0;detachWarp(warp?.pane);warp=null;backgroundActive=false;world.querySelector('feDisplacementMap').setAttribute('scale','0');world.querySelector('feGaussianBlur').setAttribute('stdDeviation','0');};paintWarp();
   }
   function backgroundTick(){backgroundTimer=0;if(!allowed())return;if(Date.now()<quietUntil){backgroundTimer=setTimeout(backgroundTick,quietUntil-Date.now()+1000);return;}void warpBackground();backgroundTimer=setTimeout(backgroundTick,75000+Math.random()*65000);}
   function pulse(kind){
-   clearText();if(!allowed())return;const clustered=kind==='cluster';if(clustered){kind='zalgo';void warpBackground();}if(kind==='background'){void warpBackground();return;}
+   clearText();if(!allowed())return;const clustered=kind==='cluster';if(clustered){kind='tear';void warpBackground();}if(kind==='background'){void warpBackground();return;}releaseText=budget.acquire(kind==='tear'?'ambient':kind,()=>clearText());if(!releaseText)return;if(kind==='zalgo')lastZalgoAt=Date.now();
    const candidates={main:[],regular:[],small:[]},headingCandidates=[],walker=doc.createTreeWalker(panel,root.NodeFilter.SHOW_TEXT);
    let node;
    while((node=walker.nextNode())){
@@ -151,20 +194,26 @@
    for(const text of chosen){const wrapper=doc.createElement('span');text.before(wrapper);wrapper.append(text);prepareText(wrapper,kind);if(clustered){targets.get(wrapper).run.dataset.clustered='true';targets.get(wrapper).run.classList.add('hud-text-shear');}}
    if(kind==='glitch'||clustered){
     const charts=Array.from(panel.querySelectorAll('.hud-signal canvas,.hud-radar>svg,.hud-channel canvas,.hud-optical-bars')).filter(el=>{const r=el.getBoundingClientRect();return r.bottom>0&&r.top<root.innerHeight;});
-    if(charts.length){const chart=charts[Math.floor(Math.random()*charts.length)];chart.classList.add(clustered?'hud-source-decay':'hud-source-fracture');instruments.add(chart);}
+    if(charts.length){releaseChart=budget.acquire('chart',()=>{for(const chart of instruments)chart.classList.remove('hud-source-fracture','hud-source-decay');instruments.clear();});if(releaseChart){const chart=charts[Math.floor(Math.random()*charts.length)];chart.classList.add(clustered?'hud-source-decay':'hud-source-fracture');instruments.add(chart);}}
    }
    if(kind==='zalgo'&&Math.random()<.3)void warpBackground();
-   panel.setAttribute('data-contamination-pulse',kind);if(kind==='tear'){const job=setTimeout(()=>clearText(true),3000+Math.random()*5000);stopBurst=()=>clearTimeout(job);return;}stopBurst=kind==='glitch'?animateBurst(paintGlitch,()=>clearText(true),{changes:Math.random()<.5?2:3}):animateGrowth(paintGrowth,()=>clearText(true));
+   panel.setAttribute('data-contamination-pulse',kind);if(kind==='tear'&&!clustered){const job=setTimeout(()=>clearText(true),3000+Math.random()*5000);stopBurst=()=>clearTimeout(job);return;}stopBurst=kind==='glitch'?animateBurst(paintGlitch,()=>clearText(true),{changes:Math.random()<.5?2:3}):animateGrowth(paintGrowth,()=>clearText(true));
   }
-  function tick(kind){timer=0;if(!allowed())return;if(Date.now()<quietUntil){timer=setTimeout(tick,quietUntil-Date.now());return;}const draw=Math.random();pulse(typeof kind==='string'?kind:draw<.28?'zalgo':draw<.8?'glitch':'tear');timer=setTimeout(tick,20000+Math.random()*22000);}
-  function sync(force=false){const active=allowed();if(!active){clearTimeout(timer);clearTimeout(backgroundTimer);timer=backgroundTimer=0;clear();}else if(!wasActive||force===true){clearTimeout(timer);clear();timer=setTimeout(tick,6000+Math.random()*6000);if(!backgroundTimer)backgroundTimer=setTimeout(backgroundTick,18000+Math.random()*12000);}wasActive=active;}
-  const onChange=()=>sync(true),onPreview=event=>{if(!['zalgo','glitch','background','tear','cluster','quiet'].includes(event.effect))return;clearTimeout(timer);if(event.effect==='quiet'){clear();quietUntil=Date.now()+event.duration;timer=setTimeout(()=>tick('cluster'),event.duration);return;}quietUntil=0;tick(event.effect);};
+  function tick(kind){clearTimeout(timer);timer=0;if(!allowed())return;if(!budget.bursting&&Date.now()<quietUntil){timer=setTimeout(tick,quietUntil-Date.now());return;}const draw=Math.random(),chosen=typeof kind==='string'?kind:draw<.10&&Date.now()-lastZalgoAt>=150000?'zalgo':draw<.8?'glitch':'tear';pulse(chosen);const delay=chosen==='zalgo'||chosen==='cluster'?16000:0;timer=setTimeout(tick,Math.max(delay,budget.bursting?1800+Math.random()*1600:22000+Math.random()*20000));}
+  function surgeEvent(){const event=new Event('aved-contamination-surge');event.active=budget.bursting;doc.dispatchEvent(event);}
+  function endSurge(){clearTimeout(surgeEnd);surgeEnd=0;budget.setBurst(false);surgeEvent();}
+  function startSurge(){clearTimeout(surgeTimer);clearTimeout(surgeEnd);surgeTimer=surgeEnd=0;if(!allowed())return;budget.setBurst(true);quietUntil=0;surgeEvent();warpBackground();tick('cluster');surgeEnd=setTimeout(()=>{endSurge();scheduleSurge();},16000+Math.random()*4000);}
+  function scheduleSurge(){clearTimeout(surgeTimer);surgeTimer=setTimeout(startSurge,90000+Math.random()*120000);}
+  function sync(force=false){const active=allowed();if(!active){clearTimeout(surgeTimer);surgeTimer=0;if(surgeEnd)endSurge();clearTimeout(timer);clearTimeout(backgroundTimer);timer=backgroundTimer=0;clearTimeout(ambientTimer);ambientTimer=0;clearText();if(!modeAllowed()){clear();clearAmbient();}else{clearTimeout(backgroundFrame);backgroundFrame=0;}}else if(!wasActive||force===true){clearTimeout(timer);clearText();timer=setTimeout(tick,6000+Math.random()*6000);if(!surgeTimer&&!surgeEnd)scheduleSurge();if(!backgroundTimer)backgroundTimer=setTimeout(backgroundTick,18000+Math.random()*12000);if(!ambientTimer)ambientTick();if(warp)paintWarp();}wasActive=active;}
+  const onChange=()=>sync(true),onPreview=event=>{if(!['zalgo','glitch','background','tear','cluster','quiet'].includes(event.effect))return;clearTimeout(timer);if(event.effect==='quiet'){clearText();quietUntil=Date.now()+event.duration;timer=setTimeout(startSurge,event.duration);return;}quietUntil=0;if(event.effect==='cluster')startSurge();else tick(event.effect);};
   const observer=new MutationObserver(()=>sync());observer.observe(doc.body,{attributes:true,attributeFilter:['class']});
-  const onRoute=()=>{clear();sync(true);};
+  const onRoute=()=>{clearText();sync();if(warp)paintWarp();queueAmbient();};
   const visibilityObserver=new MutationObserver(records=>{if(records.some(({target})=>target.id==='inner-app-view'||/^(view-|game-panel-)/.test(target.id)||target.classList.contains('bar-room')))onRoute();});visibilityObserver.observe(panel,{subtree:true,attributes:true,attributeFilter:['class','hidden']});
+  const ambientObserver=new MutationObserver(records=>{if(records.some(record=>!record.target.parentElement?.closest(excluded+',.hud-ambient-shear')&&[...record.addedNodes].some(node=>node.nodeType===3||node.nodeType===1&&!node.matches(excluded+',.hud-ambient-shear'))))queueAmbient();});ambientObserver.observe(panel,{subtree:true,childList:true});
+  doc.addEventListener('scroll',queueAmbient,{capture:true,passive:true});root.addEventListener('resize',queueAmbient,{passive:true});
   for(const event of ['hashchange','popstate','aved-bar-change'])root.addEventListener(event,onRoute);
   doc.addEventListener(EVENT,onChange);doc.addEventListener(PREVIEW,onPreview);for(const event of ['visibilitychange','aved-effects-change'])doc.addEventListener(event,sync);reduced.addEventListener('change',sync);sync();
-  return()=>{disposed=true;clearTimeout(timer);clearTimeout(backgroundTimer);clear();observer.disconnect();visibilityObserver.disconnect();svg.remove();for(const event of ['hashchange','popstate','aved-bar-change'])root.removeEventListener(event,onRoute);panel.style.removeProperty('--pollution-source-filter');panel.style.removeProperty('--pollution-type-filter');doc.removeEventListener(EVENT,onChange);doc.removeEventListener(PREVIEW,onPreview);for(const event of ['visibilitychange','aved-effects-change'])doc.removeEventListener(event,sync);reduced.removeEventListener('change',sync);};
+  return()=>{disposed=true;clearTimeout(surgeTimer);endSurge();clearTimeout(timer);clearTimeout(backgroundTimer);clear();clearAmbient();observer.disconnect();visibilityObserver.disconnect();ambientObserver.disconnect();svg.remove();doc.removeEventListener('scroll',queueAmbient,true);root.removeEventListener('resize',queueAmbient);for(const event of ['hashchange','popstate','aved-bar-change'])root.removeEventListener(event,onRoute);panel.style.removeProperty('--pollution-source-filter');panel.style.removeProperty('--pollution-type-filter');panel.style.removeProperty('--pollution-ambient-filter');doc.removeEventListener(EVENT,onChange);doc.removeEventListener(PREVIEW,onPreview);for(const event of ['visibilitychange','aved-effects-change'])doc.removeEventListener(event,sync);reduced.removeEventListener('change',sync);};
  }
  let currentDialog=null;
  // Native modal focus and backdrop behavior: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog
@@ -209,6 +258,6 @@
  async function requestDisable(){if(!enabled())return true;const confirmed=await specialConfirm('stop');if(confirmed)setEnabled(false);return confirmed;}
  async function beforeLogout(){if(!enabled())return true;await specialConfirm('logout');return false;}
  function startGlobal(){const panel=root.document.getElementById('inner-app-view');if(panel)mount(root.document.body,()=>!panel.classList.contains('hidden')&&root.document.body.classList.contains('theme-inner'));}
- apply();root.AVEDContamination={enabled,setEnabled,setEntitled,preview,mount,zalgo,animateBurst,animateGrowth,TIMING,createMarkPlan,MARKS,quietFor(duration){const event=new Event(PREVIEW);event.effect='quiet';event.duration=duration;root.document.dispatchEvent(event);},confirmStart:()=>specialConfirm('start'),requestDisable,beforeLogout};
+ apply();root.AVEDContamination={budget,createEffectBudget,enabled,setEnabled,setEntitled,preview,mount,zalgo,animateBurst,animateGrowth,TIMING,createMarkPlan,MARKS,quietFor(duration){const event=new Event(PREVIEW);event.effect='quiet';event.duration=duration;root.document.dispatchEvent(event);},confirmStart:()=>specialConfirm('start'),requestDisable,beforeLogout};
  if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',startGlobal,{once:true});else if(root.document.getElementById)startGlobal();
 })(window);

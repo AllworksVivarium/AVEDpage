@@ -421,6 +421,7 @@
         if(!currentUser)return;
         if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
         if(target==='welcome'){showProfile().catch(e=>showToast(e.message));return;}
+        barUI?.leave({navigation:false});
         const path=target==='casino'?(AVEDStartup.gamePath(game)||AVEDStartup.gamePath('home')):'#/'+target;
         if(navigation==='none'&&renderedPlayerRoute===path&&location.hash===path)return;
         if(location.hash!==path){
@@ -1758,6 +1759,7 @@
             d.result.mechanisms.forEach(i=>slot5x3Mechanisms[i].discovered=true);
             byId('slot5x3-win-summary').innerHTML=AVEDGameResults.html(d);currentUser.balance=d.balance;syncUserHeaderUI();renderSlot5x3Board();renderSlot5x3History();
             if(showSlotAward){slotEffects.show(d);window.AVEDPersonalRecord.show(d.gameHighlight);}
+            window.AVEDIncomeVoice?.changed();
           }
           else if(id==='skydive-board-btn'){const input=byId('sky-bet-input')||byId('skydive-bet-input');const d=await api('/api/player/games/sky/start',{method:'POST',body:{bet:Number(input?.value||10000),round:skyUI.round()}});renderSky(d);skyUI.feedback('您已登机');}
           else if(trade){
@@ -1812,7 +1814,7 @@
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         const ticket=activeIssuedTicket;ticket.settled=true;
-        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'测试 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;};
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'测试 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;if(!ticket.demo)window.AVEDIncomeVoice?.changed();};
         finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');

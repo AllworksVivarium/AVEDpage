@@ -66,3 +66,24 @@ test('controller keeps settings, seeds ledger before announcing and isolates a c
   assert.equal(spoken.length,1);await controller.update({enabled:false});assert.ok(storage.get('aved_income_speech_v1').includes('"enabled":false'));
  }finally{controller.close();}
 });
+
+ test('revealing a prize wakes its held voice immediately without waiting for the retry',async()=>{
+ let allowed=false;const spoken=[],jobs=new Map();let next=0;
+ const queue=createQueue({allowed:()=>allowed,speak:async(text,amount)=>spoken.push(amount),cancel(){},schedule:fn=>{jobs.set(++next,fn);return next;},unschedule:id=>jobs.delete(id)});
+ queue.configure({enabled:true,mode:'merge'});queue.add(110);queue.wake();await flush();assert.equal(spoken.length,0);
+ allowed=true;queue.wake();await flush();assert.deepEqual(spoken,[110]);assert.equal(jobs.size,0);queue.clear();
+});
+
+ test('a credit arriving during a pending poll triggers a fresh read rather than waiting for the periodic poll',async()=>{
+ const requests=[],spoken=[];const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const recorded={available:true,unlock:async()=>{},cancel(){},close(){},speak:async n=>spoken.push(n)};
+ const controller=create({recorded,api:()=>new Promise(resolve=>requests.push(resolve)),getUser:()=>({id:1}),storage:{getItem:()=>null,setItem(){}},doc:{hidden:false,addEventListener(){},removeEventListener(){}}});
+ try{
+  controller.setSession(1);await controller.update({enabled:true,mode:'queue'});await sleep(15);
+  requests.shift()({cursor:5,items:[]});await flush();
+  controller.changed();await sleep(15);assert.equal(requests.length,1);
+  controller.changed();await sleep(15);
+  requests.shift()({cursor:5,items:[]});await sleep(15);assert.equal(requests.length,1);
+  requests.shift()({cursor:6,items:[{id:6,amount:321}]});await sleep(15);assert.deepEqual(spoken,[321]);
+ }finally{for(const resolve of requests)resolve({cursor:6,items:[]});controller.close();}
+});

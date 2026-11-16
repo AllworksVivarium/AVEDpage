@@ -31,8 +31,8 @@
     if(mode==='merge'&&items.length&&Number.isSafeInteger(items[0]+amount))items[0]+=amount;
     else if(items.length<100)items.push(amount);
     else if(Number.isSafeInteger(items.at(-1)+amount))items[items.length-1]+=amount;
-    if(!current&&timer===null)timer=schedule(drain,mode==='merge'?600:0);
-   },clear,
+    if(!current&&timer===null)timer=schedule(drain,mode==='merge'?150:0);
+   },wake(){if(timer!==null)unschedule(timer);timer=null;drain();},clear,
    state:()=>({items:[...items],current})
   };
  }
@@ -41,7 +41,7 @@
   let saved={};try{saved=JSON.parse(storage.getItem(KEY)||'{}')||{};}catch{}
   let settings={...defaults,...Object.fromEntries(Object.entries(saved).filter(([key])=>key in defaults))};
   settings.enabled=settings.enabled===true;if(!modes.includes(settings.mode))settings.mode='merge';settings.volume=Math.min(1,Math.max(0,Number(settings.volume)||0));
-  let ready=false,activated=false,error='',owner=null,cursor=null,busy=false,pollTimer=null,version=0,lastPoll=0,seedAfterFlight=false;
+  let ready=false,activated=false,error='',owner=null,cursor=null,busy=false,pollTimer=null,version=0,lastPoll=0,seedAfterFlight=false,repoll=false;
   const listeners=new Set(),notify=()=>listeners.forEach(fn=>fn());
   function stopEngine(){recorded?.cancel();}
   function speak(text,amount){return recorded.speak(amount,settings.volume);}
@@ -51,14 +51,14 @@
   function unlock(){return recorded?.unlock()||Promise.reject(Error('请使用支持音频播放的浏览器。'));}
   function setSession(id,initialCursor=null){if(owner===id)return;owner=id;cursor=Number.isSafeInteger(initialCursor)?initialCursor:null;version++;queue.clear();if(settings.enabled)requestPoll();}
   function active(){return settings.enabled&&activated&&ready&&!doc.hidden&&!!getUser()?.id&&getUser().id===owner;}
-  async function poll(){pollTimer=null;if(!active()||busy)return;busy=true;const id=owner,token=version;
+  async function poll(){pollTimer=null;if(!active())return;if(busy){repoll=true;return;}busy=true;const id=owner,token=version;
    try{const seeded=cursor!==null,data=await api('/api/player/income-events'+(seeded?'?after='+cursor:''),{retries:0});if(token!==version||id!==getUser()?.id||!settings.enabled)return;
     cursor=data.cursor;
     if(seeded&&active())for(const row of data.items||[])queue.add(row.amount);
     if(data.more)requestPoll(250);
-   }catch{}finally{busy=false;lastPoll=Date.now();if(seedAfterFlight){seedAfterFlight=false;cursor=null;requestPoll();}}
+   }catch{}finally{busy=false;lastPoll=Date.now();if(seedAfterFlight){seedAfterFlight=false;cursor=null;requestPoll();}else if(repoll){repoll=false;requestPoll(0);}}
   }
-  function requestPoll(delay=500){if(pollTimer!==null||!active())return;pollTimer=setTimeout(poll,delay);}
+  function requestPoll(delay=100){if(!active())return;if(pollTimer!==null){if(delay>0)return;clearTimeout(pollTimer);}pollTimer=setTimeout(poll,delay);}
   async function update(next){
    const wasEnabled=settings.enabled;settings={...settings,...Object.fromEntries(Object.entries(next).filter(([key])=>key in defaults))};settings.enabled=settings.enabled===true;if(!modes.includes(settings.mode))settings.mode='merge';settings.volume=Math.min(1,Math.max(0,Number(settings.volume)||0));
    try{storage.setItem(KEY,JSON.stringify(settings));}catch{}
@@ -75,7 +75,7 @@
   if(settings.enabled)initialize();
   return {settings:()=>({...settings}),status:()=>({ready,activated,error}),update,preview,
    subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},prepare:initialize,setSession,
-   changed(){if(canSpeak())requestPoll();},clear(){queue.clear();},
+   changed(){if(canSpeak()){queue.wake();requestPoll(0);}},clear(){queue.clear();},
    close(){clearInterval(timer);clearTimeout(pollTimer);queue.clear();recorded?.close();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('visibilitychange',visibility);}
   };
  }

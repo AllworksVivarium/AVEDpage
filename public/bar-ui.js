@@ -9,7 +9,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  document.body.append(root);
  const $=selector=>root.querySelector(selector),menu=$('.bar-menu-dialog'),log=$('[data-bar-log]'),messages=$('[data-bar-messages]'),feedback=$('[data-bar-feedback]');
  let open=false,version=0,source=null,snapshot=null,drinks=[],returnHash='#/profile',welcomeTimer=0,bubbleTimer=0,chatterTimer=0,olderBusy=false,nextBefore=null,paginationStarted=false,selection=null,buying=false,pendingOrder=null,chatBusy=false,layout='';
- const stored=(key,fallback)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};let muted=stored('aved_bar_music_muted',stored('aved_sfx_v1','on')==='off'?'true':'false')==='true';const music=AVEDBarAudio({onError:()=>{muted=true;paintMusic();tell('音乐暂时无法播放。');}});let volume=Math.max(0,Math.min(100,Number(stored('aved_bar_volume','35'))||0));music.volume(volume);$('[data-bar-volume]').value=volume;$('[data-bar-volume]').oninput=e=>{volume=Number(e.target.value);music.volume(volume);try{localStorage.setItem('aved_bar_volume',String(volume));}catch{}};
+ const stored=(key,fallback)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};let muted=stored('aved_bar_music_muted',stored('aved_sfx_v1','on')==='off'?'true':'false')==='true';const mayPlayMusic=()=>open&&!root.hidden&&location.hash==='#/bar'&&!document.hidden;const music=AVEDBarAudio({canPlay:mayPlayMusic,onError:()=>{muted=true;paintMusic();tell('音乐暂时无法播放。');}});let volume=Math.max(0,Math.min(100,Number(stored('aved_bar_volume','35'))||0));music.volume(volume);$('[data-bar-volume]').value=volume;$('[data-bar-volume]').oninput=e=>{volume=Number(e.target.value);music.volume(volume);try{localStorage.setItem('aved_bar_volume',String(volume));}catch{}};
  const identity=$('[name=identityMode]');identity.onchange=()=>{const id=getUser()?.id;if(id)try{localStorage.setItem('aved_bar_identity_'+id,identity.value);}catch{}};
  const personal=AVEDBarPersonal({root,api,esc,onChange:data=>{if(!open||!snapshot)return;snapshot.barPreferences=data.barPreferences;if(data.myDrink!==undefined)snapshot.myDrink=data.myDrink;paintGlasses();}});
  const play=AVEDBarPlay({root,api,esc,getSnapshot:()=>snapshot?{...snapshot,menu:drinks}:null,getIdentity:()=>identity.value,apply:data=>receive(data),onError:message=>tell(message)});
@@ -35,7 +35,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  function localGreeting(){const hour=new Date().getHours();const lines=greetings.find(slot=>hour>=slot.from&&hour<slot.to).lines;return lastGreeting=pickLine(lines,lastGreeting);}
  function localChatter(){const lines=smallTalk.filter(line=>line!=='今天这里还挺热闹。'||(snapshot?.onlineCount||0)>=4).filter(line=>line!=='这杯颜色不错。'||snapshot?.myDrink);return lastChatter=pickLine(lines,lastChatter);}
  function bubble(text,duration=3500){clearTimeout(bubbleTimer);const box=$('[data-bar-bubble]');box.textContent=text;box.hidden=false;bubbleTimer=setTimeout(()=>box.hidden=true,duration);}
- function paintMusic(){const button=$('[data-bar-music]');const available=!!snapshot?.music&&snapshot.music.enabled&&(snapshot.music.tracks.length||snapshot.music.previewFallback),playing=!muted&&!!available;button.disabled=!available;button.setAttribute('aria-label',playing?'静音酒吧音乐':'播放酒吧音乐');button.setAttribute('aria-pressed',String(playing));button.title=playing?'静音酒吧音乐':'播放酒吧音乐';button.textContent=playing?'♫':'♪';button.style.opacity=playing?'1':'.5';}
+ function paintMusic(){const button=$('[data-bar-music]');const available=!!snapshot?.music&&snapshot.music.enabled&&(snapshot.music.tracks.length||snapshot.music.previewFallback),playing=mayPlayMusic()&&!muted&&!!available;button.disabled=!available;button.setAttribute('aria-label',playing?'静音酒吧音乐':'播放酒吧音乐');button.setAttribute('aria-pressed',String(playing));button.title=playing?'静音酒吧音乐':'播放酒吧音乐';button.textContent=playing?'♫':'♪';button.style.opacity=playing?'1':'.5';}
  function paintGlasses(){
   if(!snapshot)return;const capacity=innerWidth<600?3:innerWidth<1000?5:6,selfId=snapshot.selfId;
   const own=snapshot.myDrink?{employeeId:selfId,alias:'你的这一杯',drink:snapshot.myDrink}:null;
@@ -115,7 +115,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   }catch(error){if(version!==visit)return;tell(error.message);$('[data-bar-online]').textContent='— 人在座';}
  }
  function leave({navigation=true}={}){
-  if(!open)return;open=false;version++;personal.close();play.close();hospitality.close();source?.close();source=null;clearTimeout(welcomeTimer);clearTimeout(bubbleTimer);clearTimeout(cheersTimer);clearInterval(chatterTimer);music.stop();if(menu.open)menu.close();root.hidden=true;document.body.classList.remove('bar-room-open');document.documentElement.classList.remove('bar-room-root-open');document.querySelector('#inner-app-view').inert=false;
+  music.stop();if(!open)return;open=false;version++;personal.close();play.close();hospitality.close();source?.close();source=null;clearTimeout(welcomeTimer);clearTimeout(bubbleTimer);clearTimeout(cheersTimer);clearInterval(chatterTimer);music.stop();if(menu.open)menu.close();root.hidden=true;document.body.classList.remove('bar-room-open');document.documentElement.classList.remove('bar-room-root-open');document.querySelector('#inner-app-view').inert=false;
   if(navigation&&location.hash==='#/bar')history.replaceState(history.state,'',returnHash);if(navigation)onExit?.();window.dispatchEvent(new Event('aved-bar-change'));nav.focus();
  }
  let asking=false;nav.onclick=async()=>{if(!getUser()||asking)return;asking=true;try{if(await window.AVEDFeedback.confirm('进去坐坐？',{title:'Sloper',tone:'info',confirmLabel:'进入酒吧',cancelLabel:'取消'}))enter();}finally{asking=false;}};
@@ -141,7 +141,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   try{await api('/api/player/bar/cheers/'+invite.id,{method:'POST',body:{decision:button.dataset.cheersReply,identityMode:identity.value}});if(open&&visit===version)tell('');}
   catch(error){if(open&&visit===version)tell(error.message);}finally{cheersBusy=false;if(open&&visit===version)paintCheers();}
  };
- $('[data-bar-music]').onclick=()=>{muted=!muted;try{localStorage.setItem('aved_bar_music_muted',String(muted));}catch{}paintMusic();if(muted)music.stop();else music.play().catch(()=>{muted=true;paintMusic();tell('音乐暂时无法播放。');});};
+ $('[data-bar-music]').onclick=()=>{if(!mayPlayMusic())return;muted=!muted;try{localStorage.setItem('aved_bar_music_muted',String(muted));}catch{}paintMusic();if(muted)music.stop();else music.play().catch(()=>{muted=true;paintMusic();tell('音乐暂时无法播放。');});};
  $('[data-bar-menu]').onclick=()=>openMenu();$('[data-bar-menu-close]').onclick=()=>{if(!buying)menu.close();};
  $('[data-bar-order-cancel]').onclick=()=>{if(!buying){selection=null;pendingOrder=null;$('[data-bar-confirm]').hidden=true;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed','false');}};
  $('[data-bar-menu-grid]').onclick=e=>{const button=e.target.closest('[data-drink]');if(button&&!buying)selectDrink(drinks.find(x=>x.id===button.dataset.drink));};
@@ -157,6 +157,10 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  };
  $('[data-bar-more]').onclick=async()=>{if(olderBusy||!nextBefore)return;olderBusy=true;const button=$('[data-bar-more]'),visit=version;button.disabled=true;try{const data=await api('/api/player/bar/messages?before='+nextBefore);if(open&&visit===version){paginationStarted=true;paintMessages(data.items,{older:true});nextBefore=data.nextBefore;button.hidden=!nextBefore;}}catch(error){if(visit===version)tell(error.message);}finally{olderBusy=false;button.disabled=false;}};
  root.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.querySelector('dialog[open]')){e.preventDefault();leave();}});menu.addEventListener('cancel',e=>{if(buying)e.preventDefault();e.stopPropagation();});
+ function syncMusic(){if(!mayPlayMusic()){music.stop();paintMusic();return;}if(!muted)music.play().catch(()=>{if(open){muted=true;paintMusic();}});paintMusic();}
+ document.addEventListener('visibilitychange',syncMusic);
+ window.addEventListener('pageshow',syncMusic);
+ for(const event of ['hashchange','popstate','aved-bar-change'])window.addEventListener(event,()=>{if(!mayPlayMusic())music.stop();});
  const sceneObserver=new ResizeObserver(()=>{if(open)paintGlasses();});sceneObserver.observe($('.bar-scene'));window.addEventListener('resize',()=>{if(open)paintGlasses();});window.addEventListener('pagehide',()=>leave({navigation:false}));
  return {enter,leave,isOpen:()=>open};
 };

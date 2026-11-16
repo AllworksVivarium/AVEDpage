@@ -47,3 +47,12 @@ test('controller migrates a saved device voice to the single recorded voice',asy
   const before=cancels;controller.clear();assert.ok(cancels>before);
  }finally{controller.close();}
 });
+
+test('receipt speech starts 200 ms after the coin and overlap stays within audio range',()=>{
+ const rate=1000,chime=new Float32Array(2000).fill(.8),voice=new Float32Array(1000).fill(.9);
+ const audio=context.AVEDReceiptAudio.mixReceipt(chime,voice,rate);
+ assert.ok(audio[200]>audio[199]+.5,'speech overlaps the coin tail at 200 ms');
+ assert.ok(Array.from(audio).every(x=>Number.isFinite(x)&&Math.abs(x)<=1));
+ const voiceOnly=context.AVEDReceiptAudio.mixReceipt(new Float32Array(2000),voice,rate);
+ assert.equal(voiceOnly[199],0);assert.ok(voiceOnly[200]>.8);
+});

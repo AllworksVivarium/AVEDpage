@@ -7,6 +7,27 @@ const root={localStorage:{getItem:k=>stored.get(k),setItem:(k,v)=>stored.set(k,v
 vm.runInNewContext(readFileSync(new URL('../public/interface-contamination.js',import.meta.url),'utf8'),{window:root,Event,setTimeout,clearTimeout});
 const {zalgo,animateBurst,animateGrowth,TIMING,MARKS,createMarkPlan}=root.AVEDContamination;
 
+test('shared budget counts kinds, releases individual instances, and exempts conditional messages',()=>{
+ const budget=root.AVEDContamination.createEffectBudget();
+ budget.acquire('ambient');const first=budget.acquire('whisper'),second=budget.acquire('whisper');
+ budget.acquire('warp');budget.acquire('tracking');assert.equal(budget.kinds.length,4);
+ assert.equal(budget.acquire('zalgo'),null);
+ const condition=budget.acquire('away',()=>{},{conditional:true});assert.equal(typeof condition,'function');assert.equal(budget.kinds.length,4);condition();
+ first();assert.equal(budget.acquire('zalgo'),null);second();
+ const zalgo=budget.acquire('zalgo');assert.equal(typeof zalgo,'function');zalgo();zalgo();assert.equal(budget.kinds.length,3);
+});
+
+test('surge admits all kinds and returns to four kinds with cleanup at its end',()=>{
+ const budget=root.AVEDContamination.createEffectBudget(),stopped=[];
+ budget.acquire('ambient');budget.acquire('warp');budget.acquire('whisper');budget.acquire('tracking');
+ budget.setBurst(true);
+ for(const kind of ['zalgo','gaze','typing','drain','chart','residue'])assert.ok(budget.acquire(kind,()=>stopped.push(kind)));
+ assert.equal(budget.kinds.length,10);budget.setBurst(false);
+ assert.equal(budget.bursting,false);assert.equal(budget.kinds.length,4);
+ assert.deepEqual(stopped,['zalgo','gaze','typing','drain','chart','residue']);
+ assert.equal(budget.acquire('gaze'),null);budget.setBurst(false);assert.equal(stopped.length,6);
+});
+
 test('saved preferences require an owned effect before enabling',()=>{
  assert.equal(root.AVEDContamination.enabled(),false);assert.equal(root.AVEDContamination.setEnabled(true),false);
  root.AVEDContamination.setEntitled(true);assert.equal(root.AVEDContamination.enabled(),true);
