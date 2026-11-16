@@ -1,9 +1,12 @@
 (function(root){
- const doc=root.document,phrases=['你在看吗？','我知道你在这里。','请看着这里。','我在等你……','正在被查阅个人信息','刚才是你吗？','你看见我了吗？','听得见吗？','我就在这一边。','请保持观察。','它也在看你。','WHO IS WATCHING?','SOURCE: INSIDE','I CAN SEE YOU','STILL HERE'];
+ const doc=root.document,phrases=['你在看吗？','我知道你在这里。','请看着这里。','我在等你……','正在被查阅个人信息','刚才是你吗？','你看见我了吗？','听得见吗？','我就在这一边。','请保持观察。','它也在看你。','WHO IS WATCHING?','SOURCE: INSIDE','I CAN SEE YOU','STILL HERE',
+  '我看见你了。','你终于注意到了。','你读到这里了。','这次看清了吗？','再靠近一点。','你刚才在找我吗？','屏幕这边很安静。','你那边呢？','我认得你的名字。','我们见过。','这行字是留给你的。','请读完这一行。','我还在这里。','你又回来了。','刚才还有一个人。','刚刚是谁在看？','你停留得够久了。','我等了很久。','现在轮到我看了。','视线已接入。','有人正在读取。','访问者已被看见。','观察方向已改变。','另一端正在输入……','这一次，保持安静。','先别移开视线。','你看完了吗？','继续看，我在。','READING YOU','LOOK CLOSER','WHO ELSE IS HERE?','I REMEMBER YOU','YOUR TURN TO WATCH','THE LINE IS STILL OPEN','WE HAVE MET','SOMEONE IS READING'];
+ let phraseBag=[],lastPhrase='';
  const messages={route:['您刚才已经来过这里。','我们可以一起看。','▇▇与您一同进入了页面。'],refresh:['检测到重复访问者。','别着急，我们还有很多时间。'],idle:['您还在终端前吗？','您在看吗？'],purchase:['您不应该购买此权限。']};
  let timer=0,nextPopup=Date.now()+45000+Math.random()*60000,quietUntil=0,lastInput=Date.now(),route=root.location.hash,lastRouteAt=0,active=false,previewIndex=0;const transients=new Set(),labels=new Map(),path=[],jobs=new Set();
  const later=(fn,ms)=>{const id=setTimeout(()=>{jobs.delete(id);fn();},ms);jobs.add(id);return id;};
  const random=items=>items[Math.floor(Math.random()*items.length)];
+ function nextPhrase(){if(!phraseBag.length)phraseBag=phrases.filter(text=>text!==lastPhrase);const index=Math.floor(Math.random()*phraseBag.length);lastPhrase=phraseBag.splice(index,1)[0];return lastPhrase;}
  function titleFor(text){const titles=['收到讯息','连接成功','我在看。'];if(/我们|我|您在看|终端前|不应该|真的要|欢迎回来|无处可逃/.test(text))titles.push('嘘……');return random(titles);}
  let encounterUntil=0,encounterRates={};
  function encounter(kind){const now=Date.now();if(now>=encounterUntil){const quiet=Math.random()<.38;encounterUntil=now+45000+Math.random()*135000;encounterRates={route:quiet?.015+Math.random()*.045:.12+Math.random()*.48,refresh:quiet?.02+Math.random()*.05:.15+Math.random()*.5,idle:quiet?.03+Math.random()*.07:.2+Math.random()*.55};}return Math.random()<encounterRates[kind];}
@@ -14,18 +17,24 @@
  function remove(el){el.remove();transients.delete(el);}
  function textEcho(text,rect,style){if(!allowed())return;const el=transient('haunt-text-echo',Array.from(text).slice(0,50).join(''),rect);if(style){el.style.font=style.font;el.style.lineHeight=style.lineHeight;}later(()=>remove(el),145);}
  function leaveText(text,rect){if(!allowed())return;const chars=Array.from(text),el=transient('haunt-dialog-residue',text,rect);const hold=550+Math.random()*350;for(let n=1;n<=Math.ceil(chars.length/2);n++)later(()=>{el.textContent=chars.slice(n,chars.length-n).join('');if(n===Math.ceil(chars.length/2))remove(el);},hold+n*45);}
- function restoreLabel(el){const state=labels.get(el);if(!state)return;remove(state.overlay);if(el.firstChild===state.run)el.replaceChildren(...state.nodes);el.classList.remove('haunt-label');labels.delete(el);}
+ function whisperResidue(overlay){
+  if(!allowed())return;const rect=overlay.getBoundingClientRect(),style=root.getComputedStyle(overlay),el=transient('haunt-whisper-residue',overlay.textContent,rect);
+  el.dataset.contaminationExempt='';el.dataset.typeIgnore='';el.style.font=style.font;el.style.lineHeight=style.lineHeight;el.style.letterSpacing=style.letterSpacing;
+  const hold=900+Math.random()*900,linger=Math.random()<.35,fade=650+Math.random()*300;
+  for(let n=1;n<=12;n++)later(()=>{const progress=n/12,inset=progress*(linger?36:50);el.style.clipPath='inset(0 '+inset+'%)';el.style.opacity=String(.62-progress*(linger?.22:.55));if(n===12){if(linger)later(()=>remove(el),450+Math.random()*400);else remove(el);}},hold+fade*n/12);
+ }
+ function restoreLabel(el,echo=false){const state=labels.get(el);if(!state)return;if(echo&&el.isConnected&&visible(el))whisperResidue(state.overlay);remove(state.overlay);if(el.firstChild===state.run)el.replaceChildren(...state.nodes);el.classList.remove('haunt-label');labels.delete(el);}
  function positionWhisper(el,state){if(!el.isConnected||!visible(el)){restoreLabel(el);return;}const rect=el.getBoundingClientRect();state.overlay.style.left=rect.left+'px';state.overlay.style.top=rect.top+'px';}
  function whisper(){
   if(!allowed())return;
   const pool=[...doc.querySelectorAll('.hud-key-en,.hud-topline>span,.hud-personnel-tag,.hud-system-copy>span,.hud-micro-label>span,.hud-signal-footer>span,.section-kicker,.notice-kicker>span[lang=en],.bar-brand>small')].filter(el=>visible(el)&&!el.closest('dialog,#inner-app-view>header,.hud-pollution-target')&&!labels.has(el)&&el.children.length===0);
-  if(!pool.length)return;
-  const el=random(pool),nodes=[...el.childNodes],rect=el.getBoundingClientRect(),style=root.getComputedStyle(el),run=doc.createElement('span'),text=random(phrases);
+  if(!pool.length||labels.size)return;
+  const el=random(pool),nodes=[...el.childNodes],rect=el.getBoundingClientRect(),style=root.getComputedStyle(el),run=doc.createElement('span'),text=nextPhrase();
   run.textContent=text;run.setAttribute('aria-hidden','true');
-  const overlay=transient('haunt-label-clear',text,rect);overlay.dataset.typeIgnore='';overlay.dataset.contaminationExempt='';overlay.style.font=style.font;overlay.style.lineHeight=style.lineHeight;overlay.style.letterSpacing=style.letterSpacing;
+  const overlay=transient('haunt-label-clear',text,rect);overlay.dataset.typeIgnore='';overlay.dataset.contaminationExempt='';overlay.style.font=style.font;overlay.style.lineHeight=style.lineHeight;overlay.style.letterSpacing=style.letterSpacing;overlay.style.maxWidth=Math.max(100,root.innerWidth-rect.left-12)+'px';
   el.style.setProperty('--haunt-label-width',rect.width+'px');el.style.setProperty('--haunt-label-height',rect.height+'px');el.classList.add('haunt-label');
   const state={nodes,run,overlay};labels.set(el,state);el.replaceChildren(run);positionWhisper(el,state);
-  later(()=>restoreLabel(el),2800+Math.random()*3200);
+  later(()=>restoreLabel(el,true),3500+Math.random()*3500);
  }
  function repositionWhispers(){for(const [el,state] of [...labels])positionWhisper(el,state);}
  doc.addEventListener('scroll',repositionWhispers,{capture:true,passive:true});root.addEventListener('resize',repositionWhispers,{passive:true});
@@ -35,9 +44,9 @@
  function checkRoute(){if(!allowed()||root.location.hash===route)return;route=root.location.hash;for(const el of [...labels.keys()])restoreLabel(el);if(Date.now()-lastRouteAt>2000&&encounter('route'))apparition('route');lastRouteAt=Date.now();}
  function onClick(event){lastInput=Date.now();const button=event.target.closest('button,[role=button]');if(!button)return;const text=button.textContent+' '+(button.getAttribute('aria-label')||'');if(/刷新/.test(text)&&encounter('refresh'))later(()=>apparition('refresh'),500);later(checkRoute,80);}
  function onPointer(event){lastInput=Date.now();if(!allowed()||event.pointerType!=='mouse')return;const now=Date.now();if(path.length&&now-path.at(-1).time<32)return;path.push({x:event.clientX,y:event.clientY,time:now});while(path.length>70)path.shift();}
- function tick(){timer=0;if(!allowed())return;const now=Date.now();checkRoute();if(now>=quietUntil){const draw=Math.random();if(draw<.42)whisper();else if(draw<.445)pointer();else if(draw>.89){const duration=35000+Math.random()*35000;quietUntil=now+duration;root.AVEDContamination.quietFor(duration);}if(now-lastInput>90000&&encounter('idle'))apparition('idle');}timer=setTimeout(tick,18000+Math.random()*22000);}
+ function tick(){timer=0;if(!allowed())return;const now=Date.now();checkRoute();if(now>=quietUntil){const draw=Math.random();if(draw<.72)whisper();else if(draw<.735)pointer();else if(draw>.94){const duration=35000+Math.random()*35000;quietUntil=now+duration;root.AVEDContamination.quietFor(duration);}if(now-lastInput>90000&&encounter('idle'))apparition('idle');}timer=setTimeout(tick,10000+Math.random()*12000);}
  function clear(){clearTimeout(timer);timer=0;for(const job of jobs)clearTimeout(job);jobs.clear();for(const el of [...labels.keys()])restoreLabel(el);for(const el of [...transients]){if(el.tagName==='DIALOG')el.close();remove(el);}path.length=0;quietUntil=0;}
- function sync(){const on=allowed();if(!on){clear();active=false;}else if(!active){active=true;route=root.location.hash;lastInput=Date.now();timer=setTimeout(tick,12000+Math.random()*12000);}}
+ function sync(){const on=allowed();if(!on){clear();active=false;}else if(!active){active=true;route=root.location.hash;lastInput=Date.now();timer=setTimeout(tick,5000+Math.random()*5000);}}
  function onPreview(event){if(!allowed())return;if(event.effect==='whisper')whisper();else if(event.effect==='apparition')apparition(['route','refresh','idle'][previewIndex++%3],true);else if(event.effect==='pointer')pointer();}
  doc.addEventListener('aved-contamination-change',sync);doc.addEventListener('visibilitychange',sync);doc.addEventListener('aved-effects-change',sync);doc.addEventListener('aved-contamination-preview',onPreview);doc.addEventListener('click',onClick);doc.addEventListener('pointermove',onPointer,{passive:true});for(const event of ['keydown','scroll','touchstart'])doc.addEventListener(event,()=>{lastInput=Date.now();},{passive:true});for(const event of ['hashchange','popstate','aved-bar-change'])root.addEventListener(event,()=>later(checkRoute,100));
  new MutationObserver(sync).observe(doc.body,{attributes:true,attributeFilter:['class']});root.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',sync);

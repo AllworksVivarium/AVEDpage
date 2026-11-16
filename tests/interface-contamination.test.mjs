@@ -59,7 +59,7 @@ function dialogHarness(){
  const doc={body:{classList:{contains:k=>flags.has(k),toggle:(k,on)=>on?flags.add(k):flags.delete(k)},append(){}},dispatchEvent(){},activeElement:{focus(){}},createElement(){
   const listeners={},copy={textContent:'',getBoundingClientRect:()=>({left:0,top:0,width:200})},heading={textContent:''},confirm={textContent:'',focus(){}},echoes=[];
   const base={querySelector:selector=>selector==='p'?copy:selector==='#pollution-dialog-title'?heading:confirm,cloneNode:()=>({className:'',setAttribute(){},style:{setProperty(){}},querySelectorAll:()=>[],remove(){echoes.splice(echoes.indexOf(this),1);}})};
-  dialog={dataset:{},style:{setProperty(){}},setAttribute(){},set innerHTML(value){copy.textContent=value.match(/<p>(.*?)<\/p>/)[1];},querySelector:selector=>selector==='p'?copy:selector==='#pollution-dialog-title'?heading:selector==='.pollution-window'?base:confirm,querySelectorAll:()=>echoes,addEventListener:(event,fn)=>listeners[event]=fn,showModal(){},close:()=>listeners.close?.(),remove(){},prepend:el=>echoes.unshift(el),click(action='confirm'){listeners.click({target:{closest:selector=>selector==='[data-pollution-'+action+']'?{}:null}});},copy,echoes};return dialog;
+  dialog={dataset:{},style:{setProperty(){}},setAttribute(){},set innerHTML(value){this.markup=value;copy.textContent=value.match(/<p>(.*?)<\/p>/)[1];},querySelector:selector=>selector==='p'?copy:selector==='#pollution-dialog-title'?heading:selector==='.pollution-window'?base:confirm,querySelectorAll:()=>echoes,addEventListener:(event,fn)=>listeners[event]=fn,showModal(){},close:()=>listeners.close?.(),remove(){},prepend:el=>echoes.unshift(el),click(action='confirm'){listeners.click({target:{closest:selector=>selector==='[data-pollution-'+action+']'?{}:null}});},copy,echoes};return dialog;
  }};
  const page={document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)}};
  const randomMath=Object.create(Math);randomMath.random=()=>.99;
@@ -70,7 +70,7 @@ function dialogHarness(){
 test('logout confirmation keeps looping and preserves the signed-in pollution state',async()=>{
  const h=dialogHarness();let settled=false;const result=h.effect.beforeLogout().then(value=>{settled=true;return value;});
  for(let n=0;n<30;n++)h.dialog.click();await Promise.resolve();
- assert.equal(settled,false);assert.equal(h.effect.enabled(),true);assert.equal(h.storage.get('aved_contamination_v1'),'on');assert.ok(h.dialog.echoes.length<=4);
+ assert.equal(settled,false);assert.equal(h.effect.enabled(),true);assert.equal(h.storage.get('aved_contamination_v1'),'on');assert.equal(h.dialog.echoes.length,16);assert.match(h.dialog.markup,/data-pollution-cancel>好<\/button>/);
  h.dialog.click('cancel');assert.equal(await result,false);assert.equal(h.effect.enabled(),true);
  h.effect.setEnabled(false);assert.equal(await h.effect.beforeLogout(),true);
 });

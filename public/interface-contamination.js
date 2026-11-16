@@ -156,8 +156,8 @@
    if(kind==='zalgo'&&Math.random()<.3)void warpBackground();
    panel.setAttribute('data-contamination-pulse',kind);if(kind==='tear'){const job=setTimeout(()=>clearText(true),3000+Math.random()*5000);stopBurst=()=>clearTimeout(job);return;}stopBurst=kind==='glitch'?animateBurst(paintGlitch,()=>clearText(true),{changes:Math.random()<.5?2:3}):animateGrowth(paintGrowth,()=>clearText(true));
   }
-  function tick(kind){timer=0;if(!allowed())return;if(Date.now()<quietUntil){timer=setTimeout(tick,quietUntil-Date.now());return;}const draw=Math.random();pulse(typeof kind==='string'?kind:draw<.45?'zalgo':draw<.8?'glitch':'tear');timer=setTimeout(tick,20000+Math.random()*22000);}
-  function sync(force=false){const active=allowed();if(!active){clearTimeout(timer);clearTimeout(backgroundTimer);timer=backgroundTimer=0;clear();}else if(!wasActive||force===true){clearTimeout(timer);clear();timer=setTimeout(tick,1200);if(!backgroundTimer)backgroundTimer=setTimeout(backgroundTick,18000+Math.random()*12000);}wasActive=active;}
+  function tick(kind){timer=0;if(!allowed())return;if(Date.now()<quietUntil){timer=setTimeout(tick,quietUntil-Date.now());return;}const draw=Math.random();pulse(typeof kind==='string'?kind:draw<.28?'zalgo':draw<.8?'glitch':'tear');timer=setTimeout(tick,20000+Math.random()*22000);}
+  function sync(force=false){const active=allowed();if(!active){clearTimeout(timer);clearTimeout(backgroundTimer);timer=backgroundTimer=0;clear();}else if(!wasActive||force===true){clearTimeout(timer);clear();timer=setTimeout(tick,6000+Math.random()*6000);if(!backgroundTimer)backgroundTimer=setTimeout(backgroundTick,18000+Math.random()*12000);}wasActive=active;}
   const onChange=()=>sync(true),onPreview=event=>{if(!['zalgo','glitch','background','tear','cluster','quiet'].includes(event.effect))return;clearTimeout(timer);if(event.effect==='quiet'){clear();quietUntil=Date.now()+event.duration;timer=setTimeout(()=>tick('cluster'),event.duration);return;}quietUntil=0;tick(event.effect);};
   const observer=new MutationObserver(()=>sync());observer.observe(doc.body,{attributes:true,attributeFilter:['class']});
   const onRoute=()=>{clear();sync(true);};
@@ -175,7 +175,7 @@
    const closing=kind==='stop',trapped=kind==='logout';let needed=trapped?Infinity:closing?6+Math.floor(Math.random()*5):1;
    let attempts=0,finished=false,slips=0,finalConfirmation=false;
    d.className='pollution-dialog';d.dataset.tone=Math.random()<.5?'black':'red';d.setAttribute('aria-labelledby','pollution-dialog-title');
-   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title">'+(closing?'终止请求':'系统警告')+'</span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+(closing?'真的要关闭吗？':kind==='logout'?'您无处可逃。':Math.random()<.16?'欢迎回来。':'您真的要启动此模式吗？')+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>取消</button><button type="button" data-pollution-confirm>'+(closing?'确认关闭':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
+   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title">'+(closing?'终止请求':'系统警告')+'</span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+(closing?'真的要关闭吗？':kind==='logout'?'您无处可逃。':Math.random()<.16?'欢迎回来。':'您真的要启动此模式吗？')+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>'+(trapped?'好':'取消')+'</button><button type="button" data-pollution-confirm>'+(closing?'确认关闭':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
    const main=d.querySelector('.pollution-window'),copy=main.querySelector('p'),confirmButton=main.querySelector('[data-pollution-confirm]'),heading=main.querySelector('#pollution-dialog-title');if(root.AVEDHaunt?.titleFor)heading.textContent=root.AVEDHaunt.titleFor(copy.textContent);
    function finish(value){if(finished)return;finished=true;const rect=copy.getBoundingClientRect();if(enabled())root.AVEDHaunt?.leaveText(copy.textContent,rect);d.close();d.remove();currentDialog=null;trigger?.focus?.();resolve(value);}
    d.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
@@ -193,13 +193,14 @@
     if(trapped){
      const copies=['您无处可逃。','别着急，我们还有很多时间。','我们可以一起看。'];
      copy.textContent=copies[Math.floor(Math.random()*copies.length)];
-     confirmButton.textContent=attempts%3===0?'登出':attempts%3===1?'再次确认':'确认登出';
+     confirmButton.textContent='确认登出';
      if(root.AVEDHaunt?.titleFor)heading.textContent=root.AVEDHaunt.titleFor(copy.textContent);
     }
     d.dataset.fault=String(attempts);d.style.setProperty('--fault-x',(Math.random()-.5)*28+'px');d.style.setProperty('--fault-y',(Math.random()-.5)*20+'px');
     const echo=main.cloneNode(true);echo.className='pollution-window pollution-window-echo';echo.setAttribute('aria-hidden','true');echo.inert=true;
     for(const el of echo.querySelectorAll('[id]'))el.removeAttribute('id');
-    echo.style.setProperty('--echo-x',(attempts%2?1:-1)*(12+Math.min(attempts,5)*7)+'px');echo.style.setProperty('--echo-y',(attempts%2?-1:1)*(9+Math.min(attempts,5)*5)+'px');d.prepend(echo);const echoes=[...d.querySelectorAll('.pollution-window-echo')];while(echoes.length>4)echoes.pop().remove();
+    const spread=trapped?Math.min(attempts,14):Math.min(attempts,5),xLimit=Math.max(16,Math.min(125,((root.innerWidth||780)-390)/2+12));
+    echo.style.setProperty('--echo-x',(attempts%2?1:-1)*Math.min(xLimit,12+spread*7)+'px');echo.style.setProperty('--echo-y',(attempts%3?1:-1)*Math.min(105,9+spread*7)+'px');d.prepend(echo);const echoes=[...d.querySelectorAll('.pollution-window-echo')];while(echoes.length>(trapped?16:4))echoes.pop().remove();
     d.dataset.tone=attempts%2?'red':'black';
    });
    doc.body.append(d);currentDialog=d;d.showModal();d.querySelector('[data-pollution-confirm]').focus();
