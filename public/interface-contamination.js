@@ -68,7 +68,7 @@
   let surgeTimer=0,surgeEnd=0,releaseAmbient=null,releaseText=null,releaseWarp=null,releaseChart=null;
   let timer=0,backgroundTimer=0,backgroundActive=false,backgroundFrame=0,warp=null,ambientTimer=0,ambientScan=0,lastZalgoAt=0,stopBurst=()=>{},stopBackground=()=>{},quietUntil=0,disposed=false,wasActive=false;const targets=new Map(),instruments=new Set();
   const getPane=()=>doc.querySelector('.terminal-content-pane');
-  const modeAllowed=()=>!disposed&&enabled()&&visible()&&!reduced.matches&&root.AVEDEffectsEnabled?.()!==false;
+  const modeAllowed=()=>!disposed&&enabled()&&visible()&&!reduced.matches;
   const allowed=()=>modeAllowed()&&!doc.hidden;
   function scanAmbient(){
    ambientScan=0;if(!allowed())return;

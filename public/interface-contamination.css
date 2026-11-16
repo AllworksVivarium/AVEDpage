@@ -115,3 +115,18 @@ body.theme-inner .pollution-window-echo{position:absolute;inset:0;transform:tran
  @keyframes presence-eye-arrive{from{opacity:0}to{opacity:var(--eye-opacity,1)}}
  @keyframes presence-caret{0%,55%{opacity:1}56%,100%{opacity:0}}
 }
+
+/* The ordinary effects switch leaves contamination-owned visuals running. */
+@layer aved-pollution {
+ body.signal-contaminated.effects-off .hud-source-fracture{filter:var(--pollution-source-filter)!important;animation:hud-source-stutter .7s steps(1,end) both!important}
+ body.signal-contaminated.effects-off .hud-corruption-infected{text-shadow:1px 0 color-mix(in srgb,var(--inner-accent) 28%,transparent)!important}
+ body.signal-contaminated.effects-off .hud-corruption-marks{transition:opacity .25s linear!important}
+ body.signal-contaminated.effects-off .haunt-portrait-mark{transition:opacity .35s linear!important}
+ body.signal-contaminated.effects-off .haunt-censor-float{animation:haunt-censor-drift var(--bar-drift,4s) var(--bar-phase,0ms) ease-in-out infinite!important}
+ body.signal-contaminated.effects-off .haunt-portrait-mark .haunt-pen-stroke{animation:haunt-pen-draw var(--pen-time,2s) var(--pen-delay,0ms) linear both!important;filter:drop-shadow(1px 1px 0 #36000066)!important}
+ body.signal-contaminated.effects-off .presence-effect{text-shadow:1px 1px 1px #000b,0 0 5px #e0181840!important}
+ body.signal-contaminated.effects-off .presence-typing::after{animation:presence-caret 1.1s steps(1) infinite!important}
+ body.signal-contaminated.effects-off :is(.presence-tracking,.presence-gaze){transition:opacity 1s ease!important;animation:presence-eye-arrive 1.4s ease-out!important}
+ body.signal-contaminated.effects-off .presence-pupils{transition:transform .14s ease-out!important}
+ body.signal-contaminated.effects-off .presence-lids{transition:transform .12s ease!important}
+}

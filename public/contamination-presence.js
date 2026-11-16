@@ -8,7 +8,7 @@
  const doc=root.document,visits=createVisits(),effects=new Set(),jobs=new Set();
  const kinds=['typing','tracking','gaze','rename','drain'];let bag=[],timer=0,watch=0,active=false,hiddenAt=null,lastRoute='',quietUntil=0,point={x:root.innerWidth/2,y:root.innerHeight/2};
  const later=(fn,ms)=>{const id=setTimeout(()=>{jobs.delete(id);fn();},ms);jobs.add(id);return id;};
- const allowed=()=>root.AVEDContamination?.enabled()&&root.AVEDEffectsEnabled?.()!==false&&!doc.hidden&&doc.body.classList.contains('theme-inner')&&!root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const allowed=()=>root.AVEDContamination?.enabled()&&!doc.hidden&&doc.body.classList.contains('theme-inner')&&!root.matchMedia('(prefers-reduced-motion: reduce)').matches;
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>60&&r.top<root.innerHeight&&getComputedStyle(el).visibility!=='hidden'&&(!el.checkVisibility||el.checkVisibility({checkVisibilityCSS:true}));};
  function pane(){const bar=doc.querySelector('.bar-room:not([hidden])');if(bar&&visible(bar))return bar;return [...doc.querySelectorAll('#inner-app-view [id^="view-"]')].find(el=>visible(el))||null;}
  function routeKey(){const p=pane();return root.location.hash+'|'+(p?.id||'')+'|'+(root.history.state?.avedForum?.thread||'');}
@@ -27,6 +27,7 @@
  }
  function message(text,duration=4800,conditional=false){const effect=portal(anchor(),'message',{conditional});if(!effect)return;effect.el.textContent=text;later(()=>stop(effect,true),duration);}
  api.whisper=()=>message(pick(['你在看吗？','我认得你。','这行字是留给你的。','先别移开视线。','你看完了吗？','我就在这里。','还有一个人在看。','现在轮到我看了。']),4500);
+ api.effectsSwitch=()=>{if(allowed()&&Math.random()<.65)message(pick(['关掉特效，也关不掉我。','逃避没有用。','你以为我会跟着消失吗？']),4600,true);};
  function typing(){const effect=portal(anchor(),'typing');if(!effect)return;const [first,last]=pick([['你身后……','你身后……算了。'],['请告诉我你的名字。','我记起来了。'],['这里只有你。','这里只有你吗？'],['你正在看着屏幕。','我正在看着你。'],['请保持连接。','再陪我一会儿。']]);let at=0;
   effect.el.textContent='另一端正在输入';
   const write=()=>{if(!effects.has(effect))return;if(at<first.length){effect.el.textContent=first.slice(0,++at);later(write,100+Math.random()*170);}else later(erase,1000+Math.random()*900);};
