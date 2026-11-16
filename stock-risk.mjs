@@ -1,14 +1,14 @@
-export const stockRiskRules=Object.freeze({maintenanceFraction:0.2,warningFraction:0.6,criticalFraction:0.4,tradeFeeRate:0.001,minimumTradeFee:1,leverageBalanceThresholds:Object.freeze({1:0,3:1000000,10:5000000})});
+export const stockRiskRules=Object.freeze({maintenanceFraction:0.2,warningFraction:0.6,criticalFraction:0.4,tradeFeeRate:0.001,minimumTradeFee:1,leverageAssetThresholds:Object.freeze({1:0,3:1000000,10:5000000})});
 
 export function stockTradeFee(amount){
  if(!Number.isSafeInteger(amount)||amount<=0)throw Error('成交额无效。');
  return Math.max(1,Math.ceil(amount/1000));
 }
 
-export function requireStockLeverage(balance,leverage){
+export function requireStockLeverage(qualification,leverage){
  if(![1,3,10].includes(leverage))throw Error('杠杆仅支持 1x、3x 或 10x。');
- const threshold=stockRiskRules.leverageBalanceThresholds[leverage];
- if(leverage>1&&balance<=threshold){const error=Error(`账户可用余额需超过 ${threshold/10000} 万，才能开 ${leverage} 倍杠杆仓位。`);error.code='LEVERAGE_LOCKED';throw error;}
+ const threshold=stockRiskRules.leverageAssetThresholds[leverage];
+ if(leverage>1&&!qualification?.unlockedLeverages?.includes(leverage)){const error=Error(`资产曾超过 ${threshold/10000} 万后永久解锁 ${leverage} 倍杠杆。`);error.code='LEVERAGE_LOCKED';throw error;}
 }
 
 export function stockPositionRisk(lot){

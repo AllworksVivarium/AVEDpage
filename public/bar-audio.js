@@ -5,14 +5,14 @@ window.AVEDBarSipSound=(()=>{
   try{if(localStorage.getItem('aved_sfx_v1')==='off')return;}catch{}
   const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
   try{context??=new C();context.resume().then(()=>{if(warmup)return;const now=context.currentTime;
-   for(const [hz,volume] of [[620,.028],[930,.009]]){const wave=context.createOscillator(),gain=context.createGain();wave.type='sine';wave.frequency.setValueAtTime(hz,now);wave.frequency.exponentialRampToValueAtTime(hz*.88,now+.13);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(volume,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.16);wave.connect(gain);gain.connect(context.destination);wave.start(now);wave.stop(now+.18);wave.onended=()=>{wave.disconnect();gain.disconnect();};}
+   for(const [hz,volume] of [[620,.028],[930,.009]]){const wave=context.createOscillator(),gain=context.createGain();wave.type='sine';wave.frequency.setValueAtTime(hz,now);wave.frequency.exponentialRampToValueAtTime(hz*.88,now+.13);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(volume,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.16);wave.connect(gain);gain.connect(window.AVEDWebSound?.output(context)||context.destination);wave.start(now);wave.stop(now+.18);wave.onended=()=>{wave.disconnect();gain.disconnect();};}
   }).catch(()=>{});}catch{}
  };
 })();
 window.AVEDBarClink=function(){
  const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
  const context=new C();context.resume().then(()=>{const now=context.currentTime;for(const [index,hz] of [1800,2650,3900].entries()){
-  const wave=context.createOscillator(),gain=context.createGain();wave.type='sine';wave.frequency.value=hz;gain.gain.setValueAtTime(.035/(index+1),now);gain.gain.exponentialRampToValueAtTime(.0001,now+.3);wave.connect(gain);gain.connect(context.destination);wave.start(now);wave.stop(now+.32);
+  const wave=context.createOscillator(),gain=context.createGain();wave.type='sine';wave.frequency.value=hz;gain.gain.setValueAtTime(.035/(index+1),now);gain.gain.exponentialRampToValueAtTime(.0001,now+.3);wave.connect(gain);gain.connect(window.AVEDWebSound?.output(context)||context.destination);wave.start(now);wave.stop(now+.32);
  }setTimeout(()=>context.close().catch(()=>{}),500);}).catch(()=>context.close().catch(()=>{}));
 };
 window.AVEDBarPreviewAudio=function(){

@@ -253,7 +253,16 @@ const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl,avatar_preset AS avatarPreset FROM profiles WHERE employee_id=?').get(employeeId) || {};
   const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:storedAvatar(employeeId,profile.avatarUrl,profile.avatarPreset,256),avatarPreset:profile.avatarUrl?'':profile.avatarPreset||'',...prefs,attributes:employeeAttributes(db,employeeId),appearance:appearance.snapshot(employeeId) };
 };
-const recordLedger = (employeeId, delta, reason) => db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
+let captureStockAssets=()=>{},stockCaptureScheduled=false;const stockCaptureAccounts=new Set();
+const recordLedger = (employeeId, delta, reason) => {
+ const result=db.prepare('INSERT INTO balance_ledger (employee_id,delta,reason) VALUES (?,?,?)').run(employeeId,delta,reason);
+ stockCaptureAccounts.add(employeeId);
+ if(!stockCaptureScheduled){stockCaptureScheduled=true;queueMicrotask(()=>{
+  stockCaptureScheduled=false;const ids=[...stockCaptureAccounts];stockCaptureAccounts.clear();
+  try{captureStockAssets(ids);}catch(e){console.error('Stock asset milestone:',e.message);}
+ });}
+ return result;
+};
 const appearance=installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger});
 const adminMutation = (req, res) => {
   const origin = req.headers.origin;
@@ -275,6 +284,7 @@ highlights=installGameHighlights({db,send,requireEmployee});
 gameTax=installGameTax({db,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
+captureStockAssets=ids=>playerService.captureStockAssets(ids);captureStockAssets();
 const achievementAlerts=installAchievementAlerts({db,send,readBody,requireEmployee,sessionEmployee});
 const barMusic=installBarMusic({db,send,readBody,requireEmployee,requireAdmin,dataDir,onChange:()=>bar.refresh()});
 const bar=installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,getMusic:()=>barMusic.playlist()});

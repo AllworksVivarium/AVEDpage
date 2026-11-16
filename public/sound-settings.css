@@ -1,0 +1,12 @@
+#hud-sound .hud-sound-settings{display:grid;gap:14px}
+#hud-sound .hud-sound-settings label{display:grid;gap:6px;font-size:13px}
+#hud-sound .hud-sound-settings .sound-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--inner-border-soft);padding-bottom:12px}
+#hud-sound .sound-switch input{width:18px;height:18px;margin:0;accent-color:var(--inner-accent)}
+#hud-sound select{width:100%;min-width:0;padding:8px;border:1px solid var(--inner-border-soft);border-radius:0;background:var(--inner-card-alt);color:var(--inner-text-main);font:13px/1.5 var(--terminal-copy,sans-serif)}
+#hud-sound input[type=range]{width:100%;padding:0;accent-color:var(--inner-accent)}
+#hud-sound .hud-sound-settings p{margin:0}
+#hud-sound [data-sound-preview],#hud-sound [data-sound-sfx-preview]{justify-self:start;padding:8px 12px;border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);color:var(--inner-text-main);font:13px/1.5 var(--terminal-copy,sans-serif)}
+
+#hud-sound .sound-volume-title{display:flex;justify-content:space-between;gap:12px}
+#hud-sound .sound-volume-title output{font-variant-numeric:tabular-nums;color:var(--inner-text-muted)}
+#hud-sound [data-sound-sfx-preview]:disabled{opacity:.5;cursor:default}

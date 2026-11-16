@@ -1,0 +1,86 @@
+@layer aved-pollution, aved-personal;
+@layer aved-personal {
+ #view-profile.personal-hud .hud-interface-effects{border:0;border-top:1px solid var(--inner-border-soft);padding:16px 0 0;margin:18px 0 0;min-width:0}
+ #view-profile.personal-hud .hud-interface-effects legend{padding:0 8px 0 0;font-size:12px!important}
+ #view-profile.personal-hud .hud-contamination-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:46px;padding:10px!important;background:var(--inner-card-alt)!important}
+ #view-profile.personal-hud .hud-contamination-toggle[aria-pressed=true]{border-color:var(--inner-accent)!important}
+ #view-profile.personal-hud .hud-contamination-toggle b{font-size:11px!important;color:var(--inner-text-muted)}
+ #view-profile.personal-hud .hud-contamination-previews{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+ #view-profile.personal-hud .hud-contamination-previews[hidden]{display:none}
+ #view-profile.personal-hud [data-hud-contamination-preview]{display:block;width:100%;min-height:36px;padding:8px!important;font-size:12px!important;text-align:center}
+ #view-profile.personal-hud [data-hud-contamination-preview][hidden]{display:none}
+ body.signal-contaminated .hud-pollution-filter{position:fixed;inset:0;width:0;height:0;pointer-events:none;overflow:hidden}
+ body.signal-contaminated .hud-pollution-target{overflow:visible}
+ body.signal-contaminated .hud-corruption-run{font:inherit!important;letter-spacing:inherit;white-space:inherit}
+ body.signal-contaminated .hud-corruption-glyph{display:inline-block;position:relative;font:inherit!important;letter-spacing:inherit;line-height:inherit;white-space:pre}
+ body.signal-contaminated .hud-corruption-infected{text-shadow:1px 0 color-mix(in srgb,var(--inner-accent) 28%,transparent)}
+ body.signal-contaminated .hud-corruption-marks{position:absolute;left:var(--mark-x,50%);width:0;pointer-events:none;user-select:none;white-space:nowrap;overflow:visible;font-family:'Times New Roman',serif!important;font-size:var(--mark-font,.58em)!important;font-weight:400!important;letter-spacing:0!important;line-height:1!important;color:inherit!important;opacity:.92;transition:opacity .25s linear}
+ body.signal-contaminated .hud-corruption-above{top:.06em;transform:translateX(-50%) rotate(var(--mark-tilt,0deg)) scaleY(1.08);transform-origin:center bottom}
+ body.signal-contaminated .hud-corruption-below{bottom:.12em;transform:translateX(-50%) rotate(var(--mark-tilt,0deg)) scaleY(1.08);transform-origin:center top}
+ body.signal-contaminated .hud-corruption-middle{top:40%;transform:translateX(-50%) rotate(var(--mark-tilt,0deg));transform-origin:center}
+ body.signal-contaminated .hud-glyph-redacted{color:transparent!important;background:var(--glitch-fill,#101516);text-shadow:none!important}
+ body.signal-contaminated .hud-glyph-redacted[data-glitch-shape=triangle]{clip-path:polygon(50% 8%,96% 92%,4% 92%)}
+ body.signal-contaminated .hud-glyph-redacted[data-glitch-shape=circle]{clip-path:circle(43% at 50% 50%)}
+ body.signal-contaminated .hud-glitch-base{visibility:hidden;font:inherit!important;line-height:inherit}
+ body.signal-contaminated .hud-glitch-symbol{position:absolute;inset:0;display:grid;place-items:center;font-family:'Times New Roman',serif!important;font-size:.65em!important;line-height:1!important;color:inherit!important;text-shadow:none!important;opacity:1!important}
+ body.signal-contaminated .hud-source-fracture{filter:var(--pollution-source-filter);animation:hud-source-stutter .7s steps(1,end) both}
+ body.signal-contaminated .hud-corruption-run[data-kind=glitch],body.signal-contaminated .hud-corruption-run[data-kind=glitch] .hud-corruption-glyph{animation:none!important;transition:none!important;opacity:1!important;text-shadow:none!important;filter:none!important}
+ @keyframes hud-source-stutter{0%,18%,38%,63%,82%,100%{transform:none}20%,28%{transform:translateX(3px) skewX(.4deg)}40%,51%{transform:translateX(-4px)}65%,71%{transform:translateX(2px) scaleX(.995)}}
+}
+@media(prefers-reduced-motion:reduce){body.signal-contaminated :is(.hud-corruption-infected,.hud-corruption-marks,.hud-source-fracture){animation:none!important;filter:none!important}}
+
+body.theme-inner .terminal-content-pane[data-contamination-warp]::before{mask-image:var(--pollution-background-mask)!important}
+
+/* These signal warnings keep their own black/red palette in every site theme. */
+@layer aved-pollution {
+body.theme-inner dialog.pollution-dialog{--warning-ink:#d7c9d0;--warning-edge:#bc374d;--warning-face:#050506;position:fixed;inset:0;width:min(390px,calc(100vw - 52px))!important;max-width:calc(100vw - 52px)!important;overflow:visible!important;padding:0!important;margin:auto!important;border:1px solid var(--warning-edge)!important;background:var(--warning-face)!important;color:var(--warning-ink)!important;box-shadow:inset 0 0 0 2px #260612,0 0 0 3px #030306,9px 9px 18px #000b!important;transform:translate(var(--fault-x,0px),var(--fault-y,0px));font-family:inherit;animation:none!important;transition:transform .12s steps(2,end)!important;isolation:isolate;outline-color:#310b10!important;}
+body.theme-inner dialog.pollution-dialog[data-tone=red]{--warning-face:#090507;--warning-edge:#ca3b50}
+body.theme-inner dialog.pollution-dialog::backdrop{background:#050306a8}
+body.theme-inner .pollution-window{position:relative;z-index:1;padding:0!important;background:repeating-linear-gradient(0deg,#a71c3b06 0 1px,transparent 1px 4px),var(--warning-face)!important;color:var(--warning-ink)!important;text-shadow:none!important}
+body.theme-inner .pollution-window header{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#c13d50!important;border-bottom:1px solid #e46770!important;color:#090708!important;font-size:12px!important;letter-spacing:.08em}
+body.theme-inner .pollution-window header button{padding:0!important;min-width:22px;height:22px;background:transparent!important;color:#090708!important;border:1px solid #48101c!important;box-shadow:none!important;line-height:18px!important;cursor:pointer}
+body.theme-inner .pollution-dialog-body{padding:26px 22px 19px}
+body.theme-inner .pollution-dialog-body p{margin:0 0 28px!important;font-size:16px!important;font-style:normal!important;line-height:1.7;color:#e4dadd!important;text-shadow:0 0 3px #f0d4d62e,0 0 9px #b52e4b30!important}
+body.theme-inner .pollution-dialog-actions{display:flex;justify-content:flex-end;gap:10px}
+body.theme-inner .pollution-dialog-actions button{padding:7px 16px!important;background:#09080d!important;border:1px solid #4c2536!important;color:#bba8b1!important;font-size:12px!important;box-shadow:2px 2px 0 #000!important;cursor:pointer}
+body.theme-inner .pollution-dialog-actions [data-pollution-confirm]{background:#370819!important;border-color:#a41d45!important;color:#edc3d0!important}
+body.theme-inner .pollution-dialog-actions button:focus-visible{outline:2px solid #f4b5aa;outline-offset:3px}
+body.theme-inner .pollution-window-echo{position:absolute;inset:0;transform:translate(var(--echo-x),var(--echo-y));border:1px solid #a43d43!important;pointer-events:none;opacity:.42;z-index:0;box-shadow:5px 5px 0 #0008}
+
+}
+
+@layer aved-pollution {
+ body.signal-contaminated .hud-text-shear{filter:var(--pollution-type-filter)!important}
+ body.signal-contaminated .hud-corruption-infected{translate:calc(var(--glyph-tear,0px) * var(--pollution-text-strength,1)) 0}
+}
+
+@layer aved-pollution {
+ body.signal-contaminated .hud-world-warp{filter:var(--pollution-world-filter)!important}
+ body.signal-contaminated{--haunt-echo:color-mix(in srgb,var(--inner-accent) 65%,#31473b 35%)}
+ body.signal-contaminated .haunt-label{display:inline-block;position:relative;width:var(--haunt-label-width);height:var(--haunt-label-height);color:var(--haunt-echo)!important}
+ body .haunt-transient{position:fixed;z-index:2147483500;pointer-events:none!important;user-select:none;font:13px/1.5 'Times New Roman',serif;color:var(--haunt-echo,#663339)!important;white-space:pre-wrap}
+ body .haunt-text-echo{opacity:.32;translate:3px 2px;text-shadow:none!important}
+ body .haunt-dialog-residue{color:#a04c53!important;opacity:.65;letter-spacing:.06em}
+ body .haunt-pointer{opacity:.28;color:#1c1014!important;width:20px;height:28px}
+ body .haunt-apparition{z-index:2147483501}
+}
+
+@layer aved-pollution {body.signal-contaminated .haunt-label>span{position:absolute;left:0;top:0;white-space:nowrap}}
+
+@layer aved-pollution {body.signal-contaminated .hud-source-decay{filter:var(--pollution-source-filter)!important;animation:none!important}}
+
+@layer aved-pollution {
+ body.theme-inner .pollution-window header :is(span,button){color:#090708!important;text-shadow:0 0 3px #ffe1dc50!important}
+ body.theme-inner .pollution-dialog-actions button{text-shadow:0 0 4px #d75b7328!important}
+}
+
+@layer aved-pollution {
+ body.signal-contaminated .haunt-label,body.signal-contaminated .haunt-label>span{color:#aa2e43!important}
+ body.signal-contaminated.dark-mode .haunt-label,body.signal-contaminated.dark-mode .haunt-label>span{color:#dd6072!important}
+}
+
+@layer aved-pollution {
+ body.signal-contaminated .haunt-label>span{visibility:hidden!important}
+ body.signal-contaminated .haunt-label-clear{color:#aa2e43!important;filter:none!important;transform:none!important;translate:none!important;animation:none!important;transition:none!important;text-shadow:0 1px 1px #0009,1px 0 1px #0004,0 0 5px #bc3a5438!important;opacity:1!important;white-space:nowrap;overflow:visible}
+ body.signal-contaminated.dark-mode .haunt-label-clear{color:#dd6072!important}
+}

@@ -21,3 +21,6 @@ body.theme-inner[data-terminal-pattern=fade] .terminal-content-pane::before{mask
 @layer aved-device-effects {
  body.theme-inner.effects-off:is([data-terminal-pattern=halftone],[data-terminal-pattern=fade],[data-terminal-pattern=grain]) .terminal-content-pane::before{display:block!important}
 }
+
+#view-profile.personal-hud .hud-pattern-ascii::after{background:var(--inner-text-main);mask-image:url('/assets/profile-ascii-flow.svg');mask-size:180px 240px;mask-repeat:repeat;opacity:1}
+#view-profile.personal-hud .hud-pattern-phase::after{background:var(--inner-text-main);mask-image:url('/assets/profile-phase-dots.svg');mask-size:65px 65px;mask-repeat:repeat;opacity:1}

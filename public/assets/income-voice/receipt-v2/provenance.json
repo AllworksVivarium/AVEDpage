@@ -1,0 +1,856 @@
+{
+  "source": "User-provided AnnounceTheTransaction 1.2.1 audio folder",
+  "modAuthor": "Zesty",
+  "prefix": {
+    "file": "arrived.mp3",
+    "sourceFile": "ali_tok_9001.mp3",
+    "startSeconds": 0.665,
+    "endSeconds": 1.292,
+    "spokenText": "到账",
+    "sourceSha256": "8c72da371b353a5ee4fa09498cc7d3919b22dee1dc9bbd360a411d4e71f44638",
+    "sha256": "7be115b4e182eae20c30015f02b513ae9b8608a6102d82b832cfc4ba56332c30",
+    "bytes": 5804
+  },
+  "files": [
+    {
+      "file": "clip-0.mp3",
+      "sourceFile": "ali_tok_0.mp3",
+      "sha256": "e8295d560ca93f9657e029f516ba25e5c8dd72255830d1989b1996cbb78ff9cd",
+      "bytes": 3885
+    },
+    {
+      "file": "clip-1.mp3",
+      "sourceFile": "ali_tok_1.mp3",
+      "sha256": "35a9c49cbb0735567266c4fe9012c77abd40618c3e1d1fa1abeb2e0e94493079",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-5.mp3",
+      "sourceFile": "ali_tok_5.mp3",
+      "sha256": "e857ea986d91c35b0d56e806626154120af4b14f4dc62c0443e74fb96799ccab",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-11.mp3",
+      "sourceFile": "ali_tok_11.mp3",
+      "sha256": "7834585655f7b1d787489a3dc568540ad3b82aba5631954428ef49c3bad98f93",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-37.mp3",
+      "sourceFile": "ali_tok_37.mp3",
+      "sha256": "7545225335d499b8356cc9faccf5d6afd6b379ff4754b3901e6799f68aa98c76",
+      "bytes": 9069
+    },
+    {
+      "file": "clip-100.mp3",
+      "sourceFile": "ali_tok_100.mp3",
+      "sha256": "2cc1a5f63db61e279eef196409eb1786bc0373a221c544fdc792b3317df462b5",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-102.mp3",
+      "sourceFile": "ali_tok_102.mp3",
+      "sha256": "2c8113bdbe3edb7a8cb2434f8e07eda387d95740ee146a0687b5bf1798156d79",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-108.mp3",
+      "sourceFile": "ali_tok_108.mp3",
+      "sha256": "2afe19e80cf74839d28fc8cc30e5192ff4d0715d353553bbbcffb14d65fb30e6",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-112.mp3",
+      "sourceFile": "ali_tok_112.mp3",
+      "sha256": "61021b9fed0b56a816d0ec0dafeaad266eb2ab13d727a907c55e717881ad82c1",
+      "bytes": 1965
+    },
+    {
+      "file": "clip-113.mp3",
+      "sourceFile": "ali_tok_113.mp3",
+      "sha256": "e5048b94b3a843ac22ccc30eabda7ee5e70e548e2f39c334705ad588e60358c4",
+      "bytes": 2157
+    },
+    {
+      "file": "clip-114.mp3",
+      "sourceFile": "ali_tok_114.mp3",
+      "sha256": "530acd4f2c4b534b86b5d6378718aa6514d7561dec64dd773389ba61407b1844",
+      "bytes": 1773
+    },
+    {
+      "file": "clip-137.mp3",
+      "sourceFile": "ali_tok_137.mp3",
+      "sha256": "55586e556eaf8aeee577c1e4608358ad49cfa222a5c64baa7eace890ab7f7f99",
+      "bytes": 6957
+    },
+    {
+      "file": "clip-155.mp3",
+      "sourceFile": "ali_tok_155.mp3",
+      "sha256": "51cd16d9646e3e6bef2b29919936fc94005a4abda4030818ec2a61f560954f85",
+      "bytes": 4845
+    },
+    {
+      "file": "clip-175.mp3",
+      "sourceFile": "ali_tok_175.mp3",
+      "sha256": "18606cca9414bedeedacc118b9b260c9cd25c58d01f7e2ee916972771c89d502",
+      "bytes": 7917
+    },
+    {
+      "file": "clip-200.mp3",
+      "sourceFile": "ali_tok_200.mp3",
+      "sha256": "2c8bf98e3d5c56d0c0b9e515a1435fbeb0d002a197ac39afff0e1ab6b66eeeb9",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-202.mp3",
+      "sourceFile": "ali_tok_202.mp3",
+      "sha256": "3e0663bafc940acb0a0251de106ce5f7cc26d5b61e46100ac9eba283201340ea",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-205.mp3",
+      "sourceFile": "ali_tok_205.mp3",
+      "sha256": "e980318c3a74ca8fb8e9ca32338ed4936c57a458b9d819d46d55e89701e5724c",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-208.mp3",
+      "sourceFile": "ali_tok_208.mp3",
+      "sha256": "eaf3b52fb2d5807b98205b168ed5412ef697aa48800081d60085a3e7bf2234bd",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-211.mp3",
+      "sourceFile": "ali_tok_211.mp3",
+      "sha256": "a4d513fd26f84b7bd6b9790f9e5340677ebb04c5b1575f0e33209a2bf905c769",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-213.mp3",
+      "sourceFile": "ali_tok_213.mp3",
+      "sha256": "3e8aad875cfb302495ebe88d4f753510eec523c549fff5bf90388c520df0aeed",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-214.mp3",
+      "sourceFile": "ali_tok_214.mp3",
+      "sha256": "9368522cd6a039fb4663eda60649403aad76821d058a74351781fc37b1667b30",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-237.mp3",
+      "sourceFile": "ali_tok_237.mp3",
+      "sha256": "15e072cf6fd0f00e96a4e23cbf2a1c9ed31ed63da78f85963679c72242d8e037",
+      "bytes": 6765
+    },
+    {
+      "file": "clip-255.mp3",
+      "sourceFile": "ali_tok_255.mp3",
+      "sha256": "e0b6bc1f0e974ce11f54caffd835014eee05d8353eefda538df9e1917dda25a9",
+      "bytes": 5421
+    },
+    {
+      "file": "clip-275.mp3",
+      "sourceFile": "ali_tok_275.mp3",
+      "sha256": "ceace31b5fac7aae64194d7b278a16996d0ae78e5cc372dd26432fa4bd57ac00",
+      "bytes": 7725
+    },
+    {
+      "file": "clip-300.mp3",
+      "sourceFile": "ali_tok_300.mp3",
+      "sha256": "75d669a46297651dc8becef835170a61bf64325a43452a0fa48e10cfd154af64",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-303.mp3",
+      "sourceFile": "ali_tok_303.mp3",
+      "sha256": "a084a9e8d2bd9bcdb1ac7bca4d4d9d9bfc3e025150c8adca75fc7364783a6dee",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-305.mp3",
+      "sourceFile": "ali_tok_305.mp3",
+      "sha256": "bf80166d88ddf75b03649949ef307c171cc549e0d3c5fbe773ac9a9eec875fea",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-306.mp3",
+      "sourceFile": "ali_tok_306.mp3",
+      "sha256": "17b3f0347e457babe4cb90fa90d522c5e9c75d21b0e54dce378c3498d04bba0f",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-309.mp3",
+      "sourceFile": "ali_tok_309.mp3",
+      "sha256": "3272902474b7a8739fc02e0ddfc95aeaa6d520d9769068ac287016fc10098129",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-311.mp3",
+      "sourceFile": "ali_tok_311.mp3",
+      "sha256": "a55a8211fe439b13958229184d0fe537788a1e28dd54dee88109669684109eb4",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-312.mp3",
+      "sourceFile": "ali_tok_312.mp3",
+      "sha256": "9646d6b7acfd7c715c6af14e3d0a6146a99673c6f7a75b3b498d691492849bbc",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-313.mp3",
+      "sourceFile": "ali_tok_313.mp3",
+      "sha256": "7952216eedc1fa161ec28f8a4a18f72f17b23f277ced8a560007dfcd32e8f115",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-314.mp3",
+      "sourceFile": "ali_tok_314.mp3",
+      "sha256": "dd01bb28ac4ba9366d276196b32d46541ad9d9a2d36dd10155b429f58d42d8b8",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-337.mp3",
+      "sourceFile": "ali_tok_337.mp3",
+      "sha256": "c9b5ad74f99be2b45fcc82600230f5e434bbb84d74b9b81ffab5abe99b3552ae",
+      "bytes": 8301
+    },
+    {
+      "file": "clip-355.mp3",
+      "sourceFile": "ali_tok_355.mp3",
+      "sha256": "da83e5338479c0ba2fac5546962b9285d527f5d7829c1f3d955ccba3c2702a99",
+      "bytes": 6381
+    },
+    {
+      "file": "clip-375.mp3",
+      "sourceFile": "ali_tok_375.mp3",
+      "sha256": "525402a9eaf9ddf46049d4678c5d530c742da0270daf085cbf461c4ebc25a1eb",
+      "bytes": 8685
+    },
+    {
+      "file": "clip-400.mp3",
+      "sourceFile": "ali_tok_400.mp3",
+      "sha256": "00b41bf8f841a49e51d5ad8e751badc5de283177e759371a1eb86a6a4f0070c2",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-405.mp3",
+      "sourceFile": "ali_tok_405.mp3",
+      "sha256": "d77cd508068a202978456eb1810e935cf0e640022051971e233938288721fd45",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-406.mp3",
+      "sourceFile": "ali_tok_406.mp3",
+      "sha256": "99be083c20237e011b4807511aa023321f5da8f14a7448cc86d0974cddb43391",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-408.mp3",
+      "sourceFile": "ali_tok_408.mp3",
+      "sha256": "68f799d8fb8233a8c55e116dca663bc77b58869b400a458c6056f988ea5d7eac",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-411.mp3",
+      "sourceFile": "ali_tok_411.mp3",
+      "sha256": "56df77d541b9bc07ea474ffb73d8a3aa0b6f38431a2628856a9cbefdd871b7f6",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-412.mp3",
+      "sourceFile": "ali_tok_412.mp3",
+      "sha256": "cfa85b1517fa00a5263655a6f65a00d7e4c89dcce6b95667ce029a332eaee286",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-416.mp3",
+      "sourceFile": "ali_tok_416.mp3",
+      "sha256": "cbbe050643b472baca9669bad435db6dded0c3f23c34af593ce7a3a8d1169123",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-437.mp3",
+      "sourceFile": "ali_tok_437.mp3",
+      "sha256": "a0389b9cdbae65e32312d26c155da80644b5430b07aed6e82e6dfaad2507358f",
+      "bytes": 7341
+    },
+    {
+      "file": "clip-455.mp3",
+      "sourceFile": "ali_tok_455.mp3",
+      "sha256": "68f2658044b4037dd54a77973be18aefa0902edcb8c01140dd255a0095e58566",
+      "bytes": 5997
+    },
+    {
+      "file": "clip-475.mp3",
+      "sourceFile": "ali_tok_475.mp3",
+      "sha256": "4fb3d071569903f4ae4b7ffc44a65433c3867078d715ced0ab80d757787d4f88",
+      "bytes": 9069
+    },
+    {
+      "file": "clip-500.mp3",
+      "sourceFile": "ali_tok_500.mp3",
+      "sha256": "951a7bb78d46e3fece4f8f981bd07244e8f0a2e89776c43a6280bba47ca72558",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-502.mp3",
+      "sourceFile": "ali_tok_502.mp3",
+      "sha256": "c665a2733c4c951deba826f4b1bdeb81ac245e5c9d996ef538d8d6d3b60edbb7",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-505.mp3",
+      "sourceFile": "ali_tok_505.mp3",
+      "sha256": "73755cf3ea87c39e591e169b9622ca0f3ea1deb1f0a6a59fbe1756264886266c",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-511.mp3",
+      "sourceFile": "ali_tok_511.mp3",
+      "sha256": "01560d593b2fd9050ba42da296ba1bba295df2a40d50dccc67c2c3909e9f71bd",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-512.mp3",
+      "sourceFile": "ali_tok_512.mp3",
+      "sha256": "79b2091ddd0b7458d4e4966982bbc216323eae9b1747f0f4a6939d83929b8606",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-513.mp3",
+      "sourceFile": "ali_tok_513.mp3",
+      "sha256": "6a8e2065306b945bdf84d7507acabb2e896a7e4eadebb5c7e27968af48d31f76",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-514.mp3",
+      "sourceFile": "ali_tok_514.mp3",
+      "sha256": "70c38cece201612d9b509efe6190a2d4b6369abc996f67ab1380b7c89598f7e1",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-537.mp3",
+      "sourceFile": "ali_tok_537.mp3",
+      "sha256": "67e48322effc3fe8cfab7d2d2ecf0fdac2c1be29cd1fc476335f5564cdef8e7a",
+      "bytes": 5805
+    },
+    {
+      "file": "clip-555.mp3",
+      "sourceFile": "ali_tok_555.mp3",
+      "sha256": "8a98c898b06d892fed6bb7ec0e5dec92ce03e2ea7ca0acd5a3b3c98fbbad0212",
+      "bytes": 5229
+    },
+    {
+      "file": "clip-575.mp3",
+      "sourceFile": "ali_tok_575.mp3",
+      "sha256": "91f9537464670fa0c32ad4c5fbe4feff88b1939104dd24a9d9f12a7e8be980a9",
+      "bytes": 8877
+    },
+    {
+      "file": "clip-600.mp3",
+      "sourceFile": "ali_tok_600.mp3",
+      "sha256": "f8b9dc69ad1b60f92c6487ab6b38c400ccad1c61b71195fd8397442664d2c07b",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-605.mp3",
+      "sourceFile": "ali_tok_605.mp3",
+      "sha256": "e116a1d5e6c05c51d7dc2d6acdf424e4e292dbd6a8f6b86251be72cec0aa0f8d",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-607.mp3",
+      "sourceFile": "ali_tok_607.mp3",
+      "sha256": "4f620a750f0caa00e1405f16a0c48919490d62db8db63f256fa9d2c25c0f3df4",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-608.mp3",
+      "sourceFile": "ali_tok_608.mp3",
+      "sha256": "dfa81040f297ef220a4e603bf003fd08ba03845d63d668ff96a358e3a8ebf275",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-611.mp3",
+      "sourceFile": "ali_tok_611.mp3",
+      "sha256": "7ab43641d144a974d15a30e3d1b46e81e8d248b1e89aa4bb09216587e59904e1",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-614.mp3",
+      "sourceFile": "ali_tok_614.mp3",
+      "sha256": "1e098baed78dab1b394e50b1476c67ca9f736d4cd7d5feb5792c70e89516f95d",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-637.mp3",
+      "sourceFile": "ali_tok_637.mp3",
+      "sha256": "1ce4666e1ac82b6b0e8c5114e1688cef04bd0a9edda7722daabde9da2d165c88",
+      "bytes": 6765
+    },
+    {
+      "file": "clip-655.mp3",
+      "sourceFile": "ali_tok_655.mp3",
+      "sha256": "fabd908e7ab4a5216850e1f7cbc91706954489f222bc23876157a513d548f22d",
+      "bytes": 5037
+    },
+    {
+      "file": "clip-675.mp3",
+      "sourceFile": "ali_tok_675.mp3",
+      "sha256": "1c3be20f64747bd795f5ac5a5db565c78dee1bece25f25727506c8c9d5d86fc6",
+      "bytes": 8685
+    },
+    {
+      "file": "clip-700.mp3",
+      "sourceFile": "ali_tok_700.mp3",
+      "sha256": "f04f0624bfcae96a41f835759619efd6c005264a9632fde2ae3df5cf2e217661",
+      "bytes": 3885
+    },
+    {
+      "file": "clip-701.mp3",
+      "sourceFile": "ali_tok_701.mp3",
+      "sha256": "76483ed7649bb4f79c9011e8b97b2d8db0211cca080ff54245a04f9a8ef500b8",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-703.mp3",
+      "sourceFile": "ali_tok_703.mp3",
+      "sha256": "d7d8402d9c92c8d101de336643b35701999b646ed6b63a910bb72437afe1ada0",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-705.mp3",
+      "sourceFile": "ali_tok_705.mp3",
+      "sha256": "c0e0a70c4625ebf105b1f3bfa30cd76b53c0a29c52e97f8f729cc307dd116e74",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-708.mp3",
+      "sourceFile": "ali_tok_708.mp3",
+      "sha256": "71290958dbf9af70f4305fcb981085e23a8159746f05be1f677cdd834aba5047",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-709.mp3",
+      "sourceFile": "ali_tok_709.mp3",
+      "sha256": "653f6f3a34ff58fe7d225c9e0ee87053c4ac983d8cecee8cf0b77bd38825f18d",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-712.mp3",
+      "sourceFile": "ali_tok_712.mp3",
+      "sha256": "734469864a95f72bbf7b6257a9769fd1cee1aba65ca8c22b9d7da1bab92efef4",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-713.mp3",
+      "sourceFile": "ali_tok_713.mp3",
+      "sha256": "3099ac183c59dfaf00e669e6f18ae41e3359b10451d2371b6b4d412d4110b9a3",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-737.mp3",
+      "sourceFile": "ali_tok_737.mp3",
+      "sha256": "1807cc00d64b4cb94c681155312e2b8f0ada8388b3b558f064f4354757b3761f",
+      "bytes": 7341
+    },
+    {
+      "file": "clip-755.mp3",
+      "sourceFile": "ali_tok_755.mp3",
+      "sha256": "1523ceb80984cc4c2a369e32810d59525b621ecf15a8c6d004f2109c42740a2c",
+      "bytes": 5421
+    },
+    {
+      "file": "clip-775.mp3",
+      "sourceFile": "ali_tok_775.mp3",
+      "sha256": "f4b662a9071ba639c14899529e8d30b12efad414f329453d878ac3bdac9c27d2",
+      "bytes": 8685
+    },
+    {
+      "file": "clip-800.mp3",
+      "sourceFile": "ali_tok_800.mp3",
+      "sha256": "53f9e30abde1cef8bae80ed31967aa2937c9350c3e7519b62cc8120dfc769bf9",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-801.mp3",
+      "sourceFile": "ali_tok_801.mp3",
+      "sha256": "df13d430693780db424e3183309584b714d410935ac595937616189c882faee9",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-802.mp3",
+      "sourceFile": "ali_tok_802.mp3",
+      "sha256": "3376c9e7c2e48910a09413ae6a22dfb9faa634e896afc3680a119fae897ba9af",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-806.mp3",
+      "sourceFile": "ali_tok_806.mp3",
+      "sha256": "148bbbbe7382905717ad2e79e4307a655c9ffd7a2e12e6414cf04d4d5870b763",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-807.mp3",
+      "sourceFile": "ali_tok_807.mp3",
+      "sha256": "cecb2ac76804699e9bb90a36f28fa764ef9d939c30ac577f99717038b2b69cf9",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-812.mp3",
+      "sourceFile": "ali_tok_812.mp3",
+      "sha256": "b6c3d3d24f7809b408a91f3fd443314e2042d7c65624773623cb835b1ade76e3",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-813.mp3",
+      "sourceFile": "ali_tok_813.mp3",
+      "sha256": "86b627306b5b4a619b689d1919fe87fcf51c73ed7551b1c22049046802b0d759",
+      "bytes": 2157
+    },
+    {
+      "file": "clip-837.mp3",
+      "sourceFile": "ali_tok_837.mp3",
+      "sha256": "c05fb59b6b9baf9183cead80e3a6d10f2d19a5441181916fec80e3446d8e100a",
+      "bytes": 5997
+    },
+    {
+      "file": "clip-855.mp3",
+      "sourceFile": "ali_tok_855.mp3",
+      "sha256": "5aa41401cb1a5a6f0729bfbbb9ae0395eefe0c8fbd0b48d043fe350a857b8af0",
+      "bytes": 5229
+    },
+    {
+      "file": "clip-875.mp3",
+      "sourceFile": "ali_tok_875.mp3",
+      "sha256": "b0862d80ec8149100774b953ea5688386a27292212c93ba8080360941f1c5ade",
+      "bytes": 9069
+    },
+    {
+      "file": "clip-900.mp3",
+      "sourceFile": "ali_tok_900.mp3",
+      "sha256": "76edd6d33ea4306e43867e4e6eefea99994d127397c7786852b755f3ec2647d4",
+      "bytes": 4077
+    },
+    {
+      "file": "clip-901.mp3",
+      "sourceFile": "ali_tok_901.mp3",
+      "sha256": "0dddc01c53fa5fa9765b332eb7fff49ecfc545e54ab90276ce6af0f44e469efb",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-902.mp3",
+      "sourceFile": "ali_tok_902.mp3",
+      "sha256": "bdb877574c269d44f424a7e3180e27a1becf1ea29187bd09635f06b2fcf76e48",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-905.mp3",
+      "sourceFile": "ali_tok_905.mp3",
+      "sha256": "4ae13122ff8538fb9270982cdf11f6c429421f685c69f1d337f528dcd9c2c516",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-906.mp3",
+      "sourceFile": "ali_tok_906.mp3",
+      "sha256": "e21cc0621839c02dabe2ad52c7d8fdcb569756e06705b4bf8b32e7520f44e1cf",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-908.mp3",
+      "sourceFile": "ali_tok_908.mp3",
+      "sha256": "e94aeb235e75d5c71af7edafc0982b70518fc1745624f838df62d6cd7a130c38",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-911.mp3",
+      "sourceFile": "ali_tok_911.mp3",
+      "sha256": "1b398a52d09f5bea24e6d63422c23ab7c1260ddd97c70509ac9741b4b1a96fc7",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-912.mp3",
+      "sourceFile": "ali_tok_912.mp3",
+      "sha256": "ac454c3de47590e5de7d6ed9ec11249715d4ea3e559fbcd97f20265756778177",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-913.mp3",
+      "sourceFile": "ali_tok_913.mp3",
+      "sha256": "16b164f2a416d6daba5c333d738fc10e3d3260b2f6ca0f013f62b1a0e9612890",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-914.mp3",
+      "sourceFile": "ali_tok_914.mp3",
+      "sha256": "b0be319b6b0794860e7cc95b4d3a72b41e333aa33c410a1749ef8441ed29bb6a",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-916.mp3",
+      "sourceFile": "ali_tok_916.mp3",
+      "sha256": "6af765170d28cf96e8d1baf89a14b79d7a2e04b28320b5901af5544a21effea2",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-937.mp3",
+      "sourceFile": "ali_tok_937.mp3",
+      "sha256": "81e3cd4450a9c2f99b8e9df60d3e00697c22d6e0a284d8345e5f42640d222437",
+      "bytes": 6957
+    },
+    {
+      "file": "clip-955.mp3",
+      "sourceFile": "ali_tok_955.mp3",
+      "sha256": "b5ac6ff885b6d7418b6255a3d2f3fdebc85c87ff970a92594210ae79f30e56d5",
+      "bytes": 5421
+    },
+    {
+      "file": "clip-975.mp3",
+      "sourceFile": "ali_tok_975.mp3",
+      "sha256": "804d8f4c1e5d011098c35e2346780322b422b3b462fce2f47a6ba298236a3eee",
+      "bytes": 8301
+    },
+    {
+      "file": "clip-1013.mp3",
+      "sourceFile": "ali_tok_1013.mp3",
+      "sha256": "53e8a8fa3a565f867c715a3c7608d57d95c7fb6edd2456c0277a7c88c187adfc",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-1014.mp3",
+      "sourceFile": "ali_tok_1014.mp3",
+      "sha256": "c3cc2392523f308ac123ac6c321a0b708482d260f64c0d384b7899935f437f2d",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-1016.mp3",
+      "sourceFile": "ali_tok_1016.mp3",
+      "sha256": "5080af004693120ddad69de70d70f29a53a291fcf15cb9b58820391f034e882a",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-1037.mp3",
+      "sourceFile": "ali_tok_1037.mp3",
+      "sha256": "3a31304595cab73a745eb13353ef302669efdcc4c590899370aaf9736fe9a6d1",
+      "bytes": 7533
+    },
+    {
+      "file": "clip-1055.mp3",
+      "sourceFile": "ali_tok_1055.mp3",
+      "sha256": "cf92f4fd6fa8f1d1bb546e562453f29fbb8efcf70af4ebea30729475b53675b0",
+      "bytes": 5421
+    },
+    {
+      "file": "clip-1075.mp3",
+      "sourceFile": "ali_tok_1075.mp3",
+      "sha256": "86893fc6b5fecead9a45a6a7afae21571234191e926a1410cee0b2d87e560e47",
+      "bytes": 8685
+    },
+    {
+      "file": "clip-1103.mp3",
+      "sourceFile": "ali_tok_1103.mp3",
+      "sha256": "6d3ae6b5264f2828d97ead1e9812d4fbf3af159fdbe388137201709f4452db11",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-1200.mp3",
+      "sourceFile": "ali_tok_1200.mp3",
+      "sha256": "7cb320008e97abd3366fcd2d7d9b64b843e224d44be8f0c13b18181eb0a747d7",
+      "bytes": 5037
+    },
+    {
+      "file": "clip-1202.mp3",
+      "sourceFile": "ali_tok_1202.mp3",
+      "sha256": "c42c804984e46b9cedbc2f726b765fe1a083569ffc4195e4c7be98f8abdc1b70",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-1205.mp3",
+      "sourceFile": "ali_tok_1205.mp3",
+      "sha256": "97f3e6b26455f81062aa06213d486544649f9ca0627b4b5eb54d69df30e6fb23",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-1206.mp3",
+      "sourceFile": "ali_tok_1206.mp3",
+      "sha256": "3899087a5296fe64ee63c7a9e9e2e76a059b2b636463a111ad49b8be29d51261",
+      "bytes": 2349
+    },
+    {
+      "file": "clip-1207.mp3",
+      "sourceFile": "ali_tok_1207.mp3",
+      "sha256": "b7488cc34ec1be923e592df61aa42327b699bcf782e989f79069530eac7613d8",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-1208.mp3",
+      "sourceFile": "ali_tok_1208.mp3",
+      "sha256": "e36f1a8d322531c3de3841af67d2f4d24dbc698cabb7cbaa1c85372e3e754acc",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-1209.mp3",
+      "sourceFile": "ali_tok_1209.mp3",
+      "sha256": "020ded2d29e8a0aaeac50d22fc77a08ec138959175b6509033e46132a59c1360",
+      "bytes": 2541
+    },
+    {
+      "file": "clip-1216.mp3",
+      "sourceFile": "ali_tok_1216.mp3",
+      "sha256": "c8b6b52da93c96c289fcec1b3e2a1d85ea1e8e393c268b62db08e52e7c5ed248",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-1237.mp3",
+      "sourceFile": "ali_tok_1237.mp3",
+      "sha256": "af6a5886220fe016db16bc8acf12a4c3f7c70a61199b56241496049a5d2a5bec",
+      "bytes": 7917
+    },
+    {
+      "file": "clip-1255.mp3",
+      "sourceFile": "ali_tok_1255.mp3",
+      "sha256": "3409be8b2054b1cfa767a6949e05689f26a2b00be5a554f5c34c182852d56317",
+      "bytes": 5613
+    },
+    {
+      "file": "clip-1275.mp3",
+      "sourceFile": "ali_tok_1275.mp3",
+      "sha256": "5d8262f445fe09f8c06cb021c640727010f2cbbbfc67bd6943e9aef8d1e5e7f3",
+      "bytes": 9261
+    },
+    {
+      "file": "clip-1300.mp3",
+      "sourceFile": "ali_tok_1300.mp3",
+      "sha256": "0678d060659235d52f0245a8bf52a6aa58f31f80495aa305c22b0839d476e324",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-1302.mp3",
+      "sourceFile": "ali_tok_1302.mp3",
+      "sha256": "76e0667bec1f8b9744d0516f6ae17da60f34890dbc8a3cd409122d1719520b1b",
+      "bytes": 2925
+    },
+    {
+      "file": "clip-1309.mp3",
+      "sourceFile": "ali_tok_1309.mp3",
+      "sha256": "3f66ce313e99f15920849ec38f96af5331b23305de0585c807d36e01413948db",
+      "bytes": 2733
+    },
+    {
+      "file": "clip-1311.mp3",
+      "sourceFile": "ali_tok_1311.mp3",
+      "sha256": "0933c1873741a743541ef67e46fb50a0b494b4e25360fe11ae1706e275f8000c",
+      "bytes": 3117
+    },
+    {
+      "file": "clip-1337.mp3",
+      "sourceFile": "ali_tok_1337.mp3",
+      "sha256": "d9c2095fc3d74750fe487351ef52e2441be774f1421b48b6cf42796bc654a189",
+      "bytes": 6765
+    },
+    {
+      "file": "clip-1355.mp3",
+      "sourceFile": "ali_tok_1355.mp3",
+      "sha256": "b1cdda0d9adc92274aa168944cbf71b2c7ff256e6a0ff1689cd8c2520aed07b7",
+      "bytes": 4653
+    },
+    {
+      "file": "clip-1375.mp3",
+      "sourceFile": "ali_tok_1375.mp3",
+      "sha256": "cf96dd9d6147c1c8cb05c2f99f9cc6e9bb74a308645ca3e0f30b68b25ffad908",
+      "bytes": 8301
+    },
+    {
+      "file": "clip-1403.mp3",
+      "sourceFile": "ali_tok_1403.mp3",
+      "sha256": "7146cb3c35c08075e156fba2057d91680be305f5940c3611f1be66ac3f2b25a1",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-1416.mp3",
+      "sourceFile": "ali_tok_1416.mp3",
+      "sha256": "64be1f929c0924f2e19f14ad8168b9e915d584140ff3dcf0656a27691ddba87a",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-1437.mp3",
+      "sourceFile": "ali_tok_1437.mp3",
+      "sha256": "007eb394603c0e1ab30c3f2b6fb812d1eed5ae506e53df3c7017d3434ec4afeb",
+      "bytes": 6765
+    },
+    {
+      "file": "clip-1455.mp3",
+      "sourceFile": "ali_tok_1455.mp3",
+      "sha256": "b9a5ab4e38b260cba9b82bd0ce53bc662740d35e0d6fc3e4ea7f3beafd656a8c",
+      "bytes": 5229
+    },
+    {
+      "file": "clip-1475.mp3",
+      "sourceFile": "ali_tok_1475.mp3",
+      "sha256": "b16f8bc1753d7a2ddd3a11834c7524466d11589269d3bfb62926410d342e3d89",
+      "bytes": 8877
+    },
+    {
+      "file": "clip-1500.mp3",
+      "sourceFile": "ali_tok_1500.mp3",
+      "sha256": "819c30fadd31fc0fe4a1d65d5e1b71099056c82b90f81d7bd164d1abe14b9d87",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-1600.mp3",
+      "sourceFile": "ali_tok_1600.mp3",
+      "sha256": "fcabe61c3317237bb0b96aa7d12dd4a262208e67301db8b11e0907696a86da40",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-1602.mp3",
+      "sourceFile": "ali_tok_1602.mp3",
+      "sha256": "ca2c0d1bb2dd21b29019ff28091170c1f91ad9ed734ee1c65e76da0195f25ce0",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-1608.mp3",
+      "sourceFile": "ali_tok_1608.mp3",
+      "sha256": "ca2c0d1bb2dd21b29019ff28091170c1f91ad9ed734ee1c65e76da0195f25ce0",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-1611.mp3",
+      "sourceFile": "ali_tok_1611.mp3",
+      "sha256": "ca6413150b5239f0fa21e936d2559496453dc1e65cd77f721ac9dce241a60343",
+      "bytes": 3309
+    },
+    {
+      "file": "clip-1637.mp3",
+      "sourceFile": "ali_tok_1637.mp3",
+      "sha256": "a85c1641ffeca8d54169ce67389612496ef2b6b95e2f7ca885fc0018073fd404",
+      "bytes": 7341
+    },
+    {
+      "file": "clip-9002.mp3",
+      "sourceFile": "ali_tok_9002.mp3",
+      "sha256": "fcabe61c3317237bb0b96aa7d12dd4a262208e67301db8b11e0907696a86da40",
+      "bytes": 3501
+    },
+    {
+      "file": "clip-9003.mp3",
+      "sourceFile": "ali_tok_9003.mp3",
+      "sha256": "0fa8a3729c34dc6df4fd9677319690588b2472330ce6b337d64d1f03bbfc4320",
+      "bytes": 8493
+    },
+    {
+      "file": "chime-small.mp3",
+      "sourceFile": "diaoluo_xiao.mp3",
+      "sha256": "32bc237f2871a76869cc267796c4e2c255933216b971bbc9cca5bb3578de86d6",
+      "bytes": 11703
+    },
+    {
+      "file": "chime-large.mp3",
+      "sourceFile": "diaoluo_da.mp3",
+      "sha256": "18c7192cc1e710e90ea948197b61c2f5de284dd2aa73484ea5ca92a3ccad9b9f",
+      "bytes": 25569
+    }
+  ]
+}

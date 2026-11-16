@@ -2,7 +2,10 @@
     (function() {
       // ======================================================================
       async function api(path,{method='GET',body,...options}={}) {
-        return AVEDHttp.request(path,{method,...options,body:body?JSON.stringify(body):undefined});
+        const data=await AVEDHttp.request(path,{method,...options,body:body?JSON.stringify(body):undefined});
+        if(path==='/api/logout')window.AVEDIncomeVoice?.setSession(null);
+        else if(!path.startsWith('/api/player/income-events')&&(method!=='GET'||typeof data.balance==='number'))window.AVEDIncomeVoice?.changed();
+        return data;
       }
       const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       async function apiLogin(identifier,password,remember) {
@@ -17,7 +20,17 @@
       // ======================================================================
       // 1. 本机音效开关
       let audioSfxOn=true;try{audioSfxOn=localStorage.getItem('aved_sfx_v1')!=='off';}catch{}
-      let audioCtx=null;
+      let audioSfxVolume=.75;try{const stored=localStorage.getItem('aved_sfx_volume_v1');if(stored!==null&&Number.isFinite(Number(stored)))audioSfxVolume=Math.min(1,Math.max(0,Number(stored)));}catch{}
+      let audioCtx=null;const sfxOutputs=new Map();
+      function refreshSfxOutputs(){for(const [context,output] of sfxOutputs){if(context.state==='closed'){sfxOutputs.delete(context);continue;}output.gain.setTargetAtTime(audioSfxOn?audioSfxVolume*2:0,context.currentTime,.015);}}
+      function sfxOutput(context){
+        for(const [existing] of sfxOutputs)if(existing.state==='closed')sfxOutputs.delete(existing);
+        if(!sfxOutputs.has(context)){const output=context.createGain();output.gain.value=audioSfxOn?audioSfxVolume*2:0;output.connect(context.destination);sfxOutputs.set(context,output);}
+        return sfxOutputs.get(context);
+      }
+      window.AVEDWebSound={volume:()=>audioSfxVolume,enabled:()=>audioSfxOn,output:sfxOutput,
+        setVolume(value){if(!Number.isFinite(Number(value)))return;audioSfxVolume=Math.min(1,Math.max(0,Number(value)));try{localStorage.setItem('aved_sfx_volume_v1',String(audioSfxVolume));}catch{}refreshSfxOutputs();},
+        preview:()=>playSfx('click')};
       function ensureAudioCtx() {
         if (!audioCtx) {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -29,7 +42,7 @@
       }
 
       function playSfx(type) {
-        if (!audioSfxOn) return;
+        if (!audioSfxOn||audioSfxVolume===0) return;
         try {
           ensureAudioCtx();
           if (!audioCtx) return;
@@ -40,7 +53,7 @@
             const source=audioCtx.createBufferSource(),buffer=audioCtx.createBuffer(1,Math.ceil(audioCtx.sampleRate*duration),audioCtx.sampleRate),data=buffer.getChannelData(0);
             for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
             source.buffer=buffer;const filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();filter.type='lowpass';filter.frequency.setValueAtTime(wind?450:open?2400:crash?220:500,now);filter.frequency.exponentialRampToValueAtTime(wind?180:90,now+duration);
-            gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(wind?.018:open?.11:crash?.13:.08,now+.02);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);source.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};source.start();source.stop(now+duration);
+            gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(wind?.018:open?.11:crash?.13:.08,now+.02);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);source.connect(filter);filter.connect(gain);gain.connect(sfxOutput(audioCtx));source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};source.start();source.stop(now+duration);
           } else if(type.startsWith('scratch-bomb-')){
             window.AVEDScratchBomb?.sound(audioCtx,Number(type.split('-').at(-1)));
           } else if(type.startsWith('scratch-')){
@@ -51,7 +64,7 @@
               'scratch-jackpot-supreme':[523,784,1047,1319,1568,2093,1568,1319,1568,2093,1568,2093,2637,2093],
               'scratch-record':[523,523,784,1047,784,1047,1319,1568,1319,1568,2093,1568]};
             const long=['scratch-big','scratch-jackpot','scratch-jackpot-major','scratch-jackpot-supreme','scratch-record'].includes(type),notes=tunes[type]||tunes['scratch-hit'],pitch=[.891,1,1.122][Math.floor(Math.random()*3)],step=long?.16:type==='scratch-hit'?.045:.09,duration=long?.38:.17;
-            notes.forEach((freq,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),at=now+i*step;osc.type='square';osc.frequency.setValueAtTime(freq*pitch,at);gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(long?.03:type==='scratch-hit'?.025:.04,at+.008);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+duration+.02);});
+            notes.forEach((freq,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),at=now+i*step;osc.type='square';osc.frequency.setValueAtTime(freq*pitch,at);gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(long?.03:type==='scratch-hit'?.025:.04,at+.008);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);osc.connect(gain);gain.connect(sfxOutput(audioCtx));osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+duration+.02);});
           } else if (type === 'checkin' || type === 'win') {
             [523.25, 659.25, 783.99].forEach((freq, i) => {
               const osc = audioCtx.createOscillator();
@@ -61,7 +74,7 @@
               gain.gain.setValueAtTime(0.11, now + i * 0.08);
               gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.22);
               osc.connect(gain);
-              gain.connect(audioCtx.destination);
+              gain.connect(sfxOutput(audioCtx));
               osc.start(now + i * 0.08);
               osc.stop(now + i * 0.08 + 0.24);
             });
@@ -74,7 +87,7 @@
             gain.gain.setValueAtTime(0.14, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(sfxOutput(audioCtx));
             osc.start(now);
             osc.stop(now + 0.4);
           } else if (type === 'scratch') {
@@ -85,7 +98,7 @@
             gain.gain.setValueAtTime(0.045, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(sfxOutput(audioCtx));
             osc.start(now);
             osc.stop(now + 0.07);
           } else if (type === 'click') {
@@ -96,7 +109,7 @@
             gain.gain.setValueAtTime(0.05, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(sfxOutput(audioCtx));
             osc.start(now);
             osc.stop(now + 0.06);
           }
@@ -106,10 +119,11 @@
       function updateSfxUI(){
         const button=document.getElementById('audio-sfx-btn');
         button.textContent=audioSfxOn?'音效开启':'音效关闭';button.setAttribute('aria-pressed',String(audioSfxOn));
-        button.setAttribute('aria-label',audioSfxOn?'关闭音效':'开启音效');
+        button.setAttribute('aria-label',audioSfxOn?'关闭网页音效':'开启网页音效');
       }
       document.getElementById('audio-sfx-btn').addEventListener('click',()=>{
         audioSfxOn=!audioSfxOn;try{localStorage.setItem('aved_sfx_v1',audioSfxOn?'on':'off');}catch{}
+        refreshSfxOutputs();
         if(!audioSfxOn&&audioCtx){const previous=audioCtx;audioCtx=null;previous.close().catch(()=>{});}
         updateSfxUI();if(audioSfxOn)playSfx('click');
       });
@@ -175,6 +189,7 @@
 
       let forumThreads = JSON.parse(JSON.stringify(initialForumThreads));
       let currentUser = null,achievementAlerts=null;
+      window.AVEDIncomeVoice=AVEDIncomeSpeech.create({api,getUser:()=>currentUser,canSpeak:()=>!slot5x3State.spinning&&!pendingSlotRequest&&!(activeIssuedTicket&&!activeIssuedTicket.draft&&!activeIssuedTicket.demo&&!activeIssuedTicket.settled)});
       let isDarkMode = document.documentElement.dataset.savedTheme==='night';
       document.body.classList.toggle('dark-mode',isDarkMode);
       let sidebarNarrow = window.innerWidth < 768;
@@ -375,6 +390,7 @@
         } finally {button.disabled=false;}
       });
       document.getElementById('logout-btn').addEventListener('click',async()=>{
+        if(window.AVEDContamination&&!await window.AVEDContamination.beforeLogout())return;
         try{await apiLogout();location.reload();}catch(e){showToast(e.message,'warn');}
       });
 
@@ -1451,10 +1467,10 @@
         byId('stock-est-trade').textContent=fmtMoney(amount);
         byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
         byId('stock-est-fee').textContent=fmtMoney(amount>0?Math.max(1,Math.ceil(amount/1000)):0);
-        const thresholds=marketRiskRules?.leverageBalanceThresholds,balance=currentUser?.balance||0;
-        for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=level>1&&(!thresholds||balance<=thresholds[level]);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（余额需超过 '+(thresholds?.[level]/10000||'—')+' 万）':'');}
-        const leverageLocked=leverage>1&&(!thresholds||balance<=thresholds[leverage]);
-        byId('stock-leverage-note').textContent=leverageLocked?'当前余额未达到所选杠杆门槛，请改选可用倍数。':'可用余额超过 100 万解锁 3 倍，超过 500 万解锁 10 倍。';
+        const thresholds=marketRiskRules?.leverageAssetThresholds,unlocked=marketRiskRules?.unlockedLeverages||[1];
+        for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=!unlocked.includes(level);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（资产曾超过 '+(thresholds?.[level]/10000||'—')+' 万解锁）':'（已永久解锁）');}
+        const leverageLocked=!unlocked.includes(leverage);
+        byId('stock-leverage-note').textContent=leverageLocked?'所选倍数尚待解锁，请选择已解锁倍数。':'资产曾超过 100 万永久解锁 3 倍，超过 500 万永久解锁 10 倍。';
         byId('stock-trade-ticket').querySelectorAll('[data-stock-trade-side]').forEach(button=>{button.disabled=!stock||stockTradeBusy||(button.dataset.stockTradeSide==='close'?!(longHolding+shortHolding):leverageLocked);if(button.dataset.stockTradeSide==='close')button.textContent=longHolding&&shortHolding?'选择平仓':'平仓';});
       }
       function selectMarket(code){
@@ -1515,6 +1531,7 @@
         forumThreads=data.forum.items;forumDetail=null;forumBrowser.reset();
         stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...(data.stockOrders||[]));
         economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);
+        window.AVEDIncomeVoice.setSession(currentUser.id,data.incomeCursor);
         return currentUser;
       }
       const deferredSections=new Set(),deferredRequests=new Map();
@@ -1691,7 +1708,7 @@
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form',social=forumSocialUI?.compose(form)||{};
             const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{...social,title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
-            form.reset();form.querySelector('[name=identityMode]').value='anonymous';forumSocialUI?.afterPublish(form,social.personaId);if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';await refreshForum();if(reply&&!d.pending)await forumReplies.reveal(d.id);if(!reply)forumBrowser.closeComposer();showToast(d.pending?'整条图文已提交审核，通过后公开显示。':'已发布。');
+            form.reset();form.querySelector('[name=identityMode]').value='anonymous';forumSocialUI?.afterPublish(form,social.personaId);if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';await refreshForum();if(reply&&!d.pending)await forumReplies.reveal(d.id);if(!reply)forumBrowser.closeComposer();showToast(d.pending?'已提交审核。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
           }else if(id==='scp-realname-comment-form'){
@@ -1719,7 +1736,7 @@
         const trade=button.hasAttribute('data-stock-trade-side');
         if(trade&&stockTradeBusy)return;
         if(!handled.includes(id)&&!trade)return;stop(event);
-        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','正余额会清空；负余额补至零，差额从公司爱心基金扣除。此操作不可撤销。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
+        if(id==='zero-balance-btn'){askSecondConfirmation('确认将余额归零？','正余额会清空；负余额补至零，差额从公司爱心基金扣除。',()=>action(button,async()=>{const d=await api('/api/player/balance/zero',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();profileFreshAt=0;showProfile().catch(e=>showToast(e.message));}));return;}
         action(button,async()=>{
           if(id==='cloud-profile-open')return showProfile();
           if(id==='forum-refresh-skeleton-btn'){await refreshForum();return;}
@@ -1767,7 +1784,7 @@
             if(takeProfit!==null&&(!Number.isSafeInteger(takeProfit)||takeProfit<=0))throw new Error('止盈价需为正整数。');
             const stock=stocksData.find(item=>item.code===code);
             const currentPrice=Number(stock?.price);
-            if(closing&&(!stock?.holding||quantity>Math.abs(stock.holding)))throw new Error('平仓数量不能超过当前持仓。');
+            if(closing&&(!stock?.holding||quantity>Math.abs(stock.holding)))throw new Error('请填写当前持仓范围内的平仓数量。');
             if(!closing&&Number.isFinite(currentPrice)&&currentPrice>0){
               if(long){
                 if(stopLoss!==null&&stopLoss>=currentPrice)throw new Error('买涨时止损需低于现价。');

@@ -22,7 +22,7 @@ if (action === 'list') {
   try {
     const username = (await rl.question('管理员用户名：')).trim();
     const account = db.prepare('SELECT id,username FROM employees WHERE username=? AND role=?').get(username, 'admin');
-    if (!account) throw new Error('未找到该管理员。请先用 list 查看用户名；不会创建或提升普通员工权限。');
+    if (!account) throw new Error('未找到该管理员。请先用 list 查看用户名。');
     muted = true;
     process.stdout.write('新密码（至少 6 位，输入不显示）：');
     const password = await rl.question('');

@@ -22,7 +22,7 @@ test('local opening affects only the visual self and yields to authoritative fai
 function harness(){
  let state=initial(),now=1000,resolvePost,rejectPost;
  const elements=new Map(),frames=[],paints=[],calls=[],sounds=[],user={id:7,balance:900};
- function element(){return {dataset:{},style:{setProperty(){}},classList:{contains(){return false;}},hidden:false,children:[],textContent:'',append(el){this.children.push(el);},remove(){},setAttribute(){},querySelector(){return this.children[0]||null;},toDataURL(){return 'data:image/png;base64,cHJldmlldw==';},getContext(){return {fillText(){},getImageData(){return {data:new Uint8ClampedArray(4)};},putImageData(){}};}};}
+ function element(){return {dataset:{},style:{setProperty(){}},classList:{contains(){return false;},toggle(){}},hidden:false,children:[],textContent:'',append(el){this.children.push(el);},remove(){},setAttribute(){},querySelector(){return this.children[0]||null;},toDataURL(){return 'data:image/png;base64,cHJldmlldw==';},getContext(){return {fillText(){},getImageData(){return {data:new Uint8ClampedArray(4)};},putImageData(){}};}};}
  const byId=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
  const scene={paint(...args){paints.push(args);},preview(){},reset(){}};
  const api=async(path,options)=>{calls.push({path,options});if(path.endsWith('/current'))return state;return new Promise((resolve,reject)=>{resolvePost=resolve;rejectPost=reject;});};

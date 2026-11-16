@@ -115,7 +115,7 @@ window.AVEDSkyUI=function({api,esc,byId,getUser,onBalance,showToast,playSfx=()=>
 window.AVEDSkyUI.scaleBet=function(value,factor){
  const amount=Number(value);
  if(!Number.isSafeInteger(amount)||amount<100)throw new Error('请输入至少 100 的整数金额');
- if(![2,5].includes(factor))throw new Error('不支持的金额倍数');
+ if(![2,5].includes(factor))throw new Error('请选择有效的金额倍数');
  return {value:Math.min(300000,amount*factor),capped:amount*factor>300000};
 };
 

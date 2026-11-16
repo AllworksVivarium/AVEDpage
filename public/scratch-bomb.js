@@ -24,9 +24,9 @@
  function sound(ctx,total=2){
   if(!ctx)return;total=Math.min(5,Math.max(2,total));const at=ctx.currentTime;
   // Short warning ticks followed by a low electronic impact; no external audio files.
-  for(let i=0;i<2;i++){const osc=ctx.createOscillator(),g=ctx.createGain();osc.type='square';osc.frequency.value=620-i*130;g.gain.setValueAtTime(.0001,at+i*.12);g.gain.linearRampToValueAtTime(.025,at+i*.12+.01);g.gain.exponentialRampToValueAtTime(.0001,at+i*.12+.09);osc.connect(g);g.connect(ctx.destination);osc.onended=()=>{osc.disconnect();g.disconnect();};osc.start(at+i*.12);osc.stop(at+i*.12+.1);}
+  for(let i=0;i<2;i++){const osc=ctx.createOscillator(),g=ctx.createGain();osc.type='square';osc.frequency.value=620-i*130;g.gain.setValueAtTime(.0001,at+i*.12);g.gain.linearRampToValueAtTime(.025,at+i*.12+.01);g.gain.exponentialRampToValueAtTime(.0001,at+i*.12+.09);osc.connect(g);g.connect(window.AVEDWebSound?.output(ctx)||ctx.destination);osc.onended=()=>{osc.disconnect();g.disconnect();};osc.start(at+i*.12);osc.stop(at+i*.12+.1);}
   const osc=ctx.createOscillator(),g=ctx.createGain(),start=at+.26,duration=.55+total*.07;
-  osc.type='sawtooth';osc.frequency.setValueAtTime(115,start);osc.frequency.exponentialRampToValueAtTime(26,start+duration);g.gain.setValueAtTime(.0001,start);g.gain.linearRampToValueAtTime(.065,start+.018);g.gain.exponentialRampToValueAtTime(.0001,start+duration);osc.connect(g);g.connect(ctx.destination);osc.onended=()=>{osc.disconnect();g.disconnect();};osc.start(start);osc.stop(start+duration+.02);
+  osc.type='sawtooth';osc.frequency.setValueAtTime(115,start);osc.frequency.exponentialRampToValueAtTime(26,start+duration);g.gain.setValueAtTime(.0001,start);g.gain.linearRampToValueAtTime(.065,start+.018);g.gain.exponentialRampToValueAtTime(.0001,start+duration);osc.connect(g);g.connect(window.AVEDWebSound?.output(ctx)||ctx.destination);osc.onended=()=>{osc.disconnect();g.disconnect();};osc.start(start);osc.stop(start+duration+.02);
  }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
  document.addEventListener('aved-effects-change',clear);

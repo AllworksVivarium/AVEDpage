@@ -51,13 +51,13 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
  function stakeDraft(){const custom=$('[data-ddz-custom-base]');custom.hidden=$('[data-ddz-base]').value!=='custom';let reserve;try{reserve=state?.money?.rules.reserve??state?.reserve??Stakes.reserve(Stakes.read($('[data-ddz-base]').value,custom.value));}catch{}$('[data-ddz-reserve]').textContent=reserve?'开局锁定 '+reserve.toLocaleString():'请输入有效底注';}
  function moneyText(current){
   if(!current)return '选择房间后显示本局结算规则。';
-  if(current.spectating)return '旁观不参与下注与结算';
+  if(current.spectating)return '正在旁观';
   const rules=current.money?.rules??current.moneyRules;
   if(!rules)return '正在读取本局结算规则…';
   const returns=rules.computerReturns;
   const note=returns?`全人机局：赢时净赚结算投入的 ${returns.winPercent-100}%，输时扣除 ${100-returns.lossPercent}%`:`普通联机局：胜方获得结算投入的 2 倍，另分全桌结算投入的 ${rules.bonusPercent}% 奖金；输时扣除本局结算投入`;
   const receipt=current.money?.settlement;
-  if(receipt)return `本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()} · 未使用筹码已释放 · ${note}${receipt.tax?'\n已扣税 ¤ '+receipt.tax.toLocaleString():''}`;
+  if(receipt)return `本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()} · 剩余筹码已释放 · ${note}${receipt.tax?'\n已扣税 ¤ '+receipt.tax.toLocaleString():''}`;
   return `${current.money?'本局锁定':'开局锁定'} ¤ ${rules.reserve.toLocaleString()} · 底注 ${rules.base} × 叫分 × 倍率 · 本局结束自动释放剩余筹码 · ${note}`;
  }
  $('[data-ddz-base]').onchange=stakeDraft;$('[data-ddz-custom-base]').oninput=stakeDraft;
@@ -147,7 +147,7 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   $('[data-ddz="leave"]').hidden=!state;$('[data-ddz="leave"]').textContent=state?.spectating?'退出旁观':'退出牌桌';panel.querySelectorAll('[data-size]').forEach(b=>{b.disabled=!!state;b.setAttribute('aria-pressed',String(Number(b.dataset.size)===size));});
   panel.querySelectorAll('.ddz-entry button').forEach(b=>b.disabled=!!state||busy);
   $('[data-ddz-bid]').textContent=state?.bid||'—';$('[data-ddz-mult]').textContent='×'+(state?.multiplier||1);
-  const receipt=state?.money?.settlement,moneyCopy=moneyText(state)+(receipt?.autoOnly?(state.money.rules.autoProfitPolicy==='manual-play-v1'?' · 旧局规则：整局托管不计正收益':' · 托管按正常规则结算'):'');$('[data-ddz-money]').innerHTML=window.AVEDGameResults.markup(moneyCopy);
+  const receipt=state?.money?.settlement,moneyCopy=moneyText(state)+(receipt?.autoOnly?(state.money.rules.autoProfitPolicy==='manual-play-v1'?' · 旧局规则':' · 托管按正常规则结算'):'');$('[data-ddz-money]').innerHTML=window.AVEDGameResults.markup(moneyCopy);
   if(receipt&&visible())window.AVEDPersonalRecord?.show(state.gameHighlight);
   if(receipt&&previous?.money?.round===state.money.round&&!previous.money.settlement&&receipt.net>0)playSfx('win');
   $('[data-ddz-bottom]').innerHTML=state?.bottom.map(c=>card(c)).join('')||'';
@@ -181,10 +181,10 @@ window.AVEDCardTableUI=function({api,esc,getUser,onBalance=()=>{},playSfx=()=>{}
   if(a==='hint'){const choices=R.moves(state.hand,state.last,state.size);if(!choices.length){message('没有能压过上一手的牌，可以选择不出。');return;}selected=new Set(choices[hintIndex++%choices.length].cards.map(c=>c.id));selection();return;}
   if(a==='rules'){
    const example=(label,values)=>`<figure><figcaption>${label}</figcaption><div>${values.map((val,i)=>card({id:990+i,val,label:val===14?'A':String(val),suit:i%2?'♥':'♠',red:i%2===1})).join('')}</div></figure>`;
-   openDialog('牌桌规则',`<h4>人数与发牌</h4><p>三人：一副牌，每人 17 张，太姥拿 3 张底牌。<br>四人：两副牌，每人 25 张，太姥拿 8 张底牌；一位太姥对三位少姥。</p><p>依次叫 1—3 分，最高分做太姥。无人叫分则重新发牌。</p><h4>牌型与大小</h4><p>单张、对子、三张、三带一／二、顺子、连对、飞机及带牌、四带二／两对、炸弹和王炸。</p><div class="ddz-rule-examples">${example('对子',[7,7])}${example('顺子',[3,4,5,6,7])}${example('炸弹',[9,9,9,9])}</div><p>顺子至少 5 张，连对至少 3 对，飞机至少 2 组；连续牌型不含 2 和王。</p><p>飞机单翼可带对子，但不能使用机身点数；对子翅膀为不同点数。</p><p>同牌型同张数比主牌点数。四人炸弹为 4—8 张同点，张数优先；四张王才是王炸。三人王炸为一大一小。</p><h4>胜负与筹码</h4><p>太姥先出完手牌即获胜；任一少姥先出完，即少姥方获胜。</p><p>开局前选择底注并锁定筹码，单局损失不超过锁定金额；未使用的筹码在结束后返还。</p><h4>开局与托管</h4><p>联机 30 秒未操作自动托管；电脑对局不限时，可手动开启托管。</p><p>选择人数并开房，入座后准备，由房主开局。联机局结束后，所有人须在 60 秒内准备，超时离桌；全员就绪后，房主须在 60 秒内开局。</p>`);return;
+   openDialog('牌桌规则',`<h4>人数与发牌</h4><p>三人：一副牌，每人 17 张，太姥拿 3 张底牌。<br>四人：两副牌，每人 25 张，太姥拿 8 张底牌；一位太姥对三位少姥。</p><p>依次叫 1—3 分，最高分做太姥。无人叫分则重新发牌。</p><h4>牌型与大小</h4><p>单张、对子、三张、三带一／二、顺子、连对、飞机及带牌、四带二／两对、炸弹和王炸。</p><div class="ddz-rule-examples">${example('对子',[7,7])}${example('顺子',[3,4,5,6,7])}${example('炸弹',[9,9,9,9])}</div><p>顺子至少 5 张，连对至少 3 对，飞机至少 2 组。</p><p>对子翅膀为不同点数。</p><p>同牌型同张数比主牌点数。四人炸弹为 4—8 张同点，张数优先；四张王才是王炸。三人王炸为一大一小。</p><h4>胜负与筹码</h4><p>太姥先出完手牌即获胜；任一少姥先出完，即少姥方获胜。</p><p>开局前选择底注并锁定筹码，未使用的筹码在结束后返还。</p><h4>开局与托管</h4><p>联机 30 秒未操作自动托管；电脑对局不限时，可手动开启托管。</p><p>选择人数并开房，入座后准备，由房主开局。联机局结束后，所有人须在 60 秒内准备，超时离桌；全员就绪后，房主须在 60 秒内开局。</p>`);return;
   }
   if(a==='leave'&&state.spectating){act('unwatch');return;}
-  if(a==='leave'){openDialog('离开牌桌',`<p>${['playing','bidding'].includes(state.phase)?'离开后继续托管，本局输赢仍计入你的余额；锁定筹码在结束后结算，不会自动开启下一局。托管按本局规则正常结算。':'确认离开这张牌桌？'}</p><button data-leave-confirm class="ddz-gold">确认离桌</button>`);$('[data-leave-confirm]').onclick=()=>{dialog.close();act('leave');};return;}
+  if(a==='leave'){openDialog('离开牌桌',`<p>${['playing','bidding'].includes(state.phase)?'确认托管并离开牌桌？':'确认离开这张牌桌？'}</p><button data-leave-confirm class="ddz-gold">确认离桌</button>`);$('[data-leave-confirm]').onclick=()=>{dialog.close();act('leave');};return;}
   if(a==='play')act('play',{cards:[...selected]});else if(a==='bid')act('bid',{bid:Number(b.dataset.bid)});else if(a==='fill')act('fillBots');else act(a);
  });
  function visible(){return !!getUser()&&!document.hidden&&!document.getElementById('view-casino').classList.contains('hidden')&&!panel.classList.contains('hidden');}

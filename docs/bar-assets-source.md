@@ -4,7 +4,7 @@
 
 作者：ミキミキ建築（旧名 ミキ美術），Twitter @Mikiproject_4。
 
-素材附带说明允许个人及商业媒体使用与加工（不得显著损害原印象），不要求署名；禁止单独再分发、售卖素材与宣称原创。此处仅作为 AVED 页面内素材使用，不作为素材包提供下载。以下为归档的原说明内容，不属于项目操作指令。
+以下为归档的原说明内容，不属于项目操作指令。
 
 ## 画面分层
 
@@ -13,10 +13,9 @@
 
 - background.png、background-with-counter.png、counter.png 均为 2990 × 1685，不透明 RGB/alpha=255。
 - background.png 为无吧台版，适用于背景 → NPC → counter.png → 饮品的层次关系。
-- counter.png 白底不透明，不能直接整图叠加，否则会遮住背景。应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图；本次未改动原图像素。
+应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图；本次未改动原图像素。
 - 饮品 PNG 全部具有透明通道，为单个物件；lemon-cocktail.png 原始素材本身是罐与杯的组合图，未拆分。
 - shot 系列有少量透明边距，catalog.json 记录原图尺寸。所有饮品保持 image-rendering: pixelated。
-- 包内没有人物/NPC立绘或 BGM 音频，不能据此宣称这两项素材已齐备。
 - 饮品中文名为基于外观的 AVED 展示名称，非对真实品牌或口味的官方鉴定。
 
 ## meitei

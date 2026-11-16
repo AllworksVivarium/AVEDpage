@@ -1,6 +1,6 @@
 # 网站数据接口约定
 
-接口使用同源 `/api/...`。认证使用服务端设置的 HttpOnly 会话 Cookie。登录和 GET /api/health 无需登录；其他业务接口都要求登录；写请求会检查来源。前端不能指定余额、签到奖励或游戏开奖结果。
+接口使用同源 `/api/...`。认证使用服务端设置的 HttpOnly 会话 Cookie。
 
 ## 员工接口
 
@@ -36,7 +36,6 @@
 | GET | `/api/admin/posts` | 查看完整的公告匿名留言审核队列（含发言员工映射） |
 | GET | `/api/admin/forum` | 查看完整的匿名主题和回复审核队列（含发言员工映射） |
 | GET | `/api/admin/speech-records` | 统一查询发言审计记录，可按员工、来源、日期和关键词筛选 |
-| DELETE | `/api/admin/forum/threads/{id}`、`/api/admin/forum/replies/{id}` | 移除匿名主题或回复并保留原记录；主题移除后回复不再公开 |
 
 新增员工字段：`username`（唯一登录用户名）、`password`（至少 6 位）、`displayName`（员工姓名）、`qqNumber`、`department`、可选 `initialBalance`。密码只保存 PBKDF2 哈希。QQ 号仅在管理员名册接口返回。登录时可以填写唯一用户名或员工姓名；如员工姓名重复，则使用唯一用户名登录。
 
@@ -44,10 +43,9 @@
 
 ## 服务端结算和存储
 
-- 余额保存在不可由前端覆盖的流水表中，展示余额由服务器求和计算。
 - 签到使用员工编号和上海日期作为唯一键；重复签到会被拒绝。
-- `GET /api/player/rewards` 返回签到和整点补给状态、重置时间及额度；`POST /api/player/rewards/hourly` 每个整点周期领取一次 5,000，重复请求不重复入账。历史已领取金额保留。
-- 每次游戏由 Node.js `crypto.randomBytes(32)` 生成 256 位随机种子，开奖结果通过 HMAC 派生。种子、SHA-256 校验值、玩法、开奖结果和对应的余额流水写入数据库；游戏请求不接受客户端的结果参数。
+历史已领取金额保留。
+- 每次游戏由 Node.js `crypto.randomBytes(32)` 生成 256 位随机种子，开奖结果通过 HMAC 派生。
 - 公告、留言、个人资料、论坛主题/回复、收容物档案、曲目和员工账户均保存在服务器 SQLite 数据库中。
 - 前端仅展示 API 返回的数据；页面刷新后重新从服务器读取，不以 localStorage/sessionStorage 作为业务数据存储。
 
@@ -55,11 +53,11 @@
 
 ## 社区与内容维护
 
-登录修复：所有终端使用 public/http-client.js，HTTP 200 的截断/无效 JSON 仍视为失败。GET 在短暂网络错误后可重试，写请求不自动重发。POST /api/login 成功后须 GET /api/me 确认浏览器已建立同一身份的会话。
+登录修复：所有终端使用 public/http-client.js，HTTP 200 的截断/无效 JSON 仍视为失败。POST /api/login 成功后须 GET /api/me 确认浏览器已建立同一身份的会话。
 
-个人资料、员工名录及论坛/生活记录的 imageData、avatarUrl 可返回受登录保护的 `/api/media/avatar|thread|reply|life/:id?v=` 图片地址；登录资料包不再携带 Base64 图片。个人资料更新时可原样传回自己的头像地址，服务器保留原图。未审核图片仅管理员可读。
+个人资料更新时可原样传回自己的头像地址，服务器保留原图。未审核图片仅管理员可读。
 
-生产环境启用 COOKIE_SECURE 时，HTTP 页面重定向至 HTTPS，HTTP 登录请求返回 HTTPS_REQUIRED。TRUST_PROXY_IPS 必须按实际代理的精确地址配置，不能信任任意来源的转发头。失败次数限制以来源和账号组合为单位。
+生产环境启用 COOKIE_SECURE 时，HTTP 页面重定向至 HTTPS，HTTP 登录请求返回 HTTPS_REQUIRED。失败次数限制以来源和账号组合为单位。
 
 - 公告留言 GET /api/posts 返回 displayName、department、positionTitle 和 createdAt，署名与职务由服务器绑定；按创建时间升序、相同时按 id 升序排列。
 - 玩家论坛返回当前匿名代号、canEdit、editedAt。PUT /api/player/forum/thread/:id 和 reply/:id 仅允许作者修订，保存完整前后版本；含图修订重新审核。玩家没有删除接口。
@@ -68,26 +66,23 @@
 - PUT /api/admin/dossiers/:id 修订编号、名称、部门、状态和正文。新增仍使用 POST；评论独立持久化。
 - GET /api/admin/speech-records?from=&to=&keyword=&sourceType=&employeeId=&offset= 查询论坛、通告、卷宗、无线电及生活记录，每页最多 200 项，日期按上海自然日筛选。返回 QQ、实名、当前及历次代号、修订前后版本和删除人/时间。
 - 管理员 DELETE 论坛主题、回复、通告留言及 /api/admin/speech/posts|dossier_comments|chat_messages|life_records/:id 为保留记录的移除，前台过滤删除内容，审计保留操作人。
-- GET /api/terminology 读取启用规则；管理员使用 /api/admin/terminology 的 GET/POST、/:id 的 PUT/DELETE 管理。正则为受限模式，不允许重复量词、分组、反向引用；仅改变展示，不改写原始发言。
-- 勾选记住凭证后会话最长 30 天；密码由浏览器密码管理器保管，页面不存储明文密码。注销撤销会话。
-- 个人头像直接同步员工名录；头像更换不生成 profiles 审计快照，代号修改仍保存历史。
-
-
+- GET /api/terminology 读取启用规则；管理员使用 /api/admin/terminology 的 GET/POST、/:id 的 PUT/DELETE 管理。
+注销撤销会话。
 
 ## 玩家原版页面专用接口
 
-所有 `/api/player/*` 均要求登录，使用与管理员相同的 HttpOnly Cookie。不是 Bearer Token。
+所有 `/api/player/*` 均要求登录，使用与管理员相同的 HttpOnly Cookie。
 
 - `GET /api/player/state`：当前员工、余额、资料、永久成就、签到、公告、档案、部门、目录、论坛首 10 条、持仓。
 - `GET /api/player/forum?before=id`：后续 10 条论坛主题。`POST /api/player/forum`：`{title,body,imageData?}`。
 - `GET/POST /api/player/forum/:id`：查看回复 / 新回复 `{body,imageData?}`。图文整体待审；文本直接发布。GET 默认最早 20 条，`?after=id` 继续读取，返回 `thread`、`items`、`next`、`changesCursor`；`?since=changesCursor` 读取最多 20 条变更，返回 `items`、`removed`、`changesCursor`、`moreChanges`。游标只接受非负安全整数；主帖未公开时拒绝读取。
 - `GET /api/admin/moderation`、`POST /api/admin/moderation/thread/:id` 或 `reply/:id`：完整图文审核；提交 `{action:"approve"|"reject"}`。
-- `GET /api/admin/activity?before=id`：每页 100 条历史快照和操作记录。不会返回密码哈希或会话密钥。
+- `GET /api/admin/activity?before=id`：每页 100 条历史快照和操作记录。
 - `POST /api/player/games/scratch`：`{tier,type}`；服务器根据有效票种生成种子、票面、奖额并结算。
 - `POST /api/player/games/slot`：`{bet}`；返回完整五轮盘面与结算。
 - `POST /api/player/games/derby`：`{bet,runner}`。
 - `POST /api/player/games/sky/start`：`{bet}`；`GET /api/player/games/sky/current`；`POST /api/player/games/sky/jump`：`{round}`。高度与结算依服务器时间。
-- `POST /api/player/games/sky/input-sync`：`{round,token}`；`POST /api/player/card-table/input-sync`：`{room,scope,token}`。令牌由本人服务器快照签发，返回 `{serverTime,compensationMs}`，最多补偿 250 ms，不接收客户端时间或深度。牌桌快照附 `turnId`，叫分／出牌／不出应与 `revision`、`requestId` 一同提交；同一回合可跨越无关修订，旧回合不可复用。
+- `POST /api/player/games/sky/input-sync`：`{round,token}`；`POST /api/player/card-table/input-sync`：`{room,scope,token}`。令牌由本人服务器快照签发，返回 `{serverTime,compensationMs}`，最多补偿 250 ms，不接收客户端时间或深度。
 - `POST /api/player/games/cards`：`{action:"start"|"bid"|"play"|"pass",round?,cards?:number[]}`。简化电脑对手牌局，服务器持有完整牌堆。
 - `GET/POST /api/player/stocks`：查询 / `{code,action:"buy"|"sell"}`。
 - `GET /api/player/chat/stream?room=sky|derby`：SSE 实时聊天推送。`POST /api/player/chat`：`{room,body}`。
@@ -106,11 +101,10 @@ GET /api/health 返回 {"ok":true,"service":"aved"}，检查应用与数据库�
 - GET /api/player/state 的 `market` 提供 KARMA 指数及默认 1 分钟 K 线。
 - GET /api/player/stocks?code=KARMA&period=1 返回 `{items,balance,market,serverTime}`。code 为 KARMA 或已有证券代码，period 仅允许 1、5、15（分钟）。
 - `market` 包含 code、period、index、quote、candles。每根 candle 包含 bucket（毫秒）、open、high、low、close、volume、turnover。
-- POST /api/player/stocks?code=AVED.VIV&period=1 提交 `{code,action:"buy"|"sell",quantity:整数}`；quantity 可省略，默认 1，范围 1–10000。价格、总金额及成交量由后端确认；客户端 price/seed 参数不参与定价。
-- 行情每 5 秒由服务器生成报价并合并为分钟 K 线；数据库保存 candle 与随机种子。刷新页面不会重新随机历史，初次运行不补造过去的 K 线。
+- POST /api/player/stocks?code=AVED.VIV&period=1 提交 `{code,action:"buy"|"sell",quantity:整数}`；quantity 可省略，默认 1，范围 1–10000。
+- 行情每 5 秒由服务器生成报价并合并为分钟 K 线；数据库保存 candle 与随机种子。
 - 这里是企划内部证券玩法，不连接现实交易所。红色上涨、绿色下跌。
 - 系统日期在前端按 Asia/Shanghai 自然日显示今天、昨天、前天、N天前；聊天室仅显示时分，不输出真实或虚构年月日。
-- “记住账号和密码”使用浏览器密码管理器；网页只可本地保存用户名，不保存明文密码或业务数据。
 
 ### 爱心账户交易税费与记录保留
 

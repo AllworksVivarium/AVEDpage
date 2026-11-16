@@ -1,6 +1,7 @@
 import {installRecreationRecords} from './server-recreation-records.mjs';
 import {dossierView} from './server-dossier-content.mjs';
 import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
+import {installStockUnlocks} from './server-stock-unlocks.mjs';
 import {stockFeeTotals} from './server-stock-fees.mjs';
 import {installStockMargin} from './server-stock-margin.mjs';
 import {installStockLots} from './server-stock-lots.mjs';
@@ -121,6 +122,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
   const marketService=installMarket(db);
   const stockLots=installStockLots(db);
   const stockMargin=installStockMargin({db,lots:stockLots,balanceFor,recordLedger});
+  let stockUnlocks;
+  const stockQualification=id=>(stockUnlocks??=installStockUnlocks(db)).status(id);
+  const stockRulesFor=id=>({...stockRiskRules,...stockQualification(id)});
+  const captureStockAssets=ids=>(stockUnlocks??=installStockUnlocks(db)).capture(ids);
   const market=id=>{const items=marketService.items(id),lots=stockLots.list(id);return items.map(s=>{
     const positions=lots.filter(l=>l.code===s.code),longHolding=positions.reduce((n,l)=>n+Math.max(0,l.holding),0),shortHolding=positions.reduce((n,l)=>n+Math.max(0,-l.holding),0);
     const marginUsed=positions.reduce((n,l)=>n+l.marginUsed,0),positionNotional=positions.reduce((n,l)=>n+l.positionNotional,0),unrealizedPnl=positions.reduce((n,l)=>n+l.unrealizedPnl,0);
@@ -154,7 +159,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
     if(!Number.isSafeInteger(amount))throw new Error('委托金额超出限额。');
     const position=db.prepare('SELECT cost_basis,realized_pnl FROM stock_holdings WHERE employee_id=? AND code=?').get(id,stock.code);
     const plan=stockLots.plan(id,stock.code,delta,stock.price,leverage,lotId,intent);
-    if(plan.openQuantity)requireStockLeverage(balanceFor(id),leverage);
+    if(plan.openQuantity)requireStockLeverage(stockQualification(id),leverage);
     const fee=stockTradeFee(amount);
     plan.openFee=plan.openQuantity?Math.round(fee*(plan.openQuantity/Math.abs(delta))):0;
     const closingFee=fee-plan.openFee,openingFees=plan.changes.reduce((n,c)=>n+c.openFee,0);
@@ -210,10 +215,10 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
       executeStockTrade(p.employeeId,{stock:{code:p.code,price:p.price},delta:-p.quantity,stopLoss:null,takeProfit:null,reason:hit==='强制平仓'?hit:hit+'自动平仓',lotId:p.id,intent:'close'});
     }
   }
-  marketService.onQuote(()=>processProtectedStockLots());
+  marketService.onQuote(()=>{captureStockAssets();processProtectedStockLots();});
   const forum=installForumList(db);
   const replies=installForumReplies(db);
-  return {log,initializeStockLots:stockLots.migrate,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
+  return {log,initializeStockLots:stockLots.migrate,captureStockAssets,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
@@ -227,7 +232,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
         const include=name=>!bootstrap&&(!section||section===name);
         if(include('casino'))transaction(()=>{processStockAutomations(id);});
         award(id);const profile=publicProfile(id);
-        send(res,200,{employee,balance:balanceFor(id),profile,stockRiskRules,stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
+        send(res,200,{employee,incomeCursor:bootstrap?db.prepare('SELECT COALESCE(MAX(id),0) AS cursor FROM balance_ledger WHERE employee_id=?').get(id).cursor:undefined,balance:balanceFor(id),profile,stockRiskRules:stockRulesFor(id),stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),economy:getEconomy().publicRules(),serverTime:Date.now(),market:!include('casino')?null:marketService.history('KARMA',1,id),
           checkin:!!db.prepare('SELECT 1 FROM checkins WHERE employee_id=? AND checkin_date=?').get(id,today()),
           streak:db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE employee_id=?').get(id).n,
           slotProtocols:recreationRecords.unlocks(id),achievements:getPersonal().earned(id),gameRecords:getHighlights().records(id),
@@ -363,7 +368,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
               const stopLoss=intent==='close'?null:normalizeOptionalPrice(data.stopLoss);
               const takeProfit=intent==='close'?null:normalizeOptionalPrice(data.takeProfit);
               if(orderType==='limit') {
-                requireStockLeverage(balanceFor(id),leverage);
+                requireStockLeverage(stockQualification(id),leverage);
                 if(db.prepare("SELECT COUNT(*) AS n FROM stock_orders WHERE employee_id=? AND status='open'").get(id).n>=100)throw new Error('未成交委托最多 100 笔，请先撤销部分委托。');
                 const limitPrice=normalizeOptionalPrice(data.limitPrice);
                 if(limitPrice===null)throw new Error('限价单需填写触发价格。');
@@ -379,7 +384,7 @@ export function installPlayerService({db,send,readBody,requireEmployee,requireAd
             }
           }
         });
-        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRiskRules,stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
+        send(res,200,{items:market(id),orders:pendingOrders(id),riskRules:stockRulesFor(id),stockPreferences:stockMargin.preferences(id),stockRisk:stockLots.riskSummary(id),balance:balanceFor(id),market:marketService.history(code,period,id),serverTime:Date.now()});return true;
       }
       if(path==='/api/player/chat/stream'&&req.method==='GET') {
         const room=url.searchParams.get('room');if(!['sky','derby'].includes(room))throw new Error('聊天室不存在。');

@@ -26,3 +26,10 @@ body.landing-sphere #landing-view[data-sphere-pattern=ascii]::before{background:
 }
 @media(max-width:480px){.terminal-brand-code{display:none}}
 @media print{.terminal-content-pane::before{display:none!important}}
+
+/* Personal collection: restrained symbol waterfall and circuit dot matrix. */
+body.theme-inner[data-terminal-pattern=ascii] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 23%,transparent);mask-image:url('/assets/profile-ascii-flow.svg');mask-size:240px 320px;mask-repeat:repeat;animation:profile-ascii-flow 28s steps(224,end) infinite}
+body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 18%,transparent);mask-image:url('/assets/profile-phase-dots.svg');mask-size:120px 120px;mask-repeat:repeat}
+@keyframes profile-ascii-flow{from{mask-position:0 -320px}to{mask-position:0 0}}
+body.effects-off[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}
+@media(prefers-reduced-motion:reduce){body[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}}

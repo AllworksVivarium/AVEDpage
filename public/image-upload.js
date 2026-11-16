@@ -10,12 +10,12 @@ window.AVEDImageUpload=(()=>{
   return new Promise((resolve,reject)=>{const image=new Image(),url=URL.createObjectURL(file);image.onload=()=>{URL.revokeObjectURL(url);resolve(image);};image.onerror=()=>{URL.revokeObjectURL(url);reject(Error('图片无法读取，请换成 PNG、JPG 或 WEBP 后重试。'));};image.src=url;});
  }
  async function prepare(file,{kind='image'}={}){
-  if(!file?.size)return null;if(!types.includes(file.type))throw Error('请选择 PNG、JPG 或 WEBP 图片。');if(file.size>20000000)throw Error('原始图片不能超过 20 MB。');
+  if(!file?.size)return null;if(!types.includes(file.type))throw Error('请选择 PNG、JPG 或 WEBP 图片。');if(file.size>20000000)throw Error('请选择 20 MB 以内的原始图片。');
   const image=await decode(file,kind==='avatar');let canvas;
   try{
    const width=image.width||image.naturalWidth,height=image.height||image.naturalHeight;
    if(!width||!height)throw Error('图片尺寸无法读取。');
-   if(kind!=='avatar'&&width*height>16000000)throw Error('图片不能超过 1600 万像素，请先缩小图片。');
+   if(kind!=='avatar'&&width*height>16000000)throw Error('请将图片缩小至 1600 万像素以内。');
    const edge=kind==='avatar'?512:1536;
    // A resized bitmap does not change the original file: avatars must always be encoded.
    if(kind!=='avatar'&&Math.max(width,height)<=edge&&file.size<=maxBytes)return file;

@@ -19,5 +19,5 @@ test('both multipliers update valid draft amounts and enforce the server limit',
 
 test('empty, fractional and unsafe amounts cannot become a draft stake',()=>{
  for(const value of ['', 'text',99,-100,100.5,Infinity,Number.MAX_SAFE_INTEGER+1])assert.throws(()=>scale(value,2),/至少 100 的整数/);
- assert.throws(()=>scale(1000,3),/不支持/);
+ assert.throws(()=>scale(1000,3),/有效的金额倍数/);
 });

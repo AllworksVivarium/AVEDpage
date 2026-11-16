@@ -44,7 +44,7 @@ function shopFixture(t,initialBalance=80000){
 test('background shop defaults are free; the sphere and three textures charge once and survive restart',async t=>{
  const {db,balanceFor,options,service,request,login}=shopFixture(t);
  assert.deepEqual(service.snapshot(1).backgrounds,{owned:['image'],prices:{image:0,sphere:50000}});
- assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:10000,fade:10000,grain:10000}});
+ assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:10000,fade:10000,grain:10000,ascii:10000,phase:10000}});
  await request({background:'image'});await request({pattern:'plain'});assert.equal(balanceFor(1),80000);
  const sphere=await request({background:'sphere',price:1,balance:900000});assert.equal(sphere.data.balance,30000);
  assert.ok(sphere.data.appearance.backgrounds.owned.includes('sphere'));
@@ -69,4 +69,44 @@ test('invalid shop purchases and failed entitlement writes cannot charge the acc
  assert.equal((await request({background:'sphere'})).status,400);
  assert.equal(balanceFor(1),80000);assert.deepEqual(service.snapshot(1).backgrounds.owned,['image']);
  assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,0);
+});
+
+test('symbol flow and phase textures use the same one-time purchase and account isolation',async t=>{
+ const {db,request,balanceFor,service}=shopFixture(t,20000);
+ for(const pattern of ['ascii','phase']){assert.equal((await request({pattern})).status,200);assert.equal((await request({pattern})).status,200);}
+ assert.equal(balanceFor(1),0);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,2);
+ assert.deepEqual(service.snapshot(1).patterns.owned,['plain','ascii','phase']);assert.deepEqual(service.snapshot(2).patterns.owned,['plain']);
+});
+
+test('contamination costs 500000 after explicit confirmation and remains owned once purchased',async t=>{
+ const {db,request,balanceFor,service,options,login}=shopFixture(t,500000);
+ assert.deepEqual(service.snapshot(1).effects,{owned:[],prices:{contamination:500000}});
+ assert.equal((await request({effect:'contamination'})).status,400);assert.equal(balanceFor(1),500000);
+ assert.equal((await request({effect:'contamination',confirmed:1})).status,400);
+ assert.equal((await request({effect:'contamination',confirmed:true,price:1})).status,200);
+ assert.equal(balanceFor(1),0);assert.equal(db.prepare('SELECT delta FROM balance_ledger').get().delta,-500000);
+ assert.deepEqual(installAppearance(options).snapshot(1).effects.owned,['contamination']);
+ await Promise.all([request({effect:'contamination',confirmed:true}),request({effect:'contamination',confirmed:true})]);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,1);
+ login(2);assert.equal((await request({effect:'contamination',confirmed:true})).status,400);assert.equal(balanceFor(2),9999);
+ assert.deepEqual(service.snapshot(2).effects.owned,[]);
+});
+
+test('a failed effect entitlement write rolls back the debit',async t=>{
+ const {db,request,balanceFor,service}=shopFixture(t,500000);
+ db.exec("CREATE TRIGGER reject_effect BEFORE INSERT ON employee_interface_effects BEGIN SELECT RAISE(ABORT,'fixture write failure'); END;");
+ assert.equal((await request({effect:'contamination',confirmed:true})).status,400);
+ assert.equal(balanceFor(1),500000);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,0);
+ assert.deepEqual(service.snapshot(1).effects.owned,[]);
+});
+
+test('expanding the old texture constraint preserves existing ownership and ledger links',async t=>{
+ const {db,options,request}=shopFixture(t);
+ await request({pattern:'grain'});
+ db.exec(`ALTER TABLE employee_backgrounds RENAME TO old_backgrounds;
+ CREATE TABLE employee_backgrounds(employee_id INTEGER NOT NULL REFERENCES employees(id),kind TEXT NOT NULL,item TEXT NOT NULL,ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(employee_id,kind,item),CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain'))));
+ INSERT INTO employee_backgrounds SELECT * FROM old_backgrounds;DROP TABLE old_backgrounds;`);
+ const before=db.prepare('SELECT * FROM employee_backgrounds').all();const updated=installAppearance(options);
+ assert.deepEqual(db.prepare('SELECT * FROM employee_backgrounds').all(),before);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
+ const response={};await updated.handle({method:'POST',body:{pattern:'ascii'}},response,new URL('http://localhost/api/player/appearance'));assert.equal(response.status,200);
 });

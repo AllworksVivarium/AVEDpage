@@ -279,14 +279,14 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(quotes.prepare('SELECT quantity FROM stock_lots WHERE id=?').get(exposedLot.id).quantity,0);
   assert.equal(quotes.prepare("SELECT COUNT(*) n FROM stock_trades WHERE employee_id=? AND close_reason='强制平仓' AND id>?").get(funded.data.id,liquidationAfter).n,1);
   assert.ok(quotes.prepare('SELECT quantity FROM stock_lots WHERE id=?').get(first.id).quantity>0,'cash long remains open');
-  // A pending leveraged order loses eligibility if available balance falls before fill; old holdings remain closable.
+  // Earned leverage remains unlocked when available balance falls before a limit order fills.
   price(136);const pendingGate=await large({code:cheap,orderType:'limit',side:'long',quantity:1,leverage:10,limitPrice:130});assert.equal(pendingGate.status,200);
   const gateOrder=pendingGate.data.orders.find(o=>o.limitPrice===130);assert.ok(gateOrder);
   assert.equal((await api('/api/admin/employees/'+funded.data.id+'/balance',{balance:5000000,expectedBalance:pendingGate.data.balance,reason:'测试成交门槛'})).status,200);
   price(120);const pendingCheck=await fetch(base+'/api/player/stocks',{headers:{cookie:fundedCookie}});assert.equal(pendingCheck.status,200);const gateChecked=await pendingCheck.json();
-  assert.equal(gateChecked.orders.some(o=>o.id===gateOrder.id),false);assert.equal(quotes.prepare('SELECT status FROM stock_orders WHERE id=?').get(gateOrder.id).status,'cancelled');
-  assert.equal(gateChecked.balance,5000000);
-  assert.equal((await api('/api/admin/employees/'+funded.data.id+'/balance',{balance:1000000,expectedBalance:5000000,reason:'测试旧仓平仓'})).status,200);
+  assert.equal(gateChecked.orders.some(o=>o.id===gateOrder.id),false);assert.equal(quotes.prepare('SELECT status FROM stock_orders WHERE id=?').get(gateOrder.id).status,'filled');
+  assert.equal(gateChecked.balance,5000000-12-fee(120));
+  assert.equal((await api('/api/admin/employees/'+funded.data.id+'/balance',{balance:1000000,expectedBalance:gateChecked.balance,reason:'测试旧仓平仓'})).status,200);
   const belowGateClose=await large({code:cheap,intent:'close',lotId:first.id,quantity:10,leverage:10});assert.equal(belowGateClose.status,200,'closing an existing lot never requires leverage qualification');
   assert.equal(belowGateClose.data.balance,1000000+1000+200-fee(1200));
 

@@ -3,7 +3,7 @@ const pattern=/^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 sharp.cache({memory:16,files:0,items:32});sharp.concurrency(1);
 let active=0;const waiting=[];
 export async function avatarBytes(value,size=64){
- const match=String(value||'').match(pattern);if(!match)throw Error('头像不是本地图片。');
+ const match=String(value||'').match(pattern);if(!match)throw Error('请上传本地图片作为头像。');
  const input=Buffer.from(match[1],'base64');if(input.length>1650000)throw Error('头像不能超过 1.5 MB。');
  // Bound simultaneous decoders as well as libvips threads on small servers.
  if(active>=2){if(waiting.length>=8)throw Error('头像处理繁忙，请稍后重试。');await new Promise(resolve=>waiting.push(resolve));}else active++;

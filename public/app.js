@@ -356,7 +356,7 @@ function enhancePersonnelForms(employees){
    position.closest('label').hidden=!leader||mode.value!=='custom';position.disabled=!leader;position.readOnly=mode.value!=='custom';position.required=leader;position.placeholder='例如：档案管理员、人工智能、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
-   note.textContent=company?'公司收容物由管理员维护，不开通玩家登录。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像，不设置自定义身份。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。此身份不自动授予后台管理权限。':'玩家为部门成员，不设置自定义身份。';
+   note.textContent=company?'公司收容物由管理员维护。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
@@ -392,7 +392,7 @@ async function renderAdmin() {
   $("#panel").innerHTML =
     '<div class="section-heading"><div><h3>管理工作台</h3><p>员工名册 通讯记录</p></div><span class="admin-count">员工 ' +
     employees.length +
-    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>用户名用于登录且不可重复；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="-100000000" max="100000000" step="1" placeholder="初始余额（可为负数）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
+    '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>登录用户名；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="-100000000" max="100000000" step="1" placeholder="初始余额（可为负数）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
     ' 位员工 登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
     employeeRows +
@@ -490,7 +490,7 @@ function bindAdminForm(selector, path, map, custom) {
 
 // 删除前统一二次确认，删除后刷新管理台
 async function deleteContent(path, label = "这条内容") {
-  if (!await window.AVEDFeedback.confirm("确认永久删除" + label + "？此操作无法撤销。")) return;
+  if (!await window.AVEDFeedback.confirm("确认永久删除" + label + "？")) return;
   try {
     await api(path, { method: "DELETE" });
     await renderAdmin();

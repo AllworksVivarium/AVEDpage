@@ -7,12 +7,13 @@ test('fees round up actual notional, including tiny fills, without charging unfi
  for(const value of [0,-1,1.5,Infinity,Number.MAX_SAFE_INTEGER+1])assert.throws(()=>stockTradeFee(value));
 });
 
-test('leverage qualification uses strict available-balance thresholds',()=>{
- for(const [balance,leverage,allowed] of [[0,1,true],[1000000,3,false],[1000001,3,true],[5000000,10,false],[5000001,10,true],[100000,10,false]]){
-  if(allowed)assert.doesNotThrow(()=>requireStockLeverage(balance,leverage));
-  else assert.throws(()=>requireStockLeverage(balance,leverage),{code:'LEVERAGE_LOCKED'});
+test('leverage qualification uses permanently unlocked account permissions',()=>{
+ for(const [unlocked,leverage,allowed] of [[[1],1,true],[[1],3,false],[[1,3],3,true],[[1,3],10,false],[[1,3,10],10,true]]){
+  if(allowed)assert.doesNotThrow(()=>requireStockLeverage({unlockedLeverages:unlocked},leverage));
+  else assert.throws(()=>requireStockLeverage({unlockedLeverages:unlocked},leverage),{code:'LEVERAGE_LOCKED'});
  }
 });
+
 test('isolated long and short liquidation prices match exact maintenance boundaries',()=>{
  const lot={holding:10,positionNotional:1000,marginUsed:100,price:92};
  const long=stockPositionRisk(lot);assert.equal(long.positionEquity,20);assert.equal(long.maintenanceMargin,20);assert.equal(long.liquidationPrice,92);assert.equal(long.shouldLiquidate,true);

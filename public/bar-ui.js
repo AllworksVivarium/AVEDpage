@@ -148,7 +148,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  $('[data-bar-buy]').onclick=async()=>{
   if(!selection||buying)return;const visit=version;buying=true;pendingOrder??={drinkId:selection.id,requestId:crypto.randomUUID(),...(giftTarget?{recipientId:giftTarget.employeeId,identityMode:identity.value}:{roundId:selectedRoundId})};$('[data-bar-buy]').disabled=true;$('[data-bar-menu-close]').disabled=true;payment.querySelector('input').disabled=true;
   try{const data=await api('/api/player/bar/'+(giftTarget?'gifts':'orders'),{method:'POST',body:pendingOrder});pendingOrder=null;if(!open||visit!==version)return;receive(data);menu.close();tell(giftTarget?'请客邀请已送出。':'');if(data.bartenderLine)bubble(data.bartenderLine,5000);}
-  catch(error){if(visit!==version)return;$('[data-bar-order-text]').textContent=error.message+(['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code)?' 可点击重试，使用同一凭据不会重复扣款。':'');if(!['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code))pendingOrder=null;}
+  catch(error){if(visit!==version)return;$('[data-bar-order-text]').textContent=error.message+(['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code)?' 可点击重试。':'');if(!['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(error.code))pendingOrder=null;}
   finally{buying=false;$('[data-bar-buy]').disabled=false;$('[data-bar-menu-close]').disabled=false;payment.querySelector('input').disabled=false;}
  };
  $('.bar-chat-form').onsubmit=async e=>{e.preventDefault();if(chatBusy||!snapshot)return;const field=e.currentTarget.elements.message,body=field.value.trim();if(!body)return;const identityMode=identity.value;chatBusy=true;const visit=version,button=e.currentTarget.querySelector('button');button.disabled=true;

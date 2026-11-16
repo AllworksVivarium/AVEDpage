@@ -25,7 +25,7 @@ test('waiting rooms expose exactly the rules used at deal time, including online
  r.seats[2]=null;view=tableView(r,1);
  assert.equal(view.moneyRules.computerOnly,false,'an empty online lobby is not a computer game');
  assert.doesNotMatch(moneyText(null),/90%|50%|25%/);
- assert.equal(moneyText({...view,spectating:true}),'旁观不参与下注与结算');
+ assert.equal(moneyText({...view,spectating:true}),'正在旁观');
 });
 
 test('playing and settled copy uses the saved round values instead of inferring from current seats',()=>{
