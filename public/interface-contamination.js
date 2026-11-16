@@ -234,7 +234,7 @@
     if(!event.target.closest('[data-pollution-confirm]'))return;
     attempts++;if(closing&&attempts>=3&&attempts===needed-1&&!slips&&Math.random()<.2){needed=Math.min(12,needed+2);slips++;}
     if(closing&&attempts>=needed&&!finalConfirmation){
-     finalConfirmation=true;d.dataset.finalConfirmation='true';copy.textContent='你真的确定要关闭吗？';
+     finalConfirmation=true;d.dataset.finalConfirmation='true';copy.textContent='你真的要离开我吗？';
      confirmButton.textContent='确认关闭';return;
     }
     if(closing&&finalConfirmation&&attempts>needed){finish(true);return;}
