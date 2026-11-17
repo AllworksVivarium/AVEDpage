@@ -1,4 +1,4 @@
-/* Personal choices are private server-side settings. Container entry stays disabled. */
+/* Glass selection is free; only the selected glass is shared with the room. */
 window.AVEDBarPersonal=function({root,api,esc,onChange}){
  const cup=document.createElement('dialog'),tolerance=document.createElement('dialog');
  cup.className='bar-menu-dialog bar-glassware-dialog';cup.setAttribute('aria-label','选杯');
@@ -11,17 +11,17 @@ window.AVEDBarPersonal=function({root,api,esc,onChange}){
  const error=(dialog,message)=>{const el=dialog.querySelector('.bar-personal-error');el.textContent=message;el.hidden=!message;};
  function paint(){
   const cupOptions=cup.querySelector('[data-cup-options]'),cupKey=JSON.stringify([glasswareEnabled,glassware,preferences.glassId]);
-  if(cupOptions.dataset.key!==cupKey){cupOptions.dataset.key=cupKey;cupOptions.innerHTML=glasswareEnabled?`<button type="button" data-cup="" aria-pressed="${!preferences.glassId}"><span class="bar-no-cup">—</span><span>不配杯</span></button>`+glassware.filter(item=>item.image).map(item=>`<button type="button" data-cup="${esc(item.id)}" aria-pressed="${preferences.glassId===item.id}"><img src="${esc(item.image)}" alt=""><span>${esc(item.name)}</span></button>`).join(''):'';}
+  if(cupOptions.dataset.key!==cupKey){cupOptions.dataset.key=cupKey;const cards=glasswareEnabled?glassware.map(item=>`<button type="button" data-cup="${esc(item.id)}" aria-pressed="${preferences.glassId===item.id}"><img src="${esc(item.image)}" alt=""><span>${esc(item.name)}</span><small>免费 · ${item.capacityMl} mL</small></button>`).join(''):'';cupOptions.innerHTML=cards+'<button type="button" data-cup="" aria-pressed="'+!preferences.glassId+'"><span class="bar-no-cup">—</span><span>收起杯子</span></button>';const menu=root.querySelector('[data-bar-cups-menu]');if(menu)menu.innerHTML='<p>先选杯也可以 · 免费杯具</p><div>'+cards+'</div><p class="bar-personal-error" role="alert" hidden></p>';}
   const toleranceOptions=tolerance.querySelector('[data-tolerance-options]'),toleranceKey=JSON.stringify([options,preferences.toleranceId]);
   if(toleranceOptions.dataset.key!==toleranceKey){toleranceOptions.dataset.key=toleranceKey;toleranceOptions.innerHTML=options.map(item=>`<button type="button" data-tolerance="${esc(item.id)}" aria-pressed="${preferences.toleranceId===item.id}">${esc(item.label)}</button>`).join('');}
   const label=root.querySelector('[data-bar-tolerance]');if(label)label.textContent=preferences.toleranceLabel||'酒量设定';
-  for(const dialog of [cup,tolerance])for(const button of dialog.querySelectorAll('button'))button.disabled=busy;
+  for(const dialog of [cup,tolerance])for(const button of dialog.querySelectorAll('button'))button.disabled=busy;for(const button of root.querySelectorAll('[data-cup]'))button.disabled=busy;
  }
  function show(dialog){if(root.hidden||busy)return;for(const other of root.querySelectorAll('dialog[open]'))if(other!==dialog)other.close();error(dialog,'');paint();if(!dialog.open)dialog.showModal();}
- async function save(dialog,body){if(busy)return;const visit=generation;busy=true;paint();error(dialog,'');try{const data=await api('/api/player/bar/preferences',{method:'POST',body});if(visit!==generation)return;preferences=data.barPreferences;onChange(data);dialog.close();}catch(problem){if(visit===generation)error(dialog,problem.message);}finally{if(visit===generation){busy=false;paint();}}}
- cup.onclick=event=>{const button=event.target.closest('[data-cup]');if(button)save(cup,{glassId:button.dataset.cup||null});};
+ async function save(dialog,body){if(busy)return;const visit=generation;busy=true;paint();error(dialog,'');try{const data=await api('/api/player/bar/preferences',{method:'POST',body});if(visit!==generation)return;preferences=data.barPreferences;onChange(data);dialog.close();}catch(problem){if(visit===generation){if(!dialog.open)show(dialog);error(dialog,problem.message);}}finally{if(visit===generation){busy=false;paint();}}}
+ root.addEventListener('click',event=>{const button=event.target.closest('[data-cup]');if(button)save(button.closest('dialog')||cup,{glassId:button.dataset.cup||null});if(event.target.closest('[data-bar-glassware]')&&glasswareEnabled)show(cup);});
  tolerance.onclick=event=>{const button=event.target.closest('[data-tolerance]');if(button)save(tolerance,{toleranceId:button.dataset.tolerance});};
- const cupEntry=root.querySelector('[data-bar-glassware]');if(cupEntry)cupEntry.onclick=()=>{if(glasswareEnabled)show(cup);};
+ const cupEntry=root.querySelector('[data-bar-glassware]');
  root.querySelector('[data-bar-tolerance]').onclick=()=>show(tolerance);
  return {receive(data,{initial=false}={}){preferences=data.barPreferences||{};glassware=data.glassware||glassware;options=data.toleranceOptions||options;if(data.features)glasswareEnabled=data.features.glassware===true;if(cupEntry)cupEntry.hidden=!glasswareEnabled;tolerance.querySelector('[data-personal-bartender]').textContent=data.npc?.name||'调酒师';paint();if(initial&&!preferences.toleranceId)show(tolerance);},openCup:()=>{if(glasswareEnabled)show(cup);},close(){generation++;busy=false;for(const dialog of [cup,tolerance])if(dialog.open)dialog.close();}};
 };

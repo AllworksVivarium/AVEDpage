@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 
 // Invitations and names are decided on the server; accepting once creates one chat entry.
-export function createBarCheers({db,clock,dayFor,name,currentOrder,isOnline}){
+export function createBarCheers({db,clock,dayFor,name,currentOrder,currentGlass=()=>null,isOnline}){
  db.exec(`CREATE TABLE IF NOT EXISTS bar_cheers(
  id TEXT PRIMARY KEY,sender_id INTEGER NOT NULL,recipient_id INTEGER NOT NULL,
  sender_name TEXT NOT NULL,recipient_name TEXT NOT NULL,sender_order INTEGER NOT NULL,recipient_order INTEGER NOT NULL,
@@ -14,11 +14,12 @@ export function createBarCheers({db,clock,dayFor,name,currentOrder,isOnline}){
   if(mode!==undefined&&!['anonymous','real'].includes(mode))throw Error('请选择实名或匿名。');
   return mode==='real'?(db.prepare('SELECT display_name FROM employees WHERE id=?').get(id)?.display_name||'员工'):name(id);
  }
+ const canClink=(id,order)=>!!currentGlass(id)||!!order&&order.remainingMl>0;
  function sweep(){
   const now=clock();db.prepare("UPDATE bar_cheers SET status='expired',resolved_at=? WHERE status='pending' AND expires_at<=?").run(now,now);
   for(const row of db.prepare("SELECT * FROM bar_cheers WHERE status='pending'").all()){
    const own=currentOrder(row.sender_id),other=currentOrder(row.recipient_id);
-   if(!isOnline(row.sender_id)||!isOnline(row.recipient_id)||row.day!==dayFor(now)||own?.id!==row.sender_order||other?.id!==row.recipient_order||own?.remainingMl===0||other?.remainingMl===0)
+   if(!isOnline(row.sender_id)||!isOnline(row.recipient_id)||row.day!==dayFor(now)||(own?.id||0)!==row.sender_order||(other?.id||0)!==row.recipient_order||!canClink(row.sender_id,own)||!canClink(row.recipient_id,other))
     db.prepare("UPDATE bar_cheers SET status='cancelled',resolved_at=? WHERE id=? AND status='pending'").run(now,row.id);
   }
   db.prepare('DELETE FROM bar_cheers WHERE created_at<?').run(now-86400000);
@@ -35,7 +36,7 @@ export function createBarCheers({db,clock,dayFor,name,currentOrder,isOnline}){
    if(old){if(old.recipient_id!==target)throw Error('碰杯凭据已使用。');return {ok:true,id:old.id,status:old.status};}
    const senderName=author(actor.id,data.identityMode),own=currentOrder(actor.id),other=currentOrder(target);
    if(!isOnline(actor.id)||!isOnline(target))throw Error('对方已离开吧台。');
-   if(!own||!other||own.remainingMl===0||other.remainingMl===0)throw Error('双方杯里都有酒时，就可以碰杯了。');
+   if(!canClink(actor.id,own)||!canClink(target,other))throw Error('先选一只杯子，或点一份饮品，再来碰杯。');
    const duplicate=db.prepare("SELECT id FROM bar_cheers WHERE status='pending' AND ((sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?))").get(actor.id,target,target,actor.id);
    if(duplicate)throw Error('你们的碰杯邀请还在等待回应。');
    if(db.prepare("SELECT COUNT(*) AS count FROM bar_cheers WHERE status='pending' AND sender_id=?").get(actor.id).count>=4)throw Error('最多同时发出 4 份碰杯邀请。');
@@ -43,7 +44,7 @@ export function createBarCheers({db,clock,dayFor,name,currentOrder,isOnline}){
    const last=db.prepare('SELECT created_at FROM bar_cheers WHERE sender_id=? AND recipient_id=? ORDER BY created_at DESC LIMIT 1').get(actor.id,target);
    if(last&&clock()-last.created_at<30000)throw Error('刚邀请过这位客人，稍后再试吧。');
    const id=randomUUID(),now=clock();
-   db.prepare('INSERT INTO bar_cheers(id,sender_id,recipient_id,sender_name,recipient_name,sender_order,recipient_order,day,request_key,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(id,actor.id,target,senderName,name(target),own.id,other.id,dayFor(now),data.requestId,now,now+45000);
+   db.prepare('INSERT INTO bar_cheers(id,sender_id,recipient_id,sender_name,recipient_name,sender_order,recipient_order,day,request_key,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(id,actor.id,target,senderName,name(target),own?.id||0,other?.id||0,dayFor(now),data.requestId,now,now+45000);
    return {ok:true,id,status:'pending'};
   },
   respond(actor,id,data){

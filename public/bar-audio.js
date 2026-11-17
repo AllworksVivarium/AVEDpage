@@ -30,19 +30,19 @@ window.AVEDBarPreviewAudio=function(){
 /* Native audio URLs play directly, without routing remote hosts through Web Audio. */
 window.AVEDBarAudio=function({onError=()=>{},canPlay=()=>true}={}){
  const preview=AVEDBarPreviewAudio(),audio=new Audio();audio.preload='metadata';
- let settings={enabled:true,previewFallback:true,tracks:[]},key='',volume=.35,wanted=false,lastId=null,generation=0,timer=0;const failed=new Set();
- function reset(){generation++;clearTimeout(timer);audio.onended=audio.onerror=audio.oncanplay=null;audio.pause();audio.removeAttribute('src');audio.load();preview.stop();}
+ let settings={enabled:true,previewFallback:true,tracks:[]},key='',volume=.35,wanted=false,lastId=null,generation=0,timer=0,clockBase=0,clockAt=0,finishedRequest=null;const failed=new Set();
+ function reset(){generation++;clearTimeout(timer);audio.onended=audio.onerror=audio.oncanplay=audio.onloadedmetadata=null;audio.pause();audio.removeAttribute('src');audio.load();preview.stop();}
  function unavailable(){wanted=false;reset();onError();}
  function advance(){
   if(!wanted||!settings.enabled||!canPlay()){controller.stop();return Promise.resolve();}const choices=settings.tracks.filter(track=>!failed.has(track.id));if(!choices.length){unavailable();return Promise.resolve();}
-  const different=choices.filter(track=>track.id!==lastId),pool=different.length?different:choices,track=pool[Math.floor(Math.random()*pool.length)],run=++generation;lastId=track.id;clearTimeout(timer);
+  const time=clockBase+Date.now()-clockAt,request=settings.request&&settings.request.id!==finishedRequest&&settings.request.startsAt<=time&&settings.request.endsAt>time?settings.request:null,requested=request&&choices.find(t=>t.id===request.trackId),different=choices.filter(track=>track.id!==lastId),pool=different.length?different:choices,track=requested||pool[Math.floor(Math.random()*pool.length)],run=++generation;lastId=track.id;clearTimeout(timer);
   const skip=()=>{if(run!==generation||!wanted)return;failed.add(track.id);advance();};
-  audio.onerror=skip;audio.onended=()=>{if(run===generation&&wanted){failed.clear();advance();}};audio.oncanplay=()=>{if(run!==generation)return;if(!canPlay()){controller.stop();return;}clearTimeout(timer);};
+  audio.onerror=skip;audio.onended=()=>{if(run===generation&&wanted){if(requested)finishedRequest=request.id;failed.clear();advance();}};audio.oncanplay=()=>{if(run!==generation)return;if(!canPlay()){controller.stop();return;}clearTimeout(timer);};audio.onloadedmetadata=()=>{if(run!==generation||!requested)return;const offset=Math.max(0,(clockBase+Date.now()-clockAt-request.startsAt)/1000);if(Number.isFinite(audio.duration)&&offset<audio.duration)audio.currentTime=offset;};
   audio.src=track.url;audio.volume=volume;timer=setTimeout(skip,15000);
   return audio.play().catch(error=>{if(run!==generation)return;if(error.name==='NotAllowedError')unavailable();else skip();});
  }
  const controller={
-  configure(value){const next=value&&typeof value==='object'?value:{enabled:true,previewFallback:true,tracks:[]},nextKey=JSON.stringify(next);if(nextKey===key)return;key=nextKey;const resume=wanted&&canPlay();reset();wanted=false;settings={enabled:next.enabled!==false,previewFallback:next.previewFallback!==false,tracks:Array.isArray(next.tracks)?next.tracks:[]};failed.clear();if(resume)controller.play().catch(unavailable);},
+  configure(value){const next=value&&typeof value==='object'?value:{enabled:true,previewFallback:true,tracks:[]};clockBase=Number(next.serverTime)||Date.now();clockAt=Date.now();const normalized={enabled:next.enabled!==false,previewFallback:next.previewFallback!==false,tracks:Array.isArray(next.tracks)?next.tracks:[],request:next.request||null},nextKey=JSON.stringify(normalized);if(nextKey===key)return;key=nextKey;const resume=wanted&&canPlay();reset();wanted=false;settings=normalized;failed.clear();if(resume)controller.play().catch(unavailable);},
   volume(value){volume=Math.max(0,Math.min(1,value/100));audio.volume=volume;preview.volume(value);},
   async play(){if(!canPlay()||!settings.enabled){controller.stop();return;}wanted=true;if(settings.tracks.length)return advance();if(settings.previewFallback)return preview.play();},
   stop(){wanted=false;reset();}

@@ -15,16 +15,17 @@
 
  const allowed=()=>root.AVEDContamination?.enabled()&&!doc.hidden&&!root.matchMedia('(prefers-reduced-motion: reduce)').matches&&doc.body.classList.contains('theme-inner');
  const visible=el=>el.getBoundingClientRect().width&&el.getBoundingClientRect().bottom>0&&el.getBoundingClientRect().top<root.innerHeight&&(!el.checkVisibility||el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}));
+ const portraitPage=()=>root.location.hash==='#/profile'&&!doc.body.classList.contains('bar-room-open')&&!doc.querySelector('#inner-app-view')?.inert&&!doc.querySelector('#view-profile')?.classList.contains('hidden');
  function transient(className,text,rect,onStop){const el=doc.createElement('span');el.className='haunt-transient '+className;el.setAttribute('aria-hidden','true');el.textContent=text;el.style.left=Math.max(12,Math.min(rect.left,root.innerWidth-100))+'px';el.style.top=Math.max(12,Math.min(rect.top,root.innerHeight-50))+'px';el.style.maxWidth=Math.min(rect.width||320,root.innerWidth-24)+'px';const release=budget.acquire(className==='haunt-label-clear'?'whisper':'residue',onStop||(()=>remove(el)));if(!release)return null;leases.set(el,release);doc.body.append(el);transients.add(el);return el;}
  function remove(el){leases.get(el)?.();leases.delete(el);const owner=portraitOwners.get(el);if(owner){owner.classList.remove('haunt-portrait-active');portraitOwners.delete(el);}el.remove();transients.delete(el);}
  function positionPortrait(layer,avatar){
-  if(!avatar.isConnected||!visible(avatar)){remove(layer);return;}
+  if(!portraitPage()||!allowed()||!avatar.isConnected||!visible(avatar)){remove(layer);return;}
   const rect=avatar.getBoundingClientRect(),scribble=layer.dataset.kind==='scribble';
   Object.assign(layer.style,{left:(rect.left-(scribble?rect.width*.3:6))+'px',top:(rect.top-(scribble?rect.height*.25:3))+'px',width:(scribble?rect.width*2:rect.width+12)+'px',height:(scribble?rect.height*2:rect.height+6)+'px'});
  }
  function trackPortrait(layer,avatar){if(!layer.isConnected)return;positionPortrait(layer,avatar);if(layer.isConnected)later(()=>trackPortrait(layer,avatar),150);}
  function portrait(kind,force=false){
-  if(!allowed()||doc.querySelector('dialog[open]'))return;
+  if(!allowed()||!portraitPage()||doc.querySelector('dialog[open]'))return;
   const avatar=doc.querySelector('#view-profile .hud-avatar');if(!avatar||!visible(avatar))return;
   const previous=[...portraitOwners].find(([,owner])=>owner===avatar);if(previous){if(!force)return;remove(previous[0]);}
   kind=kind||random(['mask','mask','mask','mask','scribble']);if(kind==='scribble'&&!force&&Date.now()-lastScribbleAt<120000)return;
@@ -104,7 +105,7 @@
  function onPointer(event){lastInput=Date.now();if(!allowed()||event.pointerType!=='mouse')return;const now=Date.now();if(path.length&&now-path.at(-1).time<32)return;path.push({x:event.clientX,y:event.clientY,time:now});while(path.length>70)path.shift();}
  function tick(){clearTimeout(timer);timer=0;if(!allowed())return;const now=Date.now();checkRoute();if(budget.bursting||now>=quietUntil){const draw=Math.random();if(draw<.86)whisper();else if(draw<.875)pointer();else if(draw>.965&&!budget.bursting){const duration=35000+Math.random()*35000;quietUntil=now+duration;root.AVEDContamination.quietFor(duration);}if((budget.bursting||now>=quietUntil)&&Math.random()<(budget.bursting?.55:.26))portrait();if(now-lastInput>90000&&encounter('idle'))apparition('idle');}timer=setTimeout(tick,budget.bursting?1800+Math.random()*1800:9000+Math.random()*7000);}
  function clear(){clearTimeout(timer);timer=0;for(const job of jobs)clearTimeout(job);jobs.clear();for(const el of [...labels.keys()])restoreLabel(el);for(const el of [...transients]){if(el.tagName==='DIALOG')el.close();remove(el);}path.length=0;quietUntil=0;}
- function sync(){const on=allowed();if(!on){clear();active=false;}else if(!active){active=true;route=root.location.hash;lastInput=Date.now();timer=setTimeout(tick,5000+Math.random()*5000);}}
+ function sync(){if(!portraitPage())for(const layer of [...portraitOwners.keys()])remove(layer);const on=allowed();if(!on){clear();active=false;}else if(!active){active=true;route=root.location.hash;lastInput=Date.now();timer=setTimeout(tick,5000+Math.random()*5000);}}
  function onPreview(event){if(!allowed())return;if(event.effect==='whisper')whisper();else if(event.effect==='apparition')apparition(['route','refresh','idle'][previewIndex++%3],true);else if(event.effect==='pointer')pointer();else if(event.effect==='portrait-mask')portrait('mask',true);else if(event.effect==='portrait-scribble')portrait('scribble',true);}
  doc.addEventListener('aved-contamination-surge',event=>{if(event.active)quietUntil=0;if(allowed()){clearTimeout(timer);timer=setTimeout(tick,event.active?500:9000+Math.random()*7000);}});
  doc.addEventListener('aved-contamination-change',sync);doc.addEventListener('visibilitychange',sync);doc.addEventListener('aved-effects-change',sync);doc.addEventListener('aved-contamination-preview',onPreview);doc.addEventListener('click',onClick);doc.addEventListener('pointermove',onPointer,{passive:true});for(const event of ['keydown','scroll','touchstart'])doc.addEventListener(event,()=>{lastInput=Date.now();},{passive:true});for(const event of ['hashchange','popstate','aved-bar-change'])root.addEventListener(event,()=>later(checkRoute,100));

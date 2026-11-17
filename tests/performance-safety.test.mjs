@@ -54,13 +54,13 @@ test('forged rewards, duplicate tickets, unfunded stock exposure and retired car
  const login=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:'safety',password})});assert.equal(login.status,200);const cookie=login.headers.get('set-cookie').split(';')[0];
  const req=async(path,body,method=body?'POST':'GET')=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};};
  db=new DatabaseSync(join(dir,'wanyehui.db'));const id=(await req('/api/me')).data.employee.id;
- await req('/api/checkin',{balance:999999999,reward:999999999});assert.equal((await req('/api/me')).data.balance,10000);
+ await req('/api/checkin',{balance:999999999,reward:999999999});assert.equal((await req('/api/me')).data.balance,8000);
  const state=(await req('/api/player/state')).data,code=state.stocks[0].code;
  const news=(await req('/api/player/state?section=news')).data;assert.ok(news.announcements.length);assert.deepEqual(news.employees,[]);assert.deepEqual(news.dossiers,[]);assert.deepEqual(news.stocks,[]);assert.equal(news.market,null);
  const directory=(await req('/api/player/state?section=departments')).data;assert.ok(directory.employees.length);assert.ok(directory.departments.length);assert.deepEqual(directory.announcements,[]);
  assert.equal((await req('/api/player/state?section=unknown')).status,400);
  assert.equal((await req('/api/player/stocks',{code,action:'buy',quantity:10000,leverage:3,price:1,balance:999999999})).status,400);
- assert.equal((await req('/api/me')).data.balance,10000);assert.equal(db.prepare('SELECT count(*) n FROM stock_trades').get().n,0);
+ assert.equal((await req('/api/me')).data.balance,8000);assert.equal(db.prepare('SELECT count(*) n FROM stock_trades').get().n,0);
  for(const bet of [-100,1.5,Number.MAX_SAFE_INTEGER])assert.equal((await req('/api/player/games/slot',{bet,prize:999999999})).status,400);
  assert.equal((await req('/api/player/games/cards',{action:'start',winner:0,prize:20000})).status,410);
  const tier=state.economy.tiers[0],requestKey=randomUUID(),body={tier:tier.id,type:'three_match',cost:tier.cost,revision:state.economy.revision,requestKey,prize:999999999,totalPayout:999999999};

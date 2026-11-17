@@ -5,12 +5,10 @@ export const barToleranceOptions=Object.freeze([
  {id:'legend',label:'千杯不醉',multiplier:3}
 ]);
 export const barGlassware=Object.freeze([
- {id:'highball',name:'直身杯',image:null,displayScale:.92,width:40,height:64},
- {id:'beer-mug',name:'啤酒杯',image:null,displayScale:.85,width:48,height:56},
- {id:'rocks',name:'矮杯',image:null,displayScale:.58,width:48,height:40}
+ {id:'highball',name:'直杯',image:'/assets/bar/glass-highball.svg',capacityMl:500,width:32,height:48},
+ {id:'beer-mug',name:'啤酒杯',image:'/assets/bar/glass-beer-mug.svg',capacityMl:600,width:48,height:54}
 ]);
-// Keep the container contract while waiting for approved artwork and pouring rules.
-export const barFeatures=Object.freeze({glassware:false,pouring:false,drinking:true,intoxication:true,coasters:true});
+export const barFeatures=Object.freeze({glassware:true,pouring:true,drinking:true,intoxication:true,coasters:true});
 
 export function installBarPreferences({db,clock=Date.now}){
  db.exec(`CREATE TABLE IF NOT EXISTS bar_preferences(
@@ -19,6 +17,8 @@ export function installBarPreferences({db,clock=Date.now}){
   glass_id TEXT CHECK(glass_id IN ('highball','beer-mug','rocks')),
   updated_at TEXT NOT NULL
  )`);
+ // Preserve the contents of the local preview's old tumbler while replacing its shape.
+ db.exec("UPDATE bar_preferences SET glass_id='beer-mug' WHERE glass_id='rocks'");
  const read=db.prepare('SELECT tolerance_id AS toleranceId,glass_id AS glassId FROM bar_preferences WHERE employee_id=?');
  const get=id=>{const row=read.get(id);return {toleranceId:row?.toleranceId||null,glassId:row?.glassId||null,toleranceLabel:barToleranceOptions.find(item=>item.id===row?.toleranceId)?.label||null,intoxicationEnabled:true};};
  function save(id,data){

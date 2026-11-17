@@ -31,3 +31,10 @@ test('disabling music clears the playback intent so re-enabling does not unexpec
   f.player.configure({enabled:true,tracks:[]});assert.equal(f.plays(),1);await f.player.play();assert.equal(f.plays(),2);
  }finally{f.player.stop();}
 });
+test('requested music seeks to shared progress and heartbeat updates do not restart it or override mute',async()=>{
+ const f=fixture();try{
+  const now=Date.now(),request={id:'request-a',trackId:2,startsAt:now-20000,endsAt:now+60000},settings={enabled:true,tracks:[{id:1,url:'/one.mp3'},{id:2,url:'/two.mp3'}],request,serverTime:now};
+  f.setInside(true);f.player.configure(settings);await f.player.play();assert.equal(f.media[0].src,'/two.mp3');f.media[0].duration=180;f.media[0].onloadedmetadata();assert.ok(f.media[0].currentTime>=20&&f.media[0].currentTime<21);
+  f.player.configure({...settings,serverTime:now+1000});assert.equal(f.plays(),1);f.player.stop();f.player.configure({...settings,request:{...request,id:'request-b'}});assert.equal(f.plays(),1);
+ }finally{f.player.stop();}
+});

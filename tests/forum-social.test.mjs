@@ -60,6 +60,12 @@ test('forum replies, private notifications, real avatars and authorized persona 
  const before=(await as(owner,'/api/player/forum/notifications')).data;assert.equal(before.unread,0);
  const own=(await post(owner,thread,'自己的回复')).data.id;assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,0);
  const reply=(await post(reader,thread,'读者回复')).data.id;
+ const reactionMenu=await as(reader,'/api/player/forum/reactions');assert.equal(reactionMenu.status,200);assert.ok(reactionMenu.data.items.some(x=>x.id==='question'));
+ const reaction=await as(reader,'/api/player/forum/reactions','POST',{kind:'reply',targetId:reply,reaction:'question',confirmed:true,price:1});assert.equal(reaction.status,200);assert.equal(reaction.data.charged,2000);
+ const duplicateReaction=await as(reader,'/api/player/forum/reactions','POST',{kind:'reply',targetId:reply,reaction:'question',confirmed:true});assert.equal(duplicateReaction.data.charged,0);
+ const reactedDetail=(await as(owner,'/api/player/forum/'+thread+'?page=1')).data;assert.deepEqual(reactedDetail.items.find(r=>r.id===reply).reactions,[{id:'question',count:1,mine:0}]);
+ const reactionRevision=(await as(owner,'/api/player/forum/notifications','POST',{...sync,revision:synced.changesCursor})).data;assert.equal(reactionRevision.repliesChanged,true);
+ assert.equal((await as(reader,'/api/player/forum/reactions','POST',{kind:'reply',targetId:reply,reaction:'fire',confirmed:true})).status,400);
  let inbox=(await as(owner,'/api/player/forum/notifications')).data;assert.equal(inbox.unread,1);assert.equal(inbox.items[0].threadId,thread);
  assert.equal((await as(planner,'/api/player/forum/notifications')).data.unread,0);
  const quoted=(await post(planner,thread,'回复读者',{replyToId:reply,personaId:persona.id,identityMode:'real'})).data.id;

@@ -1,3 +1,4 @@
+import {DAILY_REWARD} from './server-rewards.mjs';
 import {installBar} from './server-bar.mjs';
 import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
@@ -424,7 +425,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const date=today(), reward=10000;
+      const date=today(), reward=DAILY_REWARD;
       db.exec('BEGIN IMMEDIATE');
       try {
         if(db.prepare('SELECT employee_id FROM checkins WHERE employee_id=? AND checkin_date=?').get(employee.id,date)){db.exec('ROLLBACK');return send(res,409,{error:'今天已经签到。'});}

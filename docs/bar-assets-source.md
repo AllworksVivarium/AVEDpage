@@ -14,7 +14,7 @@
 - background.png、background-with-counter.png、counter.png 均为 2990 × 1685，不透明 RGB/alpha=255。
 - background.png 为无吧台版，适用于背景 → NPC → counter.png → 饮品的层次关系。
 应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图；本次未改动原图像素。
-- 饮品 PNG 全部具有透明通道，为单个物件；lemon-cocktail.png 原始素材本身是罐与杯的组合图，未拆分。
+- 饮品 PNG 全部具有透明通道；lemon-cocktail.png 原始素材本身是罐与杯的组合图。原 PNG 保留，柠檬特调在 bar-drink-art.js 中按原图像素轮廓分层：罐子静止，杯壁、酒液与吸管一起抬起，酒液按服务端剩余容量降低并在喝完后清空。杯子原先遮挡的窄条罐身使用原图未遮挡区域镜像补齐，未使用 AI 重绘。
 - shot 系列有少量透明边距，catalog.json 记录原图尺寸。所有饮品保持 image-rendering: pixelated。
 - 饮品中文名为基于外观的 AVED 展示名称，非对真实品牌或口味的官方鉴定。
 
@@ -206,3 +206,9 @@
 ### 酒吧侧栏鸡尾酒图标
 
 来源为用户本轮提供的 F:/QQdata/3166367907/nt_qq/nt_data/Pic/2026-11/Ori/b8743c0954d7e6515887fe045ff3edd1.png。裁去留白后生成黑底灰阶亮度遮罩，缩至 64×64，压缩为 WebP（914 字节）。当前站内文件为 public/assets/bar-cocktail-ui-v1.sidebar64.22ba024e0c18.webp，接入 visual-style.js 和 sidebar-symbol，使用已有主题颜色与 28×28 图标槽；未复制原始大图到 public。
+
+### 可选杯具与矿泉水分层（2026-11-18）
+
+`glass-highball.svg` 和 `glass-beer-mug.svg` 为本轮用原生 SVG 绘制的透明像素杯具，分别为直杯和啤酒杯。整格边缘、杯底反光和啤酒杯大把手使用有限颜色与真实 Alpha，杯内能透出后方瓶罐；液体独立着色、遮罩裁切，不改动原饮品 PNG。
+
+`bar-drink-art.js` 对原 `mineral-water.png` 分离瓶身、标签与液体，按服务端瓶中余量降低水位。特调和 SHOT 保持原杯，提前选的杯子为空杯备用。交互规则见 `bar-glassware-and-pouring.md`。

@@ -10,6 +10,7 @@ import {installForumList} from './server-forum-list.mjs';
 import {radioVisibleSQL} from './server-radio-retention.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installForumSocial,forumAuthorSQL,mapForumAuthor} from './server-forum-social.mjs';
+import {installForumReactions} from './server-forum-reactions.mjs';
 import {installForumReplies} from './server-forum-replies.mjs';
 import {createForumPresence} from './server-forum-presence.mjs';
 import {mediaReference} from './server-media.mjs';
@@ -47,6 +48,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
     addColumn(table,'moderation',"TEXT NOT NULL DEFAULT 'approved'");
   }
   const forumSocial=installForumSocial(db);
+  const forumReactions=installForumReactions({db,balanceFor,recordLedger});
   const forumPresence=createForumPresence();
   db.exec(`
     CREATE TABLE IF NOT EXISTS activity_logs(id INTEGER PRIMARY KEY,employee_id INTEGER,username TEXT NOT NULL DEFAULT '',action TEXT NOT NULL,target TEXT NOT NULL DEFAULT '',details TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -246,6 +248,8 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
       }
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
+      if(path==='/api/player/forum/reactions'&&req.method==='GET'){send(res,200,{items:forumReactions.catalog});return true;}
+      if(path==='/api/player/forum/reactions'&&req.method==='POST'){send(res,200,forumReactions.add(id,data));return true;}
       if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(id,url.searchParams));return true;}
       if(path==='/api/player/forum/personas'){
         if(req.method==='GET')send(res,200,forumSocial.list(id));
@@ -262,14 +266,14 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
         const presence=forumPresence.sync(id,data),threadId=Number(data.threadId||0),revision=Number(data.revision||0);
         if(!Number.isSafeInteger(threadId)||threadId<0||!Number.isSafeInteger(revision)||revision<0)throw Error('无效的帖子刷新位置。');
         const latest=threadId?db.prepare("SELECT MAX(v.revision) AS revision FROM forum_reply_versions v JOIN forum_threads t ON t.id=v.thread_id WHERE v.thread_id=? AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''").get(threadId)?.revision||0:0;
-        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:latest>revision,stockRisk:stockLots.riskSummary(id)});return true;
+        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:Math.max(latest,threadId?db.prepare('SELECT revision FROM forum_reaction_versions WHERE thread_id=?').get(threadId)?.revision||0:0)>revision,stockRisk:stockLots.riskSummary(id)});return true;
       }
       const forumView=path.match(/^\/api\/player\/forum\/(\d+)\/view$/);
       if(forumView&&req.method==='POST'){send(res,200,forum.recordView(id,Number(forumView[1])));return true;}
       const forumRead=path.match(/^\/api\/player\/forum\/(\d+)\/read$/);
       if(forumRead&&req.method==='POST'){send(res,200,data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.view_count AS viewCount,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,{thread:{...mapForumAuthor(topic),readThrough:forumSocial.readThrough(Number(thread[1]),id)},...replies(Number(thread[1]),id,url.searchParams)});return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.view_count AS viewCount,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,(()=>{const {threadReactions,...page}=forumReactions.decoratePage(topic.id,replies(Number(thread[1]),id,url.searchParams),id);return {thread:{...mapForumAuthor(topic),reactions:threadReactions,readThrough:forumSocial.readThrough(Number(thread[1]),id)},...page};})());return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;

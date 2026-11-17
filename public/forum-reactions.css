@@ -1,0 +1,30 @@
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-reactions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px;max-width:100%}
+ body.theme-inner #inner-app-view #view-forum .forum-reactions button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:30px;min-height:28px;padding:3px 7px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-alt)!important;color:var(--inner-text-muted)!important;font-size:11px;line-height:1.2;box-shadow:none!important;cursor:pointer}
+ body.theme-inner #inner-app-view #view-forum .forum-reactions .is-mine{border-color:var(--inner-accent)!important;color:var(--inner-text-main)!important}
+ body.theme-inner #inner-app-view #view-forum .forum-reaction-add{border-style:dashed!important;font-size:16px!important;opacity:.65}
+ .forum-reaction-icon{display:block;flex:none;width:20px;height:20px;image-rendering:pixelated;overflow:visible}
+ body.theme-inner .forum-reaction-dialog{--popup-size:530px;box-sizing:border-box;width:min(530px,calc(100vw - 28px));max-height:calc(100dvh - 36px);padding:0;border:1px solid var(--inner-border);background:var(--popup-face);color:var(--inner-text-main);overflow-y:auto;box-shadow:6px 6px 0 #0005}
+ .forum-reaction-dialog::backdrop{background:#000a}
+ .forum-reaction-dialog header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--inner-border-soft)}
+ .forum-reaction-dialog header small{font-size:9px;letter-spacing:1px;color:var(--inner-text-muted)}
+ .forum-reaction-dialog h2{margin:4px 0 0;font-size:18px}.forum-reaction-dialog header button{padding:3px 9px;font-size:24px}
+ .forum-reaction-dialog button{border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);color:inherit;cursor:pointer}
+ .forum-reaction-intro:empty,.forum-reaction-confirm p:empty{display:none}.forum-reaction-intro{margin:14px 18px;font-size:12px;color:var(--inner-text-muted)}
+ .forum-reaction-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 18px 16px}
+ body.theme-inner #view-forum .forum-reaction-options button{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px 4px 10px!important;border:1px solid var(--inner-border)!important;background:color-mix(in srgb,var(--inner-text-main) 3%,transparent)!important;min-width:0;min-height:106px}
+ .forum-reaction-options .forum-reaction-icon{width:28px;height:28px}.forum-reaction-options b{font-size:12px;font-weight:400}.forum-reaction-options small{font-size:10px;color:var(--inner-text-muted)}
+ .forum-reaction-options i{position:absolute;right:4px;top:3px;font-size:8px;font-style:normal;color:var(--inner-text-muted)}
+ body.theme-inner #view-forum .forum-reaction-options [aria-pressed=true]{border-color:var(--inner-accent)!important;box-shadow:inset 0 0 0 1px var(--inner-accent)}
+ .forum-reaction-dialog button:disabled{opacity:.45;cursor:default}.forum-reaction-dialog button:focus-visible{outline:2px solid var(--inner-accent);outline-offset:2px}
+ .forum-reaction-confirm{display:flex;flex-direction:column;gap:9px;padding:14px 18px;border-top:1px solid var(--inner-border-soft)}
+ .forum-reaction-confirm p{margin:0;font-size:12px}.forum-reaction-confirm>small{font-size:10px;line-height:1.7;color:var(--inner-text-muted)}
+ .forum-reaction-confirm>button{padding:10px;background:var(--inner-accent);color:var(--inner-accent-text)}.forum-reaction-confirm [role=alert]{color:var(--inner-accent);min-height:1em}
+ @media(max-width:400px){.forum-reaction-options{gap:6px;padding-inline:12px}.forum-reaction-options button{min-height:96px}.forum-reaction-options small{font-size:9px}}
+ @keyframes reaction-pulse{50%{opacity:.5;transform:translateY(-1px)}}
+ @keyframes reaction-flame{50%{transform:translateY(-1px) scaleX(.9)}}
+ @keyframes reaction-echo{20%{transform:translateX(1px)}25%{transform:translateX(-1px)}30%{transform:none}65%{opacity:.45}70%{opacity:1}}
+ .reaction-pulse{animation:reaction-pulse 2s steps(2,end) infinite}.reaction-flame{animation:reaction-flame 1.1s steps(2,end) infinite;transform-origin:50% 100%}.reaction-echo{animation:reaction-echo 3s steps(1,end) infinite}
+ body.effects-off :is(.reaction-pulse,.reaction-flame,.reaction-echo){animation:none}
+ @media(prefers-reduced-motion:reduce){.reaction-pulse,.reaction-flame,.reaction-echo{animation:none}}
+}

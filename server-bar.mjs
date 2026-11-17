@@ -1,3 +1,4 @@
+import {installBarPouring} from './server-bar-pouring.mjs';
 import {barDrinks} from './server-bar-catalog.mjs';
 import {randomInt} from 'node:crypto';
 import {createBarCheers} from './server-bar-cheers.mjs';
@@ -5,6 +6,7 @@ import {installBarPreferences,barToleranceOptions,barGlassware,barFeatures} from
 import {installBarDrinking,barBusinessDay} from './server-bar-drinking.mjs';
 import {installBarCoasters} from './server-bar-coasters.mjs';
 import {installBarHospitality} from './server-bar-hospitality.mjs';
+import {installBarExtras} from './server-bar-extras.mjs';
 
 export const barDay=barBusinessDay;
 const DAY=86400000;
@@ -35,8 +37,10 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
  const name=id=>db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name||'匿名员工';
  const drinking=installBarDrinking({db,clock,preferences,name}),coasters=installBarCoasters({db,clock,dayFor:barDay,name,isContainment});
  const currentOrder=drinking.currentOrder;
+ const pouring=installBarPouring({db,clock,preferences,drinking});
  const hospitality=installBarHospitality({db,clock,dayFor:barDay,name,isOnline:id=>[...streams.values()].some(client=>client.id===id),balanceFor,recordLedger,drinking});
- const cheers=createBarCheers({db,clock,dayFor:barDay,name,currentOrder,isOnline:id=>[...streams.values()].some(client=>client.id===id)});
+ const extras=installBarExtras({db,clock,dayFor:barDay,name,balanceFor,recordLedger,drinking,isContainment,getMusic});
+ const cheers=createBarCheers({db,clock,dayFor:barDay,name,currentOrder,currentGlass:id=>preferences.get(id).glassId,isOnline:id=>[...streams.values()].some(client=>client.id===id)});
  function prune(){db.prepare('DELETE FROM bar_messages WHERE created_at<?').run(new Date(clock()-5*DAY).toISOString());}
  const withIdentity=item=>({...item,isContainment:!!item.employeeId&&isContainment(item.employeeId)});
  const leaderboard=()=>{const board=drinking.leaderboard();return {...board,items:board.items.map(withIdentity)};};
@@ -44,12 +48,12 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
  function shared(){
   const ids=[...new Set([...streams.values()].map(x=>x.id))],day=barDay(clock());
   let shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);if(!shift){db.prepare('INSERT OR IGNORE INTO bar_shifts(day,npc_id) VALUES(?,?)').run(day,bartenders[randomInt(bartenders.length)].id);shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);}
-  const guests=ids.slice(0,100).map(id=>withIdentity({employeeId:id,alias:name(id),drink:currentOrder(id,day)})),round=hospitality.activeRound();
-  return {day,serverTime:clock(),onlineCount:ids.length,guests,hostedRound:round?withIdentity(round):null,cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
+  const guests=ids.slice(0,100).map(id=>withIdentity({employeeId:id,alias:name(id),glassId:preferences.get(id).glassId,drink:currentOrder(id,day)})),round=hospitality.activeRound(),music=getMusic();
+  return {day,serverTime:clock(),onlineCount:ids.length,guests,hostedRound:round?withIdentity(round):null,cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music,jukebox:extras.queue(music),...history()};
  }
  const nameFlags=invite=>({...invite,senderIsContainment:isContainment(invite.senderId),recipientIsContainment:isContainment(invite.recipientId)});
- const hospitalityState=id=>{const personal=hospitality.personal(id);return {...personal,gifts:personal.gifts.map(nameFlags),lastRound:personal.lastRound?withIdentity(personal.lastRound):null};};
- const state=(id,common=shared())=>({...common,npc:bartenderForViewer(common.npc,isContainment(id)),selfId:id,selfIsContainment:isContainment(id),myDrink:currentOrder(id,common.day),balance:balanceFor(id),hospitality:hospitalityState(id),cheersInvites:cheers.personal(id).map(nameFlags),barPreferences:preferences.get(id),drinking:drinking.status(id)});
+ const hospitalityState=id=>{const personal=hospitality.personal(id);return {...personal,gifts:personal.gifts.map(gift=>{const marked=nameFlags(gift),{senderId,recipientId,...safe}=marked;return {...safe,direction:recipientId===id?'incoming':'outgoing'};}),lastRound:personal.lastRound?withIdentity(personal.lastRound):null};};
+ const state=(id,common=shared())=>{const storedDrinks=extras.personal(id);return {...common,npc:bartenderForViewer(common.npc,isContainment(id)),selfId:id,selfIsContainment:isContainment(id),myDrink:currentOrder(id,common.day),balance:balanceFor(id),hospitality:hospitalityState(id),storedDrinks,regularDrink:extras.usual(id),cheersInvites:cheers.personal(id).map(nameFlags),barPreferences:preferences.get(id),drinking:drinking.status(id)};};
  const online=id=>[...streams.values()].some(client=>client.id===id);
  function detach(response){const client=streams.get(response);if(!client)return false;streams.delete(response);if(!online(client.id))drinking.seen(client.id,{force:true});return true;}
  function emit(response,data){if(response.destroyed||response.writableLength>262144){detach(response);response.destroy();return;}response.write('event: bar\ndata: '+JSON.stringify(data)+'\n\n');}
@@ -60,9 +64,12 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
   const path=url.pathname;if(!path.startsWith('/api/player/bar'))return false;
   const cheersReply=path.match(/^\/api\/player\/bar\/cheers\/([a-f0-9-]{36})$/);
   const hospitalityReply=path.match(/^\/api\/player\/bar\/(gifts|rounds)\/([1-9]\d{0,14})$/);
-  if(!['/api/player/bar','/api/player/bar/events','/api/player/bar/orders','/api/player/bar/messages','/api/player/bar/cheers','/api/player/bar/preferences','/api/player/bar/pour','/api/player/bar/sip','/api/player/bar/coaster','/api/player/bar/ranking','/api/player/bar/gifts','/api/player/bar/rounds'].includes(path)&&!cheersReply&&!hospitalityReply){send(res,404,{error:'未找到酒吧接口。'});return true;}
+  const storedReply=path.match(/^\/api\/player\/bar\/kept-drinks\/([1-9]\d{0,14})$/);
+  if(!['/api/player/bar','/api/player/bar/events','/api/player/bar/orders','/api/player/bar/messages','/api/player/bar/cheers','/api/player/bar/preferences','/api/player/bar/pour','/api/player/bar/sip','/api/player/bar/coaster','/api/player/bar/ranking','/api/player/bar/gifts','/api/player/bar/rounds','/api/player/bar/contacts','/api/player/bar/kept-drinks','/api/player/bar/jukebox'].includes(path)&&!cheersReply&&!hospitalityReply&&!storedReply){send(res,404,{error:'未找到酒吧接口。'});return true;}
   const actor=requireEmployee(req,res);if(!actor)return true;
   try{
+   if(path==='/api/player/bar/contacts'&&req.method==='GET'){send(res,200,{items:extras.contacts(actor,url.searchParams.get('mode')||'anonymous',url.searchParams.get('q')||'')});return true;}
+   if(req.method==='POST'&&(storedReply||path==='/api/player/bar/kept-drinks'||path==='/api/player/bar/jukebox')){const data=await readBody(req);if(storedReply)extras.receive(actor,Number(storedReply[1]),data);else if(path.endsWith('/jukebox'))extras.requestSong(actor,data);else extras.leave(actor,data);send(res,200,state(actor.id));broadcast();return true;}
    if(req.method==='POST'&&(hospitalityReply||path==='/api/player/bar/gifts'||path==='/api/player/bar/rounds')){
     const data=await readBody(req);
     if(hospitalityReply){if(hospitalityReply[1]==='gifts')hospitality.respond(actor,Number(hospitalityReply[2]),data);else hospitality.endRound(actor,Number(hospitalityReply[2]));}
@@ -73,8 +80,8 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
    if(path==='/api/player/bar/coaster'&&req.method==='GET'){send(res,200,coasters.read(actor.id,Number(url.searchParams.get('exclude'))||0));return true;}
    if(path==='/api/player/bar/coaster'&&req.method==='POST'){send(res,200,coasters.write(actor,await readBody(req)));return true;}
    if(path==='/api/player/bar/ranking'&&req.method==='GET'){send(res,200,{...leaderboard(),mine:drinking.status(actor.id)});return true;}
-   if(path==='/api/player/bar/pour'&&req.method==='POST'){send(res,409,{error:'倒酒功能暂未开放。',code:'FEATURE_DISABLED'});return true;}
-   if(path==='/api/player/bar/preferences'&&req.method==='POST'){const result=preferences.save(actor.id,await readBody(req));send(res,200,{barPreferences:result,myDrink:currentOrder(actor.id)});broadcast();return true;}
+   if(path==='/api/player/bar/pour'&&req.method==='POST'){const receipt=pouring.change(actor,await readBody(req));send(res,200,{...state(actor.id),pourReceipt:receipt});broadcast();return true;}
+   if(path==='/api/player/bar/preferences'&&req.method==='POST'){const data=await readBody(req),previous=preferences.get(actor.id),order=currentOrder(actor.id);if(Object.hasOwn(data,'glassId')&&data.glassId!==previous.glassId&&order?.glassMl>0)throw Error('先喝完杯中的饮品，再换杯或收起杯子。');const result=preferences.save(actor.id,data);if(Object.hasOwn(data,"glassId")&&!result.glassId&&order){db.prepare("UPDATE bar_servings SET drink_from='bottle' WHERE order_id=?").run(order.id);drinking.invalidate(actor.id);}const lines=['空杯也行，给你放这儿。','先拿着。想喝什么，等会儿再说。','这只刚擦过。坐着就好。'];send(res,200,{barPreferences:result,myDrink:currentOrder(actor.id),...(Object.hasOwn(data,'glassId')&&result.glassId&&!order?{bartenderLine:lines[randomInt(lines.length)]}:{})});broadcast();return true;}
    if(req.method==='POST'&&(path==='/api/player/bar/cheers'||cheersReply)){
     const data=await readBody(req),result=cheersReply?cheers.respond(actor,cheersReply[1],data):cheers.request(actor,data);send(res,200,result);broadcast();return true;
    }
@@ -96,8 +103,8 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
     send(res,201,{ok:true,id:Number(result.lastInsertRowid)});broadcast();return true;
    }
    if(path==='/api/player/bar/orders'&&req.method==='POST'){
-    const data=await readBody(req),receipt=hospitality.order(actor,data);
-    send(res,200,{...state(actor.id),receipt,...(data.drinkId==='mineral-water'?{bartenderLine:waterLines[randomInt(waterLines.length)]}:{})});broadcast();return true;
+    const data=await readBody(req),receipt=hospitality.order(actor,data);extras.invalidate(actor.id);const regular=extras.usual(actor.id),lines=isContainment(actor.id)?['老样子。别的不用说明。','这杯照旧。你的口味，我认得。']:['你的老样子。','还是这杯。记住了。','这杯的做法，我已经熟了。'];
+    send(res,200,{...state(actor.id),receipt,...(data.drinkId==='mineral-water'?{bartenderLine:waterLines[randomInt(waterLines.length)]}:regular?.drinkId===data.drinkId?{bartenderLine:lines[randomInt(lines.length)]}:{})});broadcast();return true;
    }
    send(res,405,{error:'酒吧不支持这个操作。'});return true;
   }catch(error){send(res,400,{error:error.message});broadcast();return true;}

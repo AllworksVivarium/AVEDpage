@@ -31,13 +31,13 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const empty=(await request(fresh,'/api/profile')).data;assert.deepEqual(empty.achievements,[],'new zero-balance accounts must not unlock zero');
  const profile=(await p('/api/profile')).data;assert.deepEqual(profile.achievements.map(x=>x.code),['100k']);assert.ok(profile.achievements.every(x=>x.title&&!('earned' in x)));assert.ok(!('history' in profile));
  const finance=(await p('/api/player/finance')).data;assert.ok(!('ledger' in finance));assert.equal((await p('/api/player/ledger')).data.items.length,1);
- const hourly=await Promise.all([p('/api/player/rewards/hourly','POST'),p('/api/player/rewards/hourly','POST')]);assert.equal(hourly.reduce((s,x)=>s+x.data.reward,0),5000);assert.equal((await p('/api/me')).data.balance,125000);
- const policy=(await p('/api/player/rewards')).data;assert.equal(policy.dailyReward,10000);assert.equal(policy.hourlyReward,5000);
+ const hourly=await Promise.all([p('/api/player/rewards/hourly','POST'),p('/api/player/rewards/hourly','POST')]);assert.equal(hourly.reduce((s,x)=>s+x.data.reward,0),2000);assert.equal((await p('/api/me')).data.balance,122000);
+ const policy=(await p('/api/player/rewards')).data;assert.equal(policy.dailyReward,8000);assert.equal(policy.hourlyReward,2000);
  await a('/api/admin/employees','POST',{username:'reward-review',displayName:'配给核验员',password:employeePassword});
  const rewardCookie=await login('reward-review');
  const dailyClaims=await Promise.all([request(rewardCookie,'/api/checkin','POST'),request(rewardCookie,'/api/checkin','POST')]);
- assert.deepEqual(dailyClaims.map(x=>x.status).sort(),[200,409]);assert.equal(dailyClaims.find(x=>x.status===200).data.reward,10000);
- assert.equal((await request(rewardCookie,'/api/checkin')).data.reward,10000);assert.equal((await request(rewardCookie,'/api/me')).data.balance,10000);
+ assert.deepEqual(dailyClaims.map(x=>x.status).sort(),[200,409]);assert.equal(dailyClaims.find(x=>x.status===200).data.reward,8000);
+ assert.equal((await request(rewardCookie,'/api/checkin')).data.reward,8000);assert.equal((await request(rewardCookie,'/api/me')).data.balance,8000);
  assert.equal((await request(one,'/api/admin/achievements')).status,403);
  const custom={code:'test-hour',title:'测试整点',description:'补给记录',metric:'hourly_count',threshold:1,enabled:true};assert.equal((await a('/api/admin/achievements','PUT',custom)).status,200);assert.ok((await p('/api/profile')).data.achievements.some(x=>x.code==='test-hour'));
  await a('/api/admin/achievements','PUT',{...custom,enabled:false});assert.ok(!(await p('/api/profile')).data.achievements.some(x=>x.code==='test-hour'));
@@ -49,7 +49,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  assert.equal((await request(two,'/api/player/games/derby/current')).data.round,race.round);assert.ok(!('winner' in race)&&!('seed' in race));
  db.prepare('UPDATE derby_races SET start_at=?,finish_at=?,next_at=? WHERE id=?').run(Date.now()+15000,Date.now()+33000,Date.now()+53000,race.round);
  const bet={round:race.round,runner:0,bet:10000};assert.equal((await p('/api/player/games/derby/bet','POST',bet)).status,200);
- assert.equal((await p('/api/player/games/derby/bet','POST',bet)).data.balance,115000,'same bet must not debit twice');
+ assert.equal((await p('/api/player/games/derby/bet','POST',bet)).data.balance,112000,'same bet must not debit twice');
  assert.equal((await p('/api/player/games/derby/bet','POST',{...bet,runner:1})).status,400);
  assert.equal((await request(two,'/api/player/games/derby/bet','POST',{...bet,runner:1})).status,200);
  const winner=db.prepare('SELECT winner FROM derby_races WHERE id=?').get(race.round).winner;
@@ -61,7 +61,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const otherResult=(await request(two,'/api/player/games/derby/current')).data;assert.equal(otherResult.winner,winner);
  await p('/api/player/games/derby/current');assert.equal(db.prepare("SELECT COUNT(*) AS n FROM game_tickets WHERE game='derby'").get().n,2,'restart and repeated reads settle once');
  for(const [runner,prize] of [[0,result.self.prize],[1,otherResult.self.prize]]){if(winner===runner){const gross=Math.floor(10000*result.runners[runner].odds);assert.equal(prize,gross-Math.floor(Math.max(0,gross-10000)*.03));}else assert.ok([0,500,1000,1500].includes(prize));}
- assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(first).balance,115000+result.self.prize);
+ assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(first).balance,112000+result.self.prize);
  assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(second).balance,110000+otherResult.self.prize);
  assert.equal((await p('/api/player/history')).data.items.length,1);
  // Legacy database edits must not override the fixed server prize structure.

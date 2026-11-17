@@ -17,6 +17,11 @@ export function installBarDrinking({db,clock,preferences,name}){
  CREATE INDEX IF NOT EXISTS bar_sips_day ON bar_sips(day,employee_id);
  CREATE INDEX IF NOT EXISTS bar_sips_employee ON bar_sips(employee_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_drink_daily(employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,day TEXT NOT NULL,total_ml INTEGER NOT NULL,weighted_units INTEGER NOT NULL,sip_count INTEGER NOT NULL,last_alias TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(employee_id,day));`);
+ const servingColumns=db.prepare('PRAGMA table_info(bar_servings)').all().map(column=>column.name);
+ if(!servingColumns.includes('glass_ml'))db.exec('ALTER TABLE bar_servings ADD COLUMN glass_ml INTEGER NOT NULL DEFAULT 0 CHECK(glass_ml>=0)');
+ if(!servingColumns.includes('drink_from'))db.exec("ALTER TABLE bar_servings ADD COLUMN drink_from TEXT NOT NULL DEFAULT 'bottle' CHECK(drink_from IN ('bottle','glass'))");
+ // Fixed-cup drinks keep their total remaining volume in their original glass.
+ db.exec("UPDATE bar_servings SET glass_ml=0,drink_from='bottle' WHERE (glass_ml<>0 OR drink_from<>'bottle') AND order_id IN (SELECT id FROM bar_orders WHERE drink_id='lemon-cocktail' OR drink_id LIKE '%-shot')");
  const migrateRecovery=!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='bar_intoxication'").get();
  db.exec(`CREATE INDEX IF NOT EXISTS bar_orders_employee_latest ON bar_orders(employee_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_table_state(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,last_seen INTEGER NOT NULL,cleared_through INTEGER NOT NULL DEFAULT 0);
@@ -45,7 +50,8 @@ export function installBarDrinking({db,clock,preferences,name}){
  function decorate(order){
   if(!order)return null;const recipe=servingRecipe(order.drinkId);
   if(!db.prepare('SELECT 1 FROM bar_servings WHERE order_id=?').get(order.id))db.prepare('INSERT OR IGNORE INTO bar_servings(order_id,volume_ml,remaining_ml,sip_count,strength) VALUES(?,?,?,?,?)').run(order.id,recipe.volume,recipe.volume,recipe.sips,recipe.strength);
-  return {...order,...db.prepare('SELECT volume_ml AS volumeMl,remaining_ml AS remainingMl,sip_count AS sipCount,sips_taken AS sipsTaken FROM bar_servings WHERE order_id=?').get(order.id)};
+  const serving=db.prepare('SELECT volume_ml AS volumeMl,remaining_ml AS remainingMl,sip_count AS sipCount,sips_taken AS sipsTaken,glass_ml AS glassMl,drink_from AS drinkFrom FROM bar_servings WHERE order_id=?').get(order.id);
+  return {...order,...serving,bottleMl:serving.remainingMl-serving.glassMl,canPour:order.drinkId!=='lemon-cocktail'&&!order.drinkId.endsWith('-shot')};
  }
  const currentOrder=id=>{const cached=orderCache.get(id);if(cached&&clock()-cached.at<5000)return cached.value;const value=decorate(rawOrder(id));orderCache.set(id,{at:clock(),value});if(orderCache.size>1000)orderCache.delete(orderCache.keys().next().value);return value;};
  function status(id){
@@ -63,16 +69,19 @@ export function installBarDrinking({db,clock,preferences,name}){
     const order=currentOrder(actor.id);if(!order||order.id!==data.orderId)throw Error('饮品已更换，请重新打开。');
     if(order.remainingMl<=0||order.sipCount<=0)throw Error('这一杯已经喝完了。');
     const now=clock();
-    const serving=db.prepare('SELECT * FROM bar_servings WHERE order_id=?').get(order.id),amount=Math.min(serving.remaining_ml,Math.floor(serving.volume_ml*(serving.sips_taken+1)/serving.sip_count)-Math.floor(serving.volume_ml*serving.sips_taken/serving.sip_count));
+    const serving=db.prepare('SELECT * FROM bar_servings WHERE order_id=?').get(order.id),source=serving.drink_from;
+    const available=source==='glass'?serving.glass_ml:serving.remaining_ml-serving.glass_ml;
+    const amount=Math.min(available,Math.floor(serving.volume_ml*(serving.sips_taken+1)/serving.sip_count)-Math.floor(serving.volume_ml*serving.sips_taken/serving.sip_count));
+    if(available<=0)throw Error(source==='glass'?'杯中已经喝完了，可以再倒一点。':'原容器里已经喝完了，可以改喝杯中的饮品。');
     if(amount<=0)throw Error('这一杯已经喝完了。');
     const alias=identity==='real'?(db.prepare('SELECT display_name FROM employees WHERE id=?').get(actor.id)?.display_name||'员工'):name(actor.id);
-    db.prepare('UPDATE bar_servings SET remaining_ml=remaining_ml-?,sips_taken=sips_taken+1 WHERE order_id=?').run(amount,order.id);
+    db.prepare('UPDATE bar_servings SET remaining_ml=remaining_ml-?,glass_ml=glass_ml-?,sips_taken=sips_taken+1 WHERE order_id=?').run(amount,source==='glass'?amount:0,order.id);
     const result=db.prepare('INSERT INTO bar_sips(employee_id,order_id,request_key,amount_ml,weighted_units,day,alias,created_at) VALUES(?,?,?,?,?,?,?,?)').run(actor.id,order.id,data.requestId,amount,amount*serving.strength,barBusinessDay(now),alias,now);
     if(serving.strength>0)db.prepare(`INSERT INTO bar_drink_daily(employee_id,day,total_ml,weighted_units,sip_count,last_alias,updated_at) VALUES(?,?,?,?,1,?,?) ON CONFLICT(employee_id,day) DO UPDATE SET total_ml=total_ml+excluded.total_ml,weighted_units=weighted_units+excluded.weighted_units,sip_count=sip_count+1,last_alias=excluded.last_alias,updated_at=excluded.updated_at`).run(actor.id,barBusinessDay(now),amount,amount*serving.strength,alias,now);
     if(serving.strength>0){const condition=intoxication(actor.id,now);db.prepare('INSERT INTO bar_intoxication(employee_id,units,updated_at) VALUES(?,?,?) ON CONFLICT(employee_id) DO UPDATE SET units=excluded.units,updated_at=excluded.updated_at').run(actor.id,Math.min(condition.thresholdUnits*3,condition.intoxicationUnits+amount*serving.strength),now);}
     receipt={id:Number(result.lastInsertRowid),orderId:order.id,amountMl:amount};
     isNew=true;
-   }db.exec('COMMIT');if(isNew){boardCache=null;orderCache.delete(actor.id);dailyCache.delete(actor.id);recentEvents.push({id:receipt.id,employeeId:actor.id,at:clock()});}
+   }db.exec('COMMIT');if(isNew){boardCache=null;orderCache.delete(actor.id);dailyCache.delete(actor.id);recentEvents.push({id:receipt.id,employeeId:actor.id,source:currentOrder(actor.id).drinkFrom,at:clock()});}
   }catch(error){db.exec('ROLLBACK');throw error;}
   return {receipt,myDrink:currentOrder(actor.id),drinking:status(actor.id)};
  }
