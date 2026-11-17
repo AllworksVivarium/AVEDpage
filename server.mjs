@@ -1,3 +1,4 @@
+import {backupBeforeContainmentRelease} from './server-release-backup.mjs';
 import {installBar} from './server-bar.mjs';
 import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
@@ -41,6 +42,7 @@ const publicDir = resolve(root, 'public');
 const dataDir = resolve(process.env.DATA_DIR || root);
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(resolve(dataDir, 'wanyehui.db'));
+let releaseBackup;try{releaseBackup=backupBeforeContainmentRelease(db,dataDir);}catch(e){console.error('Release backup preflight:',e);releaseBackup={status:'failed',code:e.code||e.name,message:String(e.message).slice(0,240)};}
 db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 db.exec(`
 CREATE TABLE IF NOT EXISTS employees (
@@ -312,7 +314,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   try {
     if (url.pathname === '/api/health' && req.method === 'GET') {
       db.prepare('SELECT 1').get();
-      return send(res, 200, { ok:true, service:'aved' });
+      return send(res, 200, { ok:true, service:'aved',release:'backup-preflight-20261117',releaseBackup });
     }
     const network=networkContext(req);
     if(cookieSecurity&&!network.secure&&url.pathname!=='/api/health') {
