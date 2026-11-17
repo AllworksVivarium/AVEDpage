@@ -4,7 +4,7 @@
  function createVisits(limit=64){const pages=new Map();let current=null;return {enter(key,now){if(key===current)return null;if(current&&pages.has(current))pages.get(current).left=now;const old=pages.get(key),visit={count:(old?.count||0)+1,left:null};pages.delete(key);pages.set(key,visit);current=key;while(pages.size>limit)pages.delete(pages.keys().next().value);return {count:visit.count,away:old?.left==null?null:now-old.left};},reset(){pages.clear();current=null;}};}
  function pupilOffset(x,y,rect){return {x:Math.max(-7,Math.min(7,(x-rect.left-rect.width/2)/25)),y:Math.max(-4,Math.min(4,(y-rect.top-rect.height/2)/35))};}
  const api={elapsedText,createVisits,pupilOffset};root.AVEDPresence=api;if(!root.document)return;
- const budget=root.AVEDContamination.budget;
+ const budget=root.AVEDContamination.budget,copy=root.AVEDContamination.copy;
  const doc=root.document,visits=createVisits(),effects=new Set(),jobs=new Set();
  const kinds=['typing','tracking','gaze','rename','drain'];let bag=[],timer=0,watch=0,active=false,hiddenAt=null,lastRoute='',quietUntil=0,point={x:root.innerWidth/2,y:root.innerHeight/2};
  const later=(fn,ms)=>{const id=setTimeout(()=>{jobs.delete(id);fn();},ms);jobs.add(id);return id;};
@@ -26,15 +26,23 @@
   effect.el.style.left=Math.max(16,Math.min(x,root.innerWidth-width-16))+'px';effect.el.style.top=Math.max(65,Math.min(y,root.innerHeight-55))+'px';effect.el.style.maxWidth=width+'px';
  }
  function message(text,duration=4800,conditional=false){const effect=portal(anchor(),'message',{conditional});if(!effect)return;effect.el.textContent=text;later(()=>stop(effect,true),duration);}
- api.whisper=()=>message(pick(['你在看吗？','我认得你。','这行字是留给你的。','先别移开视线。','你看完了吗？','我就在这里。','还有一个人在看。','现在轮到我看了。']),4500);
- api.effectsSwitch=()=>{if(allowed()&&Math.random()<.65)message(pick(['关掉特效，也关不掉我。','逃避没有用。','你以为我会跟着消失吗？']),4600,true);};
- function typing(){const effect=portal(anchor(),'typing');if(!effect)return;const [first,last]=pick([['你身后……','你身后……算了。'],['请告诉我你的名字。','我记起来了。'],['这里只有你。','这里只有你吗？'],['你正在看着屏幕。','我正在看着你。'],['请保持连接。','再陪我一会儿。']]);let at=0;
-  effect.el.textContent='另一端正在输入';
+ api.whisper=()=>message(pick(doc.body.classList.contains('containment-access')?copy.containmentWhisper:copy.fallbackWhisper),4500);
+ api.effectsSwitch=()=>{if(allowed()&&Math.random()<.65)message(pick(copy.effectsSwitch),4600,true);};
+ function typing(){const effect=portal(anchor(),'typing');if(!effect)return;const [first,last]=pick(copy.typing);let at=0;
+  effect.el.textContent='[另一端正在输入……]';
   const write=()=>{if(!effects.has(effect))return;if(at<first.length){effect.el.textContent=first.slice(0,++at);later(write,100+Math.random()*170);}else later(erase,1000+Math.random()*900);};
   const erase=()=>{if(!effects.has(effect))return;if(at>0){effect.el.textContent=first.slice(0,--at);later(erase,55+Math.random()*45);}else later(rewrite,600);};
   const rewrite=()=>{if(!effects.has(effect))return;effect.el.textContent=last.slice(0,++at);if(at<last.length)later(rewrite,110+Math.random()*160);else later(()=>stop(effect,true),3500);};later(write,900);
  }
- function rename(){const headings=candidates('h1,h2,.hud-personnel-tag,.section-kicker');const target=headings.find(el=>el.textContent.trim().length<45);if(!target){message(pick(['欢迎回来，旧识。','观察对象，您好。','这次该怎么称呼你？']));return;}const effect=portal(target,'rename',{replace:true});if(!effect)return;const style=getComputedStyle(target);effect.el.style.fontSize=Math.min(26,parseFloat(style.fontSize)||18)+'px';effect.el.textContent=pick(['欢迎回来，旧识。','观察对象，您好。','第六位访问者','仍有响应的那一位','我记得你的名字。','这次，轮到你了。']);later(()=>stop(effect,true),3000+Math.random()*2500);}
+ function flashName(){
+  const target=[doc.querySelector('.hud-name-row h1'),doc.getElementById('welcome-employee-banner')].filter(Boolean).find(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<root.innerHeight&&el.checkVisibility({checkVisibilityCSS:true});});if(!target||[...effects].some(effect=>effect.target===target))return;
+  let effect;const release=budget.acquire('rename',()=>stop(effect));if(!release)return;
+  const style=getComputedStyle(target),base={color:style.color,textShadow:style.textShadow};
+  const red={color:'#e01818',textShadow:'2px 0 0 #e0181866,-1px 0 0 #e0181833'};
+  const animation=target.animate([base,{...red,offset:.18},{...red,offset:.42},{...base,offset:.56},{...red,offset:.72},base],{duration:1600,easing:'ease-in-out'});
+  effect={target,animation,release,route:routeKey()};effects.add(effect);animation.onfinish=()=>stop(effect);
+ }
+ function rename(){flashName();const headings=candidates('h1,h2,.hud-personnel-tag,.section-kicker').filter(el=>!el.matches('.hud-name-row h1'));const target=headings.find(el=>el.textContent.trim().length<45);if(!target){message(pick(copy.renameFallback));return;}const effect=portal(target,'rename',{replace:true});if(!effect)return;const style=getComputedStyle(target);effect.el.style.fontSize=Math.min(26,parseFloat(style.fontSize)||18)+'px';effect.el.textContent=pick(copy.rename);later(()=>stop(effect,true),3000+Math.random()*2500);}
  function stippledEye(){
   const dots=[],iris=[],dot=(out,x,y,r,alpha)=>out.push('<circle cx="'+x.toFixed(2)+'" cy="'+y.toFixed(2)+'" r="'+r.toFixed(2)+'" opacity="'+alpha.toFixed(2)+'"/>');
   // Broken eyelid hatching and scattered grains suggest an eye without a solid outline.
@@ -63,9 +71,9 @@
   later(()=>{effect.el.classList.add('presence-leaving');later(()=>stop(effect),1000);},tracking?10000+Math.random()*8000:5000+Math.random()*5000);
  }
  function drain(){const targets=candidates('.retro-corner-box,.hud-frame,article,.game-rule-card,.bar-scene,.bar-chat,img').filter(el=>!el.matches('.hud-world-warp')&&!el.querySelector('.presence-hidden')&&el.getBoundingClientRect().height<root.innerHeight*.85);const target=pick(targets);if(!target)return;let effect;const release=budget.acquire('drain',()=>stop(effect));if(!release)return;const base=getComputedStyle(target).filter;const filter=base==='none'?'':base+' ';const animation=target.animate([{filter:filter+'grayscale(0) brightness(1)'},{filter:filter+'grayscale(1) brightness(.78)',offset:.35},{filter:filter+'grayscale(1) brightness(.78)',offset:.65},{filter:filter+'grayscale(0) brightness(1)'}],{duration:22000+Math.random()*14000,easing:'ease-in-out'});effect={target,animation,release,route:routeKey()};effects.add(effect);animation.onfinish=()=>stop(effect);}
- function run(kind){if(!allowed()||doc.querySelector('dialog[open]'))return;if(kind==='typing')typing();else if(kind==='tracking')eyes(true);else if(kind==='gaze')eyes(false);else if(kind==='rename')rename();else if(kind==='drain')drain();else if(kind==='arrival')message(pick(['这次我先到了。','我已经替你看过了。','这里一直给你留着。','进来吧，我在。']),2800);else if(kind==='repeat')message(pick(['又是你。','这一页，你已经看过了。','我们又见面了。']));}
+ function run(kind){if(!allowed()||doc.querySelector('dialog[open]'))return;if(kind==='typing')typing();else if(kind==='tracking')eyes(true);else if(kind==='gaze')eyes(false);else if(kind==='rename')rename();else if(kind==='drain')drain();else if(kind==='arrival')message(pick(doc.body.classList.contains('containment-access')?copy.containmentArrival:copy.arrival),2800);else if(kind==='repeat')message(pick(copy.repeat));}
  function schedule(){clearTimeout(timer);timer=later(()=>{if(allowed()&&(budget.bursting||Date.now()>=quietUntil)){if(!bag.length)bag=[...kinds];run(bag.splice(Math.floor(Math.random()*bag.length),1)[0]);}schedule();},budget.bursting?1400+Math.random()*1600:18000+Math.random()*14000);}
- function routeChanged(){if(!allowed())return;const key=routeKey();if(key===lastRoute)return;lastRoute=key;for(const effect of [...effects])stop(effect);const visit=visits.enter(key,Date.now());const expected=key;later(()=>{if(!allowed()||routeKey()!==expected)return;if(visit?.away!=null)message('你离开了 '+elapsedText(visit.away)+'。',4800,true);else if(visit?.count>1)message('我们又见面了。',4800,true);else if(Math.random()<.55)run('arrival');},650);}
+ function routeChanged(){if(!allowed())return;const key=routeKey();if(key===lastRoute)return;lastRoute=key;for(const effect of [...effects])stop(effect);const visit=visits.enter(key,Date.now());const expected=key;later(()=>{if(!allowed()||routeKey()!==expected)return;if(visit?.away!=null)message('你离开了 '+elapsedText(visit.away)+'。',4800,true);else if(visit?.count>1)message(pick(copy.repeat),4800,true);else if(Math.random()<.55)run('arrival');},650);}
  function sync(){if(!allowed()){if(doc.hidden&&active&&hiddenAt===null)hiddenAt=Date.now();clean();active=false;if(!root.AVEDContamination?.enabled()){visits.reset();lastRoute='';hiddenAt=null;}return;}if(active)return;active=true;routeChanged();if(hiddenAt!==null){const away=Date.now()-hiddenAt;hiddenAt=null;later(()=>message('你离开了 '+elapsedText(away)+'。我还在这里。',4800,true),900);}schedule();watch=setInterval(()=>{routeChanged();for(const effect of [...effects]){if(effect.el)position(effect);else if(!effect.target.isConnected||effect.route!==routeKey())stop(effect);}},400);}
  doc.addEventListener('aved-contamination-surge',event=>{if(event.active)quietUntil=0;if(allowed())schedule();});
  doc.addEventListener('visibilitychange',sync);doc.addEventListener('aved-contamination-change',sync);doc.addEventListener('aved-effects-change',sync);

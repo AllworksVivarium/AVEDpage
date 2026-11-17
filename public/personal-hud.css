@@ -434,3 +434,19 @@
  #view-profile.personal-hud .hud-pattern-ascii{position:relative;background:var(--inner-card-alt);overflow:hidden}
  #view-profile.personal-hud .hud-pattern-ascii::after{content:'';position:absolute;inset:0;background:var(--inner-text-main);mask:url('/assets/profile-ascii-flow.svg') 0 0/80px 107px;opacity:.7}
 }
+@layer aved-personal {
+ #view-profile.personal-hud .hud-account-layout:has(.hud-intrusion){height:auto;grid-template-rows:auto}
+ #view-profile.personal-hud .hud-account-layout:has(.hud-intrusion) .hud-register{grid-template-rows:auto auto}
+ #view-profile.personal-hud .hud-intrusion{grid-column:1/-1;border-top:1px dashed var(--inner-border-soft);padding-top:6px;min-width:0}
+ #view-profile.personal-hud .hud-intrusion>div{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+ #view-profile.personal-hud .hud-intrusion button{min-height:28px!important;padding:3px 8px!important;border:1px solid var(--inner-border-soft);font-size:11px!important;color:var(--inner-text-main);background:var(--inner-card-alt)}
+ #view-profile.personal-hud .hud-intrusion label{display:inline-flex;align-items:center;gap:4px;font-size:10px!important;cursor:pointer;opacity:.8}
+ #view-profile.personal-hud .hud-intrusion input{width:12px;height:12px;accent-color:#931c27}
+ #view-profile.personal-hud .hud-intrusion small{display:block;font-size:9px!important;line-height:1.6;margin-top:4px;color:var(--inner-text-muted)}
+}
+@layer aved-typography {
+ #view-profile.personal-hud .hud-intrusion>div{justify-content:flex-end!important;gap:10px!important}
+ #view-profile.personal-hud .hud-intrusion button{flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:20px!important;height:auto!important;padding:1px 5px!important;font-size:9px!important;line-height:1.6!important;font-weight:400!important;border:0!important;background:transparent!important;color:var(--inner-text-muted)!important}
+ #view-profile.personal-hud .hud-intrusion label,#view-profile.personal-hud .hud-intrusion small{font-size:9px!important;line-height:1.6!important}
+ #view-profile.personal-hud .hud-intrusion small{text-align:right!important}
+}

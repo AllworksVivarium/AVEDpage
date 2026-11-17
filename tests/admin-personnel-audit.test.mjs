@@ -54,7 +54,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  t.after(async()=>{db?.close();if(child.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}rmSync(folder,{recursive:true,force:true});});
  const base='http://127.0.0.1:'+port;
  let ready=false;for(let i=0;i<100;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,50));}assert.ok(ready,errors);
- async function login(username){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:username,password})});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];}
+ async function login(username,identityKind){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:username,password})});assert.equal(r.status,200);if(identityKind)assert.equal((await r.json()).employee.identityKind,identityKind);return r.headers.get('set-cookie').split(';')[0];}
  const admin=await login('audit-admin');
  async function req(cookie,path,method='GET',body){const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});return {status:r.status,data:await r.json()};}
  const a=(...args)=>req(admin,...args);
@@ -79,9 +79,16 @@ test('persistent identities, editable player containment, and lazy categorized a
  const robot=await a('/api/admin/company-robots','POST',{codename:'榜单机器人',balance:19277});assert.equal(robot.status,200);
  for(const path of ['/api/admin/employees','/api/admin/employees?roster=personnel'])assert.ok(!(await a(path)).data.items.some(x=>x.id===robot.data.id),'robots must never appear in human employee management');
  assert.ok((await a('/api/admin/company-robots')).data.items.some(x=>x.id===robot.data.id));
- const cookie=await login('player-object'),player=(...args)=>req(cookie,...args);
+ const cookie=await login('player-object','player_containment'),player=(...args)=>req(cookie,...args);
  const state=(await player('/api/player/state')).data;
  assert.equal(state.employee.identityKind,'player_containment');
+ assert.equal(state.employee.department,'公司直属','the displayed disguise must not assign a real employee department');
+ const welcome=state.achievements.filter(item=>item.code==='containment-welcome');assert.equal(welcome.length,1);assert.equal(welcome[0].title,'欢迎你，“员工”。');
+ assert.ok((await player('/api/player/achievement-alerts')).data.items.some(item=>item.code==='containment-welcome'));
+ await login('player-object');assert.equal((await player('/api/profile')).data.achievements.filter(item=>item.code==='containment-welcome').length,1);
+ const staffCookie=await login('ordinary');assert.ok(!(await req(staffCookie,'/api/profile')).data.achievements.some(item=>item.code==='containment-welcome'));
+ assert.equal((await player('/api/player/appearance')).data.appearance.effects.prices.contamination,100000);
+ assert.equal((await req(staffCookie,'/api/player/appearance')).data.appearance.effects.prices.contamination,500000);
  assert.equal((await player('/api/profile','PUT',{anonymousName:'收容代号',bio:'玩家更新简介',identityKind:'planning_member',isLeadership:true})).status,200);
  const directory=(await player('/api/player/directory')).data.items;
  assert.equal(directory.find(x=>x.id===playerId).bio,'玩家更新简介');

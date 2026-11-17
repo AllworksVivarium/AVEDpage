@@ -1,4 +1,4 @@
-import {existsSync,mkdirSync,writeFileSync,chmodSync,linkSync,unlinkSync} from 'node:fs';
+import {existsSync,mkdirSync,writeFileSync,chmodSync,copyFileSync,unlinkSync,constants} from 'node:fs';
 import {join} from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 
@@ -24,7 +24,7 @@ export async function backupBeforeContainmentRelease(db,dataDir,{production=proc
  await backup(db,pending);
  verify(pending);
  chmodSync(pending,0o600);
- linkSync(pending,target);unlinkSync(pending);
+ copyFileSync(pending,target,constants.COPYFILE_EXCL);unlinkSync(pending);
  const result=verify(),snapshot=new DatabaseSync(target,{readOnly:true}),tables=snapshot.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('employees','balance_ledger','company_fund')").all();
  const totals=Object.fromEntries(tables.map(({name})=>[name,snapshot.prepare('SELECT COUNT(*) AS count'+(name==='balance_ledger'?',COALESCE(SUM(delta),0) AS total':name==='company_fund'?',COALESCE(SUM(amount),0) AS total':'')+' FROM '+name).get()]));
  snapshot.close();

@@ -330,11 +330,13 @@
         return {cached,shown};
       }
       function signalPhase(title,progress,line) {
+        ({title,line}=window.AVEDContainmentAccess.phase(title,progress,line));
         document.getElementById('signal-status-title').textContent=title;
+        if(signalOverlay.dataset.containment==='true')window.AVEDContainmentAccess.fracture(document.getElementById('signal-status-title'),title);
         document.getElementById('signal-progress-bar').style.width=progress+'%';
         document.getElementById('signal-noise-code').textContent=progress===100?'ACCESS // GRANTED':progress<40?'IDENTITY // VERIFYING':progress<80?'UPLINK // NEGOTIATING':'AUTHORITY // SYNCING';
         const logs=document.getElementById('signal-log-lines');if(progress<40)logs.replaceChildren();
-        const steps=signalOverlay.dataset.assetLoading?['人员识别回执已确认。','正在同步岗位授权域……','工作终端待激活……']:['正在检索在册人员档案……','公司主干链路握手中……','正在同步岗位访问矩阵……'];
+        const steps=signalOverlay.dataset.containment==='true'?['[原始身份：收容物]','[员工访问映射已恢复]','[正在挂接公司内网]']:signalOverlay.dataset.assetLoading?['人员识别回执已确认。','正在同步岗位授权域……','工作终端待激活……']:['正在检索在册人员档案……','公司主干链路握手中……','正在同步岗位访问矩阵……'];
         const count=progress<40?1:progress<80?2:3;
         if(line)steps[count-1]=line;
         steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');entry.style.animation='signalLogReveal .18s ease-out both';entry.style.animationDelay=(index*70)+'ms';logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
@@ -355,12 +357,14 @@
         const error=document.getElementById('login-error'),identifier=document.getElementById('login-username').value.trim();
         const password=document.getElementById('login-password').value,remember=document.getElementById('remember-credentials-checkbox').checked;
         const connectStarted=performance.now();button.disabled=true;if(error)error.textContent='';
+        window.AVEDContainmentAccess.reset();
         loginModal.classList.add('hidden');loginModal.classList.remove('flex');
         signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
         signalPhase('员工身份核验中',12,'正在检索在册人员档案，等待识别回执……');
         try {
           await nextPaint();
           const authenticated=await apiLogin(identifier,password,remember);
+          await window.AVEDContainmentAccess.identify(authenticated.employee);
           signalPhase('正在连接万业内网',45,'人员识别通过，正在与接入节点握手……');
           await nextPaint();
           signalPhase('岗位授权域同步中',85,'内网链路已建立，正在调阅岗位访问矩阵……');
@@ -382,6 +386,7 @@
           }
           if(!remember)document.getElementById('login-password').value='';
         } catch(errorValue) {
+          window.AVEDContainmentAccess.reset();
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
           delete signalOverlay.dataset.assetLoading;
           loginModal.classList.remove('hidden');loginModal.classList.add('flex');
@@ -615,6 +620,7 @@
         if (countFooter) countFooter.textContent = `SHOWING: ${filtered.length} / FILES: ${matching.length}`;
 
         document.getElementById('scp-realname-comment-form').hidden=!filtered.length;
+        document.getElementById('scp-comment-submit').hidden=!filtered.length;
         // 空状态切换逻辑（Empty State Pattern）
         if (filtered.length === 0) {
           detailEl.replaceChildren();commentsListEl.replaceChildren();
@@ -1565,6 +1571,7 @@
         if(!currentUser)return;
         welfareUI?.syncBalance();
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;
+        window.AVEDContainmentAccess.sync(currentUser);
         byId('intranet-role').textContent='当前身份 ID：['+(currentUser.savedAlias||playerProfile.anonymousName||'未登记')+']';
         if(byId('hub-balance'))byId('hub-balance').textContent=fmtMoney(currentUser.balance);
         if(lastProfileBalance!==null&&lastProfileBalance!==currentUser.balance)profileFreshAt=0;lastProfileBalance=currentUser.balance;
@@ -1582,6 +1589,7 @@
       async function completeEnterIntranet(emp){
         innerAppView.classList.add('intranet-preparing');
         try{
+        await window.AVEDContainmentAccess.identify(emp);
         const art=await prepareTerminalArt();
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
@@ -1599,6 +1607,7 @@
         if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
         }catch(error){
+          window.AVEDContainmentAccess.reset();
           currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
           document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           throw error;
@@ -1844,6 +1853,7 @@
       barUI=AVEDBar({api,esc,getUser:()=>currentUser,onExit:()=>restorePlayerRoute(),onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
       window.AVEDJackpotTicker=AVEDCreateJackpotTicker({api,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden')});
       forumSocialUI=AVEDForumSocial({api,esc,onStockRisk:data=>economyUI?.updateRisk(data),getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
+      window.AVEDIntrusion=AVEDIntrusionUI({api,getUser:()=>currentUser,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;welfareUI?.refresh().catch(()=>{});}}});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});
@@ -1869,6 +1879,7 @@
           },
           enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
           signedOut:()=>{
+            window.AVEDContainmentAccess.reset();
             currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
             document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           },

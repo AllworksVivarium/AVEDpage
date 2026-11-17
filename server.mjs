@@ -1,4 +1,3 @@
-import {backupBeforeContainmentRelease} from './server-release-backup.mjs';
 import {installBar} from './server-bar.mjs';
 import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
@@ -26,7 +25,11 @@ import { installPlayerService } from './player-service.mjs';
 import {installEconomy,proofRandom} from './server-economy.mjs';
 import {installSky} from './server-sky.mjs';
 import {installWelfare} from './server-welfare.mjs';
+import {installPayrollIntrusion} from './server-payroll-intrusion.mjs';
+import {rankingIdentityMapper} from './server-ranking-identity.mjs';
+import {backupBeforeContainmentRelease,releaseId} from './server-release-backup.mjs';
 import {installAppearance} from './server-appearance.mjs';
+import {installContainmentWelcome} from './server-containment-welcome.mjs';
 import {directoryDepartment} from './server-directory.mjs';
 import { createServer } from 'node:http';
 import {workGate,burstLimiter} from './server-load-control.mjs';
@@ -42,7 +45,7 @@ const publicDir = resolve(root, 'public');
 const dataDir = resolve(process.env.DATA_DIR || root);
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(resolve(dataDir, 'wanyehui.db'));
-let releaseBackup;try{releaseBackup=await backupBeforeContainmentRelease(db,dataDir);}catch(e){console.error('Release backup preflight:',e);releaseBackup={status:'failed',code:e.code||e.name,message:String(e.message).slice(0,240),location:String(e.stack).split('\n').slice(1,3)};}
+const releaseBackup=await backupBeforeContainmentRelease(db,dataDir);
 db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 db.exec(`
 CREATE TABLE IF NOT EXISTS employees (
@@ -253,7 +256,7 @@ const secureRoll = (seedHex, range) => {
 };
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl,avatar_preset AS avatarPreset FROM profiles WHERE employee_id=?').get(employeeId) || {};
-  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:storedAvatar(employeeId,profile.avatarUrl,profile.avatarPreset,256),avatarPreset:profile.avatarUrl?'':profile.avatarPreset||'',...prefs,attributes:employeeAttributes(db,employeeId),appearance:appearance.snapshot(employeeId) };
+  const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:storedAvatar(employeeId,profile.avatarUrl,profile.avatarPreset,256),avatarPreset:profile.avatarUrl?'':profile.avatarPreset||'',...prefs,rankingIdentity:isPlayerContainment(employeeId)?'anonymous':prefs.rankingIdentity,attributes:employeeAttributes(db,employeeId),appearance:appearance.snapshot(employeeId) };
 };
 let captureStockAssets=()=>{},stockCaptureScheduled=false;const stockCaptureAccounts=new Set();
 const recordLedger = (employeeId, delta, reason) => {
@@ -265,7 +268,10 @@ const recordLedger = (employeeId, delta, reason) => {
  });}
  return result;
 };
-const appearance=installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger});
+const containmentIdentity=db.prepare('SELECT identity_kind FROM employees WHERE id=?');
+const isPlayerContainment=id=>containmentIdentity.get(id)?.identity_kind==='player_containment';
+const rankingIdentity=rankingIdentityMapper({isContainment:isPlayerContainment,aliasFor:id=>db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name});
+const appearance=installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment});
 const adminMutation = (req, res) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -276,27 +282,31 @@ const adminMutation = (req, res) => {
 };
 installAvatarPresets(db);
 let economy,personal,highlights,gameTax;
-const playerService=installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
+const playerService=installPlayerService({rankingIdentity,db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 // Preserve legacy split ordering before migrating independent fills.
 playerService.initializeStockLots();
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
-const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger});
+const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment});
 highlights=installGameHighlights({db,send,requireEmployee});
 gameTax=installGameTax({db,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
 personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
+installContainmentWelcome(db);
+const payrollIntrusion=installPayrollIntrusion({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger});
+payrollIntrusion.runAutomatic();
+const intrusionTimer=setInterval(()=>payrollIntrusion.runAutomatic(),30000);intrusionTimer.unref();
 captureStockAssets=ids=>playerService.captureStockAssets(ids);captureStockAssets();
 const achievementAlerts=installAchievementAlerts({db,send,readBody,requireEmployee,sessionEmployee});
 const barMusic=installBarMusic({db,send,readBody,requireEmployee,requireAdmin,dataDir,onChange:()=>bar.refresh()});
-const bar=installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,getMusic:()=>barMusic.playlist()});
+const bar=installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment,getMusic:()=>barMusic.playlist()});
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,gameTax});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
 const radioRetention=installRadioRetention(db);
 const logRetention=installLogRetention(db);
 const dossierImages=installDossierImages({db,send,requireAdmin,requireEmployee});
 const media=installMedia({db,send,requireEmployee});
-const cardTables=installCardTables({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,gameTax});
+const cardTables=installCardTables({rankingIdentity,db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,gameTax});
 const playerDesign=installPlayerDesign({db,root,send,readBody,requireAdmin,sessionEmployee});
 db.exec(`
  CREATE INDEX IF NOT EXISTS chat_room_active ON chat_messages(room,id) WHERE deleted_at='';
@@ -314,7 +324,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   try {
     if (url.pathname === '/api/health' && req.method === 'GET') {
       db.prepare('SELECT 1').get();
-      return send(res, 200, { ok:true, service:'aved',release:'backup-preflight-20261117',releaseBackup });
+      return send(res, 200, { ok:true, service:'aved',release:releaseId,releaseBackup });
     }
     const network=networkContext(req);
     if(cookieSecurity&&!network.secure&&url.pathname!=='/api/health') {
@@ -350,7 +360,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
         .run(sessionDigest(token), employee.id, now + (remember ? 30*86400000 : sessionsTtl),now);
       playerService.log(employee.id,'login');
       const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${remember ? 2592000 : 28800}${cookieSecurity}`;
-      return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
+      return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName,identity_kind AS identityKind FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if(req.method==='POST'&&(url.pathname.startsWith('/api/player/games/')||url.pathname==='/api/player/stocks'||url.pathname==='/api/player/chat'||url.pathname==='/api/player/card-table'||url.pathname.startsWith('/api/games/'))){
       const actor=requireEmployee(req,res);if(!actor)return;const retry=actionBursts(actor.id);
@@ -367,6 +377,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if(await personal.handle(req,res,url))return;
     if(await derby.handle(req,res,url))return;
     if(await companyRobots.handle(req,res,url))return;
+    if(await payrollIntrusion.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
     if(await appearance.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
@@ -743,7 +754,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
   }
 });
 
-server.on('close',()=>{bar.close();radioRetention.close();logRetention.close();achievementAlerts.close();});
+server.on('close',()=>{clearInterval(intrusionTimer);bar.close();radioRetention.close();logRetention.close();achievementAlerts.close();});
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 server.listen(port,host,() => console.log(`万业携生收容公司服务已启动：${host}:${port}`));
