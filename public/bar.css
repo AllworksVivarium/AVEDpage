@@ -84,3 +84,6 @@ html.bar-room-root-open{overflow:hidden!important}
 .bar-room .bar-menu-tools{display:flex;justify-content:flex-end;padding:6px 14px;border-bottom:1px solid var(--bar-line)}
 .bar-menu-tools button{font-size:11px;min-height:30px}
 .bar-personal-error{font-size:12px;line-height:1.6;color:#e4bda5}
+
+/* True account identity is supplied by the server, including anonymous aliases. */
+.bar-room .bar-containment-name{color:#f22b3d!important;text-shadow:0 0 5px #9f102950}

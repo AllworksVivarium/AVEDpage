@@ -44,6 +44,10 @@
   #view-containment #scp-detail-container {border-top:3px solid var(--brand-red-ink,var(--inner-crimson))!important}
   #view-containment #scp-detail-container [class*=border-b] {border-bottom:1px solid var(--inner-border-soft)!important}
   #view-containment #scp-realname-comments-list>div {border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-alt)!important}
+  #view-containment #scp-realname-comment-form{display:flex;flex-direction:row!important;align-items:stretch;flex-wrap:nowrap;gap:8px}
+  #view-containment #scp-comment-submit{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;width:auto!important;min-width:48px!important;min-height:34px!important;padding:6px 10px!important;font-size:11px!important;line-height:18px!important;white-space:nowrap!important;cursor:pointer}
+  #view-containment #scp-comment-submit[hidden]{display:none!important}
+  #view-containment #scp-realname-comment-input{min-width:0;width:0;flex:1 1 0%}
   /* Department sheets keep their existing SVG register artwork and personnel data. */
   #view-departments .department-sheet {
     border:1px solid var(--inner-border)!important;border-top:3px solid var(--brand-red-ink,var(--inner-crimson))!important;

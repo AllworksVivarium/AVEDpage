@@ -32,13 +32,14 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  const smallTalk=['想好喝什么了吗？不急。','酒单就在手边，慢慢看。','要聊两句，还是自己坐会儿？','坐着就行，不用一直找话说。','今天这里还挺热闹。','杯子放稳，刚擦过台面。','水也有，免费的。','这杯颜色不错。','纸杯垫别扔，上面可能有字。','我刚擦完这只杯子，又忘了擦的是哪只。','酒柜里的瓶子，我偶尔也要找一会儿。','你慢慢坐，我收拾一下吧台。'];
  let lastGreeting='',lastChatter='';
  function pickLine(lines,last){const pool=lines.filter(line=>line!==last);return pool[Math.floor(Math.random()*pool.length)]||lines[0];}
- function localGreeting(){const hour=new Date().getHours();const lines=greetings.find(slot=>hour>=slot.from&&hour<slot.to).lines;return lastGreeting=pickLine(lines,lastGreeting);}
- function localChatter(){const lines=smallTalk.filter(line=>line!=='今天这里还挺热闹。'||(snapshot?.onlineCount||0)>=4).filter(line=>line!=='这杯颜色不错。'||snapshot?.myDrink);return lastChatter=pickLine(lines,lastChatter);}
+ function localGreeting(){const hour=new Date().getHours(),special=snapshot?.npc.containmentGreetings;const lines=special?.length?special:greetings.find(slot=>hour>=slot.from&&hour<slot.to).lines;return lastGreeting=pickLine(lines,lastGreeting);}
+ function localChatter(){const lines=[...smallTalk,...(snapshot?.npc.containmentGreetings||[])].filter(line=>line!=='今天这里还挺热闹。'||(snapshot?.onlineCount||0)>=4).filter(line=>line!=='这杯颜色不错。'||snapshot?.myDrink);return lastChatter=pickLine(lines,lastChatter);}
+ function greetWhenReady(visit){if(!open||version!==visit)return;if(document.querySelector('dialog[open]')){welcomeTimer=setTimeout(()=>greetWhenReady(visit),400);return;}bubble(localGreeting(),3500);}
  function bubble(text,duration=3500){clearTimeout(bubbleTimer);const box=$('[data-bar-bubble]');box.textContent=text;box.hidden=false;bubbleTimer=setTimeout(()=>box.hidden=true,duration);}
  function paintMusic(){const button=$('[data-bar-music]');const available=!!snapshot?.music&&snapshot.music.enabled&&(snapshot.music.tracks.length||snapshot.music.previewFallback),playing=mayPlayMusic()&&!muted&&!!available;button.disabled=!available;button.setAttribute('aria-label',playing?'静音酒吧音乐':'播放酒吧音乐');button.setAttribute('aria-pressed',String(playing));button.title=playing?'静音酒吧音乐':'播放酒吧音乐';button.textContent=playing?'♫':'♪';button.style.opacity=playing?'1':'.5';}
  function paintGlasses(){
   if(!snapshot)return;const capacity=innerWidth<600?3:innerWidth<1000?5:6,selfId=snapshot.selfId;
-  const own=snapshot.myDrink?{employeeId:selfId,alias:'你的这一杯',drink:snapshot.myDrink}:null;
+  const own=snapshot.myDrink?{employeeId:selfId,alias:'你的这一杯',isContainment:snapshot.selfIsContainment,drink:snapshot.myDrink}:null;
   const interaction=[...(snapshot.cheers||[])].reverse().find(item=>[item.senderId,item.recipientId].includes(selfId))||snapshot.cheersInvites?.[0],partner=interaction&&(interaction.senderId===selfId?interaction.recipientId:interaction.senderId);
   const available=snapshot.guests.filter(x=>x.employeeId!==selfId&&x.drink),others=available.slice(0,capacity-(own?1:0));
   if(partner&&!others.some(guest=>guest.employeeId===partner)){const guest=available.find(item=>item.employeeId===partner);if(guest&&others.length)others[others.length-1]=guest;}
@@ -55,14 +56,14 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
    const style=`width:${m.fullWidth}px;height:${m.fullHeight}px;left:${m.x}px;top:${m.y}px`,alt=mine?'你的'+drink.name:guest.alias+'点的'+drink.name;
    const image=`<span class="bar-drink-sprite" style="width:${m.width}px;height:${m.height}px"><img src="${esc(shot?'/assets/bar/onyx-shot.png':drink.image)}" style="${style}" alt="${esc(alt)}">${shot&&remaining>0?`<img src="${esc(drink.image)}" style="${style};clip-path:inset(${15+(1-ratio)*48}% 0 0 0)" alt="" aria-hidden="true">`:''}</span>`;
    const caption=mine?(remaining>0?'你的这一杯':'已喝完'):guest.alias;
-   return `<figure class="bar-glass ${mine?'own':''}" data-glass-owner="${guest.employeeId}" style="--glass-left:${left+(right-left)*positions[i]}px" title="${esc(alt)}">${mine?`<button type="button" class="bar-glass-action bar-own-action" data-my-drink aria-label="我的饮品">${image}</button>`:`<button type="button" class="bar-glass-action" data-cheers-target="${guest.employeeId}" aria-label="与${esc(guest.alias)}互动">${image}</button>`}<figcaption>${esc(caption)}</figcaption></figure>`;
+   return `<figure class="bar-glass ${mine?'own':''}" data-glass-owner="${guest.employeeId}" style="--glass-left:${left+(right-left)*positions[i]}px" title="${esc(alt)}">${mine?`<button type="button" class="bar-glass-action bar-own-action" data-my-drink aria-label="我的饮品">${image}</button>`:`<button type="button" class="bar-glass-action" data-cheers-target="${guest.employeeId}" aria-label="与${esc(guest.alias)}互动">${image}</button>`}<figcaption class="${guest.isContainment?'bar-containment-name':''}">${esc(caption)}</figcaption></figure>`;
   }).join('');
  }
  function paintCheers(){
   clearTimeout(cheersTimer);const panel=$('[data-bar-cheers]'),now=(snapshot?.serverTime||0)+Date.now()-receivedAt,invites=(snapshot?.cheersInvites||[]).filter(invite=>invite.expiresAt>now);
   if(!invites.length){panel.hidden=true;panel.dataset.key='';return;}
   const key=JSON.stringify(invites);panel.hidden=false;
-  if(panel.dataset.key!==key){panel.dataset.key=key;panel.innerHTML=invites.map(invite=>{const incoming=invite.recipientId===snapshot.selfId;return `<div class="bar-cheers-row" data-cheers-id="${esc(invite.id)}">${incoming?`<span>${esc(invite.senderName)} 想和你碰一杯</span><button type="button" data-cheers-reply="accepted">碰杯</button><button type="button" data-cheers-reply="declined">婉拒</button>`:`<span>等 ${esc(invite.recipientName)} 碰一杯</span><button type="button" data-cheers-reply="cancelled">取消</button>`}</div>`;}).join('');}
+  if(panel.dataset.key!==key){panel.dataset.key=key;panel.innerHTML=invites.map(invite=>{const incoming=invite.recipientId===snapshot.selfId;return `<div class="bar-cheers-row" data-cheers-id="${esc(invite.id)}">${incoming?`<span><b class="${invite.senderIsContainment?'bar-containment-name':''}">${esc(invite.senderName)}</b> 想和你碰一杯</span><button type="button" data-cheers-reply="accepted">碰杯</button><button type="button" data-cheers-reply="declined">婉拒</button>`:`<span>等 <b class="${invite.recipientIsContainment?'bar-containment-name':''}">${esc(invite.recipientName)}</b> 碰一杯</span><button type="button" data-cheers-reply="cancelled">取消</button>`}</div>`;}).join('');}
   for(const button of panel.querySelectorAll('button'))button.disabled=cheersBusy;
   cheersTimer=setTimeout(paintCheers,Math.max(1,Math.min(...invites.map(invite=>invite.expiresAt-now))));
  }
@@ -83,7 +84,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   const sorted=[...messageStore.values()].sort((a,b)=>a.id-b.id);
   // Rebuild only when IDs/content change; heartbeat updates do not move a reader.
   const key=JSON.stringify(sorted);if(messages.dataset.key===key)return;messages.dataset.key=key;
-  messages.innerHTML=sorted.map(item=>`<article class="bar-message ${item.employeeId===snapshot?.selfId?'mine':''}"><header><span>${esc(item.alias)}</span><time>${esc(new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(item.createdAt)))}</time></header><p>${esc(item.body)}</p></article>`).join('')||'<p class="bar-chat-empty">吧台已经擦好了。<br>第一句话，想说什么？</p>';
+  messages.innerHTML=sorted.map(item=>`<article class="bar-message ${item.employeeId===snapshot?.selfId?'mine':''}"><header><span class="${item.isContainment?'bar-containment-name':''}">${esc(item.alias)}</span><time>${esc(new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(item.createdAt)))}</time></header><p>${esc(item.body)}</p></article>`).join('')||'<p class="bar-chat-empty">吧台已经擦好了。<br>第一句话，想说什么？</p>';
   if(older)log.scrollTop=oldTop+log.scrollHeight-oldHeight;else if(initial||pinned)log.scrollTop=log.scrollHeight;
  }
  function receive(data,{initial=false}={}){
@@ -100,7 +101,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   $('[data-bar-menu-grid]').innerHTML=drinks.filter(drink=>drink.orderable!==false).map((drink,index)=>{const box=drink.contentBox||[0,0,drink.width,drink.height],scale=48*(drink.displayScale??1)/box[3],height=drink.height*scale,bottom=(drink.height-box[1]-box[3])*scale;return `<button type="button" class="bar-menu-item" data-menu-number="${String(index+1).padStart(2,'0')}" data-drink="${esc(drink.id)}" aria-pressed="false"><span class="bar-menu-art"><img src="${esc(drink.image)}" style="height:${height}px;translate:0 ${bottom}px" loading="lazy" alt=""></span><span>${esc(drink.name)}</span><small>${esc(money(drink.price))}</small></button>`;}).join('');
  }
  function paintPayment(){const r=snapshot?.hostedRound;payment.hidden=!!giftTarget||!r;payment.querySelector('span').textContent=r?r.alias+' 请全场 · 剩余预算 '+money(r.budget-r.spent):'';}
- function openMenu(person=null){if(!snapshot||buying)return;giftTarget=person;selection=null;pendingOrder=null;selectedRoundId=null;payment.querySelector('input').checked=true;menu.querySelector('h2').textContent=person?'请 '+person.alias+' 喝一杯':'想喝点什么？';$('[data-bar-confirm]').hidden=true;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed','false');paintPayment();menu.showModal();}
+ function openMenu(person=null){if(!snapshot||buying)return;giftTarget=person;selection=null;pendingOrder=null;selectedRoundId=null;payment.querySelector('input').checked=true;menu.querySelector('h2').innerHTML=person?'请 <span class="'+(person.isContainment?'bar-containment-name':'')+'">'+esc(person.alias)+'</span> 喝一杯':'想喝点什么？';$('[data-bar-confirm]').hidden=true;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed','false');paintPayment();menu.showModal();}
  function selectDrink(drink){selection=drink;pendingOrder=null;selectedRoundId=!giftTarget&&payment.querySelector('input').checked&&drink.price>0?snapshot?.hostedRound?.id??null:null;$('[data-bar-confirm]').hidden=false;for(const button of root.querySelectorAll('[data-drink]'))button.setAttribute('aria-pressed',String(button.dataset.drink===drink.id));$('[data-bar-order-text]').textContent=drink.name+' · '+money(drink.price)+(giftTarget?' · 对方接受后扣款，邀请保留 5 分钟':selectedRoundId?' · 由 '+snapshot.hostedRound.alias+' 买单':snapshot?.myDrink?' · 替换当前酒杯':'');$('[data-bar-buy]').textContent=giftTarget?'发出请客邀请':selectedRoundId?'请我喝这杯':'确认点单 · '+money(drink.price);}
  payment.querySelector('input').onchange=()=>{if(selection&&!buying)selectDrink(selection);};
  async function enter({fromRoute=false}={}){
@@ -110,7 +111,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
   try{
    const data=await api('/api/player/bar');if(!open||version!==visit)return;drinks=data.menu;renderMenu();receive(data,{initial:true});if(!muted)music.play().catch(()=>{muted=true;paintMusic();});
    source=new EventSource('/api/player/bar/events');source.addEventListener('bar',event=>{if(!open||version!==visit)return;try{receive(JSON.parse(event.data));}catch{}});source.onerror=()=>{if(version===visit){tell('连接中断，正在重试。');$('[data-bar-online]').textContent='— 人在座';api('/api/me',{retries:0}).catch(error=>{if(error.status===401&&version===visit){leave();window.AVEDFeedback.alert('接入已失效，请重新登录。');}});}};
-   if(data.npc.image&&data.barPreferences?.toleranceId)welcomeTimer=setTimeout(()=>{if(open&&version===visit)bubble(localGreeting(),3500);},250);
+   if(data.npc.image&&(data.barPreferences?.toleranceId||data.npc.containmentGreetings?.length))welcomeTimer=setTimeout(()=>greetWhenReady(visit),250);
    chatterTimer=setInterval(()=>{if(open&&!document.hidden&&!menu.open&&snapshot?.npc.image)bubble(localChatter(),4500);},120000);
   }catch(error){if(version!==visit)return;tell(error.message);$('[data-bar-online]').textContent='— 人在座';}
  }

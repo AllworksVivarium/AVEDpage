@@ -36,7 +36,7 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  };
  action.querySelector('[data-bar-sip]').onclick=drinkOnce;
  function renderCoaster(data,{fillOwn=false}={}){
-  coasterMessage=data.message;coaster.querySelector('[data-coaster-author]').textContent=data.message?.alias||'空白的杯垫';coaster.querySelector('[data-coaster-body]').textContent=data.message?.body||'还没有人留下话。';
+  coasterMessage=data.message;coaster.querySelector('[data-coaster-author]').classList.toggle('bar-containment-name',data.message?.isContainment===true);coaster.querySelector('[data-coaster-author]').textContent=data.message?.alias||'空白的杯垫';coaster.querySelector('[data-coaster-body]').textContent=data.message?.body||'还没有人留下话。';
   if(fillOwn){coaster.querySelector('textarea').value=data.own?.body||'';coaster.querySelector('select').value=data.own?.identityMode||getIdentity();}
  }
  async function openCoaster(){
@@ -51,13 +51,13 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  coaster.querySelector('textarea').addEventListener('input',()=>{coaster.querySelector('[type=submit]').textContent='留下留言';});
  function paintRanking(board){
   if(!board)return;ranking.querySelector('[data-ranking-date]').textContent=board.day+' · 每日 04:00 换榜';
-  const list=ranking.querySelector('[data-ranking-list]'),self=getSnapshot()?.selfId,key=JSON.stringify([board.items,self]);if(list.dataset.key!==key){list.dataset.key=key;list.innerHTML=board.items.length?board.items.map(item=>`<li class="${item.employeeId===self?'mine':''}"><span>${item.rank}</span><b>${esc(item.alias)}</b><small>${item.totalMl} mL</small></li>`).join(''):'<li class="bar-ranking-empty">今晚还没有饮用记录。</li>';}
+  const list=ranking.querySelector('[data-ranking-list]'),self=getSnapshot()?.selfId,key=JSON.stringify([board.items,self]);if(list.dataset.key!==key){list.dataset.key=key;list.innerHTML=board.items.length?board.items.map(item=>`<li class="${item.employeeId===self?'mine':''}"><span>${item.rank}</span><b class="${item.isContainment?'bar-containment-name':''}">${esc(item.alias)}</b><small>${item.totalMl} mL</small></li>`).join(''):'<li class="bar-ranking-empty">今晚还没有饮用记录。</li>';}
   ranking.querySelector('[data-ranking-mine]').textContent='我本日已饮用 '+(getSnapshot()?.drinking?.totalMl||0)+' mL';
   paintBoard(board);
  }
  function paintBoard(data){
   if(board.hidden||!data)return;const self=getSnapshot()?.selfId,list=board.querySelector('[data-board-ranking]'),items=data.items.slice(0,5),key=JSON.stringify([items,self]);if(list.dataset.key===key)return;list.dataset.key=key;
-  list.innerHTML=items.length?items.map(item=>`<li class="${item.employeeId===self?'mine':''}" title="${esc(item.alias)} · ${item.totalMl} mL"><span>${item.rank}</span><b>${esc(item.alias)}</b><small>${item.totalMl}</small></li>`).join(''):'<li class="bar-board-empty">尚无人上榜</li>';
+  list.innerHTML=items.length?items.map(item=>`<li class="${item.employeeId===self?'mine':''}" title="${esc(item.alias)} · ${item.totalMl} mL"><span>${item.rank}</span><b class="${item.isContainment?'bar-containment-name':''}">${esc(item.alias)}</b><small>${item.totalMl}</small></li>`).join(''):'<li class="bar-board-empty">尚无人上榜</li>';
  }
  function setBoard(visible){board.hidden=!visible;root.dataset.rankBoardOpen=String(visible);for(const button of root.querySelectorAll('[data-bar-ranking]')){button.textContent=visible?'收起榜单':'展开榜单';button.setAttribute('aria-expanded',String(visible));}if(visible){for(const opened of root.querySelectorAll('dialog[open]'))opened.close();paintBoard(getSnapshot()?.leaderboard);}}
  function openRanking(){setBoard(board.hidden);}
