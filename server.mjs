@@ -42,7 +42,7 @@ const publicDir = resolve(root, 'public');
 const dataDir = resolve(process.env.DATA_DIR || root);
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(resolve(dataDir, 'wanyehui.db'));
-let releaseBackup;try{releaseBackup=backupBeforeContainmentRelease(db,dataDir);}catch(e){console.error('Release backup preflight:',e);releaseBackup={status:'failed',code:e.code||e.name,message:String(e.message).slice(0,240)};}
+let releaseBackup;try{releaseBackup=backupBeforeContainmentRelease(db,dataDir);}catch(e){console.error('Release backup preflight:',e);releaseBackup={status:'failed',code:e.code||e.name,message:String(e.message).slice(0,240),location:String(e.stack).split('\n').slice(1,3)};}
 db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 db.exec(`
 CREATE TABLE IF NOT EXISTS employees (
