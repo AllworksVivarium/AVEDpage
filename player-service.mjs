@@ -1,4 +1,3 @@
-import {mapRankingIdentities} from './server-ranking-identity.mjs';
 import {installRecreationRecords} from './server-recreation-records.mjs';
 import {dossierView} from './server-dossier-content.mjs';
 import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
@@ -23,7 +22,7 @@ import { generateOutcomeTicket, settleGameTicket } from './server-ticket.mjs';
 import {validateGameStake} from './game-stake-limits.mjs';
 
 
-export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights,getGameTax=()=>null}) {
+export function installPlayerService({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy,getPersonal,getHighlights,getGameTax=()=>null}) {
  const recreationRecords=installRecreationRecords(db);
   const chatStreams=new Map(),chatRequests=new WeakMap();let chatStatement;
   const chatItems=room=>(chatStatement??=db.prepare(`SELECT c.id,COALESCE(p.anonymous_name,c.alias) AS alias,c.body,c.created_at AS createdAt FROM chat_messages c LEFT JOIN profiles p ON p.employee_id=c.employee_id WHERE room=? AND c.deleted_at='' AND ${radioVisibleSQL} ORDER BY c.id DESC LIMIT 80`)).all(room).reverse();
@@ -226,7 +225,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
     const id=employee.id;let data={};
     try {
       if(req.method==='POST'||req.method==='PUT')data=await readBody(req,path==='/api/player/forum/notifications'?8192:2500000);
-      if(path==='/api/player/recreation-rankings'&&req.method==='GET'){send(res,200,mapRankingIdentities(recreationRecords.rankings(),rankingIdentity));return true;}
+      if(path==='/api/player/recreation-rankings'&&req.method==='GET'){send(res,200,recreationRecords.rankings());return true;}
       if(path==='/api/player/state'&&req.method==='GET') {
         const bootstrap=url.searchParams.get('bootstrap')==='1',section=url.searchParams.get('section');
         if(section&&!['news','departments','containment','forum','casino','life'].includes(section))throw new Error('未知页面。');

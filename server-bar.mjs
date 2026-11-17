@@ -9,20 +9,13 @@ import {installBarHospitality} from './server-bar-hospitality.mjs';
 export const barDay=barBusinessDay;
 const DAY=86400000;
 const waterLines=['这瓶不用记账。你应该会喜欢。','今天想喝水，那就喝水。','这里也欢迎只喝水的客人。','喝什么都行，坐得舒服就好。','这瓶水给你，慢慢坐。','今天先喝水？很有预算意识。'];
-const containmentGreetings=['……哦。是你。','进来吧。这里不查工牌。','名字换了？……喝点什么？','不用解释。酒单在这。','称呼就按你现在用的来。','……有人替你打过招呼了。','放心。我这里只记酒账。','……你能坐下就行。'];
 const bartenders=[
  {id:'night',name:'夜班调酒师',welcome:'欢迎光临。今晚的位置为你留着。',lines:['今天想喝点什么？','不着急，坐一会儿也好。','工作留在门外，杯子放在这里。','今晚的歌，适合慢慢听。']},
  {id:'rain',name:'雨天值班员',welcome:'进来坐。这里暂时没有待办事项。',lines:['今天过得怎么样？','杯垫下没有工作通知，放心。','再忙也要记得歇一会儿。','想说什么就说，不想说也可以。']},
  {id:'late',name:'晚归调酒师',welcome:'晚上好，欢迎来到下班之后。',lines:['今天的交接单，就写到这里吧。','喝点什么，还是先听首歌？','这一杯不催进度。','吧台今天也没有绩效排名。']}
 ];
 
-export function bartenderForViewer(npc,contained){
- if(!contained)return {...npc,containmentGreetings:[]};
- const staffRole=/员工|工牌|工作|待办|下班|上班|交接单|绩效|考勤|岗位/;
- return {...npc,welcome:staffRole.test(npc.welcome||'')?'':npc.welcome,lines:(npc.lines||[]).filter(line=>!staffRole.test(line)),containmentGreetings:npc.id==='night'?containmentGreetings.filter(line=>!staffRole.test(line)):[]};
-}
-
-export function installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,isContainment=()=>false,getMusic=()=>({enabled:true,previewFallback:true,tracks:[]}),clock=()=>Date.now(),heartbeatMs=15000}){
+export function installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,getMusic=()=>({enabled:true,previewFallback:true,tracks:[]}),clock=()=>Date.now(),heartbeatMs=15000}){
  db.exec(`CREATE TABLE IF NOT EXISTS bar_orders(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,day TEXT NOT NULL,drink_id TEXT NOT NULL,price INTEGER NOT NULL,request_key TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(employee_id,request_key));
  CREATE INDEX IF NOT EXISTS bar_orders_day ON bar_orders(day,employee_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_messages(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,alias TEXT NOT NULL,body TEXT NOT NULL,created_at TEXT NOT NULL);
@@ -33,23 +26,19 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
  const streams=new Map(),lastChat=new Map();
  const iso=()=>new Date(clock()).toISOString();
  const name=id=>db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name||'匿名员工';
- const drinking=installBarDrinking({db,clock,preferences,name}),coasters=installBarCoasters({db,clock,dayFor:barDay,name,isContainment});
+ const drinking=installBarDrinking({db,clock,preferences,name}),coasters=installBarCoasters({db,clock,dayFor:barDay,name});
  const currentOrder=drinking.currentOrder;
  const hospitality=installBarHospitality({db,clock,dayFor:barDay,name,isOnline:id=>[...streams.values()].some(client=>client.id===id),balanceFor,recordLedger,drinking});
  const cheers=createBarCheers({db,clock,dayFor:barDay,name,currentOrder,isOnline:id=>[...streams.values()].some(client=>client.id===id)});
  function prune(){db.prepare('DELETE FROM bar_messages WHERE created_at<?').run(new Date(clock()-5*DAY).toISOString());}
- const withIdentity=item=>({...item,isContainment:!!item.employeeId&&isContainment(item.employeeId)});
- const leaderboard=()=>{const board=drinking.leaderboard();return {...board,items:board.items.map(withIdentity)};};
- function history(before=Number.MAX_SAFE_INTEGER){const rows=db.prepare('SELECT id,employee_id AS employeeId,alias,identity_mode AS identityMode,body,created_at AS createdAt FROM bar_messages WHERE id<? AND created_at>=? ORDER BY id DESC LIMIT 41').all(before,new Date(clock()-5*DAY).toISOString());return {items:rows.slice(0,40).reverse().map(withIdentity),nextBefore:rows.length>40?rows[39].id:null};}
+ function history(before=Number.MAX_SAFE_INTEGER){const rows=db.prepare('SELECT id,employee_id AS employeeId,alias,identity_mode AS identityMode,body,created_at AS createdAt FROM bar_messages WHERE id<? AND created_at>=? ORDER BY id DESC LIMIT 41').all(before,new Date(clock()-5*DAY).toISOString());return {items:rows.slice(0,40).reverse(),nextBefore:rows.length>40?rows[39].id:null};}
  function shared(){
   const ids=[...new Set([...streams.values()].map(x=>x.id))],day=barDay(clock());
   let shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);if(!shift){db.prepare('INSERT OR IGNORE INTO bar_shifts(day,npc_id) VALUES(?,?)').run(day,bartenders[randomInt(bartenders.length)].id);shift=db.prepare('SELECT npc_id FROM bar_shifts WHERE day=?').get(day);}
-  const guests=ids.slice(0,100).map(id=>withIdentity({employeeId:id,alias:name(id),drink:currentOrder(id,day)})),round=hospitality.activeRound();
-  return {day,serverTime:clock(),onlineCount:ids.length,guests,hostedRound:round?withIdentity(round):null,cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
+  const guests=ids.slice(0,100).map(id=>({employeeId:id,alias:name(id),drink:currentOrder(id,day)}));
+  return {day,serverTime:clock(),onlineCount:ids.length,guests,hostedRound:hospitality.activeRound(),cheers:cheers.shared(),recentSips:drinking.recent(),leaderboard:drinking.leaderboard(),npc:{...(bartenders.find(x=>x.id===shift.npc_id)||bartenders[0]),image:'/assets/bar/bartender-preview-v7.png',temporary:true},music:getMusic(),...history()};
  }
- const nameFlags=invite=>({...invite,senderIsContainment:isContainment(invite.senderId),recipientIsContainment:isContainment(invite.recipientId)});
- const hospitalityState=id=>{const personal=hospitality.personal(id);return {...personal,gifts:personal.gifts.map(nameFlags),lastRound:personal.lastRound?withIdentity(personal.lastRound):null};};
- const state=(id,common=shared())=>({...common,npc:bartenderForViewer(common.npc,isContainment(id)),selfId:id,selfIsContainment:isContainment(id),myDrink:currentOrder(id,common.day),balance:balanceFor(id),hospitality:hospitalityState(id),cheersInvites:cheers.personal(id).map(nameFlags),barPreferences:preferences.get(id),drinking:drinking.status(id)});
+ const state=(id,common=shared())=>({...common,selfId:id,myDrink:currentOrder(id,common.day),balance:balanceFor(id),hospitality:hospitality.personal(id),cheersInvites:cheers.personal(id),barPreferences:preferences.get(id),drinking:drinking.status(id)});
  const online=id=>[...streams.values()].some(client=>client.id===id);
  function detach(response){const client=streams.get(response);if(!client)return false;streams.delete(response);if(!online(client.id))drinking.seen(client.id,{force:true});return true;}
  function emit(response,data){if(response.destroyed||response.writableLength>262144){detach(response);response.destroy();return;}response.write('event: bar\ndata: '+JSON.stringify(data)+'\n\n');}
@@ -72,7 +61,7 @@ export function installBar({db,send,readBody,requireEmployee,sessionEmployee,bal
    if(path==='/api/player/bar/sip'&&req.method==='POST'){const result=drinking.sip(actor,await readBody(req));send(res,200,{...state(actor.id),receipt:result.receipt});broadcast();return true;}
    if(path==='/api/player/bar/coaster'&&req.method==='GET'){send(res,200,coasters.read(actor.id,Number(url.searchParams.get('exclude'))||0));return true;}
    if(path==='/api/player/bar/coaster'&&req.method==='POST'){send(res,200,coasters.write(actor,await readBody(req)));return true;}
-   if(path==='/api/player/bar/ranking'&&req.method==='GET'){send(res,200,{...leaderboard(),mine:drinking.status(actor.id)});return true;}
+   if(path==='/api/player/bar/ranking'&&req.method==='GET'){send(res,200,{...drinking.leaderboard(),mine:drinking.status(actor.id)});return true;}
    if(path==='/api/player/bar/pour'&&req.method==='POST'){send(res,409,{error:'倒酒功能暂未开放。',code:'FEATURE_DISABLED'});return true;}
    if(path==='/api/player/bar/preferences'&&req.method==='POST'){const result=preferences.save(actor.id,await readBody(req));send(res,200,{barPreferences:result,myDrink:currentOrder(actor.id)});broadcast();return true;}
    if(req.method==='POST'&&(path==='/api/player/bar/cheers'||cheersReply)){

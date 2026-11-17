@@ -35,10 +35,10 @@ function shopFixture(t,initialBalance=80000){
  CREATE TABLE balance_ledger(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),delta INTEGER,reason TEXT);`);
  db.prepare('INSERT INTO employees VALUES(1,?),(2,9999)').run(initialBalance);
  const balanceFor=id=>db.prepare('SELECT initial_balance+COALESCE((SELECT SUM(delta) FROM balance_ledger WHERE employee_id=?),0) balance FROM employees WHERE id=?').get(id,id).balance;
- let userId=1;const containmentIds=new Set();
- const options={db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:()=>userId?{id:userId}:null,balanceFor,isContainment:id=>containmentIds.has(id),recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,delta,reason)};
+ let userId=1;
+ const options={db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:()=>userId?{id:userId}:null,balanceFor,recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,delta,reason)};
  const service=installAppearance(options),request=async(body,method='POST')=>{const res={};await service.handle({method,body},res,new URL('http://localhost/api/player/appearance'));return res;};
- return {db,balanceFor,options,service,request,containmentIds,login:id=>userId=id};
+ return {db,balanceFor,options,service,request,login:id=>userId=id};
 }
 
 test('background shop defaults are free; the sphere and three textures charge once and survive restart',async t=>{
@@ -98,20 +98,6 @@ test('a failed effect entitlement write rolls back the debit',async t=>{
  assert.equal((await request({effect:'contamination',confirmed:true})).status,400);
  assert.equal(balanceFor(1),500000);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,0);
  assert.deepEqual(service.snapshot(1).effects.owned,[]);
-});
-
-test('containment discount follows server identity and retries never debit twice',async t=>{
- const {db,service,request,balanceFor,containmentIds,login}=shopFixture(t,100000);
- containmentIds.add(1);
- assert.equal(service.snapshot(1).effects.prices.contamination,100000);
- assert.equal(service.snapshot(2).effects.prices.contamination,500000);
- const unconfirmed=await request({effect:'contamination'});assert.equal(unconfirmed.status,400);assert.match(unconfirmed.data.error,/100,000/);
- await Promise.all([request({effect:'contamination',confirmed:true,price:1,identityKind:'player_employee'}),request({effect:'contamination',confirmed:true})]);
- assert.equal(balanceFor(1),0);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,1);
- assert.equal(db.prepare('SELECT delta FROM balance_ledger').get().delta,-100000);
- assert.deepEqual(service.snapshot(1).effects.owned,['contamination']);
- login(2);assert.equal((await request({effect:'contamination',confirmed:true,identityKind:'player_containment',price:100000})).status,400);
- assert.equal(balanceFor(2),9999);assert.deepEqual(service.snapshot(2).effects.owned,[]);
 });
 
 test('expanding the old texture constraint preserves existing ownership and ledger links',async t=>{

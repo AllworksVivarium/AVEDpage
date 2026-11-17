@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {EventEmitter} from 'node:events';
-import {installBar,barDay,bartenderForViewer} from '../server-bar.mjs';
+import {installBar,barDay} from '../server-bar.mjs';
 import {barDrinks} from '../server-bar-catalog.mjs';
 
 class Response extends EventEmitter{
@@ -16,7 +16,7 @@ class Response extends EventEmitter{
 function setup(t){
  const db=new DatabaseSync(':memory:');db.exec(`PRAGMA foreign_keys=ON;CREATE TABLE employees(id INTEGER PRIMARY KEY,balance INTEGER,display_name TEXT);CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT);CREATE TABLE balance_ledger(employee_id INTEGER,delta INTEGER,reason TEXT);INSERT INTO employees VALUES(1,10000,'甲实名'),(2,10000,'乙实名'),(3,1,'丙实名');INSERT INTO profiles VALUES(1,'甲'),(2,'乙'),(3,'丙');`);
  let now=Date.parse('2026-11-11T15:59:50Z');const balanceFor=id=>db.prepare('SELECT balance+COALESCE((SELECT SUM(delta) FROM balance_ledger WHERE employee_id=?),0) AS balance FROM employees WHERE id=?').get(id,id).balance;
- const options={db,isContainment:id=>id===2,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:(req,res)=>{if(!req.actor){Object.assign(res,{status:401});return null;}return {id:req.actor};},sessionEmployee:req=>req.actor?{id:req.actor}:null,balanceFor,recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger VALUES(?,?,?)').run(id,delta,reason),clock:()=>now};
+ const options={db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async req=>req.body,requireEmployee:(req,res)=>{if(!req.actor){Object.assign(res,{status:401});return null;}return {id:req.actor};},sessionEmployee:req=>req.actor?{id:req.actor}:null,balanceFor,recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger VALUES(?,?,?)').run(id,delta,reason),clock:()=>now};
  let service=installBar(options);
  const request=async(actor,path='/api/player/bar',method='GET',body)=>{const res=new Response();await service.handle({actor,method,body},res,new URL('http://localhost'+path));await new Promise(resolve=>setTimeout(resolve,225));return res;};
  t.after(()=>{service.close();db.close();});return {db,request,balanceFor,setTime:value=>now=value,restart(){service.close();service=installBar(options);},get service(){return service;}};
@@ -38,10 +38,8 @@ test('bar purchases use server prices, survive reentry, and never debit a retrie
  assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:key})).data.myDrink,null);assert.equal(f.balanceFor(1),10000-drink.price);
 });
 test('bar presence counts distinct connected accounts and broadcasts each real guest order',async t=>{
- const f=setup(t);f.db.prepare('INSERT OR REPLACE INTO bar_shifts(day,npc_id) VALUES(?,?)').run(barDay(Date.parse('2026-11-11T15:59:50Z')),'night');
- const first=await f.request(1,'/api/player/bar/events'),duplicate=await f.request(1,'/api/player/bar/events'),other=await f.request(2,'/api/player/bar/events');
- assert.deepEqual(first.state().npc.containmentGreetings,[]);assert.equal(other.state().npc.containmentGreetings.length,7);assert.ok(!other.state().npc.containmentGreetings.some(line=>/工牌|员工|下班/.test(line)));
- assert.equal(first.state().onlineCount,2);assert.equal(duplicate.state().onlineCount,2);assert.equal(first.state().guests.find(x=>x.employeeId===2).isContainment,true);assert.equal(first.state().guests.find(x=>x.employeeId===1).isContainment,false);
+ const f=setup(t),first=await f.request(1,'/api/player/bar/events'),duplicate=await f.request(1,'/api/player/bar/events'),other=await f.request(2,'/api/player/bar/events');
+ assert.equal(first.state().onlineCount,2);assert.equal(duplicate.state().onlineCount,2);
  await f.request(2,'/api/player/bar/orders','POST',{drinkId:barDrinks[1].id,requestId:'other-order-00001'});
  assert.equal(first.state().guests.find(x=>x.employeeId===2).drink.drinkId,barDrinks[1].id);assert.equal(first.state().myDrink,null);assert.equal(other.state().myDrink.drinkId,barDrinks[1].id);
  first.end();assert.equal(other.state().onlineCount,2);duplicate.end();await new Promise(resolve=>setTimeout(resolve,225));assert.equal(other.state().onlineCount,1);
@@ -71,24 +69,4 @@ test('bar chat chooses server-owned real or anonymous names per message and pres
  for(const identityMode of ['invalid','admin','',null])assert.equal((await f.request(1,'/api/player/bar/messages','POST',{body:'无效身份',identityMode})).status,400);
  f.db.exec("UPDATE employees SET display_name='改名后' WHERE id=1;UPDATE profiles SET anonymous_name='新代号' WHERE employee_id=1");f.restart();
  items=(await f.request(2,'/api/player/bar/messages')).data.items;assert.deepEqual(items.map(x=>x.alias),['甲','甲实名','甲']);assert.deepEqual(items.map(x=>x.identityMode),['anonymous','real','anonymous']);
-});
-
- test('bar name markers are supplied by server identity even for anonymous history',async t=>{
- const f=setup(t);
- await f.request(2,'/api/player/bar/messages','POST',{body:'匿名收容物',identityMode:'anonymous',isContainment:false});
- await f.request(1,'/api/player/bar/messages','POST',{body:'员工伪造红名',identityMode:'real',isContainment:true});
- const history=(await f.request(1,'/api/player/bar/messages')).data.items;
- assert.equal(history.find(x=>x.body==='匿名收容物').isContainment,true);assert.equal(history.find(x=>x.body==='员工伪造红名').isContainment,false);
- f.restart();assert.equal((await f.request(1)).data.items.find(x=>x.body==='匿名收容物').isContainment,true);
- });
-
-test('bartender staff-only wording is omitted only for containment viewers',()=>{
- const night={id:'night',welcome:'欢迎光临。今晚的位置为你留着。',lines:['今天想喝点什么？','工作留在门外，杯子放在这里。']};
- const late={id:'late',welcome:'晚上好，欢迎来到下班之后。',lines:['今天的交接单，就写到这里吧。','喝点什么，还是先听首歌？','吧台今天也没有绩效排名。']};
- for(const npc of [night,late]){
-  const normal=bartenderForViewer(npc,false);assert.equal(normal.welcome,npc.welcome);assert.deepEqual(normal.lines,npc.lines);
-  const contained=bartenderForViewer(npc,true);assert.ok(!/员工|工牌|工作|下班|交接单|绩效/.test([contained.welcome,...contained.lines,...contained.containmentGreetings].join('')));
- }
- assert.equal(bartenderForViewer(late,true).welcome,'');assert.ok(bartenderForViewer(night,true).containmentGreetings.includes('……哦。是你。'));
- assert.equal(night.lines.length,2,'shared dialogue is not mutated for other viewers');
 });

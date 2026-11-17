@@ -45,16 +45,3 @@ test('all-employee leaderboards and employee donations preserve balances and rej
  assert.equal(full.highest[0].id,1);assert.equal(full.lowest[0].id,4);assert.equal(full.donors[9].donated,0);
 
 });
-
-test('containment rankings never expose real names even with historical or forged real preference',async t=>{
- const db=new DatabaseSync(':memory:');t.after(()=>db.close());
- db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,display_name TEXT,enabled INTEGER DEFAULT 1,is_npc INTEGER DEFAULT 0);
- CREATE TABLE profiles(employee_id INTEGER,anonymous_name TEXT);CREATE TABLE balance_ledger(id INTEGER PRIMARY KEY,employee_id INTEGER,delta INTEGER,reason TEXT);CREATE TABLE checkins(employee_id INTEGER,reward INTEGER);
- INSERT INTO employees(id,display_name) VALUES(1,'保密实名');INSERT INTO profiles VALUES(1,'公开代号');`);
- const service=installWelfare({db,balanceFor:()=>100,isContainment:id=>id===1,requireEmployee:()=>({id:1}),readBody:async req=>req.body,send:(res,status,data)=>Object.assign(res,{status,data})});
- db.exec("INSERT INTO employee_preferences VALUES(1,'real','anonymous')");
- const res={};await service.handle({method:'GET'},res,new URL('http://localhost/api/player/welfare'));
- for(const key of ['highest','lowest','donors']){const row=res.data[key].find(x=>x.id===1);assert.equal(row.name,'公开代号');assert.equal(row.identityMode,'anonymous');assert.equal(row.isContainment,true);}
- assert.ok(!JSON.stringify(res.data).includes('保密实名'));
- const updated={};await service.handle({method:'PUT',body:{rankingIdentity:'real'}},updated,new URL('http://localhost/api/player/preferences'));assert.equal(updated.data.rankingIdentity,'anonymous');
-});
