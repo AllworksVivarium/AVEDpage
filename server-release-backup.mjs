@@ -7,7 +7,7 @@ export const releaseId='containment-intranet-20261117';
 export async function backupBeforeContainmentRelease(db,dataDir,{production=process.env.NODE_ENV==='production'}={}){
  if(!production)return {status:'development'};
  if(!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='employees'").get())return {status:'not-required'};
- const directory=join(dataDir,'release-backups'),target=join(directory,'pre-'+releaseId+'.sqlite');
+ const directory=dataDir,target=join(directory,'pre-'+releaseId+'.sqlite');
  function verify(){const copy=new DatabaseSync(target,{readOnly:true});try{
   const integrity=copy.prepare('PRAGMA quick_check').get().quick_check;
   if(integrity!=='ok')throw Error('Release backup integrity check failed.');
@@ -18,6 +18,7 @@ export async function backupBeforeContainmentRelease(db,dataDir,{production=proc
  const integrity=db.prepare('PRAGMA quick_check').get().quick_check;
  if(integrity!=='ok')throw Error('Database integrity check failed before release.');
  mkdirSync(directory,{recursive:true});
+ writeFileSync(target,'',{flag:'wx',mode:0o600});
  await backup(db,target);
  chmodSync(target,0o600);
  const result=verify(),snapshot=new DatabaseSync(target,{readOnly:true}),tables=snapshot.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('employees','balance_ledger','company_fund')").all();

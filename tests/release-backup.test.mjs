@@ -14,7 +14,7 @@ test('release snapshot is verified before migration and never replaced on restar
  const status=await backupBeforeContainmentRelease(db,folder,{production:true});assert.deepEqual(status,{status:'verified',integrity:'ok',foreignKeyViolations:0});
  db.exec('INSERT INTO balance_ledger VALUES(100000);');
  assert.deepEqual(await backupBeforeContainmentRelease(db,folder,{production:true}),status);
- const path=join(folder,'release-backups','pre-'+releaseId+'.sqlite'),copy=new DatabaseSync(path,{readOnly:true});assert.equal(copy.prepare('SELECT SUM(delta) n FROM balance_ledger').get().n,200000);copy.close();
+ const path=join(folder,'pre-'+releaseId+'.sqlite'),copy=new DatabaseSync(path,{readOnly:true});assert.equal(copy.prepare('SELECT SUM(delta) n FROM balance_ledger').get().n,200000);copy.close();
  assert.equal(JSON.parse(readFileSync(path+'.json','utf8')).totals.balance_ledger.total,200000);
  assert.equal(db.prepare('SELECT SUM(delta) n FROM balance_ledger').get().n,300000);
 });
