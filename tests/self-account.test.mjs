@@ -1,0 +1,71 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {randomBytes} from 'node:crypto';
+import {createServer} from 'node:net';
+import {spawn} from 'node:child_process';
+import {DatabaseSync} from 'node:sqlite';
+import {installSelfAccount} from '../server-self-account.mjs';
+
+test('stale password verification cannot overwrite a newer account change or keep revoked sessions',async t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());
+ db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,username TEXT UNIQUE,display_name TEXT,password_hash TEXT,enabled INTEGER);
+ CREATE TABLE sessions(employee_id INTEGER,token_hash TEXT);
+ INSERT INTO employees VALUES(1,'original','固定真名','old-hash',1),(2,'taken','他人真名','other-hash',1);
+ INSERT INTO sessions VALUES(1,'keep'),(1,'other'),(2,'other-user');`);
+ const service=installSelfAccount({db,verifyPassword:async()=>true,hashPassword:async()=> 'new-hash'}),employee={id:1,displayName:'固定真名'};
+ const change=await service.prepare(employee,{username:'next',currentPassword:'old'});
+ db.exec("UPDATE employees SET password_hash='changed-by-admin' WHERE id=1");
+ assert.throws(()=>service.apply(employee,change,['keep']),e=>e.code==='ACCOUNT_CHANGED');
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM sessions').get().n,3);
+ const fresh=await service.prepare(employee,{username:'next',currentPassword:'old'});
+ db.exec("UPDATE employees SET display_name='next' WHERE id=2");
+ assert.throws(()=>service.apply(employee,fresh,['keep']),e=>e.code==='USERNAME_REALNAME_CONFLICT');
+ db.exec("UPDATE employees SET display_name='他人真名' WHERE id=2");
+ service.apply(employee,fresh,['keep']);
+ assert.deepEqual(db.prepare('SELECT token_hash FROM sessions ORDER BY token_hash').all().map(x=>x.token_hash),['keep','other-user']);
+});
+
+test('players edit their own bio and login credentials, keep real names immutable and preserve empty passwords',async t=>{
+ const folder=mkdtempSync(join(tmpdir(),'aved-self-account-')),password=randomBytes(14).toString('hex');
+ const port=await new Promise(r=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const n=s.address().port;s.close(()=>r(n));});});
+ const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:folder,HOST:'127.0.0.1',PORT:String(port),NODE_ENV:'development',COOKIE_SECURE:'false',SESSION_SECRET:randomBytes(32).toString('hex'),BOOTSTRAP_ADMIN_USERNAME:'account-admin',BOOTSTRAP_ADMIN_PASSWORD:password},stdio:['ignore','ignore','pipe']});
+ let errors='',db;child.stderr.on('data',x=>errors+=x);
+ t.after(async()=>{if(child.exitCode===null){const stopped=new Promise(r=>child.once('exit',r));child.kill();await stopped;}db?.close();rmSync(folder,{recursive:true,force:true});});
+ const base='http://127.0.0.1:'+port;
+ let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,50));}assert.ok(ready,errors);
+ const request=async(cookie,path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
+ const login=(name,secret=password)=>request('','/api/login','POST',{identifier:name,password:secret});
+ const admin=(await login('account-admin')).cookie;
+ const created=await request(admin,'/api/admin/employees','POST',{username:'self-before',password,displayName:'永久真名'});assert.equal(created.status,201);const id=created.data.id;
+ const other=await request(admin,'/api/admin/employees','POST',{username:'taken-user',password,displayName:'禁用者真名'});assert.equal(other.status,201);
+ db=new DatabaseSync(join(folder,'wanyehui.db'));db.prepare('UPDATE employees SET enabled=0 WHERE id=?').run(other.data.id);
+ const first=(await login('self-before')).cookie,second=(await login('self-before')).cookie;
+ const originalHash=db.prepare('SELECT password_hash FROM employees WHERE id=?').get(id).password_hash;
+ const body={anonymousName:'公开代号',bio:'本人填写的简介',username:'self-before',password:''};
+ assert.equal((await request('','/api/profile','PUT',body)).status,401);
+ assert.equal((await request(first,'/api/profile','PUT',body)).status,200);
+ assert.equal((await request(second,'/api/me')).status,200);
+ assert.equal(db.prepare('SELECT password_hash FROM employees WHERE id=?').get(id).password_hash,originalHash);
+ for(const username of ['taken-user','ＴＡＫＥＮ－ＵＳＥＲ','禁用者真名']){
+  const res=await request(first,'/api/profile','PUT',{...body,username,bio:'不得保存',currentPassword:password});assert.equal(res.status,409);
+ }
+ assert.equal((await request(first,'/api/profile','PUT',{...body,displayName:'篡改真名'})).status,400);
+ assert.equal((await request(first,'/api/profile','PUT',{...body,username:'self-after'})).status,400);
+ assert.equal((await request(first,'/api/profile','PUT',{...body,username:'self-after',currentPassword:'wrong'})).status,400);
+ assert.equal(db.prepare('SELECT bio FROM profiles WHERE employee_id=?').get(id).bio,body.bio);
+ const renamed=await request(first,'/api/profile','PUT',{...body,username:'self-after',currentPassword:password,employeeId:other.data.id});assert.equal(renamed.status,200);
+ assert.equal(renamed.data.account.username,'self-after');assert.ok(!JSON.stringify(renamed.data).includes('password'));
+ assert.equal((await request(first,'/api/me')).data.employee.username,'self-after');assert.equal((await request(second,'/api/me')).status,401);
+ assert.equal(db.prepare('SELECT username FROM employees WHERE id=?').get(other.data.id).username,'taken-user');
+ assert.equal(db.prepare('SELECT password_hash FROM employees WHERE id=?').get(id).password_hash,originalHash);
+ assert.equal((await login('self-before')).status,401);assert.equal((await login('永久真名')).status,200);
+ const fresh=(await login('self-after')).cookie,newPassword=randomBytes(16).toString('hex');
+ assert.equal((await request(first,'/api/profile','PUT',{...body,username:'self-after',password:newPassword,passwordConfirmation:'different',currentPassword:password})).status,400);
+ const updated=await request(first,'/api/profile','PUT',{...body,username:'self-after',password:newPassword,passwordConfirmation:newPassword,currentPassword:password});assert.equal(updated.status,200);
+ assert.equal((await request(fresh,'/api/me')).status,401);assert.equal((await request(first,'/api/me')).status,200);
+ assert.equal((await login('self-after',password)).status,401);assert.equal((await login('self-after',newPassword)).status,200);
+ assert.equal(db.prepare('SELECT display_name FROM employees WHERE id=?').get(id).display_name,'永久真名');
+});

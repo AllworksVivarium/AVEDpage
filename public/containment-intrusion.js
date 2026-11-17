@@ -7,7 +7,8 @@ window.AVEDIntrusionUI=function({api,getUser,onBalance}){
    const button=host.querySelector('[data-intrusion]'),toggle=host.querySelector('[data-intrusion-auto]');
    button.disabled=busy||!state||state.claimed;button.textContent=state?.claimed?'今日已黑入':'黑入基金';
    toggle.checked=!!state?.automatic;toggle.disabled=busy||!state;
-   host.querySelector('[role=status]').textContent=state?(state.claimed?'今日转入 '+money(state.amount)+' · 零点重置':'[基金链路开放] 每日一次'):'[正在接入基金链路]';
+   const status=host.querySelector('[role=status]'),full=state?(state.claimed?'今日转入 '+money(state.amount)+' · 零点重置':'[基金链路开放] 每日一次'):'[正在接入基金链路]';
+   status.textContent=host.classList.contains('hud-intrusion')?(state?(state.claimed?'+'+money(state.amount):'每日一次'):'连接中'):full;status.title=full;
   }
  }
  function current(id){return allowed()&&getUser()?.id===id;}

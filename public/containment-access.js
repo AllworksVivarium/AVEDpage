@@ -33,6 +33,9 @@
   if(!active||!node.isConnected||node.nodeType!==1&&node.nodeType!==3)return;
   if((node.nodeType===1?node:node.parentElement)?.closest(wordExcluded)&&!node.matches?.('input[placeholder],textarea[placeholder]'))return;
   if(node.nodeType===3&&!identityMatch.test(node.data))return;
+  // A queued ancestor already covers this subtree, including newly added text.
+  for(let parent=node.parentNode;parent;parent=parent.parentNode)if(wordPending.has(parent))return;
+  for(const pending of wordPending)if(node.contains(pending))wordPending.delete(pending);
   wordPending.add(node);if(wordFrame)return;
   wordFrame=requestAnimationFrame(()=>{wordFrame=0;const nodes=[...wordPending];wordPending.clear();for(const target of nodes)markEmployeeWords(target);});
  }

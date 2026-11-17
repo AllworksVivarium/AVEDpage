@@ -19,12 +19,13 @@ import {mediaReference,installMedia} from './server-media.mjs';
 import {normalizeAvatar} from './server-avatar.mjs';
 import {installCardTables} from './server-card-table.mjs';
 import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
+import {installSelfAccount} from './server-self-account.mjs';
 import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
 import {installEconomy,proofRandom} from './server-economy.mjs';
 import {installSky} from './server-sky.mjs';
-import {installWelfare} from './server-welfare.mjs';
+import {installWelfare,createWelfareRosterReader} from './server-welfare.mjs';
 import {installPayrollIntrusion} from './server-payroll-intrusion.mjs';
 import {rankingIdentityMapper} from './server-ranking-identity.mjs';
 import {backupBeforeContainmentRelease,releaseId} from './server-release-backup.mjs';
@@ -228,6 +229,7 @@ const sessionEmployee = req => {
   }
   return valid.sort((a,b)=>b.session.issuedAt-a.session.issuedAt||b.position-a.position)[0]?.session||null;
 };
+const selfAccount=installSelfAccount({db,verifyPassword,hashPassword:hashPasswordAsync});
 const requireEmployee = (req, res) => {
   const employee = sessionEmployee(req);
   if (!employee) send(res, 401, { error:'请先登录。',code:sessionTokens(req.headers.cookie).length?'SESSION_EXPIRED':'SESSION_MISSING' });
@@ -287,7 +289,7 @@ economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor
 // Preserve legacy split ordering before migrating independent fills.
 playerService.initializeStockLots();
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
-const welfare=installWelfare({db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment});
+const welfare=installWelfare({rosterState:createWelfareRosterReader(db),db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment});
 highlights=installGameHighlights({db,send,requireEmployee});
 gameTax=installGameTax({db,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
@@ -395,7 +397,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/profile' && req.method === 'PUT') {
       const employee=requireEmployee(req,res); if(!employee)return;
-      const {anonymousName,bio,avatarUrl,avatarPreset}=await readBody(req,2500000);
+      const data=await readBody(req,2500000),{anonymousName,bio,avatarUrl,avatarPreset}=data;
       if(typeof anonymousName!=='string'||anonymousName.trim().length<1||anonymousName.trim().length>32||typeof bio!=='string'||bio.length>500) return send(res,400,{error:'请填写匿名名称（最多 32 字），简介最多 500 字。'});
       if(avatarUrl!==undefined&&typeof avatarUrl!=='string')return send(res,400,{error:'头像资料无效。'});
       const previous=db.prepare('SELECT avatar_url,avatar_preset FROM profiles WHERE employee_id=?').get(employee.id)||{};
@@ -407,10 +409,18 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
         else { try { const parsed=new URL(avatarUrl); if(parsed.protocol!=='https:'||parsed.href.length>1000) throw new Error(); avatar=parsed.href;preset=''; } catch { return send(res,400,{error:'头像请使用 PNG/JPG/WEBP 图片，或填写有效的 HTTPS 图片链接。'}); } }
       }
       if(avatarUrl===''&&avatarPreset===undefined)preset='';
-      db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,avatar_preset,updated_at) VALUES(?,?,?,?,?,CURRENT_TIMESTAMP)
+      let accountChange;
+      try{accountChange=await selfAccount.prepare(employee,data);}catch(e){if(e.code)return send(res,e.status,{error:e.message,code:e.code});throw e;}
+      if(sessionEmployee(req)?.id!==employee.id)return send(res,401,{error:'当前身份连接已结束。',code:'SESSION_EXPIRED'});
+      db.exec('BEGIN IMMEDIATE');
+      try{
+       selfAccount.apply(employee,accountChange,sessionTokens(req.headers.cookie).map(sessionDigest));
+       db.prepare(`INSERT INTO profiles(employee_id,anonymous_name,bio,avatar_url,avatar_preset,updated_at) VALUES(?,?,?,?,?,CURRENT_TIMESTAMP)
         ON CONFLICT(employee_id) DO UPDATE SET anonymous_name=excluded.anonymous_name,bio=excluded.bio,avatar_url=excluded.avatar_url,avatar_preset=excluded.avatar_preset,updated_at=CURRENT_TIMESTAMP`)
         .run(employee.id,anonymousName.trim(),bio.trim(),avatar,preset);
-      return send(res,200,{profile:publicProfile(employee.id)});
+       db.exec('COMMIT');
+      }catch(e){db.exec('ROLLBACK');if(e.code)return send(res,e.status||400,{error:e.message,code:e.code});throw e;}
+      return send(res,200,{profile:publicProfile(employee.id),account:{username:accountChange?.username||employee.username}});
     }
     if (url.pathname === '/api/checkin' && req.method === 'POST') {
       const employee=requireEmployee(req,res); if(!employee)return;

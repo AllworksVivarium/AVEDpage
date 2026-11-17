@@ -56,7 +56,7 @@
   document.addEventListener('touchstart', () => {}, { passive: true });
   if (!scope) return;
   window.addEventListener('pointermove', event => {
-    if (event.pointerType !== 'mouse') return;
+    if (event.pointerType !== 'mouse' || document.hidden || scope.classList.contains('hidden') || reducedMotion.matches || !finePointer.matches || document.body.classList.contains('effects-off')) return;
     pointer = { x: event.clientX, y: event.clientY };
     if (!frame) frame = requestAnimationFrame(update);
   }, { passive: true });

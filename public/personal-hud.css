@@ -435,18 +435,24 @@
  #view-profile.personal-hud .hud-pattern-ascii::after{content:'';position:absolute;inset:0;background:var(--inner-text-main);mask:url('/assets/profile-ascii-flow.svg') 0 0/80px 107px;opacity:.7}
 }
 @layer aved-personal {
- #view-profile.personal-hud .hud-account-layout:has(.hud-intrusion){height:auto;grid-template-rows:auto}
- #view-profile.personal-hud .hud-account-layout:has(.hud-intrusion) .hud-register{grid-template-rows:auto auto}
- #view-profile.personal-hud .hud-intrusion{grid-column:1/-1;border-top:1px dashed var(--inner-border-soft);padding-top:6px;min-width:0}
- #view-profile.personal-hud .hud-intrusion>div{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
- #view-profile.personal-hud .hud-intrusion button{min-height:28px!important;padding:3px 8px!important;border:1px solid var(--inner-border-soft);font-size:11px!important;color:var(--inner-text-main);background:var(--inner-card-alt)}
- #view-profile.personal-hud .hud-intrusion label{display:inline-flex;align-items:center;gap:4px;font-size:10px!important;cursor:pointer;opacity:.8}
- #view-profile.personal-hud .hud-intrusion input{width:12px;height:12px;accent-color:#931c27}
- #view-profile.personal-hud .hud-intrusion small{display:block;font-size:9px!important;line-height:1.6;margin-top:4px;color:var(--inner-text-muted)}
+ #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])){position:relative}
+ #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])) #hub-balance{align-self:start;margin-top:1px}
+ #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden]))>button{align-self:start;height:20px!important;min-height:20px!important;padding:0!important}
 }
 @layer aved-typography {
- #view-profile.personal-hud .hud-intrusion>div{justify-content:flex-end!important;gap:10px!important}
- #view-profile.personal-hud .hud-intrusion button{flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:20px!important;height:auto!important;padding:1px 5px!important;font-size:9px!important;line-height:1.6!important;font-weight:400!important;border:0!important;background:transparent!important;color:var(--inner-text-muted)!important}
- #view-profile.personal-hud .hud-intrusion label,#view-profile.personal-hud .hud-intrusion small{font-size:9px!important;line-height:1.6!important}
- #view-profile.personal-hud .hud-intrusion small{text-align:right!important}
+ #view-profile.personal-hud .hud-bio>header>button{display:inline-flex;align-items:center;justify-content:center;width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:4px!important;border:0!important;background:transparent!important;color:var(--inner-text-muted)!important}
+ #view-profile.personal-hud .hud-bio>header>button svg{width:14px;height:14px}
+ #view-profile.personal-hud .hud-bio .hud-bio-empty{color:var(--inner-text-muted);font-size:12px!important}
+ #view-profile.personal-hud .hud-login-fields{display:grid;gap:10px;min-width:0;margin:4px 0;padding:12px;border:1px solid var(--inner-border-soft)}
+ #view-profile.personal-hud .hud-login-fields legend{padding:0 5px;font-size:12px!important;color:var(--inner-text-muted)}
+ #view-profile.personal-hud #cloud-profile-form small{font-size:11px!important;line-height:1.5!important;color:var(--inner-text-muted)}
+ #view-profile.personal-hud #cloud-profile-form input[readonly]{opacity:.65;cursor:default}
+ #view-profile.personal-hud .hud-intrusion{position:absolute;left:68px;right:8px;bottom:3px;display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;border:0;padding:0;white-space:nowrap}
+ #view-profile.personal-hud .hud-intrusion>div{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+ #view-profile.personal-hud .hud-intrusion :is(button,label,small){font-family:var(--terminal-type),monospace!important;font-size:8px!important;font-weight:400!important;line-height:12px!important;color:var(--inner-text-muted)!important;letter-spacing:0!important;margin:0!important}
+ #view-profile.personal-hud .hud-intrusion button{flex:none;width:auto!important;min-width:0!important;min-height:12px!important;height:12px!important;padding:0!important;border:0!important;background:transparent!important;opacity:.75}
+ #view-profile.personal-hud .hud-intrusion label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;opacity:.75}
+ #view-profile.personal-hud .hud-intrusion input{width:9px!important;height:9px!important;margin:0!important;accent-color:#931c27}
+ #view-profile.personal-hud .hud-intrusion small{display:block;opacity:.75}
+ @container(max-width:259px){#view-profile.personal-hud .hud-intrusion{left:8px}#view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])){padding-bottom:14px!important}#view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])) #hub-balance{margin:0}}
 }
