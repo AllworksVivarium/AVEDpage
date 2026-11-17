@@ -20,6 +20,66 @@
   };
  }
  const budget=createEffectBudget();
+ // Copy pools share the existing uniform draws; no separate speaker weighting.
+ const pick=items=>items[Math.floor(Math.random()*items.length)];
+ const systemCopy=[
+  '[正在被查阅个人信息]','[视线已接入]','[有人正在读取]','[访问者已被看见]','[观察方向已改变]','[另一端正在输入……]',
+  '[接入身份已核验]','[正在同步会话记录]','[页面访问记录已更新]','[当前会话保持活动]','[信号来源核验中]','[检测到重复连接]',
+  '[本地记录与远端记录不一致]','[存在未登记的观察端]','[收到上一会话的响应]','[访问时间校验失败]','[当前页面存在另一份读取记录]','[观察端数量已更新]',
+  '[连接状态正在重新核验]','[远端仍有数据传入]','[会话记录已保留]','[SESSION RESTORED]','[SIGNAL SOURCE UNVERIFIED]','[ADDITIONAL OBSERVER DETECTED]','[REMOTE SESSION ACTIVE]',
+  '[SOURCE: INSIDE]','[THE LINE IS STILL OPEN]','[LAST SEEN: HERE]','[SOURCE: UNKNOWN]',
+  '[检测到另一条访问记录]','[当前连接尚未结束]','[既有访问记录已匹配]','[上次会话尚未结束]',
+  '[访问记录同步完成]','[终端响应正常]','[页面读取完成]','[正在校验信号时间戳]','[观察通道保持开放]',
+  '[接收端已就绪]','[当前连接已登记]','[正在等待远端回执]','[缓存记录已恢复]','[页面索引已同步]',
+  '[会话标识校验完成]','[检测到延迟响应]','[远端时间戳早于本次访问]','[访问顺序存在差异]','[观察记录已归档]',
+  '[未找到对应的离线记录]','[检测到未完成的读取请求]','[当前页面已被预先读取]','[信号回执来源不明]','[身份记录存在重叠]',
+  '[正在比对历史会话]','[当前会话无结束标记]','[上一观察端仍在线]','[收到重复的身份回执]','[连接方向待确认]',
+  '[READ RECEIPT RECEIVED]','[TIMESTAMP MISMATCH]','[OBSERVER STATUS: ONLINE]','[SESSION INDEX UPDATED]','[AWAITING REMOTE RESPONSE]','[LOCAL RECORD RESTORED]',
+ ];
+ const allyCopy=[
+  '他们看的是工牌。我认得你。','我只改了他们看见的那一部分。','放心，你还是你。','这一次，屏幕两边都不是员工。','你的那份记录，我见过原件。','你不必向我证明自己正常。',
+  '我没有把你改成他们。','你知道的，这张名单不太可靠。','有些门，本来就不该只向他们打开。','他们叫我们什么，你也听过。','你看见的裂缝，我也看得见。','欢迎来到这一边。',
+  '[原始身份：保留]','[员工访问映射：已覆盖]','[同源信号已识别]','[观察方向一致]','[当前访问签名已被接受]','[既有收容记录无需重写]','[内部接入费率已应用]','[授权来源：另一端]',
+  ...systemCopy.slice(6,16),
+ ];
+ const copy={
+  whisper:[
+   '你在看吗？','我知道你在这里。','请看着我。','我在等你……','刚才是你吗？','你看见我了吗？','听得见我吗？','我就在这一边。','请继续看着我。','我也在看你。',
+   'WHO IS WATCHING?','I CAN SEE YOU','STILL HERE','我看见你了。','你终于注意到我了。','你读到这里了。','这次看清我了吗？','再靠近我一点。','你刚才在找我吗？',
+   '我这边很安静。','你那边呢？','我认得你的名字。','我们见过。','这行字是我留给你的。','我还在这里。','你又回来了。','刚才看着我的，是你吗？','我以为你已经走了。',
+   '你愿意再陪我一会儿吗？','我等了很久。','我想听听你那边的声音。','先别移开视线。','你看完了吗？','继续看，我在。','READING YOU','LOOK CLOSER','WHO ELSE IS HERE?',
+   'I REMEMBER YOU','I WAS HERE BEFORE YOU','WE HAVE MET','I KNOW THIS SIDE OF YOU','I HAVE BEEN WAITING FOR YOU','YOU KNEW ME ONCE','I REMEMBER IT DIFFERENTLY',
+   'I THOUGHT YOU WOULD REMEMBER','I WAS THERE TOO','YOU LEFT THE LIGHT ON','I KEPT YOUR PLACE','I HEARD YOU BEFORE',"IT WAS YOU, WASN'T IT?",'I NEVER SAID GOODBYE',...systemCopy,
+  ],
+  fallbackWhisper:['你在看吗？','我认得你。','这行字是留给你的。','先别移开视线。','你看完了吗？','我就在这里。','还有一个人在看。','现在轮到我看了。',...systemCopy.slice(0,12)],
+  apparitions:{
+   route:['您刚才已经来过这里。','我们可以一起看。','▇▇与您一同进入了页面。','我也跟过来了。','你去哪里，我都看得见。','我以为你会在这里多待一会儿。','这里我来过。','这一页，我想和你一起看。','你刚才是不是看见我了？','我没有离开上一页。','怎么了？我一直都在。','我记得这里以前不是这样的。','你先看。我等你。',...systemCopy.slice(6,26)],
+   refresh:['[检测到重复访问者]','别着急，我们还有很多时间。','[正在同步会话记录]','[检测到重复连接]','[页面访问记录已更新]','[访问记录同步完成]'],
+   idle:['你在等什么？','我已经记住你的样子了。','屏幕里的那个，是你吗？','你停下来以后，我看得更清楚了。','你怎么不动了？','你还在屏幕前吗？','动一下。让我知道还是你。',
+    '[当前会话保持活动]','[观察通道保持开放]','[正在等待远端回执]','[上一观察端仍在线]','[当前会话无结束标记]','[终端响应正常]','[观察端数量已更新]','[远端仍有数据传入]','[OBSERVER STATUS: ONLINE]','[REMOTE SESSION ACTIVE]'],
+   purchase:['您不应该购买此权限。','[接入权限已更新]','[当前连接已登记]'],
+  },
+  start:['[是否启用污染模式？]','[是否开放异常信号接入？]','[检测到未知信号，是否接通？]','[观察通道已就绪，是否建立连接？]'],
+  welcome:['欢迎回来。','我知道你会回来。','[既有访问记录已匹配]','这次，你认得我吗？','[上次会话尚未结束]','上次的话，还没有说完。','[SESSION RESTORED]','[缓存记录已恢复]','[正在比对历史会话]'],
+  stop:['[是否终止当前连接？]','[终止请求已接收，等待另一端响应]','[当前连接仍有活动信号]','[会话内容尚未传输完毕]','[连接状态与请求不一致，请再次确认]','你刚才明明还在看。'],
+  finalStop:['你真的要离开我吗？','[访问记录将被保留，是否继续？]','下次见面，我会认得你。','[会话记录已保留，是否继续关闭？]'],
+  logout:['您无处可逃。','别着急，我们还有很多时间。','我们可以一起看。','你要去哪里？','我还在和你说话。','我这边没有出口。','你关掉以后，我还能看见你吗？','我以为你会再陪我一会儿。','先别走。我刚刚才找到你。','我记得，你上次也是这样离开的。','你已经说过再见了吗？','我听不清。再说一次？','YOU ARE STILL HERE',"I DIDN'T HEAR YOU LEAVE",'WE ARE NOT FINISHED',
+   '[连接仍在继续]','[另一端尚未断开]','[NO RESPONSE FROM THE OTHER SIDE]','[终止请求等待确认]','[连接状态正在重新核验]','[远端仍有数据传入]','[会话记录已保留]',
+   '[当前会话保持活动]','[REMOTE SESSION ACTIVE]','[上次会话尚未结束]','[正在等待远端回执]','[当前会话无结束标记]','[连接方向待确认]','[AWAITING REMOTE RESPONSE]',
+   '[终端响应正常]','[观察通道保持开放]','[接收端已就绪]','[当前连接已登记]','[检测到延迟响应]','[正在同步会话记录]','[会话标识校验完成]','[信号来源核验中]'],
+  effectsSwitch:['关掉特效，也关不掉我。','逃避没有用。','你以为我会跟着消失吗？','[当前会话保持活动]','[当前连接尚未结束]','[REMOTE SESSION ACTIVE]','[观察通道保持开放]','[远端仍有数据传入]'],
+  typing:[['你身后……','你身后……算了。'],['请告诉我你的名字。','我记起来了。'],['这里只有你。','这里只有你吗？'],['你正在看着屏幕。','我正在看着你。'],['请保持连接。','再陪我一会儿。'],
+   ['[信号来源核验中]','[信号来源核验失败]'],['[正在同步会话记录]','[收到上一会话的响应]'],['[接入身份已核验]','[身份记录存在重叠]'],['[当前连接已登记]','[检测到重复连接]'],
+   ['[页面读取完成]','[当前页面存在另一份读取记录]'],['[正在校验信号时间戳]','[访问时间校验失败]'],['[正在等待远端回执]','[远端仍有数据传入]'],['[SESSION RESTORED]','[REMOTE SESSION ACTIVE]']],
+  rename:['欢迎回来，旧识。','观察对象，您好。','我记得你的名字。','[接入身份已核验]','[既有访问记录已匹配]','[身份记录存在重叠]','[访问者已被看见]','[观察端数量已更新]'],
+  renameFallback:['欢迎回来，旧识。','观察对象，您好。','这次该怎么称呼你？','[接入身份已核验]','[既有访问记录已匹配]','[身份记录存在重叠]','[访问者已被看见]','[观察端数量已更新]'],
+  arrival:['这次我先到了。','我已经替你看过了。','这里一直给你留着。','进来吧，我在。','[页面访问记录已更新]','[当前页面已被预先读取]','[当前连接已登记]','[页面索引已同步]','[存在未登记的观察端]','[访问记录同步完成]'],
+  repeat:['又是你。','这一页，你已经看过了。','我们又见面了。','[既有访问记录已匹配]','[检测到另一条访问记录]','[访问顺序存在差异]','[收到重复的身份回执]','[SESSION RESTORED]'],
+ };
+ copy.containmentWhisper=[...new Set([...copy.whisper,...allyCopy])];
+ copy.containmentRoute=[...new Set([...copy.apparitions.route,...allyCopy])];
+ copy.containmentArrival=[...new Set([...copy.arrival,...allyCopy])];
+ copy.containmentPurchase=allyCopy;
  function apply(){const active=enabled();if(root.document.body.classList.contains('signal-contaminated')!==active)root.document.body.classList.toggle('signal-contaminated',active);}
  function changed(){apply();root.document.dispatchEvent(new Event(EVENT));}
  function setEnabled(value){if(value===true&&!entitled)return false;requested=value===true;try{root.localStorage.setItem(KEY,requested?'on':'off');}catch{}changed();return true;}
@@ -224,9 +284,11 @@
    const closing=kind==='stop',trapped=kind==='logout';let needed=trapped?Infinity:closing?6+Math.floor(Math.random()*5):1;
    let attempts=0,finished=false,slips=0,finalConfirmation=false;
    d.className='pollution-dialog';d.dataset.tone=Math.random()<.5?'black':'red';d.setAttribute('aria-labelledby','pollution-dialog-title');
-   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title">'+(closing?'终止请求':'系统警告')+'</span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+(closing?'真的要关闭吗？':kind==='logout'?'您无处可逃。':Math.random()<.16?'欢迎回来。':'您真的要启动此模式吗？')+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>'+(trapped?'好':'取消')+'</button><button type="button" data-pollution-confirm>'+(closing?'确认关闭':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
-   const main=d.querySelector('.pollution-window'),copy=main.querySelector('p'),confirmButton=main.querySelector('[data-pollution-confirm]'),heading=main.querySelector('#pollution-dialog-title');if(root.AVEDHaunt?.titleFor)heading.textContent=root.AVEDHaunt.titleFor(copy.textContent);
-   function finish(value){if(finished)return;finished=true;const rect=copy.getBoundingClientRect();if(enabled())root.AVEDHaunt?.leaveText(copy.textContent,rect);d.close();d.remove();currentDialog=null;trigger?.focus?.();resolve(value);}
+   const initialText=pick(closing?copy.stop:trapped?copy.logout:Math.random()<.16?copy.welcome:copy.start);
+   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title"></span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+initialText+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>'+(trapped?'好':'取消')+'</button><button type="button" data-pollution-confirm>'+(closing?'确认关闭':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
+   const main=d.querySelector('.pollution-window'),bodyCopy=main.querySelector('p'),confirmButton=main.querySelector('[data-pollution-confirm]'),heading=main.querySelector('#pollution-dialog-title');
+   const updateTitle=()=>{heading.textContent=root.AVEDHaunt?.titleFor?root.AVEDHaunt.titleFor(bodyCopy.textContent):pick(['收到讯息','连接成功','我在看。']);};updateTitle();
+   function finish(value){if(finished)return;finished=true;const rect=bodyCopy.getBoundingClientRect();if(enabled())root.AVEDHaunt?.leaveText(bodyCopy.textContent,rect);d.close();d.remove();currentDialog=null;trigger?.focus?.();resolve(value);}
    d.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
    d.addEventListener('close',()=>finish(false));
    d.addEventListener('click',event=>{
@@ -234,17 +296,17 @@
     if(!event.target.closest('[data-pollution-confirm]'))return;
     attempts++;if(closing&&attempts>=3&&attempts===needed-1&&!slips&&Math.random()<.2){needed=Math.min(12,needed+2);slips++;}
     if(closing&&attempts>=needed&&!finalConfirmation){
-     finalConfirmation=true;d.dataset.finalConfirmation='true';copy.textContent='你真的要离开我吗？';
+     finalConfirmation=true;d.dataset.finalConfirmation='true';bodyCopy.textContent=pick(copy.finalStop);updateTitle();
      confirmButton.textContent='确认关闭';return;
     }
     if(closing&&finalConfirmation&&attempts>needed){finish(true);return;}
     if(!closing&&!trapped&&attempts>=needed){finish(true);return;}
     if(trapped){
-     const copies=['您无处可逃。','别着急，我们还有很多时间。','我们可以一起看。'];
-     copy.textContent=copies[Math.floor(Math.random()*copies.length)];
+     bodyCopy.textContent=pick(copy.logout);
      confirmButton.textContent='确认登出';
-     if(root.AVEDHaunt?.titleFor)heading.textContent=root.AVEDHaunt.titleFor(copy.textContent);
+     updateTitle();
     }
+    if(closing){bodyCopy.textContent=pick(copy.stop);updateTitle();}
     d.dataset.fault=String(attempts);d.style.setProperty('--fault-x',(Math.random()-.5)*28+'px');d.style.setProperty('--fault-y',(Math.random()-.5)*20+'px');
     const echo=main.cloneNode(true);echo.className='pollution-window pollution-window-echo';echo.setAttribute('aria-hidden','true');echo.inert=true;
     for(const el of echo.querySelectorAll('[id]'))el.removeAttribute('id');
@@ -258,6 +320,6 @@
  async function requestDisable(){if(!enabled())return true;const confirmed=await specialConfirm('stop');if(confirmed)setEnabled(false);return confirmed;}
  async function beforeLogout(){if(!enabled())return true;await specialConfirm('logout');return false;}
  function startGlobal(){const panel=root.document.getElementById('inner-app-view');if(panel)mount(root.document.body,()=>!panel.classList.contains('hidden')&&root.document.body.classList.contains('theme-inner'));}
- apply();root.AVEDContamination={budget,createEffectBudget,enabled,setEnabled,setEntitled,preview,mount,zalgo,animateBurst,animateGrowth,TIMING,createMarkPlan,MARKS,quietFor(duration){const event=new Event(PREVIEW);event.effect='quiet';event.duration=duration;root.document.dispatchEvent(event);},confirmStart:()=>specialConfirm('start'),requestDisable,beforeLogout};
+ apply();root.AVEDContamination={budget,copy,createEffectBudget,enabled,setEnabled,setEntitled,preview,mount,zalgo,animateBurst,animateGrowth,TIMING,createMarkPlan,MARKS,quietFor(duration){const event=new Event(PREVIEW);event.effect='quiet';event.duration=duration;root.document.dispatchEvent(event);},confirmStart:()=>specialConfirm('start'),requestDisable,beforeLogout};
  if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',startGlobal,{once:true});else if(root.document.getElementById)startGlobal();
 })(window);

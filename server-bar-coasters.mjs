@@ -1,10 +1,10 @@
-export function installBarCoasters({db,clock,dayFor,name}){
+export function installBarCoasters({db,clock,dayFor,name,isContainment=()=>false}){
  db.exec(`CREATE TABLE IF NOT EXISTS bar_coasters(
   id INTEGER PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
   day TEXT NOT NULL,alias TEXT NOT NULL,identity_mode TEXT NOT NULL,body TEXT NOT NULL,updated_at INTEGER NOT NULL,
   UNIQUE(employee_id,day));
  CREATE INDEX IF NOT EXISTS bar_coasters_updated ON bar_coasters(updated_at);`);
- const view=row=>row?{id:row.id,alias:row.alias,body:row.body,updatedAt:row.updated_at}:null;
+ const view=row=>row?{id:row.id,alias:row.alias,body:row.body,updatedAt:row.updated_at,isContainment:isContainment(row.employee_id)}:null;
  function read(id,exclude=0){
   const day=dayFor(clock()),own=db.prepare('SELECT * FROM bar_coasters WHERE employee_id=? AND day=?').get(id,day)||null;
   const selected=db.prepare('SELECT * FROM bar_coasters WHERE updated_at>=? AND employee_id!=? AND id!=? ORDER BY RANDOM() LIMIT 1').get(clock()-30*86400000,id,exclude)||db.prepare('SELECT * FROM bar_coasters WHERE updated_at>=? AND employee_id!=? ORDER BY RANDOM() LIMIT 1').get(clock()-30*86400000,id)||own;

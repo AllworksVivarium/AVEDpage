@@ -4,7 +4,7 @@ const patterns={plain:{name:'无纹理',price:0},halftone:{name:'波纹网点',p
 
 const effects={contamination:{name:'污染模式',price:500000}};
 
-export function installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger}){
+export function installAppearance({db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment=()=>false}){
  db.exec(`CREATE TABLE IF NOT EXISTS employee_palettes(
  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
  palette TEXT NOT NULL CHECK(palette IN ('mineral','darkroom')),
@@ -43,10 +43,11 @@ export function installAppearance({db,send,readBody,requireEmployee,balanceFor,r
  const owned=db.prepare('SELECT palette FROM employee_palettes WHERE employee_id=?');
  const ownedBackgrounds=db.prepare('SELECT item FROM employee_backgrounds WHERE employee_id=? AND kind=?');
  const prices=catalog=>Object.fromEntries(Object.entries(catalog).map(([key,value])=>[key,value.price]));
+ const effectsFor=id=>isContainment(id)?{contamination:{...effects.contamination,price:100000}}:effects;
  const snapshot=id=>({owned:['oxblood',...owned.all(id).map(r=>r.palette)],prices:prices(palettes),
   backgrounds:{owned:['image',...ownedBackgrounds.all(id,'background').map(r=>r.item)],prices:prices(backgrounds)},
   patterns:{owned:['plain',...ownedBackgrounds.all(id,'pattern').map(r=>r.item)],prices:prices(patterns)},
-  effects:{owned:ownedEffects.all(id).map(r=>r.effect),prices:prices(effects)}});
+  effects:{owned:ownedEffects.all(id).map(r=>r.effect),prices:prices(effectsFor(id))}});
  return {snapshot,async handle(req,res,url){
   if(url.pathname!=='/api/player/appearance')return false;
   const user=requireEmployee(req,res);if(!user)return true;
@@ -55,14 +56,14 @@ export function installAppearance({db,send,readBody,requireEmployee,balanceFor,r
   try{
    const body=await readBody(req),kinds=['palette','background','pattern','effect'].filter(key=>Object.hasOwn(body||{},key));
    if(kinds.length!==1)throw Error('请一次选择一项外观。');
-   const kind=kinds[0],key=body[kind],catalog={palette:palettes,background:backgrounds,pattern:patterns,effect:effects}[kind];
+   const kind=kinds[0],key=body[kind],catalog={palette:palettes,background:backgrounds,pattern:patterns,effect:effectsFor(user.id)}[kind];
    if(typeof key!=='string'||!Object.hasOwn(catalog,key))throw Error('请选择有效外观。');
    const item=catalog[key];
    db.exec('BEGIN IMMEDIATE');
    try{
     const state=snapshot(user.id),unlocked=kind==='palette'?state.owned:state[kind==='background'?'backgrounds':kind==='effect'?'effects':'patterns'].owned;
     if(item.price&&!unlocked.includes(key)){
-     if(kind==='effect'&&body.confirmed!==true)throw Error('请确认花费 500,000 A 币永久解锁污染模式。');
+     if(kind==='effect'&&body.confirmed!==true)throw Error('请确认花费 '+item.price.toLocaleString('en-US')+' A 币永久解锁污染模式。');
      if(balanceFor(user.id)<item.price)throw Error('余额不足，解锁需要 '+item.price.toLocaleString('en-US')+' A 币。');
      const debit=recordLedger(user.id,-item.price,(kind==='palette'?'解锁配色：':kind==='effect'?'解锁界面效果：':'解锁背景：')+item.name);
      if(kind==='palette')db.prepare('INSERT INTO employee_palettes(employee_id,palette,ledger_id) VALUES(?,?,?)').run(user.id,key,Number(debit.lastInsertRowid));

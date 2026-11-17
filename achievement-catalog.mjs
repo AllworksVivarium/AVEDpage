@@ -4,6 +4,7 @@ import {socialAchievementCatalog} from './server-social-achievements.mjs';
 import {gameplayAchievementCatalog} from './server-game-achievements.mjs';
 // Definitions stay on the server. Only earned entries are sent to employees.
 export const achievementCatalog = [
+ ['containment-welcome','欢迎你，“员工”。','以收容物身份首次接入公司内网。','containment_login',1],
  ['zero','归零时刻','曾将非零余额归零。','zero_count',1],
  ['relief-1','重新出发','领取一次低保。','relief_count',1],
  ['relief-10','后勤常客','累计领取十次低保。','relief_count',10],
