@@ -349,14 +349,14 @@ function enhancePersonnelForms(employees){
    const leader=kind.value==='planning_member',containment=kind.value.endsWith('_containment'),company=kind.value==='company_containment';
    fields.querySelector('[data-archive-only]').hidden=!leader;fields.querySelector('[data-archive-bio]').hidden=!containment;fields.querySelector('[name=archiveBio]').disabled=!containment;
    if(!leader)npc.checked=company;
-   if(containment)department.value='公司直属';department.disabled=containment;departmentLabel.hidden=containment;
+   if(containment)department.value='公司直属';department.disabled=containment;
    if(lastMode==='custom')customTitle=position.value;
    if(!leader){position.value=containment?'收容物':'成员';}else{position.value=mode.value==='custom'?customTitle:mode.value==='minister'?'部长':'成员';}
    lastMode=leader?mode.value:'';mode.closest('label').hidden=!leader;mode.disabled=!leader;
    position.closest('label').hidden=!leader||mode.value!=='custom';position.disabled=!leader;position.readOnly=mode.value!=='custom';position.required=leader;position.placeholder='例如：档案管理员、人工智能、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
-   note.textContent=company?'公司收容物由管理员维护。':kind.value==='player_containment'?'玩家收容物不分配员工部门；个人终端中的「收容部」为接入映射。玩家可编辑自己的收容简介和头像。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
+   note.textContent=company?'公司收容物由管理员维护。':kind.value==='player_containment'?'玩家可编辑自己的收容简介和头像。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
@@ -400,13 +400,6 @@ async function renderAdmin() {
 
   document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name==='公司直属'?'无部门归属':name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
-  const salary=document.createElement('section');salary.className='admin-section';salary.innerHTML='<div class="section-heading"><div><h3>公司工资</h3><p>为启用的员工和部长账号每人发放 200,000 A 币；不含收容物、展示档案及公司机器人。</p></div><button type="button" class="small-action" data-payroll>一键发工资</button></div><p role="status"></p>';$('#employeeCreate').closest('section').before(salary);
-  let salaryRequest=null;
-  salary.querySelector('button').onclick=async()=>{const button=salary.querySelector('button'),note=salary.querySelector('[role=status]');button.disabled=true;try{
-   if(!salaryRequest){const preview=await api('/api/admin/payroll');if(!preview.count){note.textContent='当前没有可发薪账号。';return;}if(!await window.AVEDFeedback.confirm('向 '+preview.count+' 个员工及部长账号各发放 200,000 A 币，共 '+preview.total.toLocaleString()+' A 币？'))return;salaryRequest={requestId:crypto.randomUUID(),expectedCount:preview.count};}
-   const result=await api('/api/admin/payroll',{method:'POST',body:JSON.stringify(salaryRequest)});salaryRequest=null;try{await renderAdmin();}catch{}window.AVEDFeedback.alert?.('工资已发放：'+result.count+' 个账号，共 '+result.total.toLocaleString()+' A 币。');
-  }catch(e){if(e.message.includes('员工名单已变更'))salaryRequest=null;note.textContent=e.message+'；可点击重试，同一批次不会重复入账。';}finally{button.disabled=false;}};
-
   const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
   const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
   filters.innerHTML=departments.map((name,index)=>`<button type="button" class="small-action" data-roster-filter="${name}" aria-pressed="${index===0}">${name==='公司直属'?'公司直属部':name}</button>`).join('')+'<p id="roster-filter-count" role="status"></p>';rosterTable.before(filters);

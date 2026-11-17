@@ -5,7 +5,7 @@ import {installGameplayAchievements,gameplayRules,gameplayAwardsSQL} from './ser
 
 export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights}) {
  const personalMetrics=['zero_count','relief_count','peak','debt','donated','checkin_count','hourly_count','prize_max','loss_max'];
- const metrics=[...personalMetrics,...gameplayRules.map(r=>r.metric),...socialMetrics.map(r=>r.metric),...funAchievementCatalog.map(r=>r.metric),'containment_login'];
+ const metrics=[...personalMetrics,...gameplayRules.map(r=>r.metric),...socialMetrics.map(r=>r.metric),...funAchievementCatalog.map(r=>r.metric)];
  db.exec(`CREATE TABLE IF NOT EXISTS achievement_definitions(code TEXT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL,metric TEXT NOT NULL,threshold INTEGER NOT NULL,enabled INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS personal_metrics(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,balance INTEGER NOT NULL DEFAULT 0,peak INTEGER NOT NULL DEFAULT 0,debt INTEGER NOT NULL DEFAULT 0,zero_count INTEGER NOT NULL DEFAULT 0,relief_count INTEGER NOT NULL DEFAULT 0,donated INTEGER NOT NULL DEFAULT 0,checkin_count INTEGER NOT NULL DEFAULT 0,hourly_count INTEGER NOT NULL DEFAULT 0,prize_max INTEGER NOT NULL DEFAULT 0,loss_max INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS hourly_claims(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,hour INTEGER NOT NULL,reward INTEGER NOT NULL,PRIMARY KEY(employee_id,hour));
@@ -21,8 +21,8 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
   let previous=d.description;
   if(['forum-first','forum-five','forum-twenty'].includes(d.code))previous=previous.replace('主题帖','通过审核的主题帖');
   if(['reply-first','reply-twenty','reply-hundred','forum-water'].includes(d.code))previous=previous.replace('回复','通过审核的回复');
-  if(d.code==='forum-night')previous=previous.replace('在 0','在\u5317\u4eac\u65f6\u95f4 0');
-  if(['fun-money-visited','fun-charity'].includes(d.code))previous='\u5317\u4eac\u65f6\u95f4'+previous;
+  if(d.code==='forum-night')previous=previous.replace('在 0','在北京时间 0');
+  if(['fun-money-visited','fun-charity'].includes(d.code))previous='北京时间'+previous;
   if(d.code==='fun-smiling')previous=previous.replace('至少刮得很熟练。','刮开的是涂层，也是嘴角。');
   if(previous!==d.description)db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,previous);
  }
