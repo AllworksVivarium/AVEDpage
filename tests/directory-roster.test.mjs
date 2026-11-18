@@ -10,11 +10,11 @@ test('directory cards show department plus custom title and only the title for u
  const employees=[['甲','收容部','部长'],['乙','收容部','部长'],['丙','收容部','档案管理员'],['丁','公司直属','特别顾问']].map(([name,department,positionTitle])=>({name,department,positionTitle,isLeadership:true,stats:[0,0,0,0,0,0],bracketTag:positionTitle,location:'',abilityNote:''}));
  const context={window:{avedDepartmentFilter:'收容部'},document:{getElementById:id=>nodes[id]||null},byId:id=>nodes[id],employees,departmentsData:[]};
  vm.runInNewContext(render+';renderDepartmentsAndPersonnel();',context);
- assert.equal((grid.innerHTML.match(/职务：<strong>部长<\/strong>/g)||[]).length,2);
- assert.ok(grid.innerHTML.includes('所属部门：<strong>收容部</strong><br>职务：<strong>档案管理员</strong>'));
+ assert.equal((grid.innerHTML.match(/<dt>职务<\/dt><dd>部长<\/dd>/g)||[]).length,2);
+ assert.ok(grid.innerHTML.includes('<dt>所属部门</dt><dd>收容部</dd></div><div class="directory-detail-row"><dt>职务</dt><dd>档案管理员</dd>'));
  assert.ok(!grid.innerHTML.includes('directory-role-heading'));
  context.window.avedDepartmentFilter='公司直属';vm.runInNewContext('renderDepartmentsAndPersonnel();',context);
- assert.ok(grid.innerHTML.includes('职务：<strong>特别顾问</strong>'));assert.ok(!grid.innerHTML.includes('所属部门：'));
+ assert.ok(grid.innerHTML.includes('<dt>职务</dt><dd>特别顾问</dd>'));assert.ok(!grid.innerHTML.includes('<dt>所属部门</dt>'));
 });
 
 test('the public directory excludes company robots while retaining real personnel and planning NPCs',()=>{

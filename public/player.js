@@ -532,7 +532,7 @@
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = [emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?`所属部门：<strong>${emp.department}</strong>`:'',emp.positionTitle?`职务：<strong>${emp.positionTitle}</strong>`:'',emp.containmentClassification?`收容分类：<strong>${emp.containmentClassification}</strong>`:''].filter(Boolean).join('<br>');
+          const deptDisplay = [['所属部门',emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?emp.department:''],['职务',emp.positionTitle],['收容分类',emp.containmentClassification]].filter(([,value])=>value).map(([label,value])=>`<div class="directory-detail-row"><dt>${label}</dt><dd>${value}</dd></div>`).join('');
 
           return `
             <div class="retro-corner-box p-5 space-y-4">
@@ -565,10 +565,10 @@
                 </div>
               </div>
 
-              <div class="text-xs space-y-1.5 border-t border-[var(--inner-border-soft)] pt-3 font-mono-tech">
-                <div>${deptDisplay}</div>
-${emp.location?`                <div><span class="opacity-65">办公驻地：</span><span>${emp.location}</span></div>`:''}
-${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opacity-65">档案简述：</span><span>${emp.abilityNote}</span></div>`:''}
+              <div class="directory-card-details">
+                <dl class="directory-detail-list">${deptDisplay}</dl>
+${emp.location?`                <dl class="directory-detail-list"><div class="directory-detail-row"><dt>办公驻地</dt><dd>${emp.location}</dd></div></dl>`:''}
+${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-detail-list"><div class="directory-detail-row"><dt>档案简述</dt><dd>${emp.abilityNote}</dd></div></dl>`:''}
                 ${emp.personalMessage?`<div class="directory-personal-message"><span>个人留言</span><p>${emp.personalMessage}</p></div>`:''}
               </div>
             </div>

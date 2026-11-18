@@ -90,3 +90,12 @@
 #department-archive .division-roster-tools{display:flex;justify-content:flex-end;margin:0 0 16px;min-width:0}
 #department-archive .division-roster-tools label{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--inner-text-muted);min-width:0}
 #department-archive .division-roster-tools select{height:32px;max-width:100%;padding:4px 26px 4px 9px;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:var(--inner-text-main);font:inherit;border-radius:0}
+
+/* Employee metadata shares the interface face and an inset label/value grid. */
+#inner-app-view #personnel-directory-grid .directory-card-details{padding:10px 12px;border:1px solid var(--inner-border-soft);font-family:var(--type-ui)!important;font-size:12px;line-height:1.75;letter-spacing:0;text-align:left}
+#inner-app-view #personnel-directory-grid .directory-detail-list{margin:0;padding:0}
+#inner-app-view #personnel-directory-grid .directory-detail-list+.directory-detail-list{margin-top:5px}
+#inner-app-view #personnel-directory-grid .directory-detail-row{display:grid;grid-template-columns:5em minmax(0,1fr);column-gap:8px;align-items:baseline}
+#inner-app-view #personnel-directory-grid .directory-detail-row :is(dt,dd){margin:0;padding:0;font:inherit!important;letter-spacing:0!important;overflow-wrap:anywhere}
+#inner-app-view #personnel-directory-grid .directory-detail-row dt{color:var(--inner-text-muted)}
+#inner-app-view #personnel-directory-grid .directory-detail-row dd{color:var(--inner-text-main)}
