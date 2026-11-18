@@ -1,4 +1,8 @@
 const types=['note','discovery','experiment','incident','interview','story'];
+export function normalizeContainmentClassification(value=''){
+ if(!['','SAFE','EUCLID','KETER'].includes(value))throw Error('请选择有效的收容物分类。');
+ return value;
+}
 export function installDossierContent(db){
  const cols=new Set(db.prepare('PRAGMA table_info(dossiers)').all().map(c=>c.name));
  for(const [name,def] of [['classification',"TEXT NOT NULL DEFAULT ''"],['procedures',"TEXT NOT NULL DEFAULT ''"],['sections_json',"TEXT NOT NULL DEFAULT '[]'"]])if(!cols.has(name))db.exec('ALTER TABLE dossiers ADD COLUMN '+name+' '+def);
@@ -9,8 +13,7 @@ export function installDossierContent(db){
 }
 export function dossierView(row){const {sections_json,hasImage,...rest}=row;let sections=[];try{sections=JSON.parse(sections_json||'[]');}catch{}return {...rest,...(hasImage?{imageUrl:`/api/dossiers/${row.id}/image`}:{}),sections:Array.isArray(sections)?sections:[]};}
 export function normalizeDossierContent(data,previous={}){
- const classification=data.classification??previous.classification??'';
- if(!['','SAFE','EUCLID','KETER'].includes(classification))throw Error('请选择有效的收容物分类。');
+ const classification=normalizeContainmentClassification(data.classification??previous.classification??'');
  const procedures=data.procedures??previous.procedures??'';
  if(typeof procedures!=='string'||procedures.length>8000)throw Error('特殊收容措施最多 8000 字。');
  let sections=data.sections??dossierView(previous).sections;

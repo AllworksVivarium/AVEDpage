@@ -1,0 +1,33 @@
+/* Pixel reactions: original SVG and local transparent artwork, CSS animation only. */
+window.AVEDForumReactionArt=(()=>{
+ const path=(d,fill)=>`<path d="${d}" fill="${fill}"/>`;
+ const rect=(x,y,w,h,fill)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
+ const group=(body,part='')=>`<g${part?` class="reaction-part-${part}"`:''}>${body}</g>`;
+ const glyphs={'+':['0001000','0001000','0001000','1111111','0001000','0001000','0001000'],'1':['010','110','010','010','010','010','111'],'0':['111','101','101','101','101','101','111'],'!':['1','1','1','0','1']};
+ const glyph=(letter,x,y,scale,fill)=>glyphs[letter].map((row,j)=>[...row].map((v,i)=>v==='1'?rect(x+i*scale,y+j*scale,scale,scale,fill):'').join('')).join('');
+ const raster=(name,x=0,y=0,w=32,h=32)=>`<image href="/assets/forum-reactions/${name}.webp?v=selected-20261118" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+ const art={
+  question:['问号','question',path('M10 3H22V5H26V9H28V15H24V19H20V23H13V17H17V14H21V9H18V8H13V11H6V7H10Z','#b99148')+path('M10 2H21V4H25V8H26V13H22V17H18V21H13V16H16V13H20V8H17V7H12V10H6V6H10Z','#edcf7c')+path('M11 3H20V5H11ZM8 6H11V8H8Z','#fff0ba')+rect(13,25,6,6,'#b99148')+rect(13,24,6,5,'#edcf7c')+rect(14,24,3,2,'#fff0ba')],
+  plus:['+1','plus',glyph('+',2,14,2,'#167d9e')+glyph('1',19,5,3,'#167d9e')+glyph('+',1,12,2,'#65dce7')+glyph('1',18,3,3,'#65dce7')+rect(21,4,2,3,'#e1ffff')+rect(2,18,4,1,'#e1ffff')],
+  heart:['心动一下','heart',path('M5 6H12V8H20V6H27V8H30V18H27V22H23V26H19V29H13V26H9V22H5V18H2V8H5Z','#994953')+path('M5 4H12V6H15V9H17V6H20V4H27V6H29V15H26V19H22V23H18V27H14V24H10V20H6V16H3V7H5Z','#d97788')+path('M6 6H11V8H6ZM5 8H8V13H5ZM14 24H18V26H14Z','#f4b4b9')+path('M23 17H26V20H23ZM19 21H23V23H19Z','#bb5e73')],
+  thumb:['大拇指','thumb',raster('thumb')],
+  eyes:['围观','eyes',path('M5 7H12V9H15V8H23V10H27V23H24V26H17V24H14V25H5V23H2V11H5Z','#a19e8f')+path('M5 5H11V7H14V10H16V7H23V9H26V21H23V24H17V22H14V23H6V21H3V10H5Z','#e5dfc6')+path('M6 7H10V9H6ZM17 9H22V11H17ZM4 10H7V17H4Z','#fff7df')+group(rect(9,11,4,9,'#42404b')+rect(21,12,4,9,'#42404b')+rect(9,11,2,2,'#fff5df')+rect(21,12,2,2,'#fff5df'),'pupils')],
+  applause:['肃然起敬','salute',raster('salute-face')+'<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" overflow="hidden">'+group(raster('salute-hand'),'hand')+'</svg>'],
+  cup:['这杯敬你','cup',path('M5 5H23V8H29V11H31V22H28V25H22V30H5Z','#8f9e96')+path('M22 11H27V21H22ZM25 13V19H27V13Z','#d3dccd')+path('M6 6H21V28H6Z','#d2dccc')+path('M8 11H19V25H8Z','#cfaa64')+path('M9 12H14V23H9Z','#ecd18a')+path('M8 8H20V11H17V13H13V11H8Z','#fff0ce')+rect(7,6,2,19,'#f4eed5')+rect(8,26,12,2,'#eff0da')+rect(16,16,2,2,'#f4dc9f')],
+  bulb:['醍醐灌顶','bulb',group(path('M15 0H17V4H15ZM3 5H5V7H7V9H5V7H3ZM26 5H28V7H26V9H24V7H26ZM0 15H5V17H0ZM27 15H32V17H27ZM4 24H6V22H8V24H6V26H4ZM25 22H27V24H29V26H27V24H25Z','#d8c17a'),'rays')+path('M11 6H21V8H25V12H27V20H25V24H22V27H10V24H7V20H5V12H7V8H11Z','#bc963e')+path('M11 5H20V7H24V11H25V18H23V22H20V25H12V22H9V19H7V12H9V8H11Z','#efd36d')+path('M11 8H16V10H12V16H9V11H11Z','#fff4c1')+path('M13 17H15V22H17V17H19V25H13Z','#d3a84f')+path('M11 25H21V28H19V31H13V29H11Z','#a5aaa3')+rect(12,25,8,2,'#dbe0cd')+rect(13,28,6,1,'#6d7775')],
+  hundred:['满分！','hundred',glyph('1',2,7,2,'#ad4659')+glyph('0',10,7,2,'#ad4659')+glyph('0',18,7,2,'#ad4659')+glyph('1',2,5,2,'#ea6671')+glyph('0',10,5,2,'#ea6671')+glyph('0',18,5,2,'#ea6671')+glyph('!',27,8,2,'#ee8d86')+path('M3 23H27V25H3ZM8 28H25V30H8Z','#c64b60')+path('M3 22H27V24H3ZM8 27H25V29H8Z','#ef7f83')],
+  flower:['鲜花','flower',path('M15 16H18V32H15ZM7 23H12V25H15V28H11V26H7ZM18 21H22V19H27V23H23V25H18Z','#758f66')+path('M16 17H17V30H16ZM20 22H25V23H20Z','#bfd093')+path('M13 1H20V4H24V8H29V14H25V18H22V23H15V20H10V18H4V12H7V8H9V4H13Z','#9b536c')+path('M13 1H19V5H23V9H28V13H23V17H20V22H15V18H10V16H5V12H10V9H9V5H13Z','#d98b9e')+path('M14 3H17V7H14ZM6 12H11V14H6ZM21 10H26V12H21Z','#f4bdc2')+path('M13 9H20V11H22V16H19V18H13V16H11V12H13Z','#deb565')+rect(14,10,5,5,'#f8dea0')],
+  fan:['我扇！','fan','<g transform="translate(16 27) scale(1.04 .91) translate(-16 -27)">'+path('M2 17V12H5V8H9V5H13V3H20V5H24V8H28V12H31V17L17 29H15Z','#746184')+path('M3 15V12H6V9H10V6H14V5H19V7H23V10H27V13H29V16L16 27Z','#d4ccd9')+path('M4 16V12H7V10H10L16 26ZM13 7V5H18V7L16 26ZM23 10H26V13H29V16L16 26Z','#a58bb6')+path('M3 15H6V17H3ZM6 10H9V12H6ZM10 7H14V9H10ZM14 5H19V7H14ZM20 7H24V9H20ZM24 10H27V12H24ZM27 14H30V16H27Z','#eee4ed')+'<path d="M6 17L16 27M11 11L16 27M18 8L16 27M25 14L16 27" fill="none" stroke="#85748b" stroke-width="1"/>'+'</g>'+path('M15 25H18V32H15Z','#9f8d9c')+rect(15,26,2,3,'#d4c5cf')],
+  medal:['值得表彰','medal',path('M8 18H15V32L11 29L7 32ZM18 18H25V32L21 29L17 32Z','#7895a2')+path('M9 22H12V29L9 30ZM19 22H22V29L19 30Z','#b6cad0')+path('M13 1H19V4H24V7H28V13H31V19H27V23H22V27H11V24H6V20H2V13H5V7H9V4H13Z','#b57c40')+path('M14 1H18V5H23V8H27V13H30V17H26V22H21V25H12V22H7V18H3V14H7V9H11V5H14Z','#dba44f')+path('M14 4H18V10H22V14H27V18H21V21H17V24H13V19H8V15H12V10H14Z','#f3d378')+path('M15 8H18V13H22V17H18V21H14V17H10V14H15Z','#fff0b0')+path('M20 5H23V8H20ZM5 13H8V16H5Z','#f8e2a0')],
+  pig:['猪','pig',raster('pig')],
+  spark:['闪耀登场','spark',path('M14 3H18V9H21V12H29V16H22V20H19V28H15V22H11V18H3V14H10V11H14Z','#bd984b')+path('M14 1H18V8H21V12H29V15H21V19H18V27H15V20H11V16H3V13H10V10H14Z','#eed38a')+path('M15 7H17V12H20V15H17V20H15V16H11V14H15Z','#fff5ca')+group(path('M4 2H6V5H9V7H6V10H4V7H1V5H4ZM26 22H28V25H31V27H28V30H26V27H23V25H26Z','#d5a5b9'),'twinkles')],
+  fire:['热度拉满','fire',path('M14 1H18V5H21V10H24V7H27V12H30V24H27V28H23V31H8V29H4V25H2V17H5V11H8V16H11V10H14Z','#ad5361')+path('M15 2H17V7H20V12H24V10H26V16H28V23H25V27H21V29H9V27H6V24H4V18H7V15H8V20H12V15H15Z','#dd8960')+path('M15 12H18V17H21V15H23V22H21V26H11V24H8V21H12V18H15Z','#efc16d')+path('M15 21H18V24H20V27H13V25H11V23H15Z','#fff0ad')],
+  thinking:['思考','thinking',raster('thinking')],
+  mahjong:['中','mahjong',raster('mahjong')],
+  check:['对勾','check',raster('check')],
+  // Keep an illustration for already-paid, retired reactions only.
+  signal:['异常共鸣','signal',path('M10 3H22V7H27V11H31V21H27V25H22V29H10V25H5V21H1V11H5V7H10ZM11 8H7V13H5V19H8V23H13V26H20V23H25V19H27V13H24V9H20V7H13V8Z','#bf828b')+path('M14 10H18V14H22V19H18V23H14V19H10V14H14Z','#e5cda2')]
+ };
+ function icon(id){const entry=art[id]||art.question;return `<svg class="forum-reaction-icon" viewBox="0 0 32 32" aria-hidden="true" shape-rendering="crispEdges"><g class="reaction-motion reaction-motion-${entry[1]}">${entry[2]}</g></svg>`;}
+ return {art,icon};
+})();

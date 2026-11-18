@@ -1,10 +1,22 @@
 export const forumReactionCatalog=Object.freeze([
- {id:'question',name:'？',price:2000}, {id:'heart',name:'喜欢',price:4000},
- {id:'eyes',name:'围观',price:6000}, {id:'applause',name:'鼓掌',price:8000},
- {id:'cup',name:'敬一杯',price:10000}, {id:'flower',name:'送花',price:15000},
- {id:'spark',name:'闪闪发光',price:30000,animated:true},
- {id:'fire',name:'热烈回应',price:60000,animated:true},
- {id:'signal',name:'异常共鸣',price:100000,animated:true}
+ {id:'plus',name:'+1',price:300,animated:true},
+ {id:'heart',name:'心动一下',price:300,animated:true},
+ {id:'thumb',name:'大拇指',price:300,animated:true},
+ {id:'flower',name:'鲜花',price:800,animated:true},
+ {id:'medal',name:'值得表彰',price:800,animated:true},
+ {id:'hundred',name:'满分！',price:800,animated:true},
+ {id:'cup',name:'这杯敬你',price:800,animated:true},
+ {id:'bulb',name:'醍醐灌顶',price:800,animated:true},
+ {id:'check',name:'对勾',price:800,animated:true},
+ {id:'eyes',name:'围观',price:800,animated:true},
+ {id:'mahjong',name:'中',price:800,animated:true},
+ {id:'fan',name:'我扇！',price:800,animated:true},
+ {id:'spark',name:'闪耀登场',price:1500,animated:true},
+ {id:'fire',name:'热度拉满',price:1500,animated:true},
+ {id:'applause',name:'肃然起敬',price:1500,animated:true},
+ {id:'pig',name:'猪',price:1500,animated:true},
+ {id:'thinking',name:'思考',price:1500,animated:true},
+ {id:'question',name:'问号',price:1500,animated:true}
 ]);
 
 export function installForumReactions({db,balanceFor,recordLedger}){
@@ -14,7 +26,12 @@ export function installForumReactions({db,balanceFor,recordLedger}){
   reaction TEXT NOT NULL,price INTEGER NOT NULL CHECK(price>0),ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE(target_kind,target_id,reaction,employee_id));
   CREATE INDEX IF NOT EXISTS forum_reactions_target ON forum_reactions(target_kind,target_id,reaction);
-  CREATE TABLE IF NOT EXISTS forum_reaction_versions(thread_id INTEGER PRIMARY KEY REFERENCES forum_threads(id) ON DELETE CASCADE,revision INTEGER NOT NULL);`);
+  CREATE TABLE IF NOT EXISTS forum_reaction_versions(thread_id INTEGER PRIMARY KEY REFERENCES forum_threads(id) ON DELETE CASCADE,revision INTEGER NOT NULL);
+  CREATE TABLE IF NOT EXISTS forum_reaction_notifications(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+   reaction_id INTEGER NOT NULL UNIQUE REFERENCES forum_reactions(id) ON DELETE CASCADE,
+   read_at TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+  CREATE INDEX IF NOT EXISTS forum_reaction_notifications_inbox ON forum_reaction_notifications(employee_id,read_at,id);`);
  const visible=(kind,id)=>{
   if(!['thread','reply'].includes(kind)||!Number.isSafeInteger(id)||id<1)throw Error('请选择有效的发言。');
   const sql=kind==='thread'?"SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND moderation='approved' AND deleted_at=''":"SELECT 1 FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id WHERE r.id=? AND r.status='published' AND r.moderation='approved' AND r.deleted_at='' AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''";
@@ -26,7 +43,28 @@ export function installForumReactions({db,balanceFor,recordLedger}){
   for(const {target_kind,target_id,...item}of rows){const k=target_kind+':'+target_id;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(item);}
   return {threadReactions:groups.get('thread:'+threadId)||[],...page,items:page.items?.map(item=>({...item,reactions:groups.get('reply:'+item.id)||[]}))};
  }
+ const noticeVisible=`FROM forum_reaction_notifications n JOIN forum_reactions a ON a.id=n.reaction_id
+ LEFT JOIN forum_replies r ON a.target_kind='reply' AND r.id=a.target_id
+ JOIN forum_threads t ON t.id=CASE WHEN a.target_kind='thread' THEN a.target_id ELSE r.thread_id END
+ WHERE n.employee_id=? AND a.employee_id<>n.employee_id
+ AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''
+ AND (a.target_kind='thread' OR (r.status='published' AND r.moderation='approved' AND r.deleted_at=''))`;
+ const noticeSelect=`SELECT n.id AS notificationId,(n.read_at='') AS unread,t.id AS threadId,t.title,
+ CASE WHEN a.target_kind='reply' THEN a.target_id ELSE 0 END AS replyId,a.reaction,n.created_at AS createdAt `;
+ // Moderation columns finish migrating after services are installed at startup.
+ let noticeQueries;
+ const notices=()=>noticeQueries??=( {
+  count:db.prepare('SELECT COUNT(*) AS n '+noticeVisible+" AND n.read_at=''"),
+  fresh:db.prepare(noticeSelect+noticeVisible+" AND n.read_at='' ORDER BY n.id DESC LIMIT 20"),
+  old:db.prepare(noticeSelect+noticeVisible+" AND n.read_at<>'' ORDER BY n.id DESC LIMIT 5")
+ });
  return {catalog:forumReactionCatalog,summary,decoratePage,
+  inbox(id){const q=notices();return {unread:q.count.get(id).n,items:[...q.fresh.all(id),...q.old.all(id)]};},
+  read(id,ids){
+   if(!Array.isArray(ids)||ids.length>20||ids.some(n=>!Number.isSafeInteger(n)||n<1))throw Error('无效的反应提醒。');
+   if(ids.length)db.prepare(`UPDATE forum_reaction_notifications SET read_at=CURRENT_TIMESTAMP WHERE employee_id=? AND id IN (${ids.map(()=>'?').join(',')})`).run(id,...ids);
+   return {ok:true};
+  },
   add(actor,data){
    const {kind,targetId,reaction}=data||{},item=forumReactionCatalog.find(x=>x.id===reaction);
    if(!item)throw Error('请选择有效反应。');
@@ -35,9 +73,11 @@ export function installForumReactions({db,balanceFor,recordLedger}){
     visible(kind,targetId);
     const prior=db.prepare('SELECT id FROM forum_reactions WHERE employee_id=? AND target_kind=? AND target_id=? AND reaction=?').get(actor,kind,targetId,reaction);
     if(!prior){
-     if(balanceFor(actor)<item.price)throw Error('余额不足，此反应需要 '+item.price.toLocaleString('en-US')+' A 币。');
+     if(balanceFor(actor)<item.price)throw Error('余额不足，此反应需要 '+item.price.toLocaleString('en-US')+' ¤。');
      const ledger=recordLedger(actor,-item.price,'论坛反应：'+item.name);
-     db.prepare('INSERT INTO forum_reactions(employee_id,target_kind,target_id,reaction,price,ledger_id) VALUES(?,?,?,?,?,?)').run(actor,kind,targetId,reaction,item.price,Number(ledger.lastInsertRowid));
+     const added=db.prepare('INSERT INTO forum_reactions(employee_id,target_kind,target_id,reaction,price,ledger_id) VALUES(?,?,?,?,?,?)').run(actor,kind,targetId,reaction,item.price,Number(ledger.lastInsertRowid));
+     const recipient=db.prepare('SELECT employee_id FROM '+(kind==='thread'?'forum_threads':'forum_replies')+' WHERE id=?').get(targetId).employee_id;
+     if(recipient!==actor)db.prepare('INSERT INTO forum_reaction_notifications(employee_id,reaction_id) VALUES(?,?)').run(recipient,Number(added.lastInsertRowid));
     }
     if(!prior&&db.prepare("SELECT 1 FROM sqlite_master WHERE name='forum_reply_clock'").get()){
      db.exec('UPDATE forum_reply_clock SET revision=revision+1 WHERE id=1');

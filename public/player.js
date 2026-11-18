@@ -442,7 +442,7 @@
           await nextPaint();
           if(visit===containmentVisit&&!document.getElementById('view-containment').classList.contains('hidden'))triggerScpTitleRedactionGlitch();
         }).catch(e=>showToast(e.message,'warn'));
-        if(target==='departments'){window.avedDepartmentFilter='';renderDepartmentsAndPersonnel();}
+        if(target==='departments'){window.avedDepartmentFilter='';window.AVEDDepartmentArchive?.reset();renderDepartmentsAndPersonnel();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
@@ -499,6 +499,7 @@
       // 分页 2：部门介绍与员工名录（医疗部直接嵌入您上传的第3张宣发背景卡）
       // ======================================================================
       function renderDepartmentsAndPersonnel() {
+        if(window.AVEDDepartmentArchive){window.AVEDDepartmentArchive.render({departments:departmentsData,employees,onChange:renderDepartmentsAndPersonnel});}else{
         document.getElementById('view-departments').dataset.directoryView=window.avedDepartmentFilter?'roster':'overview';
         const deptGrid = document.getElementById('departments-grid');
         if (deptGrid) {
@@ -509,10 +510,11 @@
 
         let extra=document.getElementById('directory-unassigned');if(!extra){extra=document.createElement('button');extra.id='directory-unassigned';extra.type='button';extra.className='community-button directory-unassigned';extra.dataset.departmentFilter='公司直属';deptGrid.after(extra);}const unassigned=employees.filter(e=>e.department==='公司直属').length;extra.hidden=!unassigned;extra.textContent='公司直属 / '+unassigned+' 人';
         let leadership=document.getElementById('company-leadership-directory');if(!leadership){leadership=document.createElement('section');leadership.id='company-leadership-directory';leadership.className='company-leadership';byId('view-departments').append(leadership);}byId('view-departments').append(leadership);const leaders=employees.filter(e=>e.isLeadership&&e.department==='公司直属');leadership.hidden=!leaders.length;leadership.innerHTML='<header><span class="section-kicker">COMPANY DIRECTORATE</span><h3>公司直属</h3></header><div class="leadership-cards">'+leaders.map(e=>`<article><span class="section-kicker">DIRECTORATE</span><h4>${e.positionTitle}</h4><p>${e.name}</p><button type="button" class="community-button" data-department-filter="公司直属">调阅直属档案 ↗</button></article>`).join('')+'</div>';
+        }
         const dirGrid = document.getElementById('personnel-directory-grid');
         if (!dirGrid) return;
         dirGrid.parentElement.classList.add('directory-results');
-        dirGrid.parentElement.hidden=!window.avedDepartmentFilter;
+        dirGrid.parentElement.hidden=!window.avedDepartmentFilter||window.AVEDDepartmentArchive?.isPersonnel()===false;
         if(!window.avedDepartmentFilter){dirGrid.replaceChildren();return;}
 
         const labels = ['力量','意志','洞察','敏捷','智力','体质'];
@@ -522,9 +524,13 @@
         const midHex = angles.map(a => `${(cx + rMax * 0.6 * Math.cos(a)).toFixed(1)},${(cy + rMax * 0.6 * Math.sin(a)).toFixed(1)}`).join(' ');
 
         const isHead=emp=>emp.isLeadership&&emp.department!=='公司直属'&&emp.positionTitle==='部长';
-        const group=emp=>isHead(emp)?'部长档案':emp.isLeadership?'职务档案':emp.identityKind?.endsWith('_containment')?'收容物档案':'部门成员';
+        const group=emp=>isHead(emp)?'部长档案':emp.isLeadership?'职务档案':emp.identityKind?.endsWith('_containment')?'收容物档案':emp.department==='公司直属'?'在册人员':'部门成员';
         const rank=emp=>isHead(emp)?0:emp.isLeadership?1:emp.identityKind?.endsWith('_containment')?3:2;
-        const selectedEmployees=employees.filter(emp=>emp.department===window.avedDepartmentFilter).sort((a,b)=>rank(a)-rank(b));
+        const allPersonnel=window.avedDepartmentFilter==='*';
+        const departmentOrder=['收容部','武装部','医疗部','科研部','后勤部'];
+        const departmentRank=emp=>{const i=departmentOrder.indexOf(emp.department);return i<0?5:i;};
+        const departmentLabel=emp=>departmentRank(emp)===5?'其他职位':emp.department;
+        const selectedEmployees=employees.filter(emp=>allPersonnel||(window.avedDepartmentFilter==='公司直属'?departmentRank(emp)===5:emp.department===window.avedDepartmentFilter)).sort((a,b)=>(allPersonnel?departmentRank(a)-departmentRank(b):0)||rank(a)-rank(b));
         dirGrid.innerHTML = selectedEmployees.map((emp,index) => {
           const stats = emp.stats || [0, 0, 0, 0, 0, 0];
           const polyPoints = stats.map((val, i) => {
@@ -532,10 +538,10 @@
             return `${(cx + r * Math.cos(angles[i])).toFixed(1)},${(cy + r * Math.sin(angles[i])).toFixed(1)}`;
           }).join(' ');
 
-          const deptDisplay = [emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?`所属部门：<strong>${emp.department}</strong>`:'',emp.positionTitle?`职务：<strong>${emp.positionTitle}</strong>`:''].filter(Boolean).join('<br>');
+          const deptDisplay = [emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?`所属部门：<strong>${emp.department}</strong>`:'',emp.positionTitle?`职务：<strong>${emp.positionTitle}</strong>`:'',emp.containmentClassification?`收容分类：<strong>${emp.containmentClassification}</strong>`:''].filter(Boolean).join('<br>');
 
           return `
-            ${index===0||group(emp)!==group(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+group(emp)+'</h3>':''}
+            ${allPersonnel?(index===0||departmentLabel(emp)!==departmentLabel(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+departmentLabel(emp)+'</h3>':''):(index===0||group(emp)!==group(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+group(emp)+'</h3>':'')}
             <div class="retro-corner-box p-5 space-y-4">
               <div class="flex items-center justify-between border-b-2 border-[var(--inner-border)] pb-2 text-xs font-mono-tech">
                 <span class="font-bold">A.V.E. DIRECTORATE // ID</span>
@@ -568,12 +574,13 @@
 
               <div class="text-xs space-y-1.5 border-t border-[var(--inner-border-soft)] pt-3 font-mono-tech">
                 <div>${deptDisplay}</div>
-                <div><span class="opacity-65">办公驻地：</span><span>${emp.location}</span></div>
-                <div><span class="opacity-65">档案简述：</span><span>${emp.abilityNote}</span></div>
+${emp.location?`                <div><span class="opacity-65">办公驻地：</span><span>${emp.location}</span></div>`:''}
+${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opacity-65">档案简述：</span><span>${emp.abilityNote}</span></div>`:''}
+                ${emp.personalMessage?`<div class="directory-personal-message"><span>个人留言</span><p>${emp.personalMessage}</p></div>`:''}
               </div>
             </div>
           `;
-        }).join('')||'<p class="p-5">本部门暂无在册人员。</p>';
+        }).join('')||'<p class="p-5">暂无在册人员。</p>';
       }
 
       // ======================================================================
@@ -1521,7 +1528,7 @@
       function showToast(message,type='info',options={}) {
         window.AVEDFeedback.toast(message,type,options);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,containmentClassification:esc(e.containmentClassification||''),bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),personalMessage:esc(e.bio||''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;scratchBombRules=c.scratchBombs||null;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1532,7 +1539,7 @@
         employees=data.employees.map(employeeDirectoryCard);
         departmentsData.splice(0,departmentsData.length,...data.departments.map(d=>({...d,name:esc(d.name),desc:esc(d.desc),motto:esc(d.motto),minister:''})));
         currentUser={id:String(data.employee.id),name:data.employee.displayName,account:data.employee.username,department:data.employee.department,bracketTag:[...new Set([/^公司直属(?:部|领导)?$/.test(data.employee.department||'')?'':data.employee.department,data.employee.positionTitle].filter(Boolean))].join(' '),
-          identityKind:data.employee.identityKind,positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
+          identityKind:data.employee.identityKind,containmentClassification:data.employee.containmentClassification||'',positionTitle:data.employee.positionTitle||data.employees.find(e=>String(e.id)===String(data.employee.id))?.positionTitle||'',isAdmin:false,serverAdmin:data.employee.role==='admin',balance:data.balance,savedAlias:data.profile.anonymousName,streak:data.streak,lastCheckinDate:data.checkin?getTodayDateString():'',avatarBadge:'员',avatarColor:'#444'};
         companyNews=data.announcements.map(n=>({id:String(n.id),title:esc(n.title),code:'AVED-'+n.id,category:n.pinned?'置顶公告':'公司通告',pinned:!!n.pinned,createdAt:n.createdAt,recipient:n.recipient||'',issuer:n.issuer||'',postCount:Number(n.postCount)||0,summary:esc(AVEDNotices.excerpt(n.body)),fullContent:esc(n.body),realComments:[]}));
         scpItemsData=data.dossiers.map(d=>AVEDDossierContent.map(d));
         forumThreads=data.forum.items;forumDetail=null;forumBrowser.reset();
@@ -1596,7 +1603,9 @@
         // Prepare behind the connection screen; keep the gateway until rendering succeeds.
         innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
-        renderScratchTiersAndLobby();initSlot5x3Game();restorePlayerRoute(true);
+        renderScratchTiersAndLobby();initSlot5x3Game();
+        history.replaceState(null,'','#/profile');
+        switchMainView('profile',{navigation:'replace'});
         communityUI.refresh();
 
         // Chat streams open only while their game panel is visible.

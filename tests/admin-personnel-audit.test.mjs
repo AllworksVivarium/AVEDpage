@@ -29,7 +29,10 @@ test('legacy positions migrate without changing credentials or admin permissions
 
 test('only planning members have custom titles and can become department ministers',()=>{
  assert.equal(personnelAssignment({identityKind:'player_employee',positionTitle:'自定义玩家身份'}).positionTitle,'成员');
- assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false});
+ assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false,containmentClassification:''});
+ for(const identityKind of ['player_containment','company_containment'])for(const containmentClassification of ['SAFE','EUCLID','KETER'])assert.equal(personnelAssignment({identityKind,containmentClassification}).containmentClassification,containmentClassification);
+ assert.throws(()=>personnelAssignment({identityKind:'player_containment',containmentClassification:'invalid'}),/有效的收容物分类/);
+ assert.equal(personnelAssignment({identityKind:'player_employee',containmentClassification:'KETER'}).containmentClassification,'');
  assert.equal(personnelAssignment({identityKind:'planning_member',department:'公司直属部',positionTitle:'人工智能'}).positionTitle,'人工智能');
  const minister=personnelAssignment({identityKind:'planning_member',department:'医疗部',positionTitle:'人工智能'});
  assert.equal(minister.department,'医疗部');assert.equal(minister.positionTitle,'人工智能');assert.equal(minister.isLeadership,true);
@@ -60,12 +63,12 @@ test('persistent identities, editable player containment, and lazy categorized a
  const a=(...args)=>req(admin,...args);
  async function create(identityKind,username,more={}){const r=await a('/api/admin/employees','POST',{identityKind,username,password,displayName:username,department:'公司直属',...more});assert.equal(r.status,201,JSON.stringify(r.data));return r.data.id;}
  const employeeId=await create('player_employee','ordinary',{department:'医疗部'});
- const playerId=await create('player_containment','player-object',{archiveBio:'原始收容简介'});
+ const playerId=await create('player_containment','player-object',{archiveBio:'原始收容简介',containmentClassification:'SAFE'});
  const ministerId=await create('planning_member','minister',{department:'医疗部',positionTitle:'部长'});
  const secondMinisterId=await create('planning_member','minister-two',{department:'医疗部',positionTitle:'部长'});
  const customId=await create('planning_member','archivist',{department:'收容部',positionTitle:'档案管理员'});
  const leaderId=await create('planning_member','director',{positionTitle:'人工智能'});
- const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介'});
+ const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介',containmentClassification:'KETER'});
  assert.equal((await a('/api/admin/employees','POST',{identityKind:'player_employee',username:'fake-leader',password,displayName:'普通玩家',positionTitle:'部长'})).status,400);
  const items=(await a('/api/admin/employees')).data.items;
  assert.equal(items.find(x=>x.id===ministerId).department,'医疗部');
@@ -73,15 +76,21 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal(items.find(x=>x.id===leaderId).role,'employee');
  assert.equal(items.find(x=>x.id===companyId).enabled,0);
  assert.equal(items.find(x=>x.id===companyId).archiveBio,'公司提供的收容简介');
+ assert.equal(items.find(x=>x.id===playerId).containmentClassification,'SAFE');assert.equal(items.find(x=>x.id===companyId).containmentClassification,'KETER');
+ assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'不应保存',containmentClassification:'INVALID'})).status,400);
+ assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'player-object',containmentClassification:'EUCLID'})).status,200);
  assert.equal((await a('/api/admin/employees/'+playerId,'PUT',{displayName:'玩家收容物',identityKind:'player_containment',positionTitle:'伪造身份'})).status,200);
  assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===playerId).positionTitle,'收容物');
- const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok(!roster.some(x=>x.id===companyId));assert.ok([employeeId,playerId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));assert.ok((await a('/api/admin/employees')).data.items.some(x=>x.id===companyId));
+ const roster=(await a('/api/admin/employees?roster=personnel')).data.items;assert.ok([employeeId,playerId,companyId,ministerId,leaderId].every(id=>roster.some(x=>x.id===id)));
+ assert.equal(roster.find(x=>x.id===companyId).identityKind,'company_containment');
+ const systemLogin=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:roster.find(x=>x.id===companyId).username,password})});assert.equal(systemLogin.status,401,'system containment is a display archive, not a player login');
  const robot=await a('/api/admin/company-robots','POST',{codename:'榜单机器人',balance:19277});assert.equal(robot.status,200);
  for(const path of ['/api/admin/employees','/api/admin/employees?roster=personnel'])assert.ok(!(await a(path)).data.items.some(x=>x.id===robot.data.id),'robots must never appear in human employee management');
  assert.ok((await a('/api/admin/company-robots')).data.items.some(x=>x.id===robot.data.id));
  const cookie=await login('player-object','player_containment'),player=(...args)=>req(cookie,...args);
  const state=(await player('/api/player/state')).data;
  assert.equal(state.employee.identityKind,'player_containment');
+ assert.equal(state.employee.containmentClassification,'EUCLID');
  assert.equal(state.employee.department,'公司直属','the displayed disguise must not assign a real employee department');
  const welcome=state.achievements.filter(item=>item.code==='containment-welcome');assert.equal(welcome.length,1);assert.equal(welcome[0].title,'欢迎你，“员工”。');
  assert.ok((await player('/api/player/achievement-alerts')).data.items.some(item=>item.code==='containment-welcome'));
@@ -89,8 +98,10 @@ test('persistent identities, editable player containment, and lazy categorized a
  const staffCookie=await login('ordinary');assert.ok(!(await req(staffCookie,'/api/profile')).data.achievements.some(item=>item.code==='containment-welcome'));
  assert.equal((await player('/api/player/appearance')).data.appearance.effects.prices.contamination,100000);
  assert.equal((await req(staffCookie,'/api/player/appearance')).data.appearance.effects.prices.contamination,500000);
- assert.equal((await player('/api/profile','PUT',{anonymousName:'收容代号',bio:'玩家更新简介',identityKind:'planning_member',isLeadership:true})).status,200);
+ assert.equal((await player('/api/profile','PUT',{anonymousName:'收容代号',bio:'玩家更新简介',identityKind:'planning_member',isLeadership:true,containmentClassification:'KETER'})).status,200);
  const directory=(await player('/api/player/directory')).data.items;
+ assert.equal(directory.find(x=>x.id===companyId).identityKind,'company_containment');
+ assert.equal(directory.find(x=>x.id===companyId).containmentClassification,'KETER');assert.equal(directory.find(x=>x.id===playerId).containmentClassification,'EUCLID');
  assert.equal(directory.find(x=>x.id===playerId).bio,'玩家更新简介');
  assert.equal(directory.find(x=>x.id===playerId).identityKind,'player_containment');
  assert.equal(directory.find(x=>x.id===ministerId).isLeadership,1);

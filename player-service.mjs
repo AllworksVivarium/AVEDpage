@@ -250,6 +250,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
       if(path==='/api/player/forum/reactions'&&req.method==='GET'){send(res,200,{items:forumReactions.catalog});return true;}
       if(path==='/api/player/forum/reactions'&&req.method==='POST'){send(res,200,forumReactions.add(id,data));return true;}
+      if(path==='/api/player/forum/reactions/read'&&req.method==='POST'){send(res,200,forumReactions.read(id,data.notificationIds));return true;}
       if(path==='/api/player/forum'&&req.method==='GET'){send(res,200,forum(id,url.searchParams));return true;}
       if(path==='/api/player/forum/personas'){
         if(req.method==='GET')send(res,200,forumSocial.list(id));
@@ -261,12 +262,12 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
         else if(req.method==='POST')send(res,201,forumSocial.publish(id,data));
         else send(res,405,{error:'指令无效。'});return true;
       }
-      if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,{...forumSocial.inbox(id),stockRisk:stockLots.riskSummary(id)});return true;}
+      if(path==='/api/player/forum/notifications'&&req.method==='GET'){send(res,200,{...forumSocial.inbox(id),reactions:forumReactions.inbox(id),stockRisk:stockLots.riskSummary(id)});return true;}
       if(path==='/api/player/forum/notifications'&&req.method==='POST'){
         const presence=forumPresence.sync(id,data),threadId=Number(data.threadId||0),revision=Number(data.revision||0);
         if(!Number.isSafeInteger(threadId)||threadId<0||!Number.isSafeInteger(revision)||revision<0)throw Error('无效的帖子刷新位置。');
         const latest=threadId?db.prepare("SELECT MAX(v.revision) AS revision FROM forum_reply_versions v JOIN forum_threads t ON t.id=v.thread_id WHERE v.thread_id=? AND t.status='published' AND t.moderation='approved' AND t.deleted_at=''").get(threadId)?.revision||0:0;
-        send(res,200,{...forumSocial.inbox(id),presence,threadId,repliesChanged:Math.max(latest,threadId?db.prepare('SELECT revision FROM forum_reaction_versions WHERE thread_id=?').get(threadId)?.revision||0:0)>revision,stockRisk:stockLots.riskSummary(id)});return true;
+        send(res,200,{...forumSocial.inbox(id),reactions:forumReactions.inbox(id),presence,threadId,repliesChanged:Math.max(latest,threadId?db.prepare('SELECT revision FROM forum_reaction_versions WHERE thread_id=?').get(threadId)?.revision||0:0)>revision,stockRisk:stockLots.riskSummary(id)});return true;
       }
       const forumView=path.match(/^\/api\/player\/forum\/(\d+)\/view$/);
       if(forumView&&req.method==='POST'){send(res,200,forum.recordView(id,Number(forumView[1])));return true;}

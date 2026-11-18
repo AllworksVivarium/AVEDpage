@@ -82,7 +82,7 @@ export function installBarExtras({db,clock,balanceFor,recordLedger,name,isContai
    const music=getMusic(),track=music.enabled&&music.tracks.find(t=>t.id===data.trackId);if(!track)throw Error('这首歌暂时不能点播，请选择已上架曲目。');
    queue(music);const now=clock(),pending=db.prepare("SELECT employee_id,ends_at FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY ends_at DESC").all(now);
    if(pending.length>=20||pending.filter(r=>r.employee_id===actor.id).length>=2)throw Error('点播队列暂满；每位客人最多同时点播两首。');
-   if(balanceFor(actor.id)<JUKEBOX_PRICE)throw Error('点播一首需要 30,000 A 币。');
+   if(balanceFor(actor.id)<JUKEBOX_PRICE)throw Error('点播一首需要 30,000 ¤。');
    const start=Math.max(now,pending[0]?.ends_at||now),duration=Math.max(30,Math.min(900,Number(track.durationSeconds)||180))*1000;
    recordLedger(actor.id,-JUKEBOX_PRICE,'酒吧点播：'+track.title);
    db.prepare('INSERT INTO bar_jukebox_requests(id,employee_id,track_id,title,alias,identity_mode,message,price,created_at,starts_at,ends_at,request_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(randomUUID(),actor.id,track.id,track.title,author(actor.id,kind),kind,message,JUKEBOX_PRICE,now,start,start+duration,key);

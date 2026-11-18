@@ -224,7 +224,7 @@ const sessionEmployee = req => {
   const tokens=sessionTokens(req.headers.cookie),valid=[];
   for(const [position,token] of tokens.entries()) {
     const tokenHash=sessionDigest(token);
-    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.identity_kind AS identityKind,e.position_title AS positionTitle,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
+    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.identity_kind AS identityKind,e.containment_classification AS containmentClassification,e.position_title AS positionTitle,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
     if(!session||session.expires_at<Date.now()||!session.enabled){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash);continue;}
     valid.push({session,position});
   }
@@ -605,8 +605,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
-      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,e.attributes_json AS attributes,
-        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e WHERE NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id) AND (?=0 OR e.identity_kind IN ('player_employee','player_containment','planning_member')) ORDER BY e.id`).all(url.searchParams.get('roster')==='personnel'?1:0).map(e=>({...e,attributes:attributeValues(e.attributes)}))});
+      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.containment_classification AS containmentClassification,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,e.attributes_json AS attributes,
+        COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e WHERE NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id) AND (?=0 OR e.identity_kind IN ('player_employee','player_containment','planning_member','company_containment')) ORDER BY e.id`).all(url.searchParams.get('roster')==='personnel'?1:0).map(e=>({...e,attributes:attributeValues(e.attributes)}))});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
@@ -614,7 +614,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const {username,password,displayName,qqNumber,role,initialBalance}=data;
       let attributes;try{attributes=data.attributes===undefined?'':normalizeAttributes(data.attributes);}catch(e){return send(res,400,{error:e.message});}
       let assignment;try{assignment=personnelAssignment(data);}catch(e){return send(res,400,{error:e.message});}
-      const {identityKind,department,positionTitle,isNpc,isLeadership}=assignment;
+      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification}=assignment;
       if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
       if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或收容物名称（最多 80 字）。'});
@@ -623,8 +623,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const passwordHash=await hashPasswordAsync(isNpc?randomBytes(32).toString('hex'):password);
       try {
         db.exec('BEGIN IMMEDIATE');
-        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind,attributes_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind,attributes);
+        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind,attributes_json,containment_classification) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind,attributes,containmentClassification);
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,`匿名员工-${id}`,data.archiveBio?.trim()||'');
         if(!isNpc&&initialBalance)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         db.exec('COMMIT');return send(res,201,{id});
@@ -634,12 +634,12 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
       const data=await readBody(req),{displayName,qqNumber,password}=data;
-      const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,department,position_title AS positionTitle,attributes_json AS attributesRaw FROM employees WHERE id=?').get(employeeId);
+      const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,containment_classification AS containmentClassification,department,position_title AS positionTitle,attributes_json AS attributesRaw FROM employees WHERE id=?').get(employeeId);
       if(!previous)return send(res,404,{error:'员工档案不存在。'});
       previous.isNpc=!!previous.isNpc;
       let attributes;try{attributes=data.attributes===undefined?previous.attributesRaw:normalizeAttributes(data.attributes);}catch(e){return send(res,400,{error:e.message});}
       let assignment;try{assignment=personnelAssignment(data,previous);}catch(e){return send(res,400,{error:e.message});}
-      const {identityKind,department,positionTitle,isNpc,isLeadership}=assignment;
+      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification}=assignment;
       if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80)return send(res,400,{error:'员工姓名或部门无效。'});
       const qq=qqNumber==null||qqNumber===''?null:(validText(qqNumber,30)?qqNumber.trim():undefined);
@@ -648,7 +648,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       const passwordHash=typeof password==='string'&&password?await hashPasswordAsync(password):null;
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=?,attributes_json=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:1,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,attributes,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=?,attributes_json=?,containment_classification=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:1,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,attributes,containmentClassification,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(data.archiveBio!==undefined)db.prepare('UPDATE profiles SET bio=? WHERE employee_id=?').run(data.archiveBio.trim(),employeeId);
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(passwordHash,employeeId);

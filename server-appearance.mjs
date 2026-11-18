@@ -63,8 +63,8 @@ export function installAppearance({db,send,readBody,requireEmployee,balanceFor,r
    try{
     const state=snapshot(user.id),unlocked=kind==='palette'?state.owned:state[kind==='background'?'backgrounds':kind==='effect'?'effects':'patterns'].owned;
     if(item.price&&!unlocked.includes(key)){
-     if(kind==='effect'&&body.confirmed!==true)throw Error('请确认花费 '+item.price.toLocaleString('en-US')+' A 币永久解锁污染模式。');
-     if(balanceFor(user.id)<item.price)throw Error('余额不足，解锁需要 '+item.price.toLocaleString('en-US')+' A 币。');
+     if(kind==='effect'&&body.confirmed!==true)throw Error('请确认花费 '+item.price.toLocaleString('en-US')+' ¤永久解锁污染模式。');
+     if(balanceFor(user.id)<item.price)throw Error('余额不足，解锁需要 '+item.price.toLocaleString('en-US')+' ¤。');
      const debit=recordLedger(user.id,-item.price,(kind==='palette'?'解锁配色：':kind==='effect'?'解锁界面效果：':'解锁背景：')+item.name);
      if(kind==='palette')db.prepare('INSERT INTO employee_palettes(employee_id,palette,ledger_id) VALUES(?,?,?)').run(user.id,key,Number(debit.lastInsertRowid));
      else if(kind==='effect')db.prepare('INSERT INTO employee_interface_effects(employee_id,effect,ledger_id) VALUES(?,?,?)').run(user.id,key,Number(debit.lastInsertRowid));

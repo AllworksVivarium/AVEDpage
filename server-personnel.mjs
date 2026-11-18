@@ -1,7 +1,9 @@
 import {directoryDepartment} from './server-directory.mjs';
+import {normalizeContainmentClassification} from './server-dossier-content.mjs';
 
 export const identityKinds=['player_employee','player_containment','planning_member','company_containment'];
 export function installPersonnel(db){
+  if(!db.prepare('PRAGMA table_info(employees)').all().some(c=>c.name==='containment_classification'))db.exec("ALTER TABLE employees ADD COLUMN containment_classification TEXT NOT NULL DEFAULT ''");
   if(!db.prepare('PRAGMA table_info(employees)').all().some(c=>c.name==='identity_kind')){
     db.exec(`ALTER TABLE employees ADD COLUMN identity_kind TEXT NOT NULL DEFAULT 'player_employee';
       UPDATE employees SET identity_kind=CASE
@@ -33,5 +35,6 @@ export function personnelAssignment(data,previous={}){
   const rawNpc=data.isNpc??(data.identityKind&&data.identityKind!==previous.identityKind?false:previous.isNpc??false);
   if(typeof rawNpc!=='boolean')throw new Error('账号类型无效。');
   const isNpc=kind==='company_containment'||(kind==='planning_member'&&rawNpc);
-  return {identityKind:kind,department,positionTitle,isNpc,isLeadership};
+  const containmentClassification=kind.endsWith('_containment')?normalizeContainmentClassification(data.containmentClassification??previous.containmentClassification??''):'';
+  return {identityKind:kind,department,positionTitle,isNpc,isLeadership,containmentClassification};
 }

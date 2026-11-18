@@ -15,7 +15,7 @@ window.AVEDForumReplies=function({api,container,count,renderItem,onThread,onSeen
  },{threshold:.1}):null;
  function paint(s,data){
   observer?.disconnect();const next=new Map();
-  for(const item of data.items){const html=renderItem(item),old=s.nodes.get(item.id);let el=old?.html===html?old.el:document.createElement('article');if(el!==old?.el){el.className='forum-reply-entry';el.dataset.replyId=item.id;el.innerHTML=html;}next.set(item.id,{el,html,item});}
+  for(const item of data.items){const html=renderItem(item),old=s.nodes.get(item.id);let el=old?.html===html?old.el:document.createElement('article');if(el!==old?.el){el.className='forum-reply-entry';el.dataset.replyId=item.id;el.tabIndex=0;el.setAttribute('aria-haspopup','dialog');el.innerHTML=html;}next.set(item.id,{el,html,item});}
   s.nodes=next;container.replaceChildren(...[...next.values()].map(n=>n.el));
   if(!next.size){const empty=document.createElement('p');empty.textContent='暂无回复。';container.append(empty);}
   for(const {el} of next.values())observer?.observe(el);

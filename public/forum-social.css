@@ -157,3 +157,17 @@
  #view-forum #forum-threads-list-container .forum-card-excerpt{font-family:var(--type-ui)!important;font-size:13px!important;line-height:1.6!important;margin:5px 0 10px!important;color:var(--inner-text-muted)!important;-webkit-line-clamp:1!important}
  #view-forum #forum-threads-list-container .forum-author b{font-family:var(--type-ui)!important;font-size:11px!important;font-weight:600!important}
 }
+
+@layer aved-personal {
+ .forum-social-dialog .forum-inbox-section{padding:0 16px 12px}
+ .forum-social-dialog .forum-inbox-section h3{display:flex;align-items:center;gap:6px;margin:10px 0 6px;font:12px/1.5 var(--type-ui);color:var(--inner-text-muted)}
+ .forum-social-dialog .forum-reaction-inbox{border-bottom:1px solid var(--inner-border-soft)}
+ .forum-social-dialog .forum-reaction-inbox-list{display:grid;gap:6px}
+ .forum-social-dialog .forum-reaction-inbox-list>p{margin:6px 0;font-size:11px;color:var(--inner-text-muted)}
+ .forum-social-dialog .forum-reaction-inbox-list>button{display:grid;gap:5px;min-width:0;padding:8px 10px;text-align:left;color:inherit;background:var(--inner-card-alt);border:1px solid var(--inner-border-soft);cursor:pointer}
+ .forum-social-dialog .forum-reaction-inbox-list>button[data-unread=true]{border-left:3px solid var(--inner-accent)}
+ .forum-social-dialog .forum-reaction-notice-heading{display:flex;align-items:center;gap:8px;font-size:12px}
+ .forum-social-dialog .forum-reaction-notice-heading .forum-reaction-icon{width:22px;height:22px}
+ .forum-social-dialog .forum-reaction-inbox-list small{font-size:10px;overflow-wrap:anywhere;color:var(--inner-text-muted)}
+ .forum-social-dialog .forum-reaction-inbox-list>button[data-unread=false] strong{font-weight:400}
+}

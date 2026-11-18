@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 
 test('reply paging only acknowledges visible floors and discards responses after navigation',async()=>{
- class Element{constructor(){this.dataset={};this.children=[];this.innerHTML='';}before(){}after(){}replaceChildren(...nodes){this.children=nodes;}append(n){this.children.push(n);}contains(n){return this.children.includes(n);}scrollIntoView(){}}
+ class Element{constructor(){this.dataset={};this.children=[];this.innerHTML='';}before(){}after(){}setAttribute(name,value){this[name]=value;}replaceChildren(...nodes){this.children=nodes;}append(n){this.children.push(n);}contains(n){return this.children.includes(n);}scrollIntoView(){}}
  const container=new Element(),requests=[],seen=[],topics=[];let observation;
  const context={window:{AVEDForumPager:()=>({el:new Element(),render(){}})},URLSearchParams,document:{createElement:()=>new Element()},IntersectionObserver:class{constructor(cb){observation=cb;}observe(){}disconnect(){}}};
  const source=readFileSync(new URL('../public/forum-replies.js',import.meta.url),'utf8');

@@ -85,7 +85,7 @@
     container.style.position='relative';
     const readout=root.document.getElementById('market-trade-readout')||root.document.createElement('p');readout.id='market-trade-readout';readout.className='market-trade-readout';readout.setAttribute('role','status');
     readout.textContent=trades.length?'我的近期成交 · B 买入 / S 卖出 · 点标记查阅（最多 300 笔）':'当前图中暂无我的成交';container.after(readout);
-    const showTrades=index=>{const list=groups[index]||[];if(!list.length)return;container._selectedTradeBucket=rows[index].bucket;readout.textContent=list.slice(0,20).sort((a,b)=>a.tradedAt-b.tradedAt).map(t=>root.AVEDTime.clock(t.tradedAt)+' '+(t.action==='buy'?'买入':'卖出')+' '+number(t.quantity)+' 股 @ '+number(t.price)+' A 币').join('\n')+(list.length>20?'\n该时段另有 '+(list.length-20)+' 笔成交。':'');};
+    const showTrades=index=>{const list=groups[index]||[];if(!list.length)return;container._selectedTradeBucket=rows[index].bucket;readout.textContent=list.slice(0,20).sort((a,b)=>a.tradedAt-b.tradedAt).map(t=>root.AVEDTime.clock(t.tradedAt)+' '+(t.action==='buy'?'买入':'卖出')+' '+number(t.quantity)+' 股 @ '+number(t.price)+' ¤').join('\n')+(list.length>20?'\n该时段另有 '+(list.length-20)+' 笔成交。':'');};
     const selectedIndex=rows.findIndex(c=>c.bucket===container._selectedTradeBucket);if(selectedIndex>=0)showTrades(selectedIndex);
     details(rows.at(-1));
 

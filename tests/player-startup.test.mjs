@@ -6,7 +6,7 @@ const context={setTimeout,clearTimeout};vm.runInNewContext(readFileSync(new URL(
 test('a stalled font cannot block entry; fast resources retain their result',async()=>{let calls=0;const stalled=new Promise(()=>{});assert.equal(await within(stalled,10,()=>{calls++;return 'fallback';}),'fallback');assert.equal(calls,1);assert.equal(await within(Promise.resolve('font'),10,()=>{calls++;return 'fallback';}),'font');await new Promise(r=>setTimeout(r,20));assert.equal(calls,1);await assert.rejects(within(Promise.reject(Error('network')),10,()=>null),/network/);});
 test('only known pages can be restored; links do not accept account IDs or QQ numbers',()=>{const allowed=['profile','forum','casino'];assert.equal(route('#/forum',allowed),'forum');assert.equal(route('#/casino',allowed),'casino');for(const hash of ['#/123456789','?qq=123456789','#/admin','#/profile?employeeId=2'])assert.equal(route(hash,allowed),'profile');});
 
-test('game deep links survive refresh and invalid children return to the lobby',()=>{
+test('signed-in game routes resolve correctly and invalid children return to the lobby',()=>{
  const allowed=['profile','forum','casino'],routing=context.AVEDStartup;
  for(const game of ['skydive','slots','scratch','derby','doudizhu','stocks']){
   const hash='#/casino/'+(game==='doudizhu'?'doutailao':game),parsed=routing.resolveRoute(hash,allowed);
