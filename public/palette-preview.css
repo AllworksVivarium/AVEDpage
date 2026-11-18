@@ -124,7 +124,7 @@
     --study-on-red:#151310; --study-screen-ink:#ede9e2;
   }
   /* All decorative red details follow the same brand token, including Original. */
-  html[data-palette-preview] #inner-app-view :is(.section-kicker,.terminal-page-kicker,.terminal-heading-eyebrow,.directory-role-heading,.company-leadership h3,.company-leadership h4) {
+  html[data-palette-preview] #inner-app-view :is(.section-kicker,.terminal-page-kicker,.terminal-heading-eyebrow,.company-leadership h3,.company-leadership h4) {
     color:var(--brand-red-ink) !important;opacity:1 !important;
   }
   html[data-palette-preview] #inner-app-view .leadership-cards>article {

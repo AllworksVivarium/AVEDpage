@@ -5,6 +5,10 @@
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     return pool.slice(0,count);
   }
+  function forViewer(items,user,count=4,random=Math.random){
+    const own=user?.identityKind==='player_containment'?items.find(item=>item.employeeId!=null&&String(item.employeeId)===String(user.id)):null;
+    return own&&count>0?[own,...sample(items.filter(item=>item!==own),count-1,random)]:sample(items,count,random);
+  }
   let active=null;
   function cancel(){if(active){const old=active;active=null;old.timers.forEach(old.clear);old.restore();}}
   function glitch({document:doc,random=Math.random,setTimer=setTimeout,clearTimer=clearTimeout,enabled=true}){
@@ -27,7 +31,7 @@
     frame(0);
     state.timers.push(setTimer(()=>frame(1),45),setTimer(()=>{restore();if(active===state)active=null;},95));
   }
-  const api={sample,glitch,cancel};
+  const api={sample,forViewer,glitch,cancel};
   if(typeof module==='object'&&module.exports)module.exports=api;
   else {root.AVEDArchiveBoard=api;root.document.addEventListener('aved-effects-change',()=>{if(root.document.body.classList.contains('effects-off'))cancel();});}
 })(typeof window==='object'?window:globalThis);

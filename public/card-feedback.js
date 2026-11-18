@@ -57,7 +57,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   if(waiting){
    const host=String(state.host)===String(getUser()?.id),notReady=state.seats.filter(p=>p&&!p.bot&&p.id!==state.host&&!p.ready),empty=state.seats.filter(p=>!p).length;
    const ownReady=state.seats[state.seat]?.ready;
-   const instruction=host&&!ownReady?'请先准备，再等待其他玩家就绪后手动开局。':host?notReady.length?`还有 ${notReady.length} 位玩家未准备${empty?'，可先补齐电脑':''}，全部准备后由你手动开局。`:empty?'可等待同事入座，或先“补齐电脑”，再手动确认开局。':'全员就绪，点击下方金色按钮确认开局。':ownReady?'你已准备，等待房主确认开局。':'点击下方准备按钮，再由房主确认开局。';
+   const instruction=host&&!ownReady?'请先准备，再等待其他同事就绪后手动开局。':host?notReady.length?`还有 ${notReady.length} 位同事未准备${empty?'，可先补齐电脑':''}，全部准备后由你手动开局。`:empty?'可等待同事入座，或先“补齐电脑”，再手动确认开局。':'全员就绪，点击下方金色按钮确认开局。':ownReady?'你已准备，等待房主确认开局。':'点击下方准备按钮，再由房主确认开局。';
    round.innerHTML=`<header><small>${state.phase==='ended'?'ROUND COMPLETE':'TABLE READY'}</small><strong>${state.phase==='ended'||state.readyCycle?'本局结束 · 下一局准备':state.mode==='solo'?'电脑房已创建 · 等待开局':'联机房已创建 · 等待入座'}</strong></header><div class="ddz-ready-seats">${state.seats.map(p=>`<span class="${p?.ready?'is-ready':''}">${p?esc(p.name):'空座位'}<b>${!p?'待入座':p.bot?'电脑就绪':(p.id===state.host?'房主 · ':'')+(p.ready?'已准备':'未准备')}</b>${p?.readyDeadline&&!p.ready?`<small class="ddz-ready-clock" data-ready-deadline="${p.readyDeadline}"></small>`:''}</span>`).join('')}</div><p>${instruction}</p>${state.readyCycle?'<p>未准备者 60 秒后自动离桌；房主超时会移交给其他真人。</p>':''}${state.hostStartDeadline?`<small class="ddz-ready-clock" data-ready-kind="start" data-ready-deadline="${state.hostStartDeadline}"></small>`:''}`;
   }
   const ev=state?.event,key=state?state.id+':'+(ev?.id||JSON.stringify([ev,state.last?.cards?.map(c=>c.id)])):'';

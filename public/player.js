@@ -188,7 +188,7 @@
       let scpItemsData = JSON.parse(JSON.stringify(initialScpItems));
 
       let forumThreads = JSON.parse(JSON.stringify(initialForumThreads));
-      let currentUser = null,achievementAlerts=null;
+      let currentUser = null,achievementAlerts=null,adsUI=null;
       window.AVEDIncomeVoice=AVEDIncomeSpeech.create({api,getUser:()=>currentUser,canSpeak:()=>!slot5x3State.spinning&&!pendingSlotRequest&&!(activeIssuedTicket&&!activeIssuedTicket.draft&&!activeIssuedTicket.demo&&!activeIssuedTicket.settled)});
       let isDarkMode = document.documentElement.dataset.savedTheme==='night';
       document.body.classList.toggle('dark-mode',isDarkMode);
@@ -436,6 +436,7 @@
         renderedPlayerRoute=path;
         const enteringContainment=target==='containment'&&document.getElementById('view-containment').classList.contains('hidden');
         const visit=++containmentVisit;
+        if(enteringContainment)deferredSections.delete('containment');
         const sectionReady=target!=='profile'&&target!=='welcome'?loadDeferredPlayerData(target):null;
         if(sectionReady)Promise.resolve(sectionReady).then(async()=>{
           if(!enteringContainment||visit!==containmentVisit)return;
@@ -470,7 +471,7 @@
         document.title=gameTitle?gameTitle+' · '+playerPageTitle:playerPageTitle;
         if(target==='profile')renderProfile();
         if (target === 'containment') {
-          if(enteringContainment)scpBoardSelection=null;renderScpArchives();
+          if(enteringContainment){scpBoardSelection=null;selectedScpId=null;}renderScpArchives();
           randomizeScpDualNamePlaceholder();
         } else if (target === 'forum') {
           renderForumView();
@@ -523,15 +524,8 @@
         const outerHex = angles.map(a => `${(cx + rMax * Math.cos(a)).toFixed(1)},${(cy + rMax * Math.sin(a)).toFixed(1)}`).join(' ');
         const midHex = angles.map(a => `${(cx + rMax * 0.6 * Math.cos(a)).toFixed(1)},${(cy + rMax * 0.6 * Math.sin(a)).toFixed(1)}`).join(' ');
 
-        const isHead=emp=>emp.isLeadership&&emp.department!=='公司直属'&&emp.positionTitle==='部长';
-        const group=emp=>isHead(emp)?'部长档案':emp.isLeadership?'职务档案':emp.identityKind?.endsWith('_containment')?'收容物档案':emp.department==='公司直属'?'在册人员':'部门成员';
-        const rank=emp=>isHead(emp)?0:emp.isLeadership?1:emp.identityKind?.endsWith('_containment')?3:2;
-        const allPersonnel=window.avedDepartmentFilter==='*';
-        const departmentOrder=['收容部','武装部','医疗部','科研部','后勤部'];
-        const departmentRank=emp=>{const i=departmentOrder.indexOf(emp.department);return i<0?5:i;};
-        const departmentLabel=emp=>departmentRank(emp)===5?'其他职位':emp.department;
-        const selectedEmployees=employees.filter(emp=>allPersonnel||(window.avedDepartmentFilter==='公司直属'?departmentRank(emp)===5:emp.department===window.avedDepartmentFilter)).sort((a,b)=>(allPersonnel?departmentRank(a)-departmentRank(b):0)||rank(a)-rank(b));
-        dirGrid.innerHTML = selectedEmployees.map((emp,index) => {
+        const selectedEmployees=window.AVEDDepartmentArchive?.roster?.(employees,window.avedDepartmentFilter)||employees.filter(emp=>window.avedDepartmentFilter==='*'||emp.department===window.avedDepartmentFilter).sort((a,b)=>String(a.sortName??a.name).localeCompare(String(b.sortName??b.name),'zh-CN',{numeric:true}));
+        dirGrid.innerHTML = selectedEmployees.map(emp => {
           const stats = emp.stats || [0, 0, 0, 0, 0, 0];
           const polyPoints = stats.map((val, i) => {
             const r = (val / 100) * rMax;
@@ -541,7 +535,6 @@
           const deptDisplay = [emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?`所属部门：<strong>${emp.department}</strong>`:'',emp.positionTitle?`职务：<strong>${emp.positionTitle}</strong>`:'',emp.containmentClassification?`收容分类：<strong>${emp.containmentClassification}</strong>`:''].filter(Boolean).join('<br>');
 
           return `
-            ${allPersonnel?(index===0||departmentLabel(emp)!==departmentLabel(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+departmentLabel(emp)+'</h3>':''):(index===0||group(emp)!==group(selectedEmployees[index-1])?'<h3 class="directory-role-heading">'+group(emp)+'</h3>':'')}
             <div class="retro-corner-box p-5 space-y-4">
               <div class="flex items-center justify-between border-b-2 border-[var(--inner-border)] pb-2 text-xs font-mono-tech">
                 <span class="font-bold">A.V.E. DIRECTORATE // ID</span>
@@ -621,8 +614,8 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
           return kwParts.some(part => haystack.includes(part));
         });
 
-        const boardKey=JSON.stringify([kw,selectedScpFilter,matching.map(item=>item.id)]);
-        if(!scpBoardSelection||scpBoardSelection.key!==boardKey)scpBoardSelection={key:boardKey,ids:AVEDArchiveBoard.sample(matching,4).map(item=>item.id)};
+        const boardKey=JSON.stringify([currentUser?.id,currentUser?.identityKind,kw,selectedScpFilter,matching.map(item=>item.id)]);
+        if(!scpBoardSelection||scpBoardSelection.key!==boardKey)scpBoardSelection={key:boardKey,ids:AVEDArchiveBoard.forViewer(matching,currentUser,4).map(item=>item.id)};
         const filtered=scpBoardSelection.ids.map(id=>matching.find(item=>item.id===id)).filter(Boolean);
         if (countFooter) countFooter.textContent = `SHOWING: ${filtered.length} / FILES: ${matching.length}`;
 
@@ -1134,7 +1127,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
         }
 
         const discCount = slot5x3Mechanisms.filter(m => m.discovered).length;
-        const count=document.getElementById('slot5x3-mechanisms-count');if(count)count.textContent = `已解锁 ${discCount}/3`;
+        const count=document.getElementById('slot5x3-mechanisms-count');if(count)count.textContent = `已识别 ${discCount}/3`;
         const mechList = document.getElementById('slot5x3-mechanisms-list');
         if (mechList) {
           setSlotMarkup(mechList,slot5x3Mechanisms.map(m => `
@@ -1374,7 +1367,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
         const board=byId('active-ticket-board-container');scratchBoard.render(tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
-          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'测试 · ':'')+AVEDGameResults.html(tk);
+          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'试刮 · ':'')+AVEDGameResults.html(tk);
           scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
         }
       }
@@ -1482,9 +1475,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
         byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
         byId('stock-est-fee').textContent=fmtMoney(amount>0?Math.max(1,Math.ceil(amount/1000)):0);
         const thresholds=marketRiskRules?.leverageAssetThresholds,unlocked=marketRiskRules?.unlockedLeverages||[1];
-        for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=!unlocked.includes(level);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（资产曾超过 '+(thresholds?.[level]/10000||'—')+' 万解锁）':'（已永久解锁）');}
+        for(const option of byId('stock-trade-leverage').options){const level=Number(option.value),locked=!unlocked.includes(level);option.disabled=locked;option.textContent=level===1?'1x（无杠杆）':level+'x'+(locked?'（资产曾超过 '+(thresholds?.[level]/10000||'—')+' 万可开通）':'（已开通）');}
         const leverageLocked=!unlocked.includes(leverage);
-        byId('stock-leverage-note').textContent=leverageLocked?'所选倍数尚待解锁，请选择已解锁倍数。':'资产曾超过 100 万永久解锁 3 倍，超过 500 万永久解锁 10 倍。';
+        byId('stock-leverage-note').textContent=leverageLocked?'所选杠杆权限尚未开通，请选择可用倍数。':'历史总资产超过 100 万可开通 3 倍，超过 500 万可开通 10 倍。';
         byId('stock-trade-ticket').querySelectorAll('[data-stock-trade-side]').forEach(button=>{button.disabled=!stock||stockTradeBusy||(button.dataset.stockTradeSide==='close'?!(longHolding+shortHolding):leverageLocked);if(button.dataset.stockTradeSide==='close')button.textContent=longHolding&&shortHolding?'选择平仓':'平仓';});
       }
       function selectMarket(code){
@@ -1528,7 +1521,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       function showToast(message,type='info',options={}) {
         window.AVEDFeedback.toast(message,type,options);
       }
-      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,containmentClassification:esc(e.containmentClassification||''),bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),personalMessage:esc(e.bio||''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
+      function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),sortName:e.displayName,department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,containmentClassification:esc(e.containmentClassification||''),bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),personalMessage:esc(e.bio||''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
       function applyEconomyRules(c){economyRevision=c.revision;scratchBombRules=c.scratchBombs||null;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
@@ -1553,7 +1546,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
         if(!currentUser||deferredSections.has(section))return Promise.resolve();
         if(deferredRequests.has(section))return deferredRequests.get(section);
         const owner=currentUser.id,panel=byId('view-'+section);panel?.setAttribute('aria-busy','true');
-        const task=api('/api/player/state?section='+encodeURIComponent(section)).then(data=>{
+        if(section==='forum')forumBrowser.beginSeed();
+        const request=section==='containment'?api('/api/dossiers').then(data=>({dossiers:data.items})):api('/api/player/state?section='+encodeURIComponent(section));
+        const task=request.then(async data=>{
           if(currentUser?.id!==owner)return;
           if(section==='departments')employees=data.employees.map(employeeDirectoryCard);
           if(section==='departments'||section==='life'){
@@ -1568,9 +1563,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
           if(section==='casino'){slot5x3Mechanisms.forEach((m,i)=>m.discovered=(data.slotProtocols||[]).includes(i));renderSlot5x3Board();marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
-          if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
+          if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();const dossier=scpItemsData.find(d=>d.id===selectedScpId);if(dossier&&!byId('view-containment').classList.contains('hidden'))await loadDossierComments(dossier);}
           deferredSections.add(section);
-        }).finally(()=>{deferredRequests.delete(section);panel?.removeAttribute('aria-busy');});
+        }).catch(error=>{if(section==='forum'&&currentUser?.id===owner)forumBrowser.endSeed(error);throw error;}).finally(()=>{deferredRequests.delete(section);panel?.removeAttribute('aria-busy');});
         deferredRequests.set(section,task);return task;
       }
       function syncUserHeaderUI() {
@@ -1615,9 +1610,10 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
         await nextPaint();
         if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
+        adsUI?.enter();
         }catch(error){
           window.AVEDContainmentAccess.reset();
-          currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+          adsUI?.reset();currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
           document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           throw error;
         }finally{innerAppView.classList.remove('intranet-preparing');}
@@ -1650,9 +1646,11 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       let forumSocialUI=null,forumDetail=null;
       const forumReactionsUI=AVEDForumReactions({api,esc,getUser:()=>currentUser,getThread:()=>forumDetail,onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();profileFreshAt=0;}},showToast});
       const forumBrowser=AVEDForumBrowser({api,getUser:()=>currentUser,onError:message=>showToast(message,'warn'),onData:data=>{forumThreads=data.items;renderForumView();}});
+      const forumMainLoading=AVEDForumSkeleton({target:byId('forum-detail-main-post'),kind:'thread'});
       const forumReplies=AVEDForumReplies({api,container:byId('forum-detail-replies-list'),count:byId('forum-detail-reply-count'),
         enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
-        onError:message=>showToast(message,'warn'),onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},onSeen:ids=>forumSocialUI?.seenReplies(currentForumThreadId,ids),
+        onLoading:(busy,loaded)=>{if(busy&&!loaded&&forumDetail?.preview)forumMainLoading.start();if(!busy)forumMainLoading.end();},
+        onError:message=>{if(forumDetail?.preview)byId('forum-detail-main-post').textContent='主题加载失败，请重试。';showToast(message,'warn');},onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},onSeen:ids=>forumSocialUI?.seenReplies(currentForumThreadId,ids),
         renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} · ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
       function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}${forumReactionsUI.markup('thread',th.id,th.reactions)}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
       let forumListPosition=null,forumListMarkup='',forumRestoring=false;
@@ -1674,12 +1672,12 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       function renderForumView(replyId){
         const th=currentForumThreadId?(forumDetail||forumThreads.find(t=>String(t.id)===String(currentForumThreadId))):null;
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
-        byId('forum-skeleton-container')?.classList.add('hidden');for(const id of ['forum-global-back','forum-toolbar-back'])if(byId(id))byId(id).hidden=!th;byId('forum-refresh-skeleton-btn').hidden=false;
-        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box forum-thread-row"><a href="#/forum" data-cloud-thread="${t.id}" class="forum-thread-link"><div class="forum-thread-heading"><h3 class="forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><span class="forum-thread-date">${AVEDTime.markup(t.createdAt)}</span></div><p class="forum-card-excerpt">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><div class="forum-thread-footer"><div class="forum-post-meta"><span>${forumAuthor(t)}</span></div><div class="forum-thread-counts"><span>回帖 <b>${Number(t.replyCount)||0}</b></span><span>浏览 <b>${Number(t.viewCount)||0}</b></span><span aria-hidden="true">›</span></div></div></a></article>`).join('')||'<p class="p-5">暂无帖子。</p>');
+        for(const id of ['forum-global-back','forum-toolbar-back'])if(byId(id))byId(id).hidden=!th;byId('forum-refresh-skeleton-btn').hidden=false;
+        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box forum-thread-row"><a href="#/forum" data-cloud-thread="${t.id}" class="forum-thread-link"><div class="forum-thread-heading"><h3 class="forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><span class="forum-thread-date">${AVEDTime.markup(t.createdAt)}</span></div><p class="forum-card-excerpt">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><div class="forum-thread-footer"><div class="forum-post-meta"><span>${forumAuthor(t)}</span></div><div class="forum-thread-counts"><span>回帖 <b>${Number(t.replyCount)||0}</b></span><span>浏览 <b>${Number(t.viewCount)||0}</b></span><span aria-hidden="true">›</span></div></div></a></article>`).join('')||(forumBrowser.hasData()?'<p class="p-5">暂无帖子。</p>':''));
           if(markup!==forumListMarkup){forumListMarkup=markup;byId('forum-threads-list-container').innerHTML=markup;}
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
-        if(th.preview){byId('forum-detail-main-post').textContent='正在加载主题…';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
+        if(th.preview){byId('forum-detail-main-post').textContent='';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
       function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false">${real&&item.avatarUrl?`<span class="forum-author-avatar"><img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async"></span>`:''}<i class="forum-online-dot" aria-label="在线" hidden></i><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
@@ -1743,14 +1741,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
           }
         });
       },true);
-      async function loadDossierComments(dossier){const d=await api('/api/player/dossiers/'+dossier.dbId+'/comments');dossier.realComments=d.items.map(c=>({id:String(c.id),authorName:esc(c.displayName),authorRole:esc(c.department),time:AVEDTime.markup(c.createdAt),text:esc(c.body)}));renderScpArchives();}
+      async function loadDossierComments(dossier){const owner=currentUser?.id,d=await api('/api/player/dossiers/'+dossier.dbId+'/comments');if(currentUser?.id!==owner||!scpItemsData.includes(dossier))return;dossier.realComments=d.items.map(c=>({id:String(c.id),authorName:esc(c.displayName),authorRole:esc(c.department),time:AVEDTime.markup(c.createdAt),text:esc(c.body)}));renderScpArchives();}
       document.addEventListener('click',event=>{
         const card=event.target.closest('[data-scp-id]');if(card){const dossier=scpItemsData.find(d=>d.id===card.dataset.scpId);if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         const button=event.target.closest('button,a');if(!button)return;const id=button.id;
         if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();byId('news-detail-subview').scrollIntoView({block:'start'});return;}
         if(button.dataset.cloudThread){stop(event);rememberForumPosition(button);openForumThread(button.dataset.cloudThread);byId('view-forum').scrollIntoView({block:'start'});return;}
         if(button.dataset.nav==='welcome'){stop(event);showProfile().catch(e=>showToast(e.message));return;}
-        if(button.dataset.nav==='containment'){const dossier=scpItemsData.find(d=>d.id===selectedScpId)||scpItemsData[0];if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         if(button.dataset.game==='doudizhu')initDoudizhu();
         const handled=['forum-refresh-skeleton-btn','zero-balance-btn','ticket-modal-confirm-btn','scratch-next-ticket','slot5x3-spin-btn','skydive-board-btn','cloud-profile-open'];
         const trade=button.hasAttribute('data-stock-trade-side');
@@ -1833,7 +1830,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         const ticket=activeIssuedTicket;ticket.settled=true;
-        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'测试 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;if(!ticket.demo)window.AVEDIncomeVoice?.changed();};
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'试刮 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;if(!ticket.demo)window.AVEDIncomeVoice?.changed();};
         finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');
@@ -1848,7 +1845,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
           scratchFeedback.clear();activeIssuedTicket=window.AVEDScratchBombDemo.make({tier:selectedTier,gameType,totalLoss:1+bombs[demoIndex++%bombs.length].penaltyMultiplier});
           modal.classList.add('hidden');modal.classList.remove('flex');
           byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
-          byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='测试票 · 待刮开';
+          byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='试刮票 · 待刮开';
           renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='下一张';
           byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
         };
@@ -1865,6 +1862,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       forumSocialUI=AVEDForumSocial({api,esc,onStockRisk:data=>economyUI?.updateRisk(data),getUser:()=>currentUser,getThread:()=>currentForumThreadId?forumDetail:null,getReplyRevision:()=>forumReplies.revision(),onRepliesChanged:()=>forumReplies.refresh(),getReply:(id,reveal=false)=>reveal?forumReplies.reveal(id).then(()=>forumReplies.get(id)):forumReplies.get(id),showToast,refreshForum,openThread:async(id,replyId)=>{switchMainView('forum');return openForumThread(id,replyId);},getContext:id=>forumReplies.context(id)});
       window.AVEDIntrusion=AVEDIntrusionUI({api,getUser:()=>currentUser,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;welfareUI?.refresh().catch(()=>{});}}});
       welfareUI=AVEDWelfareUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},onPreferences:p=>{Object.assign(playerProfile,p);},showToast});
+      adsUI=AVEDAds({api,esc,getUser:()=>currentUser,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}}});
       setInterval(()=>{if(currentUser&&!document.hidden&&!byId('view-departments').classList.contains('hidden'))refreshDirectory().catch(()=>{});},30000);
       const personalUI=AVEDPersonalUI({api,esc,byId,getUser:()=>currentUser,getProfile:()=>playerProfile,getAchievements:()=>playerAchievements,getRecords:()=>playerGameRecords,welfare:()=>welfareUI,onBalance:b=>{if(currentUser){currentUser.balance=b;syncUserHeaderUI();profileFreshAt=0;}},onDailyCheckin:performDailyCheckin,showToast});
       window.AVEDRefreshPersonal=()=>{if(currentUser&&!byId('view-profile').classList.contains('hidden'))renderProfile();};
@@ -1873,7 +1871,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       AVEDVisualStyle({byId});
       const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
-        currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+        adsUI?.reset();currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
         document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
         try{await apiLogout();}catch{}finally{location.reload();}
       }});
@@ -1890,13 +1888,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <div><span class="opaci
           enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
           signedOut:()=>{
             window.AVEDContainmentAccess.reset();
-            currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+            adsUI?.reset();currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
             document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
           },
           unavailable:()=>{
             delete signalOverlay.dataset.assetLoading;
             signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');
-            currentUser=null;signalPhase('公司内网连接暂未建立',12,'');
+            adsUI?.reset();currentUser=null;signalPhase('公司内网连接暂未建立',12,'');
             const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
             message.textContent='暂未取得内网响应，员工身份尚未确认。请重新连接。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
             retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);

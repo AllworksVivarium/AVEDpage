@@ -23,13 +23,12 @@
  #department-archive .division-overview-card p{font-size:12px;line-height:1.9;opacity:.8;margin:0;max-width:22em}
  #department-archive .division-overview-card footer{border-top:1px solid var(--division-line);padding-top:12px;align-items:center}
  #department-archive .division-overview-card footer b{font:inherit;white-space:nowrap}
- #department-archive .division-card-portrait{width:112px;height:150px;overflow:hidden;border:1px solid var(--division-line);background:#b5b8b8}
- #department-archive .division-card-portrait img,#department-archive .division-thumbnails img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 45%;transform:translateX(var(--uniform-shift,0%)) scale(var(--uniform-scale,1));transform-origin:50% 45%}
+ #department-archive .division-card-portrait{width:112px;height:150px;overflow:hidden;border:1px solid var(--division-line);background:var(--uniform-bg,#b5b8b8)}
  #department-archive .division-card-seal{display:grid;place-content:center;position:relative;height:150px;text-align:center;opacity:.45;border:1px solid var(--division-line);overflow:hidden}
  #department-archive .division-card-seal span{font:24px var(--terminal-type,monospace);letter-spacing:3px}
  #department-archive .division-card-seal i{width:68px;height:68px;border:1px solid currentColor;border-radius:50%;position:absolute;inset:0;margin:auto;opacity:.25}
  #department-archive .division-breadcrumb{display:flex;gap:10px;align-items:center;margin:0 0 18px;font-size:11px}
- #department-archive .division-breadcrumb button{padding:6px 0;border-bottom:1px solid var(--division-line)}
+ #department-archive .division-breadcrumb button{min-height:32px;padding:6px 10px;margin:0;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:var(--inner-text-main);font-family:inherit;font-size:11px;font-weight:600;line-height:1.4;box-shadow:var(--system-key-shadow);border-radius:0}
  #view-departments[data-department-archive] [data-emp-photo-slot]{width:80px;height:104px}
  #view-departments[data-department-archive] [data-emp-photo-slot]>img{width:100%;height:100%;object-fit:cover;object-position:50% 38%}
  #department-archive .division-dossier{border:1px solid var(--division-line);background:var(--division-paper);padding:0 24px;box-shadow:3px 3px 0 var(--inner-bg),4px 4px 0 var(--division-line)}
@@ -39,8 +38,8 @@
  #department-archive .division-spread{display:grid;grid-template-columns:54% 46%;padding:24px 0}
  #department-archive figure{margin:0;min-width:0}
  #department-archive .division-spread>figure{background:#b5b8b8;color:#363939;border:1px solid #949797}
- #department-archive .division-image{display:block;position:relative;width:100%;padding:0;border:0;height:500px;background:#b5b8b8;overflow:hidden}
- #department-archive .division-image img{display:block;width:100%;height:100%;object-fit:contain;filter:none}
+ #department-archive .division-image{display:block;position:relative;width:100%;padding:0;border:0;height:500px;background:var(--uniform-bg,#b5b8b8);overflow:hidden}
+ #department-archive .division-image img,#department-archive .division-card-portrait img,#department-archive .division-thumbnails img{display:block;position:relative;left:50%;width:auto;max-width:none;height:100%;object-fit:contain;filter:none;transform:translateX(calc(-1 * var(--uniform-center,50%)))}
  #department-archive .division-image>span{position:absolute;bottom:12px;right:12px;font-size:9px;padding:5px 8px;color:#eee;background:#222b;opacity:0}
  #department-archive .division-image:hover>span,#department-archive .division-image:focus-visible>span{opacity:1}
  #department-archive figcaption{font:9px var(--terminal-type,monospace);padding:12px 14px;display:flex;justify-content:space-between;gap:8px}
@@ -49,12 +48,13 @@
  #department-archive .division-intro h3{font:600 44px/1.4 var(--terminal-heading,'SimSun',serif);letter-spacing:3px;margin:16px 0 8px}
  #department-archive .division-rule{width:40px;height:3px;background:var(--inner-crimson);margin:24px 0}
  #department-archive .division-description{font:13px/2 var(--terminal-copy,sans-serif)}
- #department-archive .division-attire{margin-top:24px;border-top:1px solid var(--division-line);padding-top:16px}
- #department-archive .division-attire h4{font-size:12px;margin-bottom:8px}
- #department-archive .division-attire p{font-size:11px;line-height:1.9;opacity:.75}
- #department-archive .division-roster-link{font-size:11px;border-bottom:1px solid var(--division-line);padding:8px 0;margin-top:22px}
+ #department-archive .division-focus{margin-top:24px;border-top:1px solid var(--division-line);padding-top:16px}
+ #department-archive .division-focus h4{font-size:12px;margin-bottom:8px}
+ #department-archive .division-focus p{font-size:11px;line-height:1.9;opacity:.75}
+ #department-archive .division-roster-link{font-size:11px;line-height:1.5;border:1px solid var(--inner-border);background:var(--inner-card-alt,var(--division-paper));color:var(--inner-text-main);padding:9px 12px;margin-top:22px;box-shadow:var(--system-key-shadow)}
+#department-archive :is(.division-roster-link,.division-breadcrumb button):hover{background:var(--inner-card-alt);border-color:var(--inner-crimson)}
  #department-archive .division-thumbnails{display:flex;gap:10px;margin-top:20px}
- #department-archive .division-thumbnails button{width:48px;height:66px;position:relative;border:1px solid var(--division-line);background:#b5b8b8;padding:0;overflow:hidden}
+ #department-archive .division-thumbnails button{width:48px;height:66px;position:relative;border:1px solid var(--division-line);background:var(--uniform-bg,#b5b8b8);padding:0;overflow:hidden}
  #department-archive .division-thumbnails button[aria-pressed=true]{outline:2px solid var(--inner-crimson);outline-offset:2px}
  #department-archive .division-thumbnails span{position:absolute;right:0;bottom:0;color:#eee;background:#333;padding:2px 4px;font-size:8px}
  #department-archive .division-common{margin-top:30px;border-top:2px solid var(--inner-border);padding-top:20px}
@@ -65,9 +65,6 @@
  #department-archive .division-common>div{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
  #department-archive .division-common figure{border:1px solid var(--division-line);background:var(--division-paper)}
  #department-archive .division-common .division-image{height:410px}
- #department-archive .division-roster-heading{border-bottom:1px solid var(--division-line);padding:0 0 15px}
- #department-archive .division-roster-heading>span{font:9px var(--terminal-type,monospace);opacity:.6}
- #department-archive .division-roster-heading h3{font-size:22px;margin-top:7px}
  #view-departments[data-department-archive] .directory-selection,#view-departments[data-department-archive] #company-leadership-directory{display:none!important}
  #view-departments[data-department-archive] .directory-results[hidden]{display:none!important}
  #view-departments .directory-personal-message{border-top:1px solid var(--inner-border-soft);padding-top:12px;margin-top:12px}
@@ -77,16 +74,19 @@
  .division-image-dialog::backdrop{background:#000b}
  .division-image-dialog>header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;font-size:12px;border-bottom:1px solid #645d50}
  .division-image-dialog button{padding:6px 10px;border:1px solid #645d50;color:inherit}
+ .division-image-dialog>header button{display:grid;place-items:center;flex-shrink:0;padding:0!important;white-space:nowrap;font-size:18px;line-height:1}
  .division-image-dialog>div{overflow:auto;max-height:calc(92dvh - 60px)}
  .division-image-dialog img{max-width:100%;max-height:80dvh;object-fit:contain;display:block;margin:auto}
  #inner-app-view #department-archive .division-intro h3{font-size:clamp(32px,3.5vw,44px)!important;line-height:1.4!important}
- #inner-app-view #department-archive :is(.division-common h3,.division-roster-heading h3){font-size:22px!important}
- #inner-app-view #department-archive .division-attire h4{font-size:12px!important}
+ #inner-app-view #department-archive :is(.division-common h3){font-size:22px!important}
+ #inner-app-view #department-archive .division-focus h4{font-size:12px!important}
  @media(max-width:900px){#department-archive .division-intro{padding:22px 0 10px 24px}#department-archive .division-description{font-size:12px}#department-archive .division-image{height:470px}}
  @media(max-width:650px){#department-archive .division-view-tabs button{flex:1;padding:12px 6px;font-size:12px}#department-archive .division-view-tabs small{display:block;margin:5px 0 0;font-size:8px}#department-archive .division-departments button{font-size:11px;padding:12px 1px}#department-archive .division-dossier{padding:0 14px}#department-archive .division-dossier>header,#department-archive .division-dossier>footer{font-size:8px}#department-archive .division-spread{grid-template-columns:1fr;padding:14px 0}#department-archive .division-image{height:420px}#department-archive .division-intro{padding:26px 8px 12px}#department-archive .division-intro h3{font-size:35px}#department-archive .division-description{font-size:13px}#department-archive .division-common>div{gap:10px}#department-archive .division-common .division-image{height:270px}#department-archive .division-image>span{opacity:.8;font-size:8px;right:7px;bottom:7px}#department-archive figcaption{font-size:8px;padding:10px}#department-archive .division-common header span{font-size:8px}}
 @media(max-width:650px){#department-archive .division-overview{grid-template-columns:1fr;gap:16px}#department-archive .division-overview-card{padding:16px}#department-archive .division-card-body{grid-template-columns:minmax(0,1fr) 86px;gap:12px;min-height:142px}#department-archive .division-card-portrait{width:86px;height:126px}#department-archive .division-card-seal{height:126px}#inner-app-view #department-archive .division-overview-card h3{font-size:26px!important}#department-archive .division-overview-card footer{font-size:8px}}
 
-#department-archive .division-personnel-scope{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;border:1px solid var(--division-line);border-top:0;background:var(--division-line);margin:0 0 24px;font-size:11px}
-#department-archive .division-personnel-scope button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:36px;padding:9px 12px;line-height:1.4;color:var(--inner-text-muted);border:0;background:var(--division-paper)}
-#department-archive .division-personnel-scope button[aria-pressed=true]{color:var(--inner-text-main);box-shadow:inset 0 -2px var(--inner-crimson)}
-#department-archive .division-departments:not(:has(+.division-personnel-scope)){margin-bottom:24px}
+
+#department-archive .division-departments{margin-bottom:20px}
+#department-archive .division-departments:has(+.division-roster-tools){margin-bottom:8px}
+#department-archive .division-roster-tools{display:flex;justify-content:flex-end;margin:0 0 16px;min-width:0}
+#department-archive .division-roster-tools label{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--inner-text-muted);min-width:0}
+#department-archive .division-roster-tools select{height:32px;max-width:100%;padding:4px 26px 4px 9px;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:var(--inner-text-main);font:inherit;border-radius:0}

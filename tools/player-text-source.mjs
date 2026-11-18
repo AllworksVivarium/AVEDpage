@@ -2,7 +2,7 @@
 import {createHash} from 'node:crypto';
 import {parse} from './vendor/acorn.mjs';
 
-export const sourceFiles=['player-terminal.html','player.js','player-community.js','personal-ui.js','page-headings.js','terminal-frame.js','terminal-preferences.js','window-style.js','print-signal.js','notices-ui.js','market-chart.js','sky-ui.js','economy-ui.js','welfare-ui.js','visual-style.js','rewards-ui.js','derby-ui.js','landing-sphere.js','personal-hud.js','ddz-ui.js','card-room-lobby.js','casino-switcher.js'].map(f=>'public/'+f);
+export const sourceFiles=['player-terminal.html','player.js','player-community.js','page-headings.js','terminal-frame.js','terminal-preferences.js','window-style.js','print-signal.js','notices-ui.js','market-chart.js','sky-ui.js','economy-ui.js','welfare-ui.js','visual-style.js','rewards-ui.js','derby-ui.js','landing-sphere.js','personal-hud.js','ddz-ui.js','card-room-lobby.js','casino-switcher.js'].map(f=>'public/'+f);
 const digest=s=>createHash('sha256').update(s).digest('hex');
 export const normalize=s=>s.replace(/\s+/gu,' ').trim();
 const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:'\u00a0'};

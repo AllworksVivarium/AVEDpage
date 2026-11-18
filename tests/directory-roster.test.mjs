@@ -12,7 +12,7 @@ test('directory cards show department plus custom title and only the title for u
  vm.runInNewContext(render+';renderDepartmentsAndPersonnel();',context);
  assert.equal((grid.innerHTML.match(/职务：<strong>部长<\/strong>/g)||[]).length,2);
  assert.ok(grid.innerHTML.includes('所属部门：<strong>收容部</strong><br>职务：<strong>档案管理员</strong>'));
- assert.equal((grid.innerHTML.match(/>部长档案</g)||[]).length,1);
+ assert.ok(!grid.innerHTML.includes('directory-role-heading'));
  context.window.avedDepartmentFilter='公司直属';vm.runInNewContext('renderDepartmentsAndPersonnel();',context);
  assert.ok(grid.innerHTML.includes('职务：<strong>特别顾问</strong>'));assert.ok(!grid.innerHTML.includes('所属部门：'));
 });
@@ -64,17 +64,16 @@ test('uniform roster cards use profile messages safely even without a character 
  context.employees.reverse();
  context.employees[0].department='公司直属';context.employees[1].department='收容部';
  context.window.avedDepartmentFilter='*';vm.runInNewContext('renderDepartmentsAndPersonnel();',context);
- assert.ok(grid.innerHTML.indexOf('>收容部</h3>')<grid.innerHTML.indexOf('>其他职位</h3>'));
- assert.equal((grid.innerHTML.match(/directory-role-heading/g)||[]).length,2);
+ assert.ok(!grid.innerHTML.includes('directory-role-heading'));
  assert.ok(grid.innerHTML.includes('职员甲'));assert.ok(grid.innerHTML.includes('职员乙'));
  context.window.avedDepartmentFilter='公司直属';vm.runInNewContext('renderDepartmentsAndPersonnel();',context);
  assert.ok(grid.innerHTML.includes('职员乙'));assert.ok(!grid.innerHTML.includes('职员甲'));
 });
 
 
-test('department archive starts at the overview and keeps other positions in personnel only',()=>{
+test('personnel opens directly without redundant headings and department filters toggle back to all',()=>{
  const source=readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8');
- const host={innerHTML:'',addEventListener(type,fn){this.click=fn;}};
+ const host={innerHTML:'',addEventListener(type,fn){this[type]=fn;}};
  const root={dataset:{}},grid={parentElement:{before(){},hidden:false}};
  const nodes={'view-departments':root,'departments-grid':grid};
  const context={window:{avedDepartmentFilter:'医疗部'},document:{getElementById:id=>nodes[id],createElement:()=>host}};
@@ -88,10 +87,65 @@ test('department archive starts at the overview and keeps other positions in per
  click({divisionDepartment:'武装部'});assert.ok(host.innerHTML.includes('division-dossier'));
  click({divisionView:'personnel',divisionKeep:''});assert.equal(context.window.avedDepartmentFilter,'武装部');assert.equal(archive.isPersonnel(),true);
  click({divisionView:'department'});assert.equal(context.window.avedDepartmentFilter,'');
- click({divisionView:'personnel'});assert.equal(context.window.avedDepartmentFilter,'*');assert.ok(host.innerHTML.includes('其他职位'));
+ click({divisionView:'personnel'});assert.equal(context.window.avedDepartmentFilter,'*');
+ assert.ok(!host.innerHTML.includes('division-personnel-scope'));assert.ok(!host.innerHTML.includes('division-roster-heading'));
+ assert.ok(host.innerHTML.includes('data-division-sort'));assert.ok(!host.innerHTML.includes('全部人员'));assert.ok(!host.innerHTML.includes('其他职位'));
  const departmentNav=host.innerHTML.match(/<nav class="division-departments"[^>]*>(.*?)<\/nav>/)[1];
  assert.equal((departmentNav.match(/<button/g)||[]).length,5);assert.ok(!departmentNav.includes('其他职位'));assert.ok(!departmentNav.includes('全部人员'));
- click({divisionDepartment:'公司直属'});assert.ok(host.innerHTML.includes('<h3>其他职位</h3>'));assert.ok(!host.innerHTML.includes('division-dossier'));
+ click({divisionDepartment:'医疗部'});assert.equal(context.window.avedDepartmentFilter,'医疗部');
+ click({divisionDepartment:'医疗部'});assert.equal(context.window.avedDepartmentFilter,'*');
  click({divisionView:'department'});click({divisionDepartment:'收容部'});click({divisionBack:''});assert.equal(context.window.avedDepartmentFilter,'');
  click({divisionView:'personnel'});archive.reset();render();assert.equal(archive.isPersonnel(),false);assert.ok(host.innerHTML.includes('division-overview'));
+});
+
+test('default prioritizes only direct employees; manual name ordering includes everyone and respects department filters',()=>{
+ const host={innerHTML:'',addEventListener(type,fn){this[type]=fn;}},root={dataset:{}},grid={parentElement:{before(){},hidden:false}};
+ const nodes={'view-departments':root,'departments-grid':grid};
+ const context={window:{},document:{getElementById:id=>nodes[id],createElement:()=>host}};
+ vm.runInNewContext(readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8'),context);
+ const archive=context.window.AVEDDepartmentArchive,render=()=>archive.render({onChange:render});render();
+ const staff=[
+  {id:1,name:'阿字',department:'公司直属',identityKind:'player_containment'},
+  {id:2,name:'张员工',department:'武装部',identityKind:'player_employee'},
+  {id:3,name:'白职员',department:'收容部',identityKind:'player_employee'},
+  {id:4,name:'赵顾问',department:'公司直属',identityKind:'planning_member'},
+  {id:5,name:'陈总部',department:'公司直属',identityKind:'player_employee'},
+  {id:6,name:'王部长',department:'医疗部',identityKind:'planning_member',isLeadership:true},
+  {id:7,name:'阿尔法10',department:'后勤部',identityKind:'player_employee'},
+  {id:8,name:'阿尔法2',department:'后勤部',identityKind:'player_employee'}
+ ];
+ const before=staff.map(x=>x.id),ids=(filter='*')=>Array.from(archive.roster(staff,filter),x=>x.id);
+ const choose=value=>host.change({target:{closest:()=>({value})}});
+ assert.deepEqual(ids(),[5,4,8,7,1,3,6,2]);assert.deepEqual(staff.map(x=>x.id),before,'sorting never changes the shared source roster');
+ assert.deepEqual(ids('医疗部'),[6],'direct employees do not bypass department filtering');
+ choose('name-asc');assert.deepEqual(ids(),[8,7,1,3,5,6,2,4]);
+ assert.deepEqual(ids('后勤部'),[8,7]);
+ choose('name-desc');assert.deepEqual(ids(),[4,2,6,5,3,1,7,8]);assert.deepEqual(ids('后勤部'),[7,8]);
+ const strokes=['一','二','三'].map((name,id)=>({id,name,department:'医疗部'}));
+ choose('name-asc');assert.deepEqual(Array.from(archive.roster(strokes,'*'),p=>p.name),['二','三','一']);
+ choose('stroke');assert.deepEqual(Array.from(archive.roster(strokes,'*'),p=>p.name),['一','二','三']);
+ archive.reset();render();assert.deepEqual(ids(),[5,4,8,7,1,3,6,2]);
+});
+
+test('switching uniform plates preserves the surrounding dossier and focused thumbnail',()=>{
+ let replacements=0,html='',changes=0;
+ const image={src:'',alt:''},picture={dataset:{},style:{},setAttribute(key,value){this[key]=value;},querySelector:()=>image},number={textContent:''};
+ const thumbnails=[0,1].map(index=>({dataset:{divisionUniform:String(index)},setAttribute(key,value){this[key]=value;}}));
+ const host={get innerHTML(){return html;},set innerHTML(value){html=value;replacements++;},addEventListener(type,fn){this[type]=fn;},querySelector:selector=>selector==='[data-division-uniform-number]'?number:picture,querySelectorAll:()=>thumbnails};
+ const root={dataset:{}},grid={parentElement:{before(){},hidden:false}},nodes={'view-departments':root,'departments-grid':grid};
+ const context={window:{},document:{getElementById:id=>nodes[id],createElement:()=>host}};
+ vm.runInNewContext(readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8'),context);
+ const archive=context.window.AVEDDepartmentArchive,render=()=>{changes++;archive.render({onChange:render});};render();
+ const click=dataset=>host.click({target:{closest:()=>({dataset,hasAttribute:()=>false})}});
+ click({divisionDepartment:'武装部'});const initialReplacements=replacements,initialChanges=changes;
+ for(const index of [1,0,1]){
+  click(thumbnails[index].dataset);
+  assert.equal(image.src,'/assets/uniforms/armed-'+(index?'light':'dark')+'-clean.webp');
+  assert.equal(picture.dataset.divisionImage,index?'armed-light':'armed-dark');
+  assert.equal(number.textContent,index?'02':'01');assert.equal(thumbnails[index]['aria-pressed'],'true');assert.equal(thumbnails[1-index]['aria-pressed'],'false');
+  assert.equal(replacements,initialReplacements,'headings and thumbnail nodes must not be replaced');assert.equal(changes,initialChanges,'switching art must not rerender the whole directory');
+ }
+ for(const index of [1,-1,NaN,2])click({divisionUniform:String(index)});
+ assert.equal(replacements,initialReplacements);assert.equal(number.textContent,'02');
+ archive.render({onChange:render});assert.equal(replacements,initialReplacements,'an unrelated refresh must keep the selected plate');
 });

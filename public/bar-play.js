@@ -1,6 +1,6 @@
 window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}){
  const make=(name,title,body)=>{const dialog=document.createElement('dialog');dialog.className='bar-menu-dialog '+name;dialog.setAttribute('aria-label',title);dialog.innerHTML=`<header><h2>${title}</h2><button type="button" data-play-close aria-label="关闭${title}">×</button></header>${body}<p class="bar-play-error" role="alert" hidden></p>`;root.append(dialog);dialog.querySelector('[data-play-close]').onclick=()=>dialog.close();dialog.addEventListener('cancel',event=>event.stopPropagation());return dialog;};
- const action=make('bar-action-dialog','我的这一杯','<div class="bar-serving-summary"><b data-serving-name></b><p data-serving-remaining></p><small data-serving-today></small></div><div class="bar-pour-controls"><p data-pour-summary></p><button type="button" data-bar-pour>倒入杯中</button><div><button type="button" data-bar-from-glass>用杯子喝</button><button type="button" data-bar-from-bottle>直接喝</button></div><button type="button" data-bar-glassware>选杯 / 收起杯子</button></div><div class="bar-serving-actions"><button type="button" data-bar-sip>喝一口</button><button type="button" data-bar-coaster>翻开杯垫</button><button type="button" data-bar-ranking>饮酒榜</button></div>');
+ const action=make('bar-action-dialog','我的这一杯','<div class="bar-serving-summary"><b data-serving-name></b><p data-serving-remaining></p><small data-serving-today></small></div><div class="bar-pour-controls"><p data-pour-summary></p><div><button type="button" data-bar-glassware>选杯</button><button type="button" data-bar-stow-glass>收起杯子</button></div><div><button type="button" data-bar-from-glass>用杯子喝</button><button type="button" data-bar-from-bottle>直接喝</button></div></div><div class="bar-serving-actions"><button type="button" data-bar-coaster>翻开杯垫</button><button type="button" data-bar-ranking>饮酒榜</button></div>');
  const coaster=make('bar-coaster-dialog','杯垫留言','<section class="bar-coaster-card"><small data-coaster-author></small><p data-coaster-body>翻开杯垫……</p></section><div class="bar-coaster-controls"><button type="button" data-coaster-another>换一张</button></div><form class="bar-coaster-form"><label for="bar-coaster-text">留给下一位客人</label><textarea id="bar-coaster-text" maxlength="120" rows="3" placeholder="写点什么……" aria-label="杯垫留言内容"></textarea><div><select aria-label="杯垫留言身份"><option value="anonymous">匿名</option><option value="real">实名</option></select><button type="submit">留下留言</button></div></form>');
  const ranking=make('bar-ranking-dialog','饮酒榜','<p class="bar-ranking-date" data-ranking-date></p><ol class="bar-ranking-list" data-ranking-list></ol><p class="bar-ranking-mine" data-ranking-mine></p>');
  const board=document.createElement('aside');board.className='bar-rank-board';board.hidden=true;board.setAttribute('aria-label','吧台饮酒榜');board.innerHTML='<header><b>酒量榜</b><button type="button" class="bar-board-close" aria-label="收起榜单" title="收起榜单">×</button></header><ol data-board-ranking></ol>';root.querySelector('.bar-scene').append(board);
@@ -20,11 +20,11 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
   const data=getSnapshot(),drink=data?.myDrink,menu=data?.menu||[],item=menu.find(item=>item.id===drink?.drinkId);
   const fixed=drink?.canPour===false,glass=data?.barPreferences?.glassId,available=drink?.drinkFrom==='glass'?drink.glassMl:drink?.bottleMl??drink?.remainingMl;action.querySelector('[data-serving-name]').textContent=item?.name||(glass?'空杯已经放好了':'我的这一杯');action.querySelector('[data-serving-remaining]').textContent=drink?`${drink.remainingMl??0} / ${drink.volumeMl??0} mL`:'还没有点酒';
   action.querySelector('[data-serving-today]').textContent=`本日已饮用 ${data?.drinking?.totalMl||0} mL · ${drunkStatus(data?.drinking).levelLabel}`;
-  const button=action.querySelector('[data-bar-sip]');button.disabled=busy||!(available>0);button.textContent=busy?'稍等…':drink?.remainingMl===0?'已喝完':drink?.drinkFrom==='glass'&&available===0?'杯中已空':'喝一口';
+  const sipDisabled=busy||!(available>0),sipLabel=busy?'稍等…':drink?.remainingMl===0?'已喝完':drink?.drinkFrom==='glass'&&available===0?'杯中已空':'喝一口';
   action.querySelector('[data-pour-summary]').textContent=fixed?'使用原杯 · 所选杯具先留作备用':drink?'杯中 '+(drink.glassMl||0)+' mL · 原容器 '+(drink.bottleMl??drink.remainingMl)+' mL'+(drink.drinkFrom==='glass'?' · 正在用杯子喝':' · 直接饮用'):glass?'杯子可以先留着，想喝什么再点。':'空杯免费，也可以只坐一会儿。';
-  action.querySelector('[data-bar-pour]').disabled=busy||fixed||!glass||!(drink?.bottleMl>0)||drink.glassMl>=(glass==='beer-mug'?600:500);action.querySelector('[data-bar-pour]').hidden=fixed;
-  for(const [source,selector] of [['glass','[data-bar-from-glass]'],['bottle','[data-bar-from-bottle]']]){const mode=action.querySelector(selector);mode.hidden=fixed;mode.disabled=busy||fixed||!(source==='glass'?glass&&drink?.glassMl>0:drink?.bottleMl>0);mode.setAttribute('aria-pressed',String(drink?.drinkFrom===source));}
-  const direct=root.querySelector('[data-bar-drink-button]');direct.disabled=button.disabled;direct.textContent=button.textContent;direct.title=drink?`${drink.remainingMl||0} / ${drink.volumeMl||0} mL`:'先点一杯酒';
+  action.querySelector('[data-bar-stow-glass]').disabled=busy||!glass||drink?.glassMl>0;action.querySelector('[data-bar-glassware]').disabled=busy;
+  for(const [source,selector] of [['glass','[data-bar-from-glass]'],['bottle','[data-bar-from-bottle]']]){const mode=action.querySelector(selector);mode.disabled=busy||!(source==='glass'?(fixed?drink?.remainingMl>0:glass&&(drink?.glassMl>0||drink?.bottleMl>0)):!fixed&&drink?.bottleMl>0);}
+  const direct=root.querySelector('[data-bar-drink-button]');direct.disabled=sipDisabled;direct.textContent=sipLabel;direct.title=drink?`${drink.remainingMl||0} / ${drink.volumeMl||0} mL`:'先点一杯酒';
  }
  function animateSips(items,{initial=false}={}){
   for(const item of items||[]){if(seenSips.has(item.id))continue;seenSips.add(item.id);if(initial)continue;if(item.employeeId===getSnapshot()?.selfId)window.AVEDBarSipSound?.();if(matchMedia('(prefers-reduced-motion: reduce)').matches||document.body.classList.contains('effects-off'))continue;const sprite=root.querySelector(`[data-glass-owner="${item.employeeId}"] [data-sip-motion]`)||root.querySelector(`[data-glass-owner="${item.employeeId}"] [data-drink-motion]`);if(sprite)sprite.animate([{transform:'translateY(0)'},{transform:'translateY(-22px)',offset:.25},{transform:'translateY(-22px)',offset:.78},{transform:'translateY(0)'}],{duration:1400,easing:'ease-in-out'});}
@@ -38,17 +38,25 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
   finally{setTimeout(()=>{if(visit===generation){busy=false;paintAction();}},1450);}
  };
  async function pourOnce(actionType='pour',source=null){
-  const drink=getSnapshot()?.myDrink;if(busy||!drink)return;const visit=generation,pourDuration=1700;busy=true;paintAction();error(action,'');
+  const drink=getSnapshot()?.myDrink;if(busy||!drink)return;const visit=generation,pourDuration=1700;let success=false;busy=true;paintAction();error(action,'');
   if(!pendingPour||pendingPour.orderId!==drink.id||pendingPour.action!==actionType||pendingPour.source!==source)pendingPour={orderId:drink.id,action:actionType,source,requestId:crypto.randomUUID()};
-  try{const updated=await api('/api/player/bar/pour',{method:'POST',body:pendingPour});pendingPour=null;if(visit!==generation)return;apply(updated);
+  try{const updated=await api('/api/player/bar/pour',{method:'POST',body:pendingPour});pendingPour=null;if(visit!==generation)return false;apply(updated);success=true;
    if(actionType==='pour'){action.close();onError?.('已倒入 '+updated.pourReceipt.amountMl+' mL。');if(!document.hidden&&!document.body.classList.contains('effects-off')&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const bottle=root.querySelector('.bar-glass.own .bar-source-container'),cup=root.querySelector('.bar-glass.own .bar-cup-position');if(bottle)bottle.animate([{transform:'translate(0,0) rotate(0)'},{transform:'translate(9px,-28px) rotate(24deg)',offset:.25},{transform:'translate(9px,-28px) rotate(24deg)',offset:.8},{transform:'translate(0,0) rotate(0)'}],{duration:pourDuration,easing:'ease-in-out'});if(cup)cup.animate([{transform:'translateY(0)'},{transform:'translateY(-16px)',offset:.25},{transform:'translateY(-16px)',offset:.8},{transform:'translateY(0)'}],{duration:pourDuration,easing:'ease-in-out'});}}
   }catch(problem){if(visit===generation)error(action,problem.message);if(!['NETWORK','TIMEOUT','INVALID_RESPONSE'].includes(problem.code))pendingPour=null;}
-  finally{setTimeout(()=>{if(visit===generation){busy=false;paintAction();}},actionType==='pour'?pourDuration+50:150);}
+  finally{await new Promise(resolve=>setTimeout(resolve,actionType==='pour'?pourDuration+50:150));if(visit===generation){busy=false;paintAction();}}
+  return success&&visit===generation;
  }
- action.querySelector('[data-bar-pour]').onclick=()=>pourOnce();
- action.querySelector('[data-bar-from-glass]').onclick=()=>pourOnce('source','glass');
- action.querySelector('[data-bar-from-bottle]').onclick=()=>pourOnce('source','bottle');
- action.querySelector('[data-bar-sip]').onclick=drinkOnce;
+ async function drinkFrom(source){
+  if(busy)return;const visit=generation,drink=getSnapshot()?.myDrink;if(!(drink?.remainingMl>0))return;
+  if(drink.canPour===false){if(source==='glass')await drinkOnce();return;}
+  if(source==='glass'&&!(drink.glassMl>0)){if(!await pourOnce())return;}
+  if(visit!==generation)return;
+  if(getSnapshot()?.myDrink?.id!==drink.id)return;
+  if(getSnapshot().myDrink.drinkFrom!==source&&!await pourOnce('source',source))return;
+  if(visit===generation&&getSnapshot()?.myDrink?.id===drink.id)await drinkOnce();
+ }
+ action.querySelector('[data-bar-from-glass]').onclick=()=>drinkFrom('glass');
+ action.querySelector('[data-bar-from-bottle]').onclick=()=>drinkFrom('bottle');
  function renderCoaster(data,{fillOwn=false}={}){
   coasterMessage=data.message;coaster.querySelector('[data-coaster-author]').classList.toggle('bar-containment-name',data.message?.isContainment===true);coaster.querySelector('[data-coaster-author]').textContent=data.message?.alias||'空白的杯垫';coaster.querySelector('[data-coaster-body]').textContent=data.message?.body||'还没有人留下话。';
   if(fillOwn){coaster.querySelector('textarea').value=data.own?.body||'';coaster.querySelector('select').value=data.own?.identityMode||getIdentity();}

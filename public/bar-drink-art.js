@@ -28,16 +28,25 @@ window.AVEDBarDrinkArt=(()=>{
   return `<span class="bar-drink-sprite bar-drink-layered bar-drink-lift" ${clink?'data-drink-motion':''} ${sip?'data-sip-motion':''} data-vessel="bottle" data-order-id="${serving.id}" data-fill-ratio="${fill}" data-level-top="18" data-level-bottom="95" data-splash-color="${color(drink.id)}" style="position:relative;width:${m.width}px;height:${m.height}px" role="img" aria-label="${esc(alt)}">${svg(defs+`<path d="${waterInside}" fill="#d6e6df" fill-opacity=".10"/><g mask="url(#${id}-shell)">${source}</g>`)}<span class="bar-drink-liquid" style="clip-path:inset(${fill<=0?100:18+(1-fill)*77}% 0 0 0)">${svg(`<g clip-path="url(#${id}-inside)">${source}</g>`)}</span>${svg(`<g clip-path="url(#${id}-label)">${source}</g><path d="M20 350H70V360H20ZM30 390H60V400H30ZM40 100H50V130H40Z" fill="#fff" fill-opacity=".30"/>`)}</span>`;
  }
  function cupMetrics(glassId,unit){const mug=glassId==='beer-mug',height=unit*(mug?1:.85);return {height,width:height*(mug?48/54:32/48)};}
+ function cupFill(glassId,serving){
+  const capacity=glassId==='beer-mug'?600:500;
+  // Fit a normal serving to the illustration, leaving a little room below the rim.
+  // Use the original serving size so sipping, partial pours and refills keep their level.
+  const portion=Math.min(capacity,Math.max(330,Number(serving?.volumeMl)||capacity));
+  const full=.88+.08*portion/capacity;
+  return Math.max(0,Math.min(1,(serving?.glassMl||0)/portion))*full;
+ }
  function cupArt(glassId,fill,ink,esc,owner,order,{sip=false,clink=true,height=48,drinkId=''}={}) {
   const mug=glassId==='beer-mug',h=mug?54:48,w=mug?48:32,id='bar-cup-'+owner,width=height*w/h,top=mug?12:8,bottom=88;
   const shape=mug?'M4 6H32V44H30V46H6V44H4Z':'M4 6H28V38H26V42H6V38H4Z';
   const svg=body=>`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true" shape-rendering="crispEdges">${body}</svg>`;
   const foam=mug&&fill>0&&(/-brew$/.test(drinkId)||drinkId==='green-bottle')?svg(`<g class="bar-drink-foam" style="transform:translateY(${(top+(1-fill)*(bottom-top))*h/100}px)"><path d="M4 0H32V2H30V4H22V2H16V4H8V2H4Z" fill="#f2e6c7" fill-opacity=".88"/><path d="M8 0H14V2H8ZM22 0H28V2H22Z" fill="#fff5df" fill-opacity=".8"/></g>`):'';
-  return `<span class="bar-drink-lift bar-separate-cup" data-vessel="glass" ${clink?'data-drink-motion':''} ${sip?'data-sip-motion':''} data-order-id="${order||'empty'}" data-fill-ratio="${fill}" data-level-top="${top}" data-level-bottom="${bottom}" data-rim=".06" data-rim-x="${mug?.375:.5}" data-rim-width="${mug?.58:.82}" data-splash-color="${ink}" style="width:${width}px;height:${height}px">${svg(`<path d="${shape}" fill="#d9e4db" fill-opacity=".05"/>`)}<span class="bar-drink-liquid" style="clip-path:inset(${fill<=0?100:top+(1-fill)*(bottom-top)}% 0 0 0)">${svg(`<defs><clipPath id="${id}-inside"><path d="${shape}"/></clipPath></defs><g clip-path="url(#${id}-inside)"><rect x="4" y="4" width="${mug?28:24}" height="${h-8}" fill="${ink}" fill-opacity="${ink===color('mineral-water')?'.15':'.58'}"/><path d="M6 6H26V8H6ZM6 12H10V14H6ZM22 16H24V18H22Z" fill="#f3e3ba" fill-opacity=".22"/></g>`)}</span>${foam}${svg(`<image href="/assets/bar/glass-${mug?'beer-mug':'highball'}.svg" width="${w}" height="${h}"/>`)}</span>`;
+  const ice=fill>0&&(drinkId==='mineral-water'||/-fizz$|-highball$/.test(drinkId))?svg(`<defs><clipPath id="${id}-ice-inside"><path d="${shape}"/></clipPath></defs><g clip-path="url(#${id}-ice-inside)"><g class="bar-drink-ice" style="transform:translateY(${(top+(1-fill)*(bottom-top))*h/100}px)"><path d="M8 2H14V4H16V10H10V8H8ZM20 6H26V8H28V14H22V12H20Z" fill="#e7eee8" fill-opacity=".4"/><path d="M8 2H14V4H10V8H8ZM20 6H26V8H22V12H20Z" fill="#fff7e3" fill-opacity=".66"/><path d="M12 8H16V10H12ZM24 12H28V14H24Z" fill="#a3bfbd" fill-opacity=".3"/></g></g>`):'';
+  return `<span class="bar-drink-lift bar-separate-cup" data-vessel="glass" ${clink?'data-drink-motion':''} ${sip?'data-sip-motion':''} data-order-id="${order||'empty'}" data-fill-ratio="${fill}" data-level-top="${top}" data-level-bottom="${bottom}" data-rim=".06" data-rim-x="${mug?.375:.5}" data-rim-width="${mug?.58:.82}" data-splash-color="${ink}" style="width:${width}px;height:${height}px">${svg(`<path d="${shape}" fill="#d9e4db" fill-opacity=".05"/>`)}<span class="bar-drink-liquid" style="clip-path:inset(${fill<=0?100:top+(1-fill)*(bottom-top)}% 0 0 0)">${svg(`<defs><clipPath id="${id}-inside"><path d="${shape}"/></clipPath></defs><g clip-path="url(#${id}-inside)"><rect x="4" y="4" width="${mug?28:24}" height="${h-8}" fill="${ink}" fill-opacity="${ink===color('mineral-water')?'.15':'.58'}"/><path d="M6 6H26V8H6ZM6 12H10V14H6ZM22 16H24V18H22Z" fill="#f3e3ba" fill-opacity=".22"/></g>`)}</span>${foam}${ice}${svg(`<image href="/assets/bar/glass-${mug?'beer-mug':'highball'}.svg" width="${w}" height="${h}"/>`)}</span>`;
  }
  function render(drink,serving,m,esc,owner,alt,{glassId=null,unit=80}={}) {
   if(!glassId)return drink?.id==='mineral-water'?water(drink,serving,m,esc,owner,alt):drink?lemon(drink,serving,m,esc,owner,alt):'';
-  const mug=glassId==='beer-mug',fixed=drink&&(drink.id==='lemon-cocktail'||drink.id.endsWith('-shot')),{height,width}=cupMetrics(glassId,unit),left=drink?m.width+(fixed?12:8):0,wholeWidth=drink?Math.max(m.width,left+width):width,wholeHeight=Math.max(drink?m.height:0,height),fill=fixed?0:(serving?.glassMl||0)/(mug?600:500),fromGlass=!fixed&&serving?.drinkFrom==='glass';
+  const fixed=drink&&(drink.id==='lemon-cocktail'||drink.id.endsWith('-shot')),{height,width}=cupMetrics(glassId,unit),left=drink?m.width+(fixed?12:8):0,wholeWidth=drink?Math.max(m.width,left+width):width,wholeHeight=Math.max(drink?m.height:0,height),fill=fixed?0:cupFill(glassId,serving),fromGlass=!fixed&&serving?.drinkFrom==='glass';
   const bottleServing=serving?{...serving,remainingMl:serving.bottleMl??serving.remainingMl}:null;
   let bottle='';
   if(drink?.id==='mineral-water')bottle=water(drink,bottleServing,m,esc,owner,alt,{clink:false,sip:!fromGlass});
@@ -52,7 +61,7 @@ window.AVEDBarDrinkArt=(()=>{
    if(!old||old.order!==cup.dataset.orderId||old.fill===fill)continue;
    const timing={duration:fill>old.fill?700:400,delay:fill>old.fill?400:500,fill:'backwards',easing:'steps(6,end)'};
    cup.querySelector('.bar-drink-liquid').animate([{clipPath:`inset(${clipLevel(cup,old.fill)}% 0 0 0)`},{clipPath:`inset(${clipLevel(cup,fill)}% 0 0 0)`}],timing);
-   const foam=cup.querySelector('.bar-drink-foam');if(foam){const h=54;foam.animate([{transform:`translateY(${clipLevel(cup,old.fill)*h/100}px)`},{transform:`translateY(${clipLevel(cup,fill)*h/100}px)`}],timing);}
+   for(const floating of cup.querySelectorAll('.bar-drink-foam,.bar-drink-ice')){const h=floating.ownerSVGElement.viewBox.baseVal.height;floating.animate([{transform:`translateY(${clipLevel(cup,old.fill)*h/100}px)`},{transform:`translateY(${clipLevel(cup,fill)*h/100}px)`}],timing);}
   }
  }
  function splash(root,cups){

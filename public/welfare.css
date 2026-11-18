@@ -140,6 +140,7 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
  #inner-app-view .company-ranking-panel .rank-pixel-art{display:block;width:100%;height:auto;overflow:visible;image-rendering:pixelated}
  #inner-app-view .company-ranking-panel .rank-podium-number{position:absolute;right:0;bottom:-3px;display:grid;place-items:center;min-width:24px;padding:2px 4px;background:var(--rank-ink);color:var(--inner-accent-text);border:2px solid var(--inner-card-bg);font:900 14px/1 monospace;box-shadow:2px 2px 0 #0003}
  #inner-app-view .company-ranking-panel .rank-top-1 .rank-podium-number{right:4px;bottom:-8px;min-width:36px;padding:5px;font-size:24px}
+ #inner-app-view .company-ranking-panel[data-ranking=bankrupt] .rank-top-2 .rank-podium-number{right:0;bottom:-5px;min-width:22px;padding:3px 4px;background:var(--inner-card-bg);color:var(--rank-ink);border:1px solid color-mix(in srgb,var(--rank-ink) 45%,var(--inner-card-bg));font:11px/1 var(--terminal-type,monospace);box-shadow:none}
  #inner-app-view .company-ranking-panel .rank-copy{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
  #inner-app-view .company-ranking-panel .rank-seat-label{font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.12em;color:var(--rank-ink)}
  #inner-app-view .company-ranking-panel .rank-top-1 .rank-seat-label{padding:4px 8px;margin-bottom:4px;border:1px solid currentColor;font-size:12px;letter-spacing:.18em}

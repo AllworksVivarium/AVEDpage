@@ -432,11 +432,11 @@
  #view-profile.personal-hud .hud-optical-bars i:nth-child(3n){background:repeating-linear-gradient(to top,var(--inner-crimson) 0 2px,transparent 2px 3px)}
  #view-profile.personal-hud .hud-matrix-strip canvas{border-top:1px solid var(--inner-border-soft);padding-top:2px}
  #view-profile.personal-hud .hud-pattern-ascii{position:relative;background:var(--inner-card-alt);overflow:hidden}
- #view-profile.personal-hud .hud-pattern-ascii::after{content:'';position:absolute;inset:0;background:var(--inner-text-main);mask:url('/assets/profile-ascii-flow.svg') 0 0/80px 107px;opacity:.7}
+ #view-profile.personal-hud .hud-pattern-ascii::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--inner-crimson),var(--inner-text-muted) 40%,var(--inner-text-main) 70%,var(--inner-crimson));mask:url('/assets/profile-ascii-flow.svg') 0 0/80px 107px;opacity:.7}
 }
 @layer aved-personal {
  #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])){position:relative}
- #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])) #hub-balance{align-self:start;margin-top:1px}
+ #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])) #hub-balance{align-self:center;margin-top:0}
  #view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden]))>button{align-self:start;height:20px!important;min-height:20px!important;padding:0!important}
 }
 @layer aved-typography {

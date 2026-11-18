@@ -68,8 +68,8 @@
   }
   #landing-view .landing-brand-row :is(.tech-line-left,.tech-line-right) {min-width:0 !important}
   #cover-logo-slot {
-    width:clamp(100px,18vw,208px) !important;
-    height:clamp(100px,18vw,208px) !important;
+    width:clamp(130px,21vw,260px) !important;
+    height:clamp(114px,18.3vw,226px) !important;
     flex:0 0 auto;
   }
   #cover-logo-slot .company-emblem {
@@ -307,8 +307,10 @@
  #landing-view #open-login-btn {background:rgba(22,23,23,.4)!important;border-color:#a5aaa780!important;box-shadow:0 0 12px #b5bdb60b!important;backdrop-filter:blur(2px)!important;color:#bfc4c1!important}
  #landing-view #open-login-btn:is(:hover,:focus-visible) {background:rgba(52,55,54,.48)!important;border-color:#c7ceca99!important;box-shadow:0 0 14px #b5bdb61c!important}
  #landing-view #open-login-btn .login-trigger-copy :is(div,span) {color:#c0c5c2!important}
- #landing-view .landing-brand-row,#landing-view .landing-motto {opacity:.76}
- #landing-view #cover-logo-slot .company-emblem {opacity:.9!important;filter:invert(1) brightness(.9)!important;mix-blend-mode:screen;transform:scale(1.35)}
+ #landing-view .landing-brand-row {opacity:1}
+ #landing-view .landing-motto {opacity:.76}
+ /* The current vector is already white; keep its first paint aligned with gateway-effects.css. */
+ #landing-view #cover-logo-slot .company-emblem {opacity:1!important;filter:brightness(1.04)!important;mix-blend-mode:normal;transform:none}
  #landing-view #open-login-btn::after {content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 1px 3px);opacity:.4}
  body:not(.effects-off) #landing-view #open-login-btn .login-trigger-copy {animation:gatewaySignalSlip 11s steps(1,end) infinite}
  #signal-Connecting-overlay {background-color:rgba(7,9,8,.84)!important}

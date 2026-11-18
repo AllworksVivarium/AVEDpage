@@ -21,11 +21,21 @@ window.AVEDRankingArt=(()=>{
   return `<path fill="${p.edge}" d="M23 51h50v22h7v5H16v-5h7z"/><path fill="${metal}" d="M26 54h44v20H26z"/><path fill="${light}" d="M28 55h40v3H28z"/>${person()}<path fill="${metal}" d="M34 5h9v8h-4v5h-5zm19 0h9v13h-5v-5h-4z"/><path fill="${light}" d="M41 9h14v3h5v9h-5v4H41v-4h-5v-9h5z"/><path fill="${metal}" d="M43 12h10v10H43z"/><path fill="${p.edge}" d="${place===2?'M45 14h6v4h-4v1h4v2h-6v-4h4v-1h-4z':'M45 14h6v7h-6v-2h4v-1h-3v-1h3v-1h-4z'}"/>${theme}${star(82,42,light)}`;
  }
  function bill(x,y,w=16,h=21){return `<g transform="translate(${x} ${y})"><path fill="#ddd2b4" d="M0 0h${w}v${h}H0z"/><path fill="#927e67" d="M3 4h${w-6}v2H3zm0 5h${w-8}v2H3zm0 5h${w-7}v2H3z"/></g>`;}
+ function emptyPockets(){
+  // Reuse the same employee sprite as the other podiums; only change the gesture.
+  return '<g class="rank-empty-pockets">'+person()+
+   '<path fill="#171e22" d="M32 39h-6v6H18v7h14v-6h4zm32 0h6v6h8v7H64v-6h-4z"/>'+
+   '<path fill="#343c40" d="M28 42h4v7H21v-2h7zm36 0h4v5h7v2H64z"/>'+
+   '<path fill="#c8c3b0" d="M14 44h3v3h7v4H13v-5h1zm65 0h3v2h1v5H72v-4h7z"/>'+
+   '<path fill="#e6e1ce" d="M14 47h9v2h-9zm59 0h9v2h-9z"/>'+
+   '<path fill="#c8c3b0" d="M34 49h8v7h-2v2h-4v-2h-2zm20 0h8v7h-2v2h-4v-2h-2z"/>'+
+   '<path fill="#e6e1ce" d="M35 50h6v5h-2v1h-2v-1h-2zm20 0h6v5h-2v1h-2v-1h-2z"/></g>';
+ }
  function broke(place,p){
   const floor='<path fill="#738078" d="M3 74h90v2H3z"/>';
   if(place===1)return floor+`<path fill="#171e22" d="M29 56h34v13H29zm32 3h21v6H61zm16-4h9v10h-9zm-11 12h19v5H66z"/><path fill="#343c40" d="M35 58h27v4H35z"/><path fill="#d4cbb4" d="M16 59h16v11H16zm15 8h17v5H31z"/><path fill="#171e22" d="M25 59h7v11h-7z"/><path fill="#a94d42" d="M31 69h9v3h-9z"/>${bill(37,40,26,15)}${bill(40,28,25,15)}${bill(35,17,26,14)}<path fill="#b46653" d="M46 19h3v9h-3zm-3 3h9v2h-9z"/><path fill="#493d32" d="M3 62h12v10H3zm1-4h8v4H4z"/><path fill="#d4cbb4" d="M5 60h5v2H5z"/><g class="rank-pixel-sparks"><path fill="#9b9581" d="M8 42h5v5H8zm6 0h5v5h-5z"/><path fill="#4e5148" d="M12 41h2v8h-2z"/></g><path fill="#738078" d="M23 48h2v6h-2zm-5 1h2v4h-2z"/>`;
-  if(place===2)return floor+`<path fill="#171e22" d="M32 30h32v29H32zM23 60h24v12H23zm27 0h24v12H50zM19 34h14v7H19zm45 0h14v7H64z"/><path fill="#343c40" d="M33 31h7v25h-7zm23 0h7v25h-7z"/><path fill="#eee4cb" d="M42 31h12l-4 19h-4z"/><path fill="#c8c3b0" d="M38 7h20v20H38zM15 33h8v9h-8zm60 0h8v9h-8z"/><path fill="#52616a" d="M41 19h4v2h-4zm10 0h4v2h-4zm-7 4h9v2h-9z"/><path fill="#68a4b7" d="M39 22h3v7h-3zm15 0h3v7h-3z"/><path fill="#646c65" d="M6 40h27v20H6zm58 0h27v20H64z"/><path fill="#f1ead4" d="M8 42h23v11h-4v6H12v-6H8zm58 0h23v11h-4v6H70v-6h-4z"/><path fill="#b8ad94" d="M12 44h15v2H12zm58 0h15v2H70z"/>`;
-  return floor+`<path fill="#171e22" d="M27 32h30v29H27zm-6 28h23v12H21zm27 0h19v12H48zM53 32h12V21h7v21H53z"/><path fill="#343c40" d="M29 34h7v22h-7zm20 0h6v21h-6z"/><path fill="#eee4cb" d="M38 33h12l-4 19h-4z"/><path fill="#c8c3b0" d="M33 9h20v20H33zm31 7h9v8h-9zM20 43h10v8H20z"/><path fill="#52616a" d="M36 20h4v2h-4zm8 0h4v2h-4zm-6 5h9v2h-9z"/><path fill="#49362a" d="M65 4h27v17H65z"/><path fill="#b2a17d" d="M68 7h21v6H68z"/><path fill="#292724" d="M70 9h17v4H70z"/><path fill="#846b4b" d="M67 15h23v3H67z"/><path fill="#829487" d="M78 26h2v5h-2zm0 11h2v5h-2z"/><g class="rank-pixel-sparks"><path fill="#c48a35" d="M75 51h10v8H75z"/><path fill="#ffe298" d="M77 52h6v2h-6z"/></g><path fill="#829487" d="M81 66h9v2h-9z"/>`;
+  if(place===2)return '<path fill="#738078" d="M14 72h68v2H14z"/>'+emptyPockets();
+  return floor+`<path fill="#171e22" d="M27 32h30v29H27zm-6 28h23v12H21zm27 0h19v12H48zM53 32h12V21h7v21H53z"/><path fill="#343c40" d="M29 34h7v22h-7zm20 0h6v21h-6z"/><path fill="#eee4cb" d="M38 33h12l-4 19h-4z"/><path fill="#c8c3b0" d="M33 9h20v20H33zm31 7h9v8h-9zM20 43h10v8H20z"/><path fill="#49362a" d="M65 4h27v17H65z"/><path fill="#b2a17d" d="M68 7h21v6H68z"/><path fill="#292724" d="M70 9h17v4H70z"/><path fill="#846b4b" d="M67 15h23v3H67z"/><path fill="#829487" d="M78 26h2v5h-2zm0 11h2v5h-2z"/><g class="rank-pixel-sparks"><path fill="#c48a35" d="M75 51h10v8H75z"/><path fill="#ffe298" d="M77 52h6v2h-6z"/></g><path fill="#829487" d="M81 66h9v2h-9z"/>`;
 
  }
  function saint(place,p){

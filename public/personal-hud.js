@@ -30,7 +30,7 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
    </div>
    <section class="hud-frame hud-bio"><header><span>个人简介</span><button type="button" data-hud-open="hud-edit" data-hud-bio aria-label="编辑个人简介" aria-haspopup="dialog">${icon('edit')}</button></header><p${p.bio?'':' class="hud-bio-empty"'}>${p.bio?esc(p.bio):'添加个人简介'}</p></section>
    ${highest?`<details class="hud-frame hud-record"><summary><span>最高单局奖金</span><strong>${money(highest.prize)}</strong><span>＋</span></summary><div class="hud-detail-body"><p>${esc(games[highest.game]||highest.game)} · 奖金含本金</p>${(records.byGame||[]).map(r=>`<div class="hud-list-row"><span>${esc(games[r.game]||r.game)}</span><strong>${money(r.prize)}</strong></div>`).join('')}</div></details>`:''}
-   ${earned.length?`<details class="hud-frame hud-earned"><summary><span>个人成就</span><span class="hud-stamps" aria-hidden="true">${earned.slice(0,4).map(()=>'<i>✧</i>').join('')}</span><small>${earned.length}</small><span>＋</span></summary><div class="hud-detail-body">${earned.map(a=>`<article class="hud-achievement"><span aria-hidden="true">✧</span><div><strong>${esc(a.title)}</strong><p>${esc(a.description||'')}</p></div></article>`).join('')}</div></details>`:''}
+   ${earned.length?`<details class="hud-frame hud-earned"><summary><span>个人荣誉</span><span class="hud-stamps" aria-hidden="true">${earned.slice(0,4).map(()=>'<i>✧</i>').join('')}</span><small>${earned.length}</small><span>＋</span></summary><div class="hud-detail-body">${earned.map(a=>`<article class="hud-achievement"><span aria-hidden="true">✧</span><div><strong>${esc(a.title)}</strong><p>${esc(a.description||'')}</p></div></article>`).join('')}</div></details>`:''}
    <div class="hud-log-grid">${[['ledger','账户流水'],['history','游戏记录']].map(([key,name])=>`<details class="hud-frame hud-log" data-hud-log="${key}"><summary><span>${name}</span><span>↗</span></summary><div class="hud-detail-body"><div data-log-items role="status"></div><button type="button" data-log-more hidden>更多记录</button></div></details>`).join('')}</div>
    <footer class="hud-footer" aria-hidden="true"><span class="hud-light-array">▏▎▍▏▌▎▏▍▎▌▏▏</span><span lang="en">PERSONNEL TERMINAL <bdi lang="he" dir="rtl">תיק אישי</bdi></span><span>＋ ── ＋</span></footer></section>
    ${dialog('hud-palette','界面配色',`<div class="hud-palette-options">${Object.entries(window.AVEDAppearance?.palettes||{}).map(([key,palette])=>`<div class="hud-palette-choice"><button type="button" data-hud-palette="${key}"><span>${esc(palette.name)}</span><span class="hud-colors" aria-hidden="true">${palette[document.body.classList.contains('dark-mode')?'night':'day'].map(c=>`<i style="--chip:${c}"></i>`).join('')}</span><b aria-hidden="true"></b></button><button type="button" data-hud-preview="${key}" aria-label="预览${esc(palette.name)}">预览</button></div>`).join('')}</div>`)}
@@ -93,28 +93,28 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
    const pollution=window.AVEDContamination?.enabled()===true,contaminationButton=root.querySelector('[data-hud-contamination]'),effectState=window.AVEDAppearance?.entitlements?.effects;
    const effectOwned=effectState?.owned.includes('contamination')===true,effectPrice=effectState?.prices.contamination??(u.identityKind==='player_containment'?100000:500000);
    contaminationButton.disabled=shopReading;contaminationButton.setAttribute('aria-pressed',String(pollution));contaminationButton.querySelector('[data-hud-contamination-state]').textContent=effectOwned?(pollution?'已开启':'已关闭'):money(effectPrice);
-   contaminationButton.setAttribute('aria-label',effectOwned?'污染模式，'+(pollution?'已开启':'已关闭'):'污染模式，购买解锁 '+effectPrice.toLocaleString()+' ¤');
+   contaminationButton.setAttribute('aria-label',effectOwned?'污染模式，'+(pollution?'已开启':'已关闭'):'污染模式，购买 '+effectPrice.toLocaleString()+' ¤');
    const sound=root.querySelector('[data-hud-sound]');sound.removeAttribute('aria-pressed');sound.setAttribute('aria-label','声音设置');root.querySelector('[data-hud-sound-label]').textContent='声音设置';syncSound();
    const soundIcon=root.querySelector('[data-hud-sound-icon]');if(soundIcon.dataset.state!==String(muted)){soundIcon.innerHTML=icon(muted?'sound':'soundOn');soundIcon.dataset.state=String(muted);}
-   root.querySelectorAll('[data-hud-palette]').forEach(b=>{const key=b.dataset.hudPalette,selected=key===document.documentElement.dataset.palettePreview,owned=window.AVEDAppearance?.entitlements?.owned.includes(key)||key==='oxblood';b.setAttribute('aria-pressed',String(selected));b.querySelector('b').textContent=selected?'✓':owned?'已解锁':(window.AVEDAppearance?.entitlements?.prices[key]??50000).toLocaleString()+' 点';const palette=window.AVEDAppearance?.palettes[key];b.setAttribute('aria-label',palette.name+(owned?'，已解锁':'，购买解锁 '+(window.AVEDAppearance?.entitlements?.prices[key]??50000).toLocaleString()+' 点'));palette?.[document.body.classList.contains('dark-mode')?'night':'day'].forEach((c,i)=>b.querySelectorAll('i')[i].style.setProperty('--chip',c));});
+   root.querySelectorAll('[data-hud-palette]').forEach(b=>{const key=b.dataset.hudPalette,selected=key===document.documentElement.dataset.palettePreview,owned=window.AVEDAppearance?.entitlements?.owned.includes(key)||key==='oxblood';b.setAttribute('aria-pressed',String(selected));b.querySelector('b').textContent=selected?'✓':owned?'已购':(window.AVEDAppearance?.entitlements?.prices[key]??50000).toLocaleString()+' ¤';const palette=window.AVEDAppearance?.palettes[key];b.setAttribute('aria-label',palette.name+(owned?'，已购':'，购买 '+(window.AVEDAppearance?.entitlements?.prices[key]??50000).toLocaleString()+' ¤'));palette?.[document.body.classList.contains('dark-mode')?'night':'day'].forEach((c,i)=>b.querySelectorAll('i')[i].style.setProperty('--chip',c));});
    for(const [kind,catalog] of [['background',backgrounds],['pattern',patterns]])for(const [key,name,fallbackPrice] of catalog){
     const button=root.querySelector(`[data-hud-${kind}="${key}"]`),state=window.AVEDAppearance?.entitlements?.[kind==='background'?'backgrounds':'patterns'];
     const owned=fallbackPrice===0||state?.owned.includes(key),price=state?.prices[key]??fallbackPrice,selected=owned&&key===(kind==='background'?window.AVEDGateway?.selected:document.body.dataset.terminalPattern);
     button.disabled=shopReading;button.setAttribute('aria-pressed',String(Boolean(selected)));
-    button.querySelector('[data-hud-shop-state]').textContent=selected?'使用中':owned?(fallbackPrice===0?'免费 · 使用':'已解锁 · 使用'):money(price);
-    button.setAttribute('aria-label',name+(selected?'，使用中':owned?'，点击使用':'，购买解锁 '+price.toLocaleString()+' ¤'));
+    button.querySelector('[data-hud-shop-state]').textContent=selected?'使用中':owned?(fallbackPrice===0?'免费 · 使用':'已购 · 使用'):money(price);
+    button.setAttribute('aria-label',name+(selected?'，使用中':owned?'，点击使用':'，购买 '+price.toLocaleString()+' ¤'));
    }
   }
   async function readShop(){if(shopReading)return;shopReading=true;sync();try{const d=await api('/api/player/appearance');if(!active())return;getProfile().appearance=d.appearance;window.AVEDAppearance.setEntitlements(d.appearance);onBalance(d.balance);}catch(e){if(active())showToast(e.message);}finally{shopReading=false;sync();}}
   function startContamination(){window.AVEDContamination.setEnabled(true);sync();close(byId('hud-tools'));}
   async function confirmContamination(){close(byId('hud-tools'));if(await window.AVEDContamination.confirmStart())if(active())startContamination();}
-  function selectShopItem(kind,key){if(kind==='background'){const result=window.AVEDGateway.select(key);if(!result)throw Error('请先解锁这个背景。');if(!result.saved)showToast('背景已切换，但浏览器未允许保存设置。');}else window.AVEDAppearance.setPattern(key);sync();}
+  function selectShopItem(kind,key){if(kind==='background'){const result=window.AVEDGateway.select(key);if(!result)throw Error('请先购买此背景。');if(!result.saved)showToast('背景已切换，但浏览器未允许保存设置。');}else window.AVEDAppearance.setPattern(key);sync();}
   function chooseShopItem(kind,key){
    if(shopReading)return;const catalog=kind==='background'?backgrounds:patterns,item=catalog.find(x=>x[0]===key);if(!item)return;
    const [,name,fallbackPrice]=item,state=window.AVEDAppearance.entitlements?.[kind==='background'?'backgrounds':'patterns'];
    if(fallbackPrice===0||state?.owned.includes(key)){selectShopItem(kind,key);return;}
    const price=state?.prices[key]??fallbackPrice;
-   confirm(`花费 ${price.toLocaleString()} ¤解锁「${name}」并使用？`,async()=>{
+   confirm(`花费 ${price.toLocaleString()} ¤购买「${name}」并使用？`,async()=>{
     const d=await api('/api/player/appearance',{method:'POST',body:{[kind]:key}});if(!active())return;
     getProfile().appearance=d.appearance;window.AVEDAppearance.setEntitlements(d.appearance);onBalance(d.balance);selectShopItem(kind,key);
    },'购买并使用');
@@ -128,7 +128,7 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
    if(b.dataset.hudOpen){open(b.dataset.hudOpen,b);if(b.dataset.hudOpen==='hud-tools')void readShop();if(b.hasAttribute('data-hud-alias'))byId('cloud-profile-form').elements.anonymousName.focus();if(b.hasAttribute('data-hud-bio'))byId('cloud-profile-form').elements.bio.focus();return;}
    if(b.dataset.hudPreview){const key=b.dataset.hudPreview,palette=window.AVEDAppearance.palettes[key];byId('hud-palette-preview-title').textContent=palette.name+' · 配色预览';for(const sample of root.querySelectorAll('[data-preview-mode]')){const mode=sample.dataset.previewMode,colors=palette[mode];sample.style.setProperty('--sample-base',colors[0]);sample.style.setProperty('--sample-ink',mode==='night'?colors[1]:colors[3]);sample.style.setProperty('--sample-accent',colors[2]);sample.style.setProperty('--sample-face',mode==='night'?'color-mix(in srgb,'+colors[0]+' 88%,'+colors[1]+' 12%)':colors[1]);}close(byId('hud-palette'));open('hud-palette-preview');return;}
    if(b.hasAttribute('data-preview-back')){close(byId('hud-palette-preview'));open('hud-palette');return;}
-   if(b.dataset.hudPalette){const key=b.dataset.hudPalette,appearance=window.AVEDAppearance;close(byId('hud-palette'));if(appearance.entitlements?.owned.includes(key)||key==='oxblood'){appearance.setPalette(key);sync();return;}const name=appearance.palettes[key].name,price=appearance.entitlements?.prices[key]??50000;confirm(`花费 ${price.toLocaleString()} 点永久解锁「${name}」？`,async()=>{const d=await api('/api/player/appearance',{method:'POST',body:{palette:key}});if(!active())return;getProfile().appearance=d.appearance;onBalance(d.balance);appearance.setEntitlements(d.appearance);appearance.setPalette(key);sync();showToast('已解锁「'+name+'」。');},'购买解锁');return;}
+   if(b.dataset.hudPalette){const key=b.dataset.hudPalette,appearance=window.AVEDAppearance;close(byId('hud-palette'));if(appearance.entitlements?.owned.includes(key)||key==='oxblood'){appearance.setPalette(key);sync();return;}const name=appearance.palettes[key].name,price=appearance.entitlements?.prices[key]??50000;confirm(`花费 ${price.toLocaleString()} ¤购买「${name}」？`,async()=>{const d=await api('/api/player/appearance',{method:'POST',body:{palette:key}});if(!active())return;getProfile().appearance=d.appearance;onBalance(d.balance);appearance.setEntitlements(d.appearance);appearance.setPalette(key);sync();showToast('已购入「'+name+'」。');},'购买');return;}
    if(b.dataset.hudBackground){chooseShopItem('background',b.dataset.hudBackground);return;}
    if(b.dataset.hudPattern){chooseShopItem('pattern',b.dataset.hudPattern);return;}
    if(b.hasAttribute('data-hud-contamination')){
@@ -238,31 +238,26 @@ window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,
  }
 
  function particles(canvas,visible){
-  const ctx=canvas.getContext('2d');if(!ctx)return()=>{};let frame=0,w=1,h=1,t=0,last=0,pointer=null;const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  let ink='',accent='';
+  const ctx=canvas.getContext('2d');if(!ctx)return()=>{};let frame=0,w=1,h=1,t=0,last=0,pointer=null,disposed=false,inView=true,stars=[];const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  let ink='';
+  function seed(){stars=Array.from({length:Math.min(620,Math.max(180,Math.round(w*h/105)))},()=>{const z=.45+Math.random()*1.15;return{x:(Math.random()-.5)*z,y:(Math.random()-.5)*z,z,size:Math.random(),phase:Math.random()*Math.PI*2};});}
   function draw(){
-   ctx.clearRect(0,0,w,h);const cx=w*.5+(pointer?(pointer.x-w*.5)*.04:0),cy=h*.5,rx=Math.min(w*.31,h*1.1),ry=h*.36;
-   ctx.strokeStyle=ink;ctx.lineWidth=.6;ctx.globalAlpha=.12;ctx.beginPath();
-   for(let x=10;x<w;x+=24){ctx.moveTo(x,5);ctx.lineTo(x,h-5);}for(let y=8;y<h;y+=16){ctx.moveTo(8,y);ctx.lineTo(w-8,y);}ctx.stroke();
-   ctx.globalAlpha=.35;ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(10,cy);ctx.lineTo(w-10,cy);ctx.moveTo(cx,5);ctx.lineTo(cx,h-5);ctx.stroke();ctx.setLineDash([]);
-   for(let orbit=0;orbit<3;orbit++){
-    const angle=(orbit-1)*.48;ctx.save();ctx.translate(cx,cy);ctx.rotate(angle);ctx.strokeStyle=orbit===1?accent:ink;ctx.globalAlpha=orbit===1?.6:.32;ctx.beginPath();ctx.ellipse(0,0,rx,ry*(orbit===1?.65:1),0,0,Math.PI*2);ctx.stroke();ctx.restore();
-    for(let i=0;i<9;i++){const a=i*Math.PI*2/9+t*(orbit%2?-1:1)+orbit,x=Math.cos(a)*rx,y=Math.sin(a)*ry*(orbit===1?.65:1),px=cx+x*Math.cos(angle)-y*Math.sin(angle),py=cy+x*Math.sin(angle)+y*Math.cos(angle);ctx.globalAlpha=.35+.6*(Math.sin(a)+1)/2;ctx.fillStyle=orbit===1?accent:ink;ctx.fillRect(px-1,py-1,i===0?3:2,i===0?3:2);}
-   }
-   const radius=Math.min(14,h*.15);ctx.strokeStyle=accent;ctx.globalAlpha=.85;ctx.beginPath();
-   for(let i=0;i<=6;i++){const a=i*Math.PI/3+t*.3,x=cx+Math.cos(a)*radius,y=cy+Math.sin(a)*radius;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);}ctx.stroke();
-   ctx.globalAlpha=.4;ctx.beginPath();ctx.moveTo(cx-radius-6,cy);ctx.lineTo(cx+radius+6,cy);ctx.moveTo(cx,cy-radius-6);ctx.lineTo(cx,cy+radius+6);ctx.stroke();
-   ctx.strokeStyle=ink;ctx.globalAlpha=.6;for(const side of [-1,1]){const x=cx+side*(rx+15);ctx.beginPath();ctx.moveTo(x-side*5,cy-ry);ctx.lineTo(x,cy-ry);ctx.lineTo(x,cy+ry);ctx.lineTo(x-side*5,cy+ry);ctx.stroke();}
-   ctx.font='7px monospace';ctx.fillStyle=ink;ctx.globalAlpha=.65;ctx.fillText('S / 01',12,13);ctx.fillText('LINK',Math.max(12,w-33),h-8);ctx.globalAlpha=1;
+   ctx.clearRect(0,0,w,h);ctx.fillStyle=ink;ctx.strokeStyle=ink;
+   const dx=pointer?(pointer.x-w/2)*.025:0,dy=pointer?(pointer.y-h/2)*.025:0;
+   for(const s of stars){const x=w*(.5+s.x/s.z)+dx/s.z,y=h*(.5+s.y/s.z)+dy/s.z,size=.35+s.size*.65+.3/s.z;
+    const light=(.25+s.size*.5)*(.8+.2*Math.sin(t*.8+s.phase));ctx.globalAlpha=light;ctx.fillRect(x-size/2,y-size/2,size,size);
+    if(s.size>.94){ctx.globalAlpha=light*.12;ctx.fillRect(x-2.5,y-2.5,5,5);ctx.globalAlpha=light*.4;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(x-3.5,y);ctx.lineTo(x+3.5,y);ctx.moveTo(x,y-3.5);ctx.lineTo(x,y+3.5);ctx.stroke();}
+   }ctx.globalAlpha=1;
   }
-  const allowed=()=>visible()&&window.AVEDEffectsEnabled?.()&&!reduced.matches;
-  function tick(now){frame=0;if(!allowed())return;if(now-last>55){t+=.013;draw();last=now;}frame=requestAnimationFrame(tick);}
-  function sync(){cancelAnimationFrame(frame);frame=0;const css=getComputedStyle(canvas);ink=css.color;accent=css.getPropertyValue('--inner-crimson').trim()||ink;draw();if(allowed())frame=requestAnimationFrame(tick);}
-  const resize=new ResizeObserver(()=>{w=canvas.width=canvas.clientWidth;h=canvas.height=canvas.clientHeight;sync();});resize.observe(canvas);
+  const allowed=()=>!disposed&&inView&&visible()&&window.AVEDEffectsEnabled?.()!==false&&!reduced.matches;
+  function tick(now){frame=0;if(!allowed())return;if(!last||now-last>=40){const dt=last?Math.min(.08,(now-last)/1000):0;last=now;t+=dt;for(const s of stars){s.z-=dt*.018;if(s.z<.25||Math.abs(s.x/s.z)>.51||Math.abs(s.y/s.z)>.51){s.z=1.6;s.x=(Math.random()-.5)*s.z;s.y=(Math.random()-.5)*s.z;}}draw();}frame=requestAnimationFrame(tick);}
+  function sync(){cancelAnimationFrame(frame);frame=0;last=0;if(disposed)return;ink=getComputedStyle(canvas).color;draw();if(allowed())frame=requestAnimationFrame(tick);}
+  const resize=new ResizeObserver(()=>{const width=canvas.clientWidth,height=canvas.clientHeight;if(width===w&&height===h)return;w=width;h=height;const ratio=Math.min(2,devicePixelRatio||1);canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));ctx.setTransform(ratio,0,0,ratio,0,0);seed();sync();});resize.observe(canvas);
+  const viewport=new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;sync();});viewport.observe(canvas);
   const state=new MutationObserver(sync);for(const node of [document.body,document.documentElement,canvas.closest('#view-profile')])state.observe(node,{attributes:true,attributeFilter:['class','data-palette-preview','data-theme-mode']});
   document.addEventListener('visibilitychange',sync);document.addEventListener('aved-effects-change',sync);reduced.addEventListener('change',sync);
   canvas.onpointermove=e=>{const r=canvas.getBoundingClientRect();pointer={x:e.clientX-r.left,y:e.clientY-r.top};};canvas.onpointerleave=()=>pointer=null;sync();
-  return()=>{cancelAnimationFrame(frame);resize.disconnect();state.disconnect();document.removeEventListener('visibilitychange',sync);document.removeEventListener('aved-effects-change',sync);reduced.removeEventListener('change',sync);};
+  return()=>{disposed=true;cancelAnimationFrame(frame);resize.disconnect();viewport.disconnect();state.disconnect();canvas.onpointermove=null;canvas.onpointerleave=null;document.removeEventListener('visibilitychange',sync);document.removeEventListener('aved-effects-change',sync);reduced.removeEventListener('change',sync);};
  }
  return {render};
 };

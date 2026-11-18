@@ -1,4 +1,5 @@
 import {dossierView} from './server-dossier-content.mjs';
+import {listDossiers} from './server-containment-dossiers.mjs';
 import sharp from 'sharp';
 
 export async function normalizeDossierImage(value){
@@ -20,7 +21,7 @@ export function installDossierImages({db,send,requireAdmin,requireEmployee}){
   const image=playerImage||url.pathname.match(/^\/api\/admin\/dossiers\/(\d+)\/image$/),list=url.pathname==='/api/admin/dossiers'&&req.method==='GET';
   if(!image&&!list)return false;
   if(!(playerImage?requireEmployee:requireAdmin)(req,res))return true;
-  if(list){const items=db.prepare("SELECT id,code,title,department,status,summary,classification,procedures,sections_json,(image_data<>'') AS hasImage FROM dossiers ORDER BY id DESC").all();send(res,200,{items:items.map(item=>({...dossierView(item),hasImage:item.hasImage,imageUrl:item.hasImage?'/api/admin/dossiers/'+item.id+'/image':''}))});return true;}
+  if(list){const items=listDossiers(db,{admin:true});send(res,200,{items:items.map(item=>({...dossierView(item),hasImage:item.hasImage,imageUrl:item.hasImage?'/api/admin/dossiers/'+item.id+'/image':''}))});return true;}
   if(!['GET','HEAD'].includes(req.method)){send(res,405,{error:'影像读取指令无效。'});return true;}
   const row=db.prepare('SELECT image_data FROM dossiers WHERE id=?').get(image[1]),match=row?.image_data.match(/^data:(image\/webp);base64,(.+)$/);
   if(!match){send(res,404,{error:'此卷宗暂无图片。'});return true;}

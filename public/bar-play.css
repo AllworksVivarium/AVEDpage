@@ -8,7 +8,7 @@
 .bar-scene-bottom .bar-drunk-toggle{margin-right:auto;font-size:10px;min-height:30px;padding:4px 8px;background:#201923d9;color:#c9b2a1}
 .bar-room .bar-action-dialog{--popup-size:360px;width:min(360px,calc(100vw - 24px))}
 .bar-serving-summary b{font-size:14px;font-weight:500}.bar-serving-summary p{font:18px monospace;margin:12px 0 6px;color:var(--bar-gold)}.bar-serving-summary small{font-size:11px;color:var(--bar-muted)}
-.bar-serving-actions{display:grid;gap:8px;padding:0 16px 16px}.bar-serving-actions [data-bar-sip]{background:#c4a16f;color:#241b1d;border-color:#dfc397}
+.bar-serving-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 16px 16px}
 .bar-room .bar-coaster-dialog{--popup-size:420px;width:min(420px,calc(100vw - 24px))}
 .bar-coaster-card{margin:16px;padding:20px 18px;min-height:130px;background:#b29a76;color:#332820;border:2px solid #79634c;box-shadow:inset 0 0 0 3px #c9b18a}
 .bar-coaster-card small{font-size:10px;color:#5a4938}.bar-coaster-card p{font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}

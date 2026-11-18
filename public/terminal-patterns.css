@@ -33,3 +33,9 @@ body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{bac
 @keyframes profile-ascii-flow{from{mask-position:0 -320px}to{mask-position:0 0}}
 body.effects-off[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}
 @media(prefers-reduced-motion:reduce){body[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}}
+/* The animated field replaces only the player's ASCII texture. */
+body.theme-inner .terminal-content-pane.has-ascii-field::before{display:none!important}
+.terminal-ascii-field{position:sticky;top:0;display:block;width:100%;margin-bottom:calc(-1 * var(--ascii-field-height,0px));z-index:-1;pointer-events:none;opacity:.19}
+.terminal-ascii-field[hidden]{display:none}
+body:not(.dark-mode) .terminal-ascii-field{opacity:.15}
+@media print{.terminal-ascii-field{display:none!important}}

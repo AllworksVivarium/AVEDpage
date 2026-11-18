@@ -1,6 +1,10 @@
 /* Only the internal layout changes. The black opening and logo keep their original styles. */
 #inner-app-view{width:100%;min-height:100dvh}
 #inner-app-view>header>div,#inner-app-view>div{max-width:none;width:100%}
+/* Keep desktop reading pages on the same centred canvas as the lounge. */
+@media(min-width:1000px){
+ #inner-app-view .terminal-content-pane>section[id^="view-"]{box-sizing:border-box;width:100%;max-width:1360px;margin-inline:auto}
+}
 #inner-app-view>div>div:last-child{min-width:0;flex:1}
 #inner-app-view>header{position:sticky;top:0;z-index:30}
 #left-sidebar{position:sticky;top:5rem;align-self:flex-start;max-height:calc(100dvh - 5rem);overflow-y:auto;min-height:calc(100dvh - 5rem)}

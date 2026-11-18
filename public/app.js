@@ -99,237 +99,23 @@ async function loadPortal({verified=null,interactive=false}={}) {
     if(!data.employee)throw new Error('接入身份未能确认，请重新登录。');
     AVEDTime.sync(data.serverTime);
     currentUser = data.employee;
-    const isAdmin = currentUser.role === "admin";
-    if(!isAdmin){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
-    dashboard.classList.toggle("admin-mode", isAdmin);
-    document.querySelector(".brand small").textContent = isAdmin
-      ? "A.V.E.D. / ADMIN"
-      : "员工内部终端 / INTERNAL";
+    if(currentUser.role!=="admin"){show(loginCard);$('#error').textContent='此入口仅供管理员使用。玩家请访问 aved.space。';return;}
+    dashboard.classList.add("admin-mode");
+    document.querySelector(".brand small").textContent = "A.V.E.D. / ADMIN";
     document
       .querySelectorAll(".tabs .tab")
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","achievements"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads","achievements"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
-    if (isAdmin) await renderTab(['dossiers','robots','achievements','barMusic'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
-    else await renderTab("files");
+    await renderTab(['dossiers','robots','achievements','barMusic','ads'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
   } catch(error) {
     if(generation!==portalGeneration)return;
     if(interactive)throw error;
     if(error.status!==401){show(loginCard);$("#error").textContent=error.message;}
-  }
-}
-
-// ===== 员工端：档案 / 公告 / 留言 =====
-async function renderDossiers() {
-  const { items } = await api("/api/dossiers");
-  $("#panel").innerHTML =
-    `<div class="section-heading"><h3>公司档案</h3><p>SERVER ARCHIVE / ${String(items.length).padStart(2, "0")}</p></div><div class="cards">${items.map((item) => `<article class="card"><span class="card-code">${esc(item.code)}　/　${esc(item.department)}</span><h4>${esc(item.title)}</h4><p>${esc(item.summary)}</p><div class="card-foot"><span>内部资料</span><span class="badge">${esc(item.status)}</span></div></article>`).join("") || "<p>暂无档案。</p>"}</div>`;
-}
-async function renderAnnouncements() {
-  const { items } = await api("/api/announcements");
-  $("#panel").innerHTML =
-    `<div class="section-heading"><h3>内部公告</h3><p>SERVER BULLETINS / ${String(items.length).padStart(2, "0")}</p></div>${items.map((item) => `<article class="notice-box"><h4>${item.pinned ? "◆ " : ""}${esc(item.title)}</h4><p class="announcement-body">${esc(item.body)}</p><small>${AVEDTime.markup(item.createdAt)}　/　${item.postCount} 条讨论</small><div class="post-list" id="posts-${item.id}"><p class="muted">正在读取讨论…</p></div><form class="post-form" data-announcement="${item.id}"><input name="anonymousName" maxlength="32" required placeholder="匿名名称"><textarea name="body" maxlength="2000" required placeholder="写一条匿名留言"></textarea><button class="small-action" type="submit">匿名发表</button></form></article>`).join("") || "<p>暂无公告。</p>"}`;
-  for (const item of items) loadPosts(item.id);
-  document.querySelectorAll(".post-form").forEach((form) =>
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const values = new FormData(form),
-        button = form.querySelector("button");
-      button.disabled = true;
-      try {
-        await api("/api/posts", {
-          method: "POST",
-          body: JSON.stringify({
-            announcementId: Number(form.dataset.announcement),
-            anonymousName: values.get("anonymousName"),
-            body: values.get("body"),
-          }),
-        });
-        form.elements.body.value = "";
-        await loadPosts(Number(form.dataset.announcement));
-      } catch (e) {
-        window.AVEDFeedback.alert(e.message);
-      } finally {
-        button.disabled = false;
-      }
-    }),
-  );
-}
-async function loadPosts(id) {
-  const target = $(`#posts-${id}`);
-  if (!target) return;
-  try {
-    const { items } = await api(`/api/posts?announcementId=${id}`);
-    target.innerHTML = items.length
-      ? items
-          .map(
-            (post) =>
-              `<div class="post"><b>${esc(post.anonymousName)}</b><span>余额 ¤ ${Number(post.balance).toLocaleString()}</span><p>${esc(post.body)}</p><small>${AVEDTime.markup(post.createdAt)}</small></div>`,
-          )
-          .join("")
-      : '<p class="muted">还没有留言。</p>';
-  } catch (e) {
-    target.innerHTML = `<p class="error">${esc(e.message)}</p>`;
-  }
-}
-
-// ===== 员工端：个人资料与签到 =====
-async function renderProfile() {
-  const [{ profile, achievements }, me, checkin] = await Promise.all([
-    api("/api/profile"),
-    api("/api/me"),
-    api("/api/checkin"),
-  ]);
-  const avatar = profile.avatarUrl
-    ? `<img class="profile-avatar" src="${esc(profile.avatarUrl)}" alt="员工头像">`
-    : '<div class="profile-avatar default-avatar" aria-label="默认员工头像"><span>?</span></div>';
-  $("#panel").innerHTML =
-    `<div class="section-heading"><h3>个人主页</h3><p>PERSONNEL PROFILE</p></div><div class="profile-layout"><section class="profile-card">${avatar}<h4>${esc(me.employee.displayName)}</h4><p>${esc(me.employee.department || "员工")}</p><p class="balance-large">¤ ${Number(me.balance).toLocaleString()} <small>点</small></p><form class="admin-form" id="profileForm"><h4>个人资料</h4><input name="anonymousName" required maxlength="32" value="${esc(profile.anonymousName)}" placeholder="论坛匿名名称"><textarea name="bio" maxlength="500" placeholder="个人简介">${esc(profile.bio)}</textarea><label class="file-label">上传头像（PNG/JPG/WEBP）<input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><input name="avatarUrl" type="url" value="${profile.avatarUrl.startsWith("data:") ? "" : esc(profile.avatarUrl)}" placeholder="或填写头像 HTTPS 图片链接（可留空）"><button class="small-action">保存档案</button></form></section><section><h4>成就记录</h4><div class="achievement-list">${achievements.map((a) => `<div class="achievement ${a.earned ? "earned" : ""}"><span>${a.earned ? "◆" : "◇"}</span><b>${esc(a.title)}</b><small>${a.earned ? "已达成" : "尚未达成"}</small></div>`).join("")}</div><div class="checkin-card"><h4>每日签到</h4><p>${checkin.checkedIn ? `今日已签到，获得 ${checkin.reward} 点。` : "完成签到后领取当日配给。"}</p><button id="checkinButton" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "签到领取 150 点"}</button></div></section></div>`;
-  $("#profileForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const f = e.currentTarget,
-      v = new FormData(f);
-    try {
-      let avatarUrl = v.get("avatarUrl");
-      const image = f.elements.avatarFile.files[0];
-      if (image) {
-        avatarUrl = await AVEDImageUpload.read(image,{kind:'avatar'});
-      }
-      await api("/api/profile", {
-        method: "PUT",
-        body: JSON.stringify({
-          anonymousName: v.get("anonymousName"),
-          bio: v.get("bio"),
-          avatarUrl,
-        }),
-      });
-      window.AVEDFeedback.toast("个人资料和头像已保存档案。", "success");
-      await renderProfile();
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-    }
-  });
-  $("#checkinButton").addEventListener("click", async (e) => {
-    e.currentTarget.disabled = true;
-    try {
-      const result = await api("/api/checkin", { method: "POST", body: "{}" });
-      window.AVEDFeedback.toast(`签到成功，获得 ${result.reward} 点。`, "success");
-      await loadPortal();
-      await renderProfile();
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-      e.currentTarget.disabled = false;
-    }
-  });
-}
-
-// ===== 员工端：互动玩法 =====
-async function renderGames() {
-  const [me, checkin, history] = await Promise.all([
-    api("/api/me"),
-    api("/api/checkin"),
-    api("/api/games/history"),
-  ]);
-  $("#panel").innerHTML =
-    `<div class="section-heading"><h3>互动玩法</h3><p>SERVER SETTLEMENT / BALANCE ¤ ${Number(me.balance).toLocaleString()}</p></div><div class="game-grid"><article class="game-card"><span class="card-code">DAILY CHECK-IN</span><h4>每日签到</h4><p>每天一次，配给到账后记入账户。</p><button id="gameCheckin" class="small-action" ${checkin.checkedIn ? "disabled" : ""}>${checkin.checkedIn ? "今日已签到" : "领取 150 点"}</button></article><article class="game-card"><span class="card-code">SCRATCH TICKET / 1,000 点</span><h4>刮刮乐</h4><p>领取配给票，刮开奖区。</p><button id="scratchButton" class="small-action">购买并刮开</button><div id="scratchResult" class="game-result"></div></article><article class="game-card"><span class="card-code">SLOT MACHINE / 500 点</span><h4>老虎机</h4><p>转轮停止后核发奖金。</p><button id="slotButton" class="small-action">启动老虎机</button><div id="slotResult" class="game-result"></div></article></div><div class="section-heading"><h3>近期游戏记录</h3><p>已归档记录</p></div><div class="table-wrap"><table><thead><tr><th>时间</th><th>玩法</th><th>支出</th><th>奖金</th></tr></thead><tbody>${history.items.map((x) => `<tr><td>${AVEDTime.markup(x.createdAt)}</td><td>${x.game === "scratch" ? "刮刮乐" : "老虎机"}</td><td>${Number(x.cost).toLocaleString()}</td><td>${Number(x.prize).toLocaleString()}</td></tr>`).join("") || '<tr><td colspan="4">暂无记录</td></tr>'}</tbody></table></div>`;
-  $("#gameCheckin").addEventListener("click", async (e) => {
-    e.currentTarget.disabled = true;
-    try {
-      await api("/api/checkin", { method: "POST", body: "{}" });
-      await loadPortal();
-      await renderGames();
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-      e.currentTarget.disabled = false;
-    }
-  });
-  $("#scratchButton").addEventListener("click", async (e) => {
-    e.currentTarget.disabled = true;
-    try {
-      const r = await api("/api/games/scratch", { method: "POST", body: "{}" });
-      await loadPortal();
-      await renderGames();
-      $("#scratchResult").innerHTML =
-        `<b>${esc(r.prizeName)}${r.prize ? `：+${Number(r.prize).toLocaleString()} 点` : ""}</b>`;
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-      e.currentTarget.disabled = false;
-    }
-  });
-  $("#slotButton").addEventListener("click", async (e) => {
-    e.currentTarget.disabled = true;
-    try {
-      const r = await api("/api/games/slot", { method: "POST", body: "{}" });
-      await loadPortal();
-      await renderGames();
-      $("#slotResult").innerHTML =
-        `<b class="slot-symbols">${r.symbols.map(esc).join("　")}</b><small>${r.prize ? `获得 ${Number(r.prize).toLocaleString()} 点` : "未中奖"}</small>`;
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-      e.currentTarget.disabled = false;
-    }
-  });
-}
-
-// ===== 员工端：匿名论坛 =====
-async function renderForum() {
-  const { items } = await api("/api/forum");
-  $("#panel").innerHTML =
-    `<div class="section-heading"><h3>匿名论坛</h3><p>匿名通讯 / ${items.length}</p></div><form class="admin-form forum-create" id="forumCreate"><h4>发布新帖</h4><input name="title" required maxlength="120" placeholder="帖子标题"><textarea name="body" required maxlength="3000" placeholder="写下内容"></textarea><button class="small-action">匿名发布</button></form><div class="forum-list">${items.map((item) => `<article class="forum-post"><div class="forum-head"><b>${esc(item.title)}</b><small>${esc(item.anonymousName)} 余额 ¤ ${Number(item.balance).toLocaleString()} 点 ${AVEDTime.markup(item.createdAt)}</small></div><p>${esc(item.body)}</p><details data-thread="${item.id}"><summary>回复（${item.replyCount}）</summary><div class="reply-list" id="replies-${item.id}">正在读取…</div><form class="reply-form" data-thread="${item.id}"><textarea name="body" required maxlength="2000" placeholder="匿名回复"></textarea><button class="small-action">发送回复</button></form></details></article>`).join("") || '<p class="muted">还没有帖子。</p>'}</div>`;
-  $("#forumCreate").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const f = e.currentTarget,
-      v = new FormData(f);
-    try {
-      await api("/api/forum", {
-        method: "POST",
-        body: JSON.stringify({ title: v.get("title"), body: v.get("body") }),
-      });
-      await renderForum();
-    } catch (err) {
-      window.AVEDFeedback.alert(err.message);
-    }
-  });
-  document.querySelectorAll("details[data-thread]").forEach((d) =>
-    d.addEventListener("toggle", () => {
-      if (d.open) loadReplies(d.dataset.thread);
-    }),
-  );
-  document.querySelectorAll(".reply-form").forEach((f) =>
-    f.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const v = new FormData(f);
-      try {
-        await api(`/api/forum/${f.dataset.thread}/replies`, {
-          method: "POST",
-          body: JSON.stringify({ body: v.get("body") }),
-        });
-        f.elements.body.value = "";
-        await loadReplies(f.dataset.thread);
-      } catch (err) {
-        window.AVEDFeedback.alert(err.message);
-      }
-    }),
-  );
-}
-async function loadReplies(id) {
-  const target = $(`#replies-${id}`);
-  if (!target) return;
-  try {
-    const { items } = await api(`/api/forum/${id}/replies`);
-    target.innerHTML =
-      items
-        .map(
-          (x) =>
-            `<div class="reply"><b>${esc(x.anonymousName)}</b><small>余额 ¤ ${Number(x.balance).toLocaleString()} 点 ${AVEDTime.markup(x.createdAt)}</small><p>${esc(x.body)}</p></div>`,
-        )
-        .join("") || '<p class="muted">暂无回复。</p>';
-  } catch (e) {
-    target.textContent = e.message;
   }
 }
 
@@ -339,7 +125,7 @@ function personnelAttributeValues(v){const values=Array.from({length:6},(_,i)=>S
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
-  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label data-position-mode>职务类型<select name="positionMode"><option value="member">成员</option><option value="minister">部长（可多人担任）</option><option value="custom">自定义职务</option></select></label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>收容简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label data-position-mode>职务类型<select name="positionMode"><option value="member">成员</option><option value="minister">部长（可多人担任）</option><option value="custom">自定义职务</option></select></label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>个人简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
   const classification=document.createElement('div');classification.dataset.containmentClassification='';classification.innerHTML=window.AVEDAdminDossierContent.classification({classification:current?.containmentClassification||''});fields.querySelector('[data-archive-bio]').before(classification);
   const department=form.querySelector('[name=department]'),departmentLabel=document.createElement('label');departmentLabel.textContent='所属部门';department.before(fields);fields.querySelector('[data-position-mode]').before(departmentLabel);departmentLabel.append(department);
   const attributes=document.createElement('fieldset');attributes.className='employee-attributes-fields';attributes.innerHTML='<legend>六维属性</legend><p>从顶部顺时针排列；每项 0–100，全部留空表示未录入。</p><div class="employee-attribute-grid">'+['力量','意志','洞察','敏捷','智力','体质'].map((label,i)=>'<label>'+label+'<input name="attribute'+i+'" type="number" min="0" max="100" step="1" aria-label="六维 '+label+'" value="'+(current?.attributes?.[i]??'')+'"></label>').join('')+'</div>';fields.after(attributes);
@@ -358,7 +144,7 @@ function enhancePersonnelForms(employees){
    position.closest('label').hidden=!leader||mode.value!=='custom';position.disabled=!leader;position.readOnly=mode.value!=='custom';position.required=leader;position.placeholder='例如：档案管理员、人工智能、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
-   note.textContent=company?'系统收容物由管理员维护，仅展示档案。':kind.value==='player_containment'?'玩家收容物不分配员工部门；个人终端中的「收容部」为接入映射。玩家可编辑自己的收容简介和头像。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
+   note.textContent=company?'系统收容物由管理员维护，仅展示档案。':kind.value==='player_containment'?'玩家收容物的卷宗在「收容卷宗」中编辑。个人简介与头像由玩家自行维护。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
   }
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
@@ -534,6 +320,7 @@ async function renderTab(tab) {
     if(tab === 'forumAdmin')await renderForumAdmin();
     else if(tab === 'lifeAdmin')await renderLifeAdmin();
     else if(tab === 'barMusic')await renderBarMusicAdmin();
+    else if(tab === 'ads')await renderAdsAdmin();
     else if(tab === 'forumWorkshop')await renderForumWorkshopAdmin();
     else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();
@@ -543,12 +330,7 @@ async function renderTab(tab) {
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();
     else if(tab === 'dossiers')await renderContentAdmin('dossiers');
-    else if (tab === "files") await renderDossiers();
-    else if (tab === "notice") await renderAnnouncements();
-    else if (tab === "admin") await renderAdmin();
-    else if (tab === "profile") await renderProfile();
-    else if (tab === "forum") await renderForum();
-    else await renderGames();
+    else await renderAdmin();
   } catch (e) {
     showError(e.message);
   }
@@ -565,11 +347,10 @@ $("#sidebarToggle").addEventListener("click", () => {
   toggle.title = collapsed ? "展开侧边栏" : "收起侧边栏";
 });
 
-// ===== 音乐播放控制 =====
 // 首次进入时：若已有会话则直接加载门户
 document.addEventListener('DOMContentLoaded',()=>loadPortal().catch(()=>{}),{once:true});
 
-// 启动后先探测一次，再每 5 秒更新一次网络灯
+// 启动后先探测一次，再每 30 秒更新一次网络灯
 setNetworkSignalStatus("checking");
 probeServerStatus();
 setInterval(()=>{if(!document.hidden)probeServerStatus();},30000);

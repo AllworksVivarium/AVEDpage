@@ -1,9 +1,11 @@
+import {installAds} from './server-ads.mjs';
 import {DAILY_REWARD} from './server-rewards.mjs';
 import {installBar} from './server-bar.mjs';
 import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
 import {installGameTax} from './server-game-tax.mjs';
 import {installDossierContent,normalizeDossierContent,dossierView} from './server-dossier-content.mjs';
+import {installContainmentDossiers,listDossiers} from './server-containment-dossiers.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
 import {installLogRetention} from './server-log-retention.mjs';
@@ -286,10 +288,12 @@ const adminMutation = (req, res) => {
 installAvatarPresets(db);
 let economy,personal,highlights,gameTax;
 const playerService=installPlayerService({rankingIdentity,db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
+installContainmentDossiers(db);
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 // Preserve legacy split ordering before migrating independent fills.
 playerService.initializeStockLots();
 const companyRobots=installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log:playerService.log});
+const ads=installAds({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger});
 const welfare=installWelfare({rosterState:createWelfareRosterReader(db),db,send,readBody,requireEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment});
 highlights=installGameHighlights({db,send,requireEmployee});
 gameTax=installGameTax({db,recordLedger});
@@ -381,6 +385,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if(await derby.handle(req,res,url))return;
     if(await companyRobots.handle(req,res,url))return;
     if(await payrollIntrusion.handle(req,res,url))return;
+    if(await ads.handle(req,res,url))return;
     if(await welfare.handle(req,res,url))return;
     if(await appearance.handle(req,res,url))return;
     if(await economy.handle(req,res,url))return;
@@ -578,7 +583,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
-      return send(res, 200, { items:db.prepare('SELECT id,code,title,department,status,summary,classification,procedures,sections_json,length(image_data)>0 AS hasImage FROM dossiers ORDER BY id DESC').all().map(dossierView) });
+      return send(res, 200, { items:listDossiers(db).map(dossierView) });
     }
     if (url.pathname === '/api/announcements' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
@@ -692,6 +697,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname.startsWith('/api/admin/dossiers/') && req.method === 'DELETE') {
       if (!requireAdmin(req,res)) return;
+      if(db.prepare('SELECT employee_id FROM dossiers WHERE id=?').get(Number(url.pathname.split('/').at(-1)))?.employee_id)return send(res,409,{error:'此卷宗已关联收容物账号，请在账号名册中管理该身份。'});
       if(!db.prepare('DELETE FROM dossiers WHERE id=?').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'卷宗不存在。'});
       return send(res,200,{ok:true});
     }

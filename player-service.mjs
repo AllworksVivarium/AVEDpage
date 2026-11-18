@@ -1,6 +1,7 @@
 import {mapRankingIdentities} from './server-ranking-identity.mjs';
 import {installRecreationRecords} from './server-recreation-records.mjs';
 import {dossierView} from './server-dossier-content.mjs';
+import {listDossiers} from './server-containment-dossiers.mjs';
 import {stockRiskRules,requireStockLeverage,stockPositionRisk,stockTradeFee} from './stock-risk.mjs';
 import {installStockUnlocks} from './server-stock-unlocks.mjs';
 import {stockFeeTotals} from './server-stock-fees.mjs';
@@ -243,7 +244,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
           employees:!include('departments')?[]:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)})),
           departments:!(include('departments')||include('life'))?[]:db.prepare('SELECT code,name,description AS desc,motto FROM company_departments').all(),
           announcements:!include('news')?[]:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,(SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all(),
-          dossiers:!include('containment')?[]:db.prepare('SELECT id,code,title,department,status,summary,classification,procedures,sections_json,length(image_data)>0 AS hasImage FROM dossiers ORDER BY id').all().map(dossierView),
+          dossiers:!include('containment')?[]:listDossiers(db).map(dossierView),
           forum:!include('forum')?{items:[],next:null}:forum(id),stocks:!include('casino')?[]:market(id),stockOrders:!include('casino')?[]:pendingOrders(id)});return true;
       }
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}

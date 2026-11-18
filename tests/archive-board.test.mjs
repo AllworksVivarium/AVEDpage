@@ -8,6 +8,19 @@ test('random board samples four distinct entries without mutating the full searc
   const result=board.sample(items,4,()=>.37);assert.equal(result.length,4);assert.equal(new Set(result).size,4);assert.deepEqual(items,before);
   assert.equal(board.sample(items.slice(0,3)).length,3);assert.equal(board.sample([]).length,0);
 });
+
+test('containment viewers always see their linked dossier first with three random distinct peers',()=>{
+ const board=api(),items=Array.from({length:12},(_,i)=>({id:'D-'+i,employeeId:i===9?42:null}));
+ for(const random of [()=>0,()=>.99,()=>.37]){
+  const result=board.forViewer(items,{id:'42',identityKind:'player_containment'},4,random);
+  assert.equal(result[0],items[9]);assert.equal(result.length,4);assert.equal(new Set(result).size,4);
+ }
+ const staff=board.forViewer(items,{id:42,identityKind:'player_employee'},4,()=>.99);
+ assert.notEqual(staff[0],items[9]);
+ const excluded=items.filter(item=>item.employeeId!==42);
+ assert.equal(board.forViewer(excluded,{id:42,identityKind:'player_containment'}).length,4,'filters do not force an excluded own dossier back into the results');
+ assert.equal(board.forViewer([items[9]],{id:42,identityKind:'player_containment'}).length,1);
+});
 test('names and summaries change once more and restore together within 100 ms',()=>{
   const board=api(),timers=[],nodes=['WY-001 咖啡机','一台需要混脸熟的异常咖啡机'].map((text,i)=>({textContent:text,getAttribute:k=>k==='data-scp-name'&&i===0?'咖啡机':null,setAttribute(){}}));
   const originals=nodes.map(n=>n.textContent);
