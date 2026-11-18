@@ -42,6 +42,7 @@
   let settings={...defaults,...Object.fromEntries(Object.entries(saved).filter(([key])=>key in defaults))};
   settings.enabled=settings.enabled===true;if(!modes.includes(settings.mode))settings.mode='merge';settings.volume=Math.min(1,Math.max(0,Number(settings.volume)||0));
   let ready=false,activated=false,error='',owner=null,cursor=null,busy=false,pollTimer=null,version=0,lastPoll=0,seedAfterFlight=false,repoll=false;
+  const seen=new Set();
   const listeners=new Set(),notify=()=>listeners.forEach(fn=>fn());
   function stopEngine(){recorded?.cancel();}
   function speak(text,amount){return recorded.speak(amount,settings.volume);}
@@ -49,12 +50,29 @@
   function configureQueue(){queue.configure({...settings,enabled:settings.enabled&&activated&&ready});}
   async function initialize(){ready=!!recorded?.available;error=ready?'':'请使用支持音频播放的浏览器。';configureQueue();notify();return ready;}
   function unlock(){return recorded?.unlock()||Promise.reject(Error('请使用支持音频播放的浏览器。'));}
-  function setSession(id,initialCursor=null){if(owner===id)return;owner=id;cursor=Number.isSafeInteger(initialCursor)?initialCursor:null;version++;queue.clear();if(settings.enabled)requestPoll();}
+  function setSession(id,initialCursor=null){if(owner===id)return;owner=id;cursor=Number.isSafeInteger(initialCursor)?initialCursor:null;version++;seen.clear();queue.clear();if(settings.enabled)requestPoll();}
   function active(){return settings.enabled&&activated&&ready&&!doc.hidden&&!!getUser()?.id&&getUser().id===owner;}
   async function poll(){pollTimer=null;if(!active())return;if(busy){repoll=true;return;}busy=true;const id=owner,token=version;
    try{const seeded=cursor!==null,data=await api('/api/player/income-events'+(seeded?'?after='+cursor:''),{retries:0});if(token!==version||id!==getUser()?.id||!settings.enabled)return;
-    cursor=data.cursor;
-    if(seeded&&active())for(const row of data.items||[])queue.add(row.amount);
+    const after=cursor;
+    if(!Number.isSafeInteger(data.cursor)||data.cursor<0)return;
+    cursor=seeded?Math.max(after,data.cursor):data.cursor;
+    if(seeded&&active()){
+     const enqueue=()=>{
+      if(token!==version||id!==owner||!active())return;
+      const key=KEY+':receipts:'+id;let shared=[];
+      try{const saved=JSON.parse(storage?.getItem(key)||'[]');if(Array.isArray(saved))shared=saved.filter(Number.isSafeInteger);}catch{}
+      const claimed=new Set(shared);
+      for(const row of data.items||[]){
+       if(!Number.isSafeInteger(row.id)||row.id<=after||row.id>cursor||!Number.isSafeInteger(row.amount)||row.amount<=0||seen.has(row.id)||claimed.has(row.id))continue;
+       seen.add(row.id);claimed.add(row.id);shared.push(row.id);
+       try{storage?.setItem(key,JSON.stringify(shared.slice(-200)));}catch{}
+       queue.add(row.amount);
+      }
+      if(seen.size>200)for(const entry of [...seen].slice(0,seen.size-200))seen.delete(entry);
+     };
+     if(root.navigator?.locks?.request)await root.navigator.locks.request('aved-income-receipts:'+id,enqueue);else enqueue();
+    }
     if(data.more)requestPoll(250);
    }catch{}finally{busy=false;lastPoll=Date.now();if(seedAfterFlight){seedAfterFlight=false;cursor=null;requestPoll();}else if(repoll){repoll=false;requestPoll(0);}}
   }

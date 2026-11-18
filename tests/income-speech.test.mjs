@@ -87,3 +87,36 @@ test('controller keeps settings, seeds ledger before announcing and isolates a c
   requests.shift()({cursor:6,items:[{id:6,amount:321}]});await sleep(15);assert.deepEqual(spoken,[321]);
  }finally{for(const resolve of requests)resolve({cursor:6,items:[]});controller.close();}
 });
+
+
+test('replayed receipts never announce the two rewards or their sum again',async()=>{
+ const memory=new Map(),spoken=[];let response={cursor:10,items:[]};
+ const storage={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
+ const doc={hidden:false,addEventListener(){},removeEventListener(){}};
+ const recorded={available:true,unlock:async()=>{},cancel(){},close(){},speak:async n=>spoken.push(n)};
+ const controller=create({api:async()=>response,getUser:()=>({id:1}),storage,doc,recorded});
+ const wait=()=>new Promise(r=>setTimeout(r,220));
+ try{
+  controller.setSession(1);await controller.update({enabled:true,mode:'queue'});await wait();
+  response={cursor:11,items:[{id:11,amount:8000}]};controller.changed();await wait();
+  response={cursor:12,items:[{id:12,amount:2000}]};controller.changed();await wait();
+  response={cursor:12,items:[{id:11,amount:8000},{id:12,amount:2000}]};controller.changed();await wait();
+  response={cursor:11,items:[{id:11,amount:8000}]};controller.changed();await wait();
+  response={cursor:13,items:[{id:12,amount:2000},{id:13,amount:300}]};controller.changed();await wait();
+  assert.deepEqual(spoken,[8000,2000,300]);
+ }finally{controller.close();}
+});
+
+test('two tabs sharing storage announce each ledger receipt only once',async()=>{
+ const memory=new Map(),spoken=[];let response={cursor:10,items:[]};
+ const storage={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
+ const make=()=>create({api:async()=>response,getUser:()=>({id:1}),storage,doc:{hidden:false,addEventListener(){},removeEventListener(){}},recorded:{available:true,unlock:async()=>{},cancel(){},close(){},speak:async n=>spoken.push(n)}});
+ const a=make(),b=make(),wait=()=>new Promise(r=>setTimeout(r,350));
+ try{
+  a.setSession(1);b.setSession(1);await a.update({enabled:true,mode:'merge'});await b.update({enabled:true,mode:'merge'});await wait();
+  response={cursor:11,items:[{id:11,amount:8000}]};a.changed();await wait();
+  response={cursor:12,items:[{id:11,amount:8000},{id:12,amount:2000}]};a.changed();await wait();
+  b.changed();await wait();assert.deepEqual(spoken,[8000,2000]);
+  response={cursor:13,items:[{id:13,amount:2000}]};b.changed();await wait();assert.deepEqual(spoken,[8000,2000,2000]);
+ }finally{a.close();b.close();}
+});

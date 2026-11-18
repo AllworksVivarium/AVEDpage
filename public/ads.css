@@ -5,7 +5,7 @@
 @media(max-width:480px){.ad-window-heading{padding:14px 16px}.ad-tabs{padding:12px 16px 0}.ad-market-content{padding:16px 16px 0}.ad-market-status{margin:12px 16px 16px}.ad-slot-grid{gap:6px}.ad-slot-grid button{padding:12px 8px}.ad-slot-grid strong{font-size:15px}.ad-slot-grid small{font-size:9px}.ad-editor-pair{grid-template-columns:1fr}.ad-popup-dialog .ad-creative,.ad-preview-dialog .ad-creative{padding:22px 20px}.ad-plan-grid{gap:7px}.ad-plan-grid button{padding:20px 7px;font-size:11px}.ad-exchange-entry{gap:10px;padding:14px}.ad-exchange-entry p{flex-basis:100%;order:3;margin:0}.ad-exchange-entry button{margin-left:auto}.ad-auction-meta{gap:8px}.ad-auction-meta button{font-size:10px;padding:7px}.ad-history header,.ad-history-state{flex-wrap:wrap}}
 .ad-market-dialog{--popup-size:760px;--popup-gap:14px}.ad-preview-dialog,.ad-popup-dialog{--popup-size:600px;--popup-gap:14px}
 .ad-popup-dialog[open] .ad-creative{animation:ad-arrive .24s ease-out both}@keyframes ad-arrive{from{opacity:.15;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.ad-popup-dialog[open] .ad-creative{animation:none}}html[data-effects=off] .ad-popup-dialog[open] .ad-creative,body.effects-off .ad-popup-dialog[open] .ad-creative{animation:none}@media(max-width:480px){.ad-slot-grid strong{font-size:14px}}
-@layer aved-popup-density{body dialog.ad-popup-dialog .ad-copy,body dialog.ad-preview-dialog .ad-copy{font-size:clamp(16px,2.5vw,23px)!important;line-height:1.85!important}body dialog.ad-market-dialog>.ad-market-content{padding:20px 22px 0!important}body dialog.ad-market-dialog>.ad-market-status{padding:0!important;margin:14px 22px 18px!important}body dialog.ad-market-dialog>.ad-window-heading h2{font-size:13px!important}body dialog.ad-market-dialog>.ad-tabs{padding:14px 22px 0!important}@media(max-width:480px){body dialog.ad-market-dialog>.ad-market-content{padding:16px 16px 0!important}body dialog.ad-market-dialog>.ad-market-status{margin:12px 16px 16px!important}body dialog.ad-market-dialog>.ad-tabs{padding:12px 16px 0!important}}}
+@layer aved-popup-density{body dialog.ad-popup-dialog .ad-copy,body dialog.ad-preview-dialog .ad-copy{font-size:12px!important;line-height:1.85!important}body dialog.ad-market-dialog>.ad-market-content{padding:20px 22px 0!important}body dialog.ad-market-dialog>.ad-market-status{padding:0!important;margin:14px 22px 18px!important}body dialog.ad-market-dialog>.ad-window-heading h2{font-size:13px!important}body dialog.ad-market-dialog>.ad-tabs{padding:14px 22px 0!important}@media(max-width:480px){body dialog.ad-market-dialog>.ad-market-content{padding:16px 16px 0!important}body dialog.ad-market-dialog>.ad-market-status{margin:12px 16px 16px!important}body dialog.ad-market-dialog>.ad-tabs{padding:12px 16px 0!important}}}
 
 .ad-market-dialog,.ad-preview-dialog,.ad-popup-dialog{--popup-face:var(--inner-card-bg);--popup-ink:var(--inner-text-main);--popup-muted:var(--inner-text-muted);--popup-line:var(--inner-border)}
 .ad-exchange-entry{scroll-margin-top:80px}
@@ -25,7 +25,18 @@
 .ad-market-dialog :is(button,input,textarea):focus-visible{outline:2px solid var(--inner-crimson);outline-offset:3px}
 @layer aved-popup-density {
  body dialog:is(.ad-popup-dialog,.ad-preview-dialog) .ad-creative-title{font-family:var(--type-heading,'Noto Serif SC',serif)!important;font-size:20px!important;line-height:1.4!important;font-weight:600!important;margin:0 0 14px!important;letter-spacing:.04em!important}
- body dialog:is(.ad-popup-dialog,.ad-preview-dialog) .ad-copy{font-family:var(--type-ui,'Noto Sans SC',sans-serif)!important;font-size:14px!important;line-height:1.8!important;font-weight:400!important;white-space:pre-wrap!important;margin:0!important}
+ body dialog:is(.ad-popup-dialog,.ad-preview-dialog) .ad-copy{font-family:var(--type-ui,'Noto Sans SC',sans-serif)!important;font-size:12px!important;line-height:1.8!important;font-weight:400!important;white-space:pre-wrap!important;margin:0!important}
  body dialog:is(.ad-popup-dialog,.ad-preview-dialog) .ad-creative footer{align-items:flex-end!important;text-align:right!important;padding-top:18px!important;margin-top:auto!important}
  body dialog:is(.ad-popup-dialog,.ad-preview-dialog) .ad-signature{font-size:12px!important;line-height:1.6!important}
 }
+
+/* Ready-to-view examples use the same popup renderer as submitted ads. */
+.ad-example-previews{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--inner-border-soft,var(--inner-border));color:var(--inner-text-main);font:12px/1.6 var(--type-ui,sans-serif)}
+.ad-example-previews>div{display:flex;gap:6px;flex-wrap:wrap}
+.ad-example-previews button{min-height:36px}
+@media(max-width:480px){.ad-example-previews>div{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.ad-example-previews button{padding:9px 6px;min-height:42px}}
+
+.ad-text-example{scroll-margin-top:90px;background:var(--inner-card-bg);color:var(--inner-text-main)}
+@media(max-width:480px){.ad-example-previews>div{grid-template-columns:repeat(2,minmax(0,1fr))}.ad-text-example{flex-wrap:wrap;gap:8px}.ad-text-example .ad-creative{flex-basis:calc(100% - 75px)}.ad-text-example>button{margin-left:auto}}
+
+@layer aved-popup-density{body .ad-text-strip .ad-creative .ad-copy{font-family:var(--type-ui,sans-serif)!important;font-size:12px!important;line-height:1.7!important}body .ad-text-strip .ad-creative .ad-creative-title{font-size:14px!important;line-height:1.5!important}body .ad-text-strip .ad-creative .ad-signature{font-size:11px!important;line-height:1.6!important}}

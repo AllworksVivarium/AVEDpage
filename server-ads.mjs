@@ -6,8 +6,8 @@ export const adSlots=Object.freeze([{id:'popup',name:'全站弹窗',base:500000,
 const bidBounds=(slot,leading)=>({minimum:leading?leading.amount+slot.step:slot.base,maximum:Math.min(1000000000,(leading?.amount??slot.base)+slot.step)});
 export const adProtectionPlans=Object.freeze([{days:1,price:20000},{days:3,price:50000},{days:7,price:100000}]);
 export const adCreativeLimits=Object.freeze({title:20,popupBody:160,stripBody:60,signature:20,popupBreaks:5,stripBreaks:1});
-export const adDay=now=>new Date(now+8*3600000).toISOString().slice(0,10);
-const boundary=day=>Date.parse(day+'T00:00:00+08:00');
+export const adDay=now=>new Date(now+4*3600000).toISOString().slice(0,10);
+const boundary=day=>Date.parse(day+'T04:00:00+08:00');
 const text=(value,max)=>{if(typeof value!=='string'||Array.from(value.trim()).length>max)throw Error('广告文字超过长度限制。');return value.trim();};
 async function creative(data,slot){
  const title=text(data.title??'',adCreativeLimits.title),body=text(typeof data.body==='string'?data.body.replace(/\r\n?/g,'\n'):data.body??'',slot.image?adCreativeLimits.popupBody:adCreativeLimits.stripBody);

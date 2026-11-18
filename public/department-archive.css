@@ -158,3 +158,12 @@
 #department-archive .division-section-label [lang=en]{font:8px/1.6 var(--type-code,monospace);letter-spacing:.05em;opacity:.6}
 #department-archive .division-dossier>footer{justify-content:flex-start;gap:20px;flex-wrap:wrap;line-height:1.6}
 @media(max-width:650px){#department-archive .division-intro{padding-top:20px}#department-archive .division-editorial-title{margin-top:14px}#department-archive .division-title-watermark{font-size:55px}#department-archive .division-dossier>header{gap:8px}#department-archive .division-dossier-brand{gap:8px}#department-archive .division-dossier-brand [lang=en]{font-size:7px}#department-archive .division-figure-label{font-size:7px;padding:8px 10px}}
+
+/* Original department reference cards remain complete, below the dossier. */
+#department-archive .division-card-attachment{margin:24px 0;border:1px solid var(--division-line);padding:clamp(10px,2vw,24px);background:var(--division-paper);box-shadow:3px 3px 0 var(--inner-bg),4px 4px 0 var(--division-line)}
+#department-archive .division-card-attachment button{display:block;width:100%;padding:0;border:0;background:transparent}
+#department-archive .division-card-attachment img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain}
+
+#department-archive .division-uniform-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:320px;aspect-ratio:3/4;border:1px solid var(--division-line);color:var(--inner-text-muted);background:var(--division-paper)}
+#department-archive .division-uniform-placeholder>span{font:28px var(--type-code,monospace);letter-spacing:.16em;opacity:.45}
+#department-archive .division-uniform-placeholder>small{margin:0;opacity:.45}

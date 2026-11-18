@@ -77,11 +77,11 @@
  body.theme-inner #inner-app-view #view-forum :is(.forum-floor,.forum-op-badge){font-size:10px!important;color:var(--inner-text-muted);font-weight:400;margin-left:5px}
  body.theme-inner #inner-app-view #view-forum .forum-op-badge{border:1px solid var(--inner-border-soft);padding:1px 3px}
  body.theme-inner #inner-app-view #view-forum .forum-author-balance{font-size:11px!important}
- body.theme-inner #inner-app-view #view-forum .forum-browse-tools{display:grid;gap:10px;margin-bottom:12px}
+ body.theme-inner #inner-app-view #view-forum .forum-browse-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;margin-bottom:12px}
  body.theme-inner #inner-app-view #view-forum .forum-search{display:flex;gap:6px;min-width:0}
  body.theme-inner #inner-app-view #view-forum .forum-search input{width:100%;min-width:0;flex:1;padding:7px 9px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft);font:13px/1.5 var(--terminal-copy, sans-serif)}
- body.theme-inner #inner-app-view #view-forum .forum-browse-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
- body.theme-inner #inner-app-view #view-forum .forum-browse-actions select{max-width:140px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft);padding:5px;font:inherit}
+ body.theme-inner #inner-app-view #view-forum .forum-browse-actions{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0}
+ body.theme-inner #inner-app-view #view-forum .forum-browse-actions select{width:86px;max-width:86px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft);padding:5px;font:inherit}
  body.theme-inner #inner-app-view #view-forum :is(.forum-pagination,.forum-browse-tools) button{min-height:30px!important;padding:5px 8px!important;font-size:12px!important;line-height:1.5!important;white-space:nowrap}
  body.theme-inner #inner-app-view #view-forum .forum-pagination{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 0;scroll-margin-block:80px;font-size:11px}
  body.theme-inner #inner-app-view #view-forum .forum-pagination label{display:flex;align-items:center;gap:4px;white-space:nowrap}
@@ -171,3 +171,5 @@
  .forum-social-dialog .forum-reaction-inbox-list small{font-size:10px;overflow-wrap:anywhere;color:var(--inner-text-muted)}
  .forum-social-dialog .forum-reaction-inbox-list>button[data-unread=false] strong{font-weight:400}
 }
+
+@layer aved-personal{body.theme-inner #inner-app-view #view-forum .forum-browse-actions label{display:flex;align-items:center;gap:4px;white-space:nowrap}body.theme-inner #inner-app-view #view-forum .forum-search button{flex:none}body.theme-inner #inner-app-view #view-forum .forum-browse-tools button{height:32px;min-height:32px!important;padding:4px 8px!important}@media(max-width:400px){body.theme-inner #inner-app-view #view-forum .forum-browse-tools{gap:5px}body.theme-inner #inner-app-view #view-forum .forum-browse-actions{gap:5px}body.theme-inner #inner-app-view #view-forum .forum-browse-actions select{width:78px;max-width:78px}}}
