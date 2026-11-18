@@ -6,13 +6,13 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  const marketDialog=make('ad-market-dialog','广告事务'),preview=make('ad-preview-dialog','广告预览'),popup=make('ad-popup-dialog','今日广告');
  marketDialog.innerHTML='<header class="ad-window-heading"><h2>广告事务</h2><button type="button" data-ad-close aria-label="关闭广告事务">×</button></header><nav class="ad-tabs"><button type="button" data-ad-tab="auction">明日竞拍</button><button type="button" data-ad-tab="mine">我的广告</button><button type="button" data-ad-tab="protection">广告保护</button></nav><div class="ad-market-content"></div><p class="ad-market-status" role="status"></p>';
  const content=marketDialog.querySelector('.ad-market-content'),status=marketDialog.querySelector('[role=status]');
- const entry=document.createElement('section');entry.className='ad-exchange-entry';entry.innerHTML='<div><small>AD EXCHANGE</small><h3>明日广告位</h3></div><p>公司需要你的支持，同事需要你的消息！</p><button type="button" class="community-button">进入竞拍 ↗</button>';
+ const entry=document.createElement('section');entry.className='ad-exchange-entry';entry.innerHTML='<div><h3>明日广告位</h3><small lang="en">AD EXCHANGE</small></div><p>公司需要你的支持，同事需要你的消息！</p><button type="button" class="community-button">进入竞拍 ↗</button>';
  document.querySelector('#game-panel-home .company-ranking-panel').after(entry);entry.querySelector('button').onclick=()=>openMarket();
  const shortcut=document.createElement('button');shortcut.type='button';shortcut.textContent='广告竞拍';shortcut.onclick=()=>openMarket();document.querySelector('#game-panel-home .casino-home-shortcuts').append(shortcut);
  const strips=['forum','casino'].map(slot=>{const el=document.createElement('aside');el.className='ad-text-strip';el.hidden=true;el.dataset.adSlot=slot;el.setAttribute('aria-label',slot==='forum'?'论坛广告':'游戏厅广告');if(slot==='casino')document.querySelector('#game-panel-home .welfare-dashboard').before(el);else (document.querySelector('#forum-list-subview [aria-label="帖子底部翻页"]')||document.getElementById('forum-threads-list-container')).after(el);return el;});
  let owner=null,state=null,tab='auction',slotId='popup',busy=false,image='',imageBusy=false,imageVersion=0,editId=null,request=null,protectionRequest=null,visitBusy=false,visitAgain=false,version=0,countTimer=null,expiryTimer=null,display=null,delta=0,localLast=0,storedAt=0,entryTimer=null,pendingPopup=null,lastAttempt=0,previewVersion=0;
  const examples=[
-  {label:'文字示例',title:'欢迎来到万业携生员工内网！',body:'我能吞下玻璃而不伤身体\n滚滚长江东逝水\n衣带渐宽终不悔，为伊消得人憔悴。\n\n汉体书写信息标准基础相容档案下载使用界面简单志愿服务升级方案。',signature:'万业携生网络工程部'},
+  {label:'文字示例',title:'欢迎来到万业携生员工内网！',body:'我能吞下玻璃而不伤身体\n滚滚长江东逝水\n衣带渐宽终不悔，为伊消得人憔悴。\n汉体书写信息标准基础相容档案下载使用界面简单志愿服务升级方案。',signature:'万业携生网络工程部'},
   {label:'图文示例',title:'下班来坐一会儿',body:'忙完了就来 Sloper 坐坐。\n喝点东西，听首歌，碰见同事就聊两句。',signature:'Sloper',imageUrl:'/assets/ad-examples/sloper.webp'},
   {label:'图片示例',imageUrl:'/assets/ad-examples/company.webp'}
  ];
