@@ -1586,7 +1586,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         byId('claim-relief-btn').textContent='余额低于 10,000 可领低保';
       }
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
-      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward),'success',{stamp:'今日已归岗'});welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
+      async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward),'success');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function completeEnterIntranet(emp){
         innerAppView.classList.add('intranet-preparing');

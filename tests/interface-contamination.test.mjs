@@ -98,7 +98,8 @@ test('logout confirmation keeps looping and preserves the signed-in pollution st
 
 test('only the last explicit closing confirmation turns the saved mode off',async()=>{
  const h=dialogHarness(),result=h.effect.requestDisable();
- for(let n=0;n<10;n++)h.dialog.click();
- assert.equal(h.dialog.dataset.finalConfirmation,'true');assert.ok(h.effect.copy.finalStop.includes(h.dialog.copy.textContent));assert.equal(h.effect.enabled(),true);assert.equal(h.storage.get('aved_contamination_v1'),'on');
+ assert.equal(h.dialog.copy.textContent,'你真的要退出吗？');
+ for(let n=0;n<10;n++){h.dialog.click();if(n<9&&(n+1)%3!==0)assert.equal(h.dialog.copy.textContent,'你真的要退出吗？');}
+ assert.equal(h.dialog.dataset.finalConfirmation,'true');assert.equal(h.dialog.copy.textContent,'你确定真的要离开我吗？');assert.equal(h.effect.enabled(),true);assert.equal(h.storage.get('aved_contamination_v1'),'on');
  h.dialog.click();assert.equal(await result,true);assert.equal(h.effect.enabled(),false);assert.equal(h.storage.get('aved_contamination_v1'),'off');
 });

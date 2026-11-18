@@ -390,7 +390,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/player-layout.css?v=desktop-page-width-20261118">
+  <link rel="stylesheet" href="/player-layout.css?v=containment-discussion-left-20261118">
   <link rel="stylesheet" href="/community.css?v=sfx-only-1">
 <link rel="stylesheet" href="/economy.css?v=compact-margin-row-20261113">
 <link rel="stylesheet" href="/welfare.css?v=rank-pockets-20261118">
@@ -417,8 +417,8 @@
 <script src="/achievement-alerts.js?v=player-admin-copy-20261118" defer></script>
   <link rel="stylesheet" href="/ui-help-notes.css?v=20261114">
   <link rel="stylesheet" href="/sound-settings.css?v=web-sound-20261116">
-  <link rel="stylesheet" href="/department-archive.css?v=personnel-details-20261118">
-  <script src="/department-archive.js?v=stable-uniform-switch-20261118" defer></script>
+  <link rel="stylesheet" href="/department-archive.css?v=editorial-department-interior-20261118">
+  <script src="/department-archive.js?v=editorial-department-interior-20261118" defer></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
   <script>window.AVEDGateway?.apply();</script>
@@ -853,9 +853,9 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div class="containment-workspace">
             <!-- 左侧 6 列：收容物档案板列表区（有数据态与空状态高度一致 min-h-[460px] 避免跳动） -->
-            <div class="archive-pinboard lg:col-span-6 border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner flex flex-col">
+            <div class="archive-pinboard border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner flex flex-col">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
                 <span>在册收容物 · 点击查阅卷宗</span>
 
@@ -894,11 +894,10 @@
               </div>
             </div>
 
-            <!-- 右侧 6 列：选中的收容物详细卷宗 + 下方员工实名评论栏 -->
-            <div class="lg:col-span-6 space-y-5">
-              <div id="scp-detail-container" class="retro-corner-box p-5 sm:p-6"></div>
+            <!-- 完整卷宗在右，评议紧接左侧档案板；窄屏依次显示档案板、卷宗、评议。 -->
+            <div id="scp-detail-container" class="retro-corner-box p-5 sm:p-6"></div>
 
-              <div class="retro-corner-box p-5 space-y-4">
+              <div id="scp-discussion-panel" class="retro-corner-box p-5 space-y-4">
                 <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-2 font-mono-tech text-xs">
                   <span class="font-bold">评议记录</span>
                   <span id="scp-comment-identity-hint" class="text-[var(--inner-crimson)] font-bold">实名绑定中</span>
@@ -912,7 +911,6 @@
                   <button id="scp-comment-submit" type="submit" class="inner-btn-primary scp-comment-submit">发表</button>
                 </form>
               </div>
-            </div>
           </div>
         </section>
 
@@ -1488,12 +1486,12 @@
   <script src="/containment-intrusion.js?v=currency-pig-salute-20261118" defer></script>
   <script src="/welfare-ui.js?v=remove-ranking-note-20261118" defer></script>
   <script src="/visual-style.js?v=economy-balance-20261118" defer></script>
-  <script src="/interface-contamination.js?v=pollution-ally-20261117" defer></script>
+  <script src="/interface-contamination.js?v=repeat-exit-confirm-20261118" defer></script>
   <script src="/contamination-haunt.js?v=beer-foam-pour-20261118" defer></script>
   <script src="/contamination-presence.js?v=away-frequency-20261117" defer></script>
   <script src="/containment-access.js?v=performance-audit-20261117" defer></script>
-  <script src="/personal-hud.js?v=dense-starfield-20261118" defer></script>
-<script src="/rewards-ui.js?v=hourly-all-day-20261118" defer></script>
+  <script src="/personal-hud.js?v=reward-toasts-no-stamp-20261118" defer></script>
+<script src="/rewards-ui.js?v=reward-toasts-no-stamp-20261118" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=casual-race-20261113" defer></script>
 <script src="/derby-ui.js?v=copy-20261116" defer></script>
@@ -1531,12 +1529,12 @@
 <script src="/bar-ui.js?v=beer-foam-pour-20261118" defer></script>
   <script src="/receipt-audio.js?v=receipt-timing-20261116" defer></script>
   <script src="/income-speech.js?v=receipt-timing-20261116" defer></script>
-<link rel="stylesheet" href="/forum-reactions.css?v=all-reactions-motion-20261118">
-<script src="/forum-reaction-art.js?v=fan-contamination-fix-20261118" defer></script>
-<script src="/forum-reactions.js?v=fan-contamination-fix-20261118" defer></script>
+<link rel="stylesheet" href="/forum-reactions.css?v=four-price-rows-original-grin-20261119">
+<script src="/forum-reaction-art.js?v=four-price-rows-original-grin-20261119" defer></script>
+<script src="/forum-reactions.js?v=four-price-rows-original-grin-20261119" defer></script>
 <link rel="stylesheet" href="/ads.css?v=creative-format-20261118">
 <script src="/ads-ui.js?v=bid-bounds-20261118" defer></script>
-<script src="/player.js?v=personnel-details-20261118" defer></script>
+<script src="/player.js?v=reward-toasts-no-stamp-20261118" defer></script>
   <script src="/page-headings.js?v=scoped-observer-9" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>

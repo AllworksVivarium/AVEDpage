@@ -1,22 +1,28 @@
 export const forumReactionCatalog=Object.freeze([
  {id:'plus',name:'+1',price:300,animated:true},
  {id:'heart',name:'心动一下',price:300,animated:true},
+ {id:'brokenHeart',name:'心碎',price:300,animated:true},
  {id:'thumb',name:'大拇指',price:300,animated:true},
+ {id:'good',name:'好！',price:300,animated:true},
+ {id:'pray',name:'合十',price:300,animated:true},
  {id:'flower',name:'鲜花',price:800,animated:true},
  {id:'medal',name:'值得表彰',price:800,animated:true},
  {id:'hundred',name:'满分！',price:800,animated:true},
  {id:'cup',name:'这杯敬你',price:800,animated:true},
- {id:'bulb',name:'醍醐灌顶',price:800,animated:true},
  {id:'check',name:'对勾',price:800,animated:true},
- {id:'eyes',name:'围观',price:800,animated:true},
- {id:'mahjong',name:'中',price:800,animated:true},
- {id:'fan',name:'我扇！',price:800,animated:true},
+ {id:'cross',name:'叉号',price:800,animated:true},
+ {id:'bulb',name:'醍醐灌顶',price:1500,animated:true},
+ {id:'eyes',name:'围观',price:1500,animated:true},
+ {id:'mahjong',name:'中',price:1500,animated:true},
+ {id:'fan',name:'我扇！',price:1500,animated:true},
  {id:'spark',name:'闪耀登场',price:1500,animated:true},
  {id:'fire',name:'热度拉满',price:1500,animated:true},
- {id:'applause',name:'肃然起敬',price:1500,animated:true},
- {id:'pig',name:'猪',price:1500,animated:true},
- {id:'thinking',name:'思考',price:1500,animated:true},
- {id:'question',name:'问号',price:1500,animated:true}
+ {id:'grin',name:'咧嘴笑',price:3000,animated:true},
+ {id:'applause',name:'肃然起敬',price:3000,animated:true},
+ {id:'thinking',name:'思考',price:3000,animated:true},
+ {id:'pig',name:'猪',price:3000,animated:true},
+ {id:'ambulance',name:'救护车',price:3000,animated:true},
+ {id:'question',name:'问号',price:3000,animated:true}
 ]);
 
 export function installForumReactions({db,balanceFor,recordLedger}){

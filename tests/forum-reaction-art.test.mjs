@@ -3,15 +3,15 @@ import {forumReactionCatalog} from '../server-forum-reactions.mjs';
 
 test('all approved reactions have matching names and visible pixel artwork with only local transparent assets',async()=>{
  const window={};vm.runInNewContext(readFileSync(new URL('../public/forum-reaction-art.js',import.meta.url),'utf8'),{window});const {art,icon}=window.AVEDForumReactionArt;
- const approved=["+1","心动一下","大拇指","鲜花","值得表彰","满分！","这杯敬你","醍醐灌顶","对勾","围观","中","我扇！","闪耀登场","热度拉满","肃然起敬","猪","思考","问号"];
+ const approved=["+1","心动一下","心碎","大拇指","好！","合十","鲜花","值得表彰","满分！","这杯敬你","对勾","叉号","醍醐灌顶","围观","中","我扇！","闪耀登场","热度拉满","咧嘴笑","肃然起敬","思考","猪","救护车","问号"];
  assert.deepEqual(forumReactionCatalog.map(x=>x.name),approved);
  for(const item of forumReactionCatalog){
   assert.equal(art[item.id][0],item.name);const svg=icon(item.id);assert.ok(svg.includes('viewBox="0 0 32 32"'));assert.ok(!/<text|https?:/.test(svg));
   let embedded=svg;
   for(const [attribute,url] of svg.matchAll(/href="([^"]+)"/g)){
-   assert.match(url,/^\/assets\/forum-reactions\/[a-z-]+\.webp\?v=[a-z0-9-]+$/);
+   assert.match(url,/^\/assets\/forum-reactions\/[a-z-]+\.(?:webp|jpg)\?v=[a-z0-9-]+$/);
    const bytes=readFileSync(new URL('../public'+url.split('?')[0],import.meta.url));
-   assert.equal((await sharp(bytes).metadata()).hasAlpha,true);
+   if(url.includes('.jpg'))assert.match(svg,/clip-path="url\(#reaction-grin-original-crop\)"/);else assert.equal((await sharp(bytes).metadata()).hasAlpha,true);
    // librsvg's image loader needs PNG; browsers decode the original WebP.
    embedded=embedded.replace(attribute,'href="data:image/png;base64,'+(await sharp(bytes).png().toBuffer()).toString('base64')+'"');
   }

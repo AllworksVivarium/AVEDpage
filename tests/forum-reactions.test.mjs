@@ -8,19 +8,21 @@ test('reaction insert failure rolls back the ledger and revision',t=>{const f=fi
 test('one batch decorates only visible replies, preserves unchanged paging, and separates thread reactions',t=>{const f=fixture(t);f.service.add(1,data);f.service.add(1,{...data,kind:'thread',targetId:10,reaction:'flower'});const result=f.service.decoratePage(10,{items:[{id:11},{id:13}],page:1},2);assert.deepEqual(result.threadReactions,[{id:'flower',count:1,mine:0}]);assert.deepEqual(result.items[0].reactions,[{id:'question',count:1,mine:0}]);assert.deepEqual(result.items[1].reactions,[]);assert.equal(f.service.decoratePage(10,{notModified:true},1).notModified,true);assert.ok(forumReactionCatalog.some(x=>x.name==='问号'));assert.ok(forumReactionCatalog.every(x=>x.animated));});
 
 test('new reactions use the lower server prices; retired reactions cannot be purchased',t=>{
- const f=fixture(t);for(const id of ['thumb','hundred','pig','plus','bulb','medal','fan','thinking','mahjong','check']){
-  const item=forumReactionCatalog.find(x=>x.id===id);assert.ok(item);assert.ok(item.price>=200&&item.price<=2000);
+ const f=fixture(t);for(const id of ['thumb','hundred','pig','plus','bulb','medal','fan','thinking','mahjong','check','grin','ambulance','pray','brokenHeart','good','cross']){
+  const item=forumReactionCatalog.find(x=>x.id===id);assert.ok(item);assert.ok(item.price>=200&&item.price<=3000);
   assert.equal(f.service.add(1,{...data,reaction:id,price:1}).charged,item.price);
  }
  assert.equal(forumReactionCatalog.some(x=>x.id==='signal'),false);assert.throws(()=>f.service.add(1,{...data,reaction:'signal'}));
  assert.ok(forumReactionCatalog.filter(x=>x.animated).every(x=>x.price<=6000));
 });
 
-test('reactions share three ascending tiers with praise first and question last',()=>{
+test('reactions share four uniform price rows with praise first and question last',()=>{
  const cost=id=>forumReactionCatalog.find(x=>x.id===id).price;
- assert.deepEqual([...new Set(forumReactionCatalog.map(x=>x.price))].sort((a,b)=>a-b),[300,800,1500]);
- assert.equal(cost('fan'),800);assert.equal(cost('question'),1500);
- assert.deepEqual(forumReactionCatalog.slice(0,3).map(x=>[x.id,x.price]),[['plus',300],['heart',300],['thumb',300]]);assert.equal(forumReactionCatalog.at(-1).id,'question');
+ assert.deepEqual([...new Set(forumReactionCatalog.map(x=>x.price))].sort((a,b)=>a-b),[300,800,1500,3000]);
+ assert.equal(cost('fan'),1500);assert.equal(cost('heart'),cost('brokenHeart'));assert.equal(cost('check'),cost('cross'));assert.equal(forumReactionCatalog.findIndex(x=>x.id==='cross'),forumReactionCatalog.findIndex(x=>x.id==='check')+1);assert.equal(cost('question'),3000);
+ assert.deepEqual(forumReactionCatalog.slice(0,4).map(x=>[x.id,x.price]),[['plus',300],['heart',300],['brokenHeart',300],['thumb',300]]);assert.equal(forumReactionCatalog.at(-1).id,'question');
+ for(let row=0;row<4;row++)assert.deepEqual(forumReactionCatalog.slice(row*6,row*6+6).map(x=>x.price),Array(6).fill([300,800,1500,3000][row]));
+ assert.deepEqual(forumReactionCatalog.slice(18,21).map(x=>x.id),['grin','applause','thinking']);
  assert.deepEqual(forumReactionCatalog.map(x=>x.price),forumReactionCatalog.map(x=>x.price).sort((a,b)=>a-b));
 });
 

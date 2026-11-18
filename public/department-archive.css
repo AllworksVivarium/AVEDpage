@@ -12,7 +12,7 @@
  #department-archive .division-departments button[aria-pressed=true]{background:var(--inner-text-main);color:var(--inner-bg)}
  #department-archive .division-register-heading{display:flex;align-items:baseline;justify-content:space-between;margin:28px 0 18px}
  #department-archive .division-register-heading>span{font:10px var(--terminal-type,monospace);opacity:.65}
- #inner-app-view #department-archive .division-register-heading h3{font-size:22px!important}
+ #inner-app-view #department-archive .division-register-heading h3{font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.5!important;font-weight:600;letter-spacing:.06em;margin:0}
  #department-archive .division-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
  #department-archive .division-overview-card{padding:20px 24px;border:1px solid var(--division-line);background:var(--division-paper);text-align:left;min-width:0;box-shadow:3px 3px 0 var(--inner-bg),4px 4px 0 var(--division-line)}
  #department-archive .division-overview-card:hover{border-color:var(--inner-text-main);background:var(--inner-card-alt,var(--division-paper))}
@@ -99,3 +99,62 @@
 #inner-app-view #personnel-directory-grid .directory-detail-row :is(dt,dd){margin:0;padding:0;font:inherit!important;letter-spacing:0!important;overflow-wrap:anywhere}
 #inner-app-view #personnel-directory-grid .directory-detail-row dt{color:var(--inner-text-muted)}
 #inner-app-view #personnel-directory-grid .directory-detail-row dd{color:var(--inner-text-main)}
+
+/* Multilingual department plates: typographic identifiers, without ordinal numbers. */
+#department-archive .division-overview-card{position:relative;overflow:hidden}
+#department-archive .division-card-meta{letter-spacing:.08em;align-items:baseline}
+#department-archive .division-card-meta>span:last-child{font-size:8px;letter-spacing:.12em}
+#department-archive .division-card-copy{position:relative;isolation:isolate;min-width:0;padding:6px 0 10px}
+#department-archive .division-card-hebrew{display:block;width:fit-content;color:var(--inner-text-muted);font:12px/1.5 var(--type-hebrew,var(--type-ui));margin-bottom:9px;letter-spacing:0}
+#inner-app-view #department-archive .division-card-copy h3{font-size:36px!important;margin:0 0 6px;letter-spacing:.06em}
+#department-archive .division-card-english{display:block;font:10px/1.6 var(--type-code,monospace);letter-spacing:.13em;margin:0 0 16px;max-width:100%;overflow-wrap:anywhere}
+#department-archive .division-card-copy p{position:relative;font-size:12px;line-height:1.8;max-width:27em}
+#department-archive .division-card-watermark{position:absolute;z-index:-1;right:0;bottom:-8px;font:600 72px/1 var(--type-ui);letter-spacing:-.05em;opacity:.045;pointer-events:none}
+#department-archive .division-card-network{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 14px;font-size:8px;letter-spacing:.04em}
+#department-archive .division-card-network [lang=he]{font-size:11px;opacity:.65}
+#department-archive .division-card-seal small{margin:18px 0 0;font-size:8px;letter-spacing:.16em}
+#department-archive .division-card-seal i{border-radius:0;width:70px;height:70px;border-width:1px 0;transform:rotate(-45deg)}
+@media(max-width:650px){#department-archive .division-card-hebrew{font-size:11px;margin-bottom:6px}#inner-app-view #department-archive .division-card-copy h3{font-size:28px!important}#department-archive .division-card-english{font-size:8px;letter-spacing:.07em;margin-bottom:10px}#department-archive .division-card-network{gap:4px 8px}#department-archive .division-card-watermark{font-size:54px}}
+
+/* Restore the old full-width archive lettering instead of isolated short initials. */
+#department-archive .division-overview-card{isolation:isolate}
+#department-archive .division-letterplate{position:absolute;inset:0;width:100%;height:100%;z-index:-1;color:var(--inner-text-main);opacity:.085;pointer-events:none}
+#department-archive .division-letterplate path{stroke:currentColor;stroke-width:.65;fill:none}
+#department-archive .division-letterplate text{fill:currentColor;font:9px var(--type-code,monospace);letter-spacing:1px}
+#department-archive .division-letterplate .division-letterplate-title{font:600 78px var(--type-ui);letter-spacing:-2px}
+#department-archive .division-letterplate text[lang=he]{font-family:var(--type-hebrew);letter-spacing:0}
+#department-archive .division-card-caption{display:block;margin-top:12px;font:8px/1.6 var(--type-code,monospace);letter-spacing:.1em;opacity:.55;white-space:nowrap}
+#department-archive .division-card-register{border-top:1px solid var(--division-line);padding:8px 0;font:8px/1.4 var(--type-code,monospace);letter-spacing:.035em;white-space:nowrap;opacity:.6}
+#department-archive .division-overview-card footer{padding-top:9px}
+#department-archive :is(.division-card-english,.division-card-hebrew,.division-card-meta,.division-card-network){white-space:nowrap;overflow-wrap:normal;flex-wrap:nowrap}
+#department-archive .division-card-network{gap:8px}
+@media(max-width:1100px){#department-archive .division-card-meta{letter-spacing:0}#department-archive .division-card-meta>span:last-child{font-size:7px;letter-spacing:0}#department-archive .division-card-register{font-size:6px;letter-spacing:0}}
+@media(max-width:650px){#department-archive .division-card-caption{font-size:7px;letter-spacing:.04em}#department-archive .division-card-network{gap:6px}#department-archive .division-letterplate{opacity:.07}}
+
+#department-archive :is(.division-card-meta,.division-overview-card footer,.division-register-heading){justify-content:flex-start;text-align:left;gap:16px}
+#department-archive .division-overview-card{text-align:left}
+
+/* Responsibility captions and baseline-aligned archive actions. */
+#department-archive .division-overview-card footer{align-items:baseline}
+#department-archive .division-overview-card footer b{position:relative;top:1px}
+
+#department-archive .division-description-en{margin:10px 0 0;font:11px/1.8 var(--type-ui,sans-serif);color:var(--inner-text-muted);text-align:left;letter-spacing:0;overflow-wrap:break-word}
+
+/* Department interiors continue the cover typography as a readable editorial spread. */
+#department-archive .division-dossier>header{align-items:baseline;justify-content:flex-start;gap:20px;flex-wrap:wrap}
+#department-archive .division-dossier-brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+#department-archive .division-dossier-brand [lang=he]{font:11px var(--type-hebrew)}
+#department-archive .division-spread>figure{align-self:start}
+#department-archive .division-figure-label{display:flex;align-items:baseline;gap:12px;padding:10px 12px;background:var(--division-paper);color:var(--division-ink);font:8px/1.6 var(--type-code,monospace);letter-spacing:.04em;border-bottom:1px solid var(--division-line)}
+#department-archive .division-figure-label [lang=he]{font:11px var(--type-hebrew)}
+#department-archive .division-editorial-title{position:relative;isolation:isolate;overflow:hidden;margin-top:20px;padding:6px 0 14px;border-bottom:1px solid var(--division-line)}
+#department-archive .division-title-watermark{position:absolute;z-index:-1;left:0;bottom:26px;font:600 clamp(54px,6vw,82px)/1 var(--type-ui);letter-spacing:-.05em;white-space:nowrap;opacity:.075;pointer-events:none}
+#department-archive .division-title-hebrew{display:block;width:fit-content;font:13px/1.5 var(--type-hebrew);color:var(--inner-text-muted)}
+#department-archive .division-editorial-title h3{margin:10px 0 8px}
+#department-archive .division-editorial-title .division-en{font:11px/1.6 var(--type-code,monospace);letter-spacing:.09em;opacity:1;white-space:nowrap}
+#department-archive .division-title-caption{display:block;margin-top:16px;font:8px/1.6 var(--type-code,monospace);letter-spacing:.06em;opacity:.6}
+#department-archive .division-intro .division-rule{margin:18px 0}
+#department-archive .division-section-label{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;font:12px/1.6 var(--type-ui)}
+#department-archive .division-section-label [lang=en]{font:8px/1.6 var(--type-code,monospace);letter-spacing:.05em;opacity:.6}
+#department-archive .division-dossier>footer{justify-content:flex-start;gap:20px;flex-wrap:wrap;line-height:1.6}
+@media(max-width:650px){#department-archive .division-intro{padding-top:20px}#department-archive .division-editorial-title{margin-top:14px}#department-archive .division-title-watermark{font-size:55px}#department-archive .division-dossier>header{gap:8px}#department-archive .division-dossier-brand{gap:8px}#department-archive .division-dossier-brand [lang=en]{font-size:7px}#department-archive .division-figure-label{font-size:7px;padding:8px 10px}}

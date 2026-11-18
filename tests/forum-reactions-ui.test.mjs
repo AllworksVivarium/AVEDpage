@@ -17,6 +17,7 @@ test('empty posts have no reaction add button; body click and keyboard open the 
  const menu=dialog.querySelector('.forum-reaction-options').innerHTML;
  for(const item of forumReactionCatalog)assert.ok(menu.includes('aria-label="'+item.name+'"'),item.name+' remains accessible');
  assert.equal((menu.match(/<b(?:\s|>)/g)||[]).length,1);assert.ok(menu.includes('>我扇<span class="forum-fan-punctuation" aria-hidden="true">！</span></b>'));assert.ok(!menu.includes('>满分！<'));assert.ok(!populated.includes('title='));
+ assert.ok(!menu.includes('forum-reaction-group'));assert.ok(!menu.includes('小黄脸'));assert.ok(menu.indexOf('data-pick-reaction="brokenHeart"')>menu.indexOf('data-pick-reaction="heart"'));
  assert.ok(!menu.includes('动态'));assert.ok(!menu.includes('静态'));
  dialog.close();const keyboardPost={dataset:{replyId:'11'},closest:()=>keyboardPost};let prevented=false;
  view.listeners.keydown({key:'Enter',target:keyboardPost,preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(dialog.open,true);assert.equal(calls.length,1,'the catalog is reused; opening the picker never purchases');

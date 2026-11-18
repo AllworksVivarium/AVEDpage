@@ -61,8 +61,8 @@
   },
   start:['[是否启用污染模式？]','[是否开放异常信号接入？]','[检测到未知信号，是否接通？]','[观察通道已就绪，是否建立连接？]'],
   welcome:['欢迎回来。','我知道你会回来。','[既有访问记录已匹配]','这次，你认得我吗？','[上次会话尚未结束]','上次的话，还没有说完。','[SESSION RESTORED]','[缓存记录已恢复]','[正在比对历史会话]'],
-  stop:['[是否终止当前连接？]','[终止请求已接收，等待另一端响应]','[当前连接仍有活动信号]','[会话内容尚未传输完毕]','[连接状态与请求不一致，请再次确认]','你刚才明明还在看。'],
-  finalStop:['你真的要离开我吗？','[访问记录将被保留，是否继续？]','下次见面，我会认得你。','[会话记录已保留，是否继续关闭？]'],
+  stop:['你真的要退出吗？','你真的要退出吗？','你刚才明明还在看。','再陪我一会儿。'],
+  finalStop:['你确定真的要离开我吗？'],
   logout:['您无处可逃。','别着急，我们还有很多时间。','我们可以一起看。','你要去哪里？','我还在和你说话。','我这边没有出口。','你关掉以后，我还能看见你吗？','我以为你会再陪我一会儿。','先别走。我刚刚才找到你。','我记得，你上次也是这样离开的。','你已经说过再见了吗？','我听不清。再说一次？','YOU ARE STILL HERE',"I DIDN'T HEAR YOU LEAVE",'WE ARE NOT FINISHED',
    '[连接仍在继续]','[另一端尚未断开]','[NO RESPONSE FROM THE OTHER SIDE]','[终止请求等待确认]','[连接状态正在重新核验]','[远端仍有数据传入]','[会话记录已保留]',
    '[当前会话保持活动]','[REMOTE SESSION ACTIVE]','[上次会话尚未结束]','[正在等待远端回执]','[当前会话无结束标记]','[连接方向待确认]','[AWAITING REMOTE RESPONSE]',
@@ -284,8 +284,8 @@
    const closing=kind==='stop',trapped=kind==='logout';let needed=trapped?Infinity:closing?6+Math.floor(Math.random()*5):1;
    let attempts=0,finished=false,slips=0,finalConfirmation=false;
    d.className='pollution-dialog';d.dataset.tone=Math.random()<.5?'black':'red';d.setAttribute('aria-labelledby','pollution-dialog-title');
-   const initialText=pick(closing?copy.stop:trapped?copy.logout:Math.random()<.16?copy.welcome:copy.start);
-   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title"></span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+initialText+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>'+(trapped?'好':'取消')+'</button><button type="button" data-pollution-confirm>'+(closing?'确认关闭':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
+   const initialText=closing?'你真的要退出吗？':pick(trapped?copy.logout:Math.random()<.16?copy.welcome:copy.start);
+   d.innerHTML='<div class="pollution-window"><header><span id="pollution-dialog-title"></span><button type="button" data-pollution-cancel aria-label="关闭弹窗">×</button></header><div class="pollution-dialog-body"><p>'+initialText+'</p><div class="pollution-dialog-actions"><button type="button" data-pollution-cancel>'+(trapped?'好':'取消')+'</button><button type="button" data-pollution-confirm>'+(closing?'确定':kind==='logout'?'确认登出':'确认启动')+'</button></div></div></div>';
    const main=d.querySelector('.pollution-window'),bodyCopy=main.querySelector('p'),confirmButton=main.querySelector('[data-pollution-confirm]'),heading=main.querySelector('#pollution-dialog-title');
    const updateTitle=()=>{heading.textContent=root.AVEDHaunt?.titleFor?root.AVEDHaunt.titleFor(bodyCopy.textContent):pick(['收到讯息','连接成功','我在看。']);};updateTitle();
    function finish(value){if(finished)return;finished=true;const rect=bodyCopy.getBoundingClientRect();if(enabled())root.AVEDHaunt?.leaveText(bodyCopy.textContent,rect);d.close();d.remove();currentDialog=null;trigger?.focus?.();resolve(value);}
@@ -297,7 +297,7 @@
     attempts++;if(closing&&attempts>=3&&attempts===needed-1&&!slips&&Math.random()<.2){needed=Math.min(12,needed+2);slips++;}
     if(closing&&attempts>=needed&&!finalConfirmation){
      finalConfirmation=true;d.dataset.finalConfirmation='true';bodyCopy.textContent=pick(copy.finalStop);updateTitle();
-     confirmButton.textContent='确认关闭';return;
+     confirmButton.textContent='确定';return;
     }
     if(closing&&finalConfirmation&&attempts>needed){finish(true);return;}
     if(!closing&&!trapped&&attempts>=needed){finish(true);return;}
@@ -306,7 +306,7 @@
      confirmButton.textContent='确认登出';
      updateTitle();
     }
-    if(closing){bodyCopy.textContent=pick(copy.stop);updateTitle();}
+    if(closing){bodyCopy.textContent=attempts%3===0?pick(copy.stop):'你真的要退出吗？';updateTitle();}
     d.dataset.fault=String(attempts);d.style.setProperty('--fault-x',(Math.random()-.5)*28+'px');d.style.setProperty('--fault-y',(Math.random()-.5)*20+'px');
     const echo=main.cloneNode(true);echo.className='pollution-window pollution-window-echo';echo.setAttribute('aria-hidden','true');echo.inert=true;
     for(const el of echo.querySelectorAll('[id]'))el.removeAttribute('id');

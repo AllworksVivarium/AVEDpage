@@ -11,7 +11,7 @@
  .forum-reaction-dialog h2{margin:4px 0 0;font-size:18px}.forum-reaction-dialog header button{padding:3px 9px;font-size:24px}
  .forum-reaction-dialog button{border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);color:inherit;cursor:pointer}
  .forum-reaction-confirm p:empty{display:none}
- .forum-reaction-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 18px 16px}
+ .forum-reaction-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:0 18px 16px}
  body.theme-inner #view-forum .forum-reaction-options button{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px 8px!important;border:1px solid var(--inner-border)!important;background:color-mix(in srgb,var(--inner-text-main) 3%,transparent)!important;min-width:0;min-height:66px}
  .forum-reaction-options .forum-reaction-icon{width:32px;height:32px}.forum-reaction-artwork{display:flex;align-items:center;justify-content:center;flex-direction:column;height:32px;flex:none}.forum-reaction-artwork.has-label .forum-reaction-icon{width:26px;height:24px}.forum-reaction-artwork b{font-size:8px;font-weight:400;line-height:8px}.forum-fan-label{position:relative;white-space:nowrap}.forum-fan-label>.forum-fan-punctuation{position:absolute;left:calc(100% + 1px);top:0;display:block;width:2px;height:7px;font-size:0!important;line-height:0}.forum-fan-label>.forum-fan-punctuation::before,.forum-fan-label>.forum-fan-punctuation::after{content:"";position:absolute;left:0;width:2px;background:currentColor}.forum-fan-label>.forum-fan-punctuation::before{top:0;height:4px}.forum-fan-label>.forum-fan-punctuation::after{top:5px;height:2px}.forum-reaction-options small{font-size:10px;color:var(--inner-text-muted)}
  body.theme-inner #view-forum .forum-reaction-options [aria-pressed=true]{border-color:var(--inner-accent)!important;box-shadow:inset 0 0 0 1px var(--inner-accent)}
@@ -58,3 +58,13 @@
  body.effects-off .reaction-motion,body.effects-off .reaction-motion *{animation:none!important}
  @media(prefers-reduced-motion:reduce){.reaction-motion,.reaction-motion *{animation:none!important}}
 }
+
+@media(max-width:480px){.forum-reaction-options{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.reaction-motion-grin{animation:reaction-nod 3.2s steps(3,end) infinite}
+.reaction-motion-ambulance{animation:reaction-sway 2.6s steps(3,end) infinite}
+.reaction-part-beacon{animation:reaction-shine 1.3s steps(2,end) infinite}
+.reaction-motion-pray{animation:reaction-rise 3.5s steps(3,end) infinite}
+.reaction-motion-broken-heart{animation:reaction-beat 4s steps(3,end) infinite}
+.reaction-motion-good,.reaction-motion-cross{animation:reaction-stamp 3.6s steps(3,end) infinite}
+body.effects-off :is(.reaction-motion-grin,.reaction-motion-ambulance,.reaction-motion-pray,.reaction-motion-broken-heart,.reaction-motion-good,.reaction-motion-cross,.reaction-part-beacon){animation:none!important}
+@media(prefers-reduced-motion:reduce){.reaction-motion-grin,.reaction-motion-ambulance,.reaction-motion-pray,.reaction-motion-broken-heart,.reaction-motion-good,.reaction-motion-cross,.reaction-part-beacon{animation:none!important}}
