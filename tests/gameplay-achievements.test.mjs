@@ -85,3 +85,22 @@ test('historical backfill is idempotent, keeps admin revisions and excludes flig
  db.exec('UPDATE sky_flights SET ended_at=2000 WHERE id=2');assert.ok(codes(2).includes('sky-extreme'));
  assert.deepEqual(db.prepare('SELECT * FROM game_tickets').all(),rows);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
 });
+
+
+test('legacy derby achievement wording follows the current game name without resetting earned records',t=>{
+ const {db,install,add}=fixture(t);
+ add(1,'derby',{round:1,market:'first'});
+ const defaults=db.prepare("SELECT code,description FROM achievement_definitions WHERE description LIKE '%随便跑跑%'").all();
+ assert.equal(defaults.length,7);
+ const earned=db.prepare('SELECT * FROM earned_achievements ORDER BY employee_id,code').all();
+ const update=db.prepare('UPDATE achievement_definitions SET description=? WHERE code=?');
+ for(const row of defaults)update.run(row.description.replaceAll('随便跑跑','下班竞速'),row.code);
+ db.prepare("UPDATE achievement_definitions SET title='自定称号',threshold=9,enabled=0 WHERE code='derby-last-five'").run();
+ update.run('同事自定说明，保留原样。','derby-both-three');
+ install();install();
+ for(const row of defaults.filter(x=>x.code!=='derby-both-three'))assert.equal(db.prepare('SELECT description FROM achievement_definitions WHERE code=?').get(row.code).description,row.description);
+ assert.equal(db.prepare("SELECT description FROM achievement_definitions WHERE code='derby-both-three'").get().description,'同事自定说明，保留原样。');
+ assert.deepEqual({...db.prepare("SELECT title,threshold,enabled FROM achievement_definitions WHERE code='derby-last-five'").get()},{title:'自定称号',threshold:9,enabled:0});
+ assert.deepEqual(db.prepare('SELECT * FROM earned_achievements ORDER BY employee_id,code').all(),earned);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,0);
+});

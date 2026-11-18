@@ -17,6 +17,8 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  for(const d of achievementCatalog)db.prepare('INSERT OR IGNORE INTO achievement_definitions(code,title,description,metric,threshold) VALUES(?,?,?,?,?)').run(d.code,d.title,d.description,d.metric,d.threshold);
  // Correct only unchanged built-in game names; retain custom achievement copy.
  for(const d of achievementCatalog.filter(d=>d.description.includes('智斗太姥')))db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,d.description.replaceAll('智斗太姥','斗太姥'));
+ // Migrate the old derby name in unchanged default descriptions, including earned achievements.
+ for(const d of achievementCatalog.filter(d=>d.description.includes('随便跑跑')))db.prepare('UPDATE achievement_definitions SET description=? WHERE code=? AND description=?').run(d.description,d.code,d.description.replaceAll('随便跑跑','下班竞速'));
  // Update built-in wording only when it still matches the previous default.
  for(const d of achievementCatalog){
   let previous=d.description;
