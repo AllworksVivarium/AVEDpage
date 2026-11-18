@@ -28,14 +28,17 @@ body.landing-sphere #landing-view[data-sphere-pattern=ascii]::before{background:
 @media print{.terminal-content-pane::before{display:none!important}}
 
 /* Personal collection: restrained symbol waterfall and circuit dot matrix. */
-body.theme-inner[data-terminal-pattern=ascii] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 23%,transparent);mask-image:url('/assets/profile-ascii-flow.svg');mask-size:240px 320px;mask-repeat:repeat;animation:profile-ascii-flow 28s steps(224,end) infinite}
-body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 18%,transparent);mask-image:url('/assets/profile-phase-dots.svg');mask-size:120px 120px;mask-repeat:repeat}
+body.theme-inner[data-terminal-pattern=ascii] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 23%,transparent);mask-image:url('/assets/profile-ascii-flow.svg?v=numeric-20261119');mask-size:240px 320px;mask-repeat:repeat;animation:profile-ascii-flow 28s steps(224,end) infinite}
+body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{background:linear-gradient(180deg,color-mix(in srgb,var(--inner-text-main) 12%,transparent),color-mix(in srgb,var(--inner-crimson) 38%,transparent) 48%,color-mix(in srgb,var(--inner-text-main) 12%,transparent) 65%);background-size:100% 240%;mask-image:url('/assets/profile-phase-dots.svg');mask-size:120px 120px;mask-repeat:repeat;animation:profile-phase-scan 12s linear infinite}
 @keyframes profile-ascii-flow{from{mask-position:0 -320px}to{mask-position:0 0}}
-body.effects-off[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}
-@media(prefers-reduced-motion:reduce){body[data-terminal-pattern=ascii] .terminal-content-pane::before{animation:none}}
-/* The animated field replaces only the player's ASCII texture. */
+@keyframes profile-phase-scan{from{background-position:0 0}to{background-position:0 240%}}
+body.effects-off:is([data-terminal-pattern=ascii],[data-terminal-pattern=phase]) .terminal-content-pane::before{animation:none}
+@media(prefers-reduced-motion:reduce){body:is([data-terminal-pattern=ascii],[data-terminal-pattern=phase]) .terminal-content-pane::before{animation:none}}
+/* One canvas replaces the selected animated texture; other surfaces stay CSS-only. */
 body.theme-inner .terminal-content-pane.has-ascii-field::before{display:none!important}
 .terminal-ascii-field{position:sticky;top:0;display:block;width:100%;margin-bottom:calc(-1 * var(--ascii-field-height,0px));z-index:-1;pointer-events:none;opacity:.19}
 .terminal-ascii-field[hidden]{display:none}
 body:not(.dark-mode) .terminal-ascii-field{opacity:.15}
+.terminal-ascii-field[data-pattern=phase]{opacity:.3}
+body:not(.dark-mode) .terminal-ascii-field[data-pattern=phase]{opacity:.23}
 @media print{.terminal-ascii-field{display:none!important}}

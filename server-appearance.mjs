@@ -1,6 +1,6 @@
 const palettes={oxblood:{name:'黑金绛红',price:0},mineral:{name:'矿物收藏',price:50000},darkroom:{name:'钴蓝静频',price:50000}};
 const backgrounds={image:{name:'建筑背景',price:0},sphere:{name:'信号球体',price:100000}};
-const patterns={plain:{name:'无纹理',price:0},halftone:{name:'波纹网点',price:20000},fade:{name:'渐隐网点',price:20000},grain:{name:'磨砂纸纹',price:20000},ascii:{name:'符号瀑流',price:20000},phase:{name:'相位点阵',price:20000}};
+const patterns={plain:{name:'无纹理',price:0},halftone:{name:'波纹网点',price:20000},fade:{name:'渐隐网点',price:20000},grain:{name:'磨砂纸纹',price:20000},ascii:{name:'符号瀑流',price:50000},phase:{name:'相位点阵',price:50000}};
 
 const effects={contamination:{name:'污染模式',price:500000}};
 

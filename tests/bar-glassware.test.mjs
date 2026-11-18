@@ -83,3 +83,27 @@ test('every current bottle fits either empty glass in a single pour without crea
   }
  }
 });
+
+
+test('reentry clears selected cups together with drinks at the existing thirty-minute boundary',async t=>{
+ const f=fixture(t);assert.equal((await f.req(1)).data.barPreferences.glassId,null);
+ await f.req(1,'/api/player/bar/preferences',{toleranceId:'high'});await prefs(f,1,'highball');
+ const bought=await order(f,1,'mineral-water');const id=bought.data.myDrink.id;
+ const poured=await pour(f,1,id);assert.equal(poured.data.myDrink.glassMl,500);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_sips').get().n,0,'pouring alone does not drink');
+ const balance=f.balanceFor(1),ledger=f.db.prepare('SELECT * FROM balance_ledger').all();
+ await f.req(1);f.advance(30*60000-1);let state=(await f.req(1)).data;
+ assert.equal(state.barPreferences.glassId,'highball');assert.equal(state.myDrink.id,id);
+ f.advance(30*60000);state=(await f.req(1)).data;
+ assert.equal(state.myDrink,null);assert.equal(state.barPreferences.glassId,null);assert.equal(state.barPreferences.toleranceId,'high');
+ assert.equal(f.balanceFor(1),balance);assert.deepEqual(f.db.prepare('SELECT * FROM balance_ledger').all(),ledger);
+ assert.equal(f.db.prepare('SELECT glass_ml FROM bar_servings WHERE order_id=?').get(id).glass_ml,500,'cleanup does not rewrite historical consumption');
+ f.restart();state=(await f.req(1)).data;assert.equal(state.myDrink,null);assert.equal(state.barPreferences.glassId,null);
+});
+
+test('an empty selected cup is also removed after thirty minutes away',async t=>{
+ const f=fixture(t);await f.req(1);await prefs(f,1,'beer-mug');
+ f.advance(30*60000);const state=(await f.req(1)).data;
+ assert.equal(state.myDrink,null);assert.equal(state.barPreferences.glassId,null);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_orders').get().n,0);assert.equal(f.balanceFor(1),100000);
+});

@@ -110,7 +110,7 @@ window.AVEDBar=function({api,esc,getUser,onBalance,onExit}){
  async function enter({fromRoute=false}={}){
   if(open||!getUser())return;identity.value=stored('aved_bar_identity_'+getUser().id,'anonymous')==='real'?'real':'anonymous';open=true;const visit=++version;if(!fromRoute){returnHash=location.hash||'#/profile';history.pushState({...history.state,avedBar:true},'','#/bar');window.dispatchEvent(new Event('aved-bar-change'));}else returnHash='#/profile';
   root.hidden=false;document.body.classList.add('bar-room-open');document.documentElement.classList.add('bar-room-root-open');document.querySelector('#inner-app-view').inert=true;root.querySelector('[data-bar-exit]').focus();
-  messageStore.clear();messages.dataset.key='';nextBefore=null;paginationStarted=false;layout='';snapshot=null;tell('');$('[data-bar-menu]').disabled=true;paintMusic();
+  messageStore.clear();messages.dataset.key='';nextBefore=null;paginationStarted=false;layout='';snapshot=null;$('[data-bar-glasses]').replaceChildren();tell('');$('[data-bar-menu]').disabled=true;paintMusic();
   try{
    const data=await api('/api/player/bar');if(!open||version!==visit)return;drinks=data.menu;renderMenu();receive(data,{initial:true});if(!muted)music.play().catch(()=>{muted=true;paintMusic();});
    source=new EventSource('/api/player/bar/events');source.addEventListener('bar',event=>{if(!open||version!==visit)return;try{receive(JSON.parse(event.data));}catch{}});source.onerror=()=>{if(version===visit){tell('连接中断，正在重试。');$('[data-bar-online]').textContent='— 人在座';api('/api/me',{retries:0}).catch(error=>{if(error.status===401&&version===visit){leave();window.AVEDFeedback.alert('接入已失效，请重新登录。');}});}};

@@ -2,7 +2,7 @@ import {existsSync,mkdirSync,writeFileSync,chmodSync,copyFileSync,unlinkSync,con
 import {join} from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 
-export const releaseId='ad-four-am-directory-20261119';
+export const releaseId='scratch-ordinary-prizes-20261119';
 // Runs before schema installation. The snapshot stays on the server data volume.
 export async function backupBeforeContainmentRelease(db,dataDir,{production=process.env.NODE_ENV==='production'}={}){
  if(!production)return {status:'development'};

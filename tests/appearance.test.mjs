@@ -44,7 +44,7 @@ function shopFixture(t,initialBalance=160000){
 test('background shop defaults are free; the sphere and three textures charge once and survive restart',async t=>{
  const {db,balanceFor,options,service,request,login}=shopFixture(t);
  assert.deepEqual(service.snapshot(1).backgrounds,{owned:['image'],prices:{image:0,sphere:100000}});
- assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:20000,fade:20000,grain:20000,ascii:20000,phase:20000}});
+ assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:20000,fade:20000,grain:20000,ascii:50000,phase:50000}});
  await request({background:'image'});await request({pattern:'plain'});assert.equal(balanceFor(1),160000);
  const sphere=await request({background:'sphere',price:1,balance:900000});assert.equal(sphere.data.balance,60000);
  assert.ok(sphere.data.appearance.backgrounds.owned.includes('sphere'));
@@ -72,10 +72,25 @@ test('invalid shop purchases and failed entitlement writes cannot charge the acc
 });
 
 test('symbol flow and phase textures use the same one-time purchase and account isolation',async t=>{
- const {db,request,balanceFor,service}=shopFixture(t,40000);
+ const {db,request,balanceFor,service}=shopFixture(t,100000);
  for(const pattern of ['ascii','phase']){assert.equal((await request({pattern})).status,200);assert.equal((await request({pattern})).status,200);}
  assert.equal(balanceFor(1),0);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,2);
+ assert.deepEqual(db.prepare('SELECT delta FROM balance_ledger ORDER BY id').all().map(row=>row.delta),[-50000,-50000]);
  assert.deepEqual(service.snapshot(1).patterns.owned,['plain','ascii','phase']);assert.deepEqual(service.snapshot(2).patterns.owned,['plain']);
+});
+
+test('higher animated texture prices preserve earlier ownership without charging a difference',async t=>{
+ const {db,options,balanceFor,login,request}=shopFixture(t,40000);
+ for(const pattern of ['ascii','phase']){
+  const ledger=db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(1,-20000,?)').run('legacy texture purchase');
+  db.prepare("INSERT INTO employee_backgrounds(employee_id,kind,item,ledger_id) VALUES(1,'pattern',?,?)").run(pattern,Number(ledger.lastInsertRowid));
+ }
+ const before=db.prepare('SELECT * FROM employee_backgrounds ORDER BY item').all(),service=installAppearance(options);
+ assert.equal(service.snapshot(1).patterns.prices.ascii,50000);assert.equal(service.snapshot(1).patterns.prices.phase,50000);
+ for(const pattern of ['ascii','phase'])assert.equal((await request({pattern})).status,200);
+ assert.equal(balanceFor(1),0);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,2);
+ assert.deepEqual(db.prepare('SELECT * FROM employee_backgrounds ORDER BY item').all(),before);
+ login(2);assert.equal((await request({pattern:'phase',price:20000})).status,400);assert.equal(balanceFor(2),9999);
 });
 
 test('contamination costs 500000 after explicit confirmation and remains owned once purchased',async t=>{

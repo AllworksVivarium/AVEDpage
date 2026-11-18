@@ -22,5 +22,9 @@ body.theme-inner[data-terminal-pattern=fade] .terminal-content-pane::before{mask
  body.theme-inner.effects-off:is([data-terminal-pattern=halftone],[data-terminal-pattern=fade],[data-terminal-pattern=grain]) .terminal-content-pane::before{display:block!important}
 }
 
-#view-profile.personal-hud .hud-pattern-ascii::after{background:var(--inner-text-main);mask-image:url('/assets/profile-ascii-flow.svg');mask-size:180px 240px;mask-repeat:repeat;opacity:1}
+#view-profile.personal-hud .hud-pattern-ascii::after{background:var(--inner-text-main);mask-image:url('/assets/profile-ascii-flow.svg?v=numeric-20261119');mask-size:180px 240px;mask-repeat:repeat;opacity:1}
 #view-profile.personal-hud .hud-pattern-phase::after{background:var(--inner-text-main);mask-image:url('/assets/profile-phase-dots.svg');mask-size:65px 65px;mask-repeat:repeat;opacity:1}
+#view-profile.personal-hud .hud-pattern-ascii::after{animation:profile-ascii-flow 28s steps(224,end) infinite}
+#view-profile.personal-hud .hud-pattern-phase::after{background:linear-gradient(180deg,color-mix(in srgb,var(--inner-text-main) 35%,transparent),var(--inner-crimson) 48%,var(--inner-text-main) 65%);background-size:100% 240%;animation:profile-phase-scan 12s linear infinite}
+body.effects-off #view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-phase)::after{animation:none}
+@media(prefers-reduced-motion:reduce){#view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-phase)::after{animation:none}}

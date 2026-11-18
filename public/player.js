@@ -1237,17 +1237,17 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           type: 'step_climb',
           sub: '五站巡签',
           title: '步步添彩',
-          tagline: '走过五个站点，签下一份好彩头',
+          tagline: '五站升降，按终点层数领取津贴',
           icon: '⚡',
-          cellsCount: 10,
+          cellsCount: 5,
           baseTopPrize: 325000,
           bgBand: 'bg-[#4a1612] text-white',
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、五个站点各有两枚签号，共 10 格',
-            '二、右侧员工签号大于左侧站点签号，即通过该站',
-            '三、通过的每个站点均可领奖'
+            '一、从 0 层出发，刮开五站的升降步数',
+            '二、上升加层、回落减层，停留不变',
+            '三、按最终到达的层数领取对应津贴'
           ]
         }
       ];
@@ -1315,7 +1315,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           rules.push('四、炸弹概率 '+percent(risk.chance)+'：'+risk.outcomes.map(x=>percent(x.chance)+' 追加 '+x.penaltyMultiplier+' 倍').join('、')+'票价，可产生负余额。');
           rules.push('五、'+(seal>1?'核准印也放大追加扣款；':'')+'本档最多损失 '+fmtMoney(cost*(1+Math.max(...risk.outcomes.map(x=>x.penaltyMultiplier))*seal))+'（含票价）。');
         }else rules.push('四、炸弹会追加扣款，可产生负余额。');
-        return rules.map(rule=>`<p>${esc(rule)}</p>`).join('');
+        return rules.map(rule=>`<p>${esc(rule)}</p>`).join('')+(game.type==='step_climb'?AVEDScratchClimb.prizeTable(scratchClimbMultipliers,cost):'');
       }
       function openTicketConfirmModal(gType) {
         if (!currentUser) return;
@@ -1352,11 +1352,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       const scratchFeedback=AVEDScratchFeedback({playSfx,isActive:()=>!byId('view-casino').classList.contains('hidden')&&!byId('scratch-play-table-view').classList.contains('hidden')});
       let lastScratchRules='';
       function scratchCellMarkup(c,tk){
+        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)return AVEDScratchClimb.cell(c,tk);
         const seal=tk.gameType.type==='lucky_num'&&c.idx===3;
         if(!c.revealed)return `<button type="button" data-scratch-cell="${c.idx}" class="scratch-cell-foil sp-cell sp-covered ${seal?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center"><span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${seal?'核准倍率':'刮开好运'}</b></span></button>`;
         return `<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${seal?'sp-seal':''} ${c.isBomb?'is-bomb':''} h-20 border-2 ${c.isWinPart?'is-winning border-[#9e1b1b] bg-[#fff5f5]':'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center"><div class="text-sm font-bold ${c.isWinPart?'text-[#9e1b1b]':''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div><div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div></div>`;
       }
       const scratchBoard=AVEDScratchBoard({host:document.getElementById('active-ticket-board-container'),cell:scratchCellMarkup,frame(tk,cells){
+        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)return AVEDScratchTicketArt.board(tk,AVEDScratchClimb.frame(cells));
         const kind=tk.gameType.type,cols=kind==='step_climb'?'scratch-step-grid sp-step-grid':kind==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
         return AVEDScratchTicketArt.board(tk,`<div class="grid ${cols} gap-3">${cells.map((html,i)=>(kind==='lucky_num'&&i===4?'</div><div class="grid scratch-prize-grid sp-nums">':'')+html).join('')}</div>`);
       }});
@@ -1365,6 +1367,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const rules=scratchRulesMarkup(scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType,tk.cost??tk.tier.cost);
         if(rules!==lastScratchRules){byId('scratch-play-rules-body').innerHTML=rules;lastScratchRules=rules;}
         const board=byId('active-ticket-board-container');scratchBoard.render(tk);
+        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)AVEDScratchClimb.update(board,tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
           tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'试刮 · ':'')+AVEDGameResults.html(tk);
@@ -1513,7 +1516,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       function renderPendingImagesQueue(){}
       function renderAnonAuditLog(){}
       function renderEmployeeRoster(){}
-      let economyUI=null,welfareUI=null,economyRevision=0,scratchBombRules=null,directoryRequest=0;
+      let economyUI=null,welfareUI=null,economyRevision=0,scratchBombRules=null,scratchClimbMultipliers=[],directoryRequest=0;
       let marketRiskRules=null,marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
@@ -1523,7 +1526,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
       function employeeDirectoryCard(e){return {id:String(e.id),name:esc(e.displayName),sortName:e.displayName,department:esc(e.department),positionTitle:esc(e.positionTitle||''),isNpc:!!e.isNpc,isLeadership:!!e.isLeadership,identityKind:e.identityKind,containmentClassification:esc(e.containmentClassification||''),bracketTag:esc(e.positionTitle||(e.identityKind?.endsWith('_containment')?'收容物':e.enabled===0?'暂停接入':'成员')),stats:e.attributes||[0,0,0,0,0,0],location:'',abilityNote:esc(e.identityKind?.endsWith('_containment')?(e.bio||''):e.registeredDepartment&&e.registeredDepartment!==e.department?e.registeredDepartment:''),personalMessage:esc(e.bio||''),avatarBadge:'员',avatarColor:'#444',avatarUrl:e.avatarUrl||''};}
       async function refreshDirectory(){if(!currentUser)return;const serial=++directoryRequest;const d=await api('/api/player/directory');if(serial!==directoryRequest)return;employees=d.items.map(employeeDirectoryCard);renderDepartmentsAndPersonnel();}
-      function applyEconomyRules(c){economyRevision=c.revision;scratchBombRules=c.scratchBombs||null;for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
+      function applyEconomyRules(c){economyRevision=c.revision;scratchBombRules=c.scratchBombs||null;scratchClimbMultipliers=c.scratchClimbMultipliers||[];for(const t of c.tiers){const tier=scratchTiers.find(x=>x.id===t.id);if(tier)Object.assign(tier,t);}if(c.slot?.symbols)for(const s of c.slot.symbols){const symbol=slot5x3Symbols.find(x=>x.id===s.id);if(symbol)Object.assign(symbol,s);}economyUI?.configure(c);}
       async function loadPlayerData() {
         forumListPosition=null;forumListMarkup='';currentForumThreadId=null;forumReplies.reset();
         deferredSections.clear();deferredRequests.clear();

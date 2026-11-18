@@ -7,14 +7,17 @@ export const scratchTiers = [
         { id: 't5', name: '董事特批', cost: 50000, internalEv: 0.74, mult: 50 },
         { id: 't6', name: 'O5最高秘钥', cost: 100000, internalEv: 0.80, mult: 100 }
       ];
+export const scratchReturnPercent=115;
+export const scratchSuperJackpot=Object.freeze({multiplier:2000,chance:1/12500000});
+export const scratchClimbMultipliers=Object.freeze([0,.5,1.2,5,20,100]);
 // Probabilities are per ticket, before the lucky-number stamp multiplies fees.
 export const scratchBombRules = Object.freeze({
-  chance: .02,
+  chance: .015,
   maxSealMultiplier: 5,
   outcomes: Object.freeze([
-    Object.freeze({penaltyMultiplier: 2, chance: .012}),
-    Object.freeze({penaltyMultiplier: 10, chance: .006}),
-    Object.freeze({penaltyMultiplier: 100, chance: .002})
+    Object.freeze({penaltyMultiplier: 2, chance: .009}),
+    Object.freeze({penaltyMultiplier: 10, chance: .0045}),
+    Object.freeze({penaltyMultiplier: 100, chance: .0015})
   ])
 });
 export const scratchGameTypes = [
@@ -56,17 +59,17 @@ export const scratchGameTypes = [
           type: 'step_climb',
           sub: '五站巡签',
           title: '步步添彩',
-          tagline: '走过五个站点，签下一份好彩头',
+          tagline: '五站升降，按终点层数领取津贴',
           icon: '⚡',
-          cellsCount: 10,
+          cellsCount: 5,
           baseTopPrize: 325000,
           bgBand: 'bg-[#4a1612] text-white',
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、五个站点各有两枚签号，共 10 格',
-            '二、右侧员工签号大于左侧站点签号，即通过该站',
-            '三、通过站点的奖金相加，就是本张获得金额'
+            '一、从 0 层出发，刮开五站的升降步数',
+            '二、上升加层、回落减层，停留不变',
+            '三、按最终到达的层数领取对应津贴'
           ]
         }
       ];

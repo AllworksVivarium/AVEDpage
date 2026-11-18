@@ -70,7 +70,7 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  db.prepare('UPDATE economy_config SET config_json=? WHERE id=1').run(JSON.stringify(config));
  const rules=(await p('/api/player/economy')).data;
  const jackpot=(await p('/api/player/games/scratch','POST',{tier:'t1',type:'three_match',cost:rules.tiers[0].cost,revision:rules.revision})).data;
- assert.equal(rules.tiers[0].topPrizes.three_match,100000);if(jackpot.gameHighlight)assert.equal(jackpot.gameHighlight.employeeId,first);
+ assert.equal(rules.tiers[0].topPrizes.three_match,2000000);if(jackpot.gameHighlight)assert.equal(jackpot.gameHighlight.employeeId,first);
  if(jackpot.prize>0)assert.ok((await p('/api/profile')).data.gameRecords.byGame.some(x=>x.game==='scratch'&&x.prize===jackpot.prize));
  const feed=(await request(two,'/api/player/game-highlights')).data;
  assert.equal(feed.items.some(x=>x.ticketId===jackpot.ticketId),!!jackpot.gameHighlight?.broadcast);

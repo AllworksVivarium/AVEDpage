@@ -1,12 +1,14 @@
-import {scratchBombRules} from './server-content.mjs';
+import {scratchBombRules,scratchSuperJackpot} from './server-content.mjs';
+import {generateClimbRoute} from './server-scratch-climb.mjs';
 const validBombMultiplier=multiplier=>scratchBombRules.outcomes.some(x=>x.penaltyMultiplier===multiplier);
 const fmtMoney = n => '¤ ' + Number(n).toLocaleString('en-US');
 export function generateOutcomeTicket(tier,game,seed,random,outcome){
- const seal=outcome.sealMultiplier||1,base=outcome.baseMultiplier??outcome.multiplier;
+ const seal=outcome.superJackpot?1:outcome.sealMultiplier||1,base=outcome.superJackpot?scratchSuperJackpot.multiplier:outcome.baseMultiplier??outcome.multiplier;
  // Round decimal representation noise before flooring integer currency, then
  // apply the stamp once. Every printed base amount remains an integer.
  const payout=Math.floor(tier.cost*base+1e-7)*seal;
  const ticket=generateSealedTicket(tier,game,seed,random,payout,seal);
+ if(outcome.superJackpot)ticket.superJackpot=true;
  if(outcome.penaltyMultiplier)applyScratchBomb(ticket,outcome.penaltyMultiplier,random);
  return ticket;
 }
@@ -17,25 +19,41 @@ export function generateOutcomeTicket(tier,game,seed,random,outcome){
         const targetPayout=basePayout*sealMultiplier;
 
         const cells = [];
+        let climb;
 
         if (gameTypeObj.type === 'three_match') {
           const icons = ['🔺', '👁️', '☢️', '🧬', '⚡', '🔒', '📁'];
-          const winIcon = icons[0];
-          const counts = {};
-          icons.forEach(ic => counts[ic] = 0);
+          // Draw distinct winning symbols and split the already-awarded payout.
+          // Additional groups change the ticket layout, never the credited amount.
+          for (let i = icons.length - 1; i > 0; i--) {
+            const j = Math.floor(random() * (i + 1));
+            [icons[i], icons[j]] = [icons[j], icons[i]];
+          }
+          const counts = Object.fromEntries(icons.map(ic => [ic, 0]));
+          const winners = new Set();
 
           if (targetPayout > 0) {
-            const part1 = Math.round(targetPayout * 0.3);
-            const part2 = Math.round(targetPayout * 0.3);
-            const part3 = targetPayout - part1 - part2;
-            cells.push({ label: winIcon, sub: fmtMoney(part1), isWinPart: true });
-            cells.push({ label: winIcon, sub: fmtMoney(part2), isWinPart: true });
-            cells.push({ label: winIcon, sub: fmtMoney(part3), isWinPart: true });
-            counts[winIcon] = 3;
+            const roll = random();
+            const groupCount = Math.min(Math.max(1, Math.floor(targetPayout / 3)), roll < .55 ? 1 : roll < .85 ? 2 : roll < .97 ? 3 : 4);
+            const minimum = Math.min(3, Math.floor(targetPayout / groupCount));
+            const remaining = targetPayout - minimum * groupCount;
+            const weights = Array.from({length: groupCount}, () => 1 + Math.floor(random() * 5));
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let allocated = 0;
+            for (let group = 0; group < groupCount; group++) {
+              const amount = group === groupCount - 1 ? targetPayout - allocated : minimum + Math.floor(remaining * weights[group] / totalWeight);
+              allocated += amount;
+              const part = Math.round(amount * .3), icon = icons[group];
+              for (const value of [part, part, amount - part * 2]) {
+                cells.push({label: icon, sub: fmtMoney(value), isWinPart: true});
+              }
+              counts[icon] = 3;
+              winners.add(icon);
+            }
           }
 
           while (cells.length < 12) {
-            const avail = icons.filter(ic => ic !== winIcon && counts[ic] < 2);
+            const avail = icons.filter(ic => !winners.has(ic) && counts[ic] < 2);
             const pick = avail[Math.floor(random() * avail.length)];
             counts[pick]++;
             const decoyAmt = cost * (1 + Math.floor(random() * 5));
@@ -70,17 +88,9 @@ export function generateOutcomeTicket(tier,game,seed,random,outcome){
           }
           cells.push(...playerCells);
         } else {
-          let remainingPayout = targetPayout;
-          for (let step = 1; step <= 5; step++) {
-            const winThisStep = (step === 1 && remainingPayout > 0);
-            const enemyPt = 20 + Math.floor(random() * 60);
-            const myPt = winThisStep ? Math.min(99, enemyPt + 5 + Math.floor(random() * 15)) : Math.max(1, enemyPt - 3 - Math.floor(random() * 15));
-            const prizeForStep = winThisStep ? remainingPayout : cost * step;
-            if (winThisStep) remainingPayout = 0;
-
-            cells.push({ role: 'STEP_LEFT', step, label: `第${step}站·签号 ${enemyPt}`, sub: '站点留签', isWinPart: false });
-            cells.push({ role: 'STEP_RIGHT', step, label: `员工签号 ${myPt}`, sub: `${winThisStep ? '✓ 已通过' : '待下次巡签'} (${fmtMoney(prizeForStep)})`, isWinPart: winThisStep });
-          }
+          const route = generateClimbRoute(cost, targetPayout, random);
+          cells.push(...route.cells);
+          climb = route.climb;
         }
 
         cells.forEach((c, idx) => { c.idx = idx; c.revealed = false; });
@@ -92,7 +102,8 @@ export function generateOutcomeTicket(tier,game,seed,random,outcome){
           totalPayout: targetPayout,
           sealMultiplier,basePayout,
           settled: false,
-          cells
+          cells,
+          ...(climb ? {climb} : {})
         };
       }
 
@@ -100,7 +111,7 @@ export function generateOutcomeTicket(tier,game,seed,random,outcome){
 // Attach one explicit bomb to a playable cell, never to a reference number.
 export function applyScratchBomb(ticket,penaltyMultiplier,random){
  if(!validBombMultiplier(penaltyMultiplier)||ticket.totalPayout!==0)throw Error('炸弹票据无效。');
- const candidates=ticket.cells.filter(c=>!c.role||['PLAYER','STEP_RIGHT'].includes(c.role));
+ const candidates=ticket.cells.filter(c=>ticket.climb ? c.stepDelta===0 : !c.role||['PLAYER','STEP_RIGHT'].includes(c.role));
  const cell=candidates[Math.floor(random()*candidates.length)];
  const seal=ticket.gameType?.type==='lucky_num'?(ticket.sealMultiplier||1):1;
  if(![1,2,3,5].includes(seal))throw Error('核准倍率无效。');

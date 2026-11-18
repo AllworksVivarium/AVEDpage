@@ -1,9 +1,9 @@
-window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
+window.AVEDAwardConfetti=function({isActive=()=>true}={}){
  const layers=new Set();
  const paperColors=['#d84b4b','var(--inner-text-main,#d9ceb8)','var(--brand-red,#5279a4)','#a72f3c'];
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const animated=()=>isActive()&&!document.hidden&&!reduced.matches&&window.AVEDEffectsEnabled?.()!==false;
- function clear(){window.AVEDScratchBomb?.clear();for(const layer of layers){clearTimeout(layer.cleanupTimer);layer.remove();}layers.clear();}
+ function clear(){for(const layer of layers){clearTimeout(layer.cleanupTimer);layer.remove();}layers.clear();}
  function makeRoom(kind){const same=[...layers].filter(layer=>layer.effectKind===kind);if(same.length>=2){const oldest=same[0];clearTimeout(oldest.cleanupTimer);oldest.remove();layers.delete(oldest);}}
  function burst(intensity=1){
   if(!animated())return;
@@ -27,6 +27,13 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   }
   document.body.append(layer);layers.add(layer);layer.cleanupTimer=setTimeout(()=>{layer.remove();layers.delete(layer);},5400);
  }
+ return {burst,rain,clear};
+};
+window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const animated=()=>isActive()&&!document.hidden&&!reduced.matches&&window.AVEDEffectsEnabled?.()!==false;
+ const {burst,rain,clear:clearConfetti}=window.AVEDAwardConfetti({isActive});
+ function clear(){window.AVEDScratchBomb?.clear();clearConfetti();}
  function reveal(board,indices,{profit=false,winning=false}={}){
   for(const [i,index] of indices.entries()){
    const el=board.querySelector('[data-revealed-cell="'+index+'"]');if(!el)continue;
@@ -34,7 +41,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   }
   if(profit&&winning)playSfx('scratch-hit');
  }
- function hideToast(){const state=window.AVEDScratchToast;if(state){clearTimeout(state.timer);state.el.hidden=true;}}
+ function hideToast(manual=false){const state=window.AVEDScratchToast;if(state&&(!state.pinned||manual)){clearTimeout(state.timer);state.timer=null;state.pinned=false;state.el.dataset.pinned='false';state.el.hidden=true;}}
  function positionToast(state){
   const rail=document.getElementById?.('left-sidebar')?.getBoundingClientRect?.();
   const width=typeof innerWidth==='number'?innerWidth:1200;
@@ -42,19 +49,21 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.el.style?.setProperty?.('--result-left',(railEnd+(width-railEnd)/2)+'px');
   state.el.style?.setProperty?.('--result-width',Math.min(340,width-railEnd-24)+'px');
  }
- function showToast({prize,multiplier,cost=0,penalty=0,tax=0}){
+ function showToast({prize,multiplier,cost=0,penalty=0,tax=0,superJackpot=false}){
   let state=window.AVEDScratchToast;
+  if(state?.pinned&&!state.el.hidden&&!superJackpot)return;
   if(!state){
    const el=document.createElement('section'),bar=document.createElement('div'),caption=document.createElement('span'),close=document.createElement('button'),body=document.createElement('div'),label=document.createElement('div'),amount=document.createElement('div');
    el.className='scratch-award-toast';bar.className='scratch-award-titlebar';caption.className='scratch-award-caption';caption.textContent='A.V.E.D. / RESULT';close.className='scratch-award-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','关闭开奖结果');body.className='scratch-award-body';label.className='scratch-award-label';amount.className='scratch-award-amount';
    el.setAttribute('aria-label','开奖结果');el.setAttribute('data-type-ignore','');label.setAttribute('role','status');label.setAttribute('aria-live','polite');amount.setAttribute('aria-live','polite');
-   close.addEventListener('click',()=>{hideToast();clear();});el.addEventListener('keydown',e=>{if(e.key==='Escape'){hideToast();clear();}});
+   close.addEventListener('click',()=>{hideToast(true);clear();});el.addEventListener('keydown',e=>{if(e.key==='Escape'){hideToast(true);clear();}});
    bar.append(caption);bar.append(close);body.append(label);body.append(amount);el.append(bar);el.append(body);document.body.append(el);state=window.AVEDScratchToast={el,label,amount,body,close,caption,timer:null};
   }
   clearTimeout(state.timer);
+  state.timer=null;state.pinned=superJackpot;state.el.dataset.pinned=String(superJackpot);
   if(!state.taxNote&&tax>0){state.taxNote=document.createElement('small');state.taxNote.className='game-tax-note';state.taxNote.setAttribute('data-type-ignore','');state.body.append(state.taxNote);}
   if(state.taxNote){state.taxNote.textContent='已扣税 ¤ '+Number(tax).toLocaleString();state.taxNote.hidden=!(tax>0);}
-  const category=multiplier>=50?'刮出超级大奖了！':multiplier>=5?'刮出大奖了！':'开奖结果';
+  const category=superJackpot?'超级大奖 · 2,000 倍':multiplier>=50?'刮出超级大奖了！':multiplier>=5?'刮出大奖了！':'开奖结果';
   const special=penalty>0||multiplier>=5;
   state.el.dataset.tone='inverse';if(state.caption)state.caption.textContent='A.V.E.D. / RESULT';
   state.el.dataset.outcome=penalty>0?'bomb':'award';state.el.dataset.presentation=special?'special':'ordinary';
@@ -63,9 +72,9 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.amount.textContent=penalty>0?'本局扣除医疗费 ¤ '+Number(penalty).toLocaleString():'本局收入 ¤ '+Number(prize).toLocaleString();state.amount.hidden=!special;state.el.hidden=false;
   state.el.classList.remove('scratch-award-enter');state.motion?.cancel();
   if(animated()){if(state.el.animate)state.motion=state.el.animate([{opacity:.25,translate:'0 -6px'},{opacity:1,translate:'0 0'}],{duration:240,easing:'ease-out'});else state.el.classList.add('scratch-award-enter');}
-  state.timer=setTimeout(()=>{state.el.hidden=true;},penalty>0?3500:multiplier>=10?4000:multiplier>=5?2500:1500);
+  if(!superJackpot)state.timer=setTimeout(()=>hideToast(),penalty>0?3500:multiplier>=10?4000:multiplier>=5?2500:1500);
  }
- function settle(banner,{cost,prize,penalty=0,tax=0,cells,gameHighlight},mode='manual'){
+ function settle(banner,{cost,prize,penalty=0,tax=0,cells,gameHighlight,superJackpot=false},mode='manual'){
   if(penalty>0){banner.dataset.scratchFeedback='bomb';banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');if(isActive()&&!document.hidden){showToast({cost,prize,penalty,multiplier:0});playSfx('scratch-bomb-'+(1+penalty/cost));const host=document.getElementById('active-ticket-board-container'),bomb=cells?.find(c=>c.isBomb),source=bomb?host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"] svg')||host?.querySelector?.('[data-revealed-cell="'+bomb.idx+'"]'):host;const rect=source?.getBoundingClientRect?.();window.AVEDScratchBomb?.show({host,cost,penalty,origin:rect?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:undefined,animated:animated()});}return;}
   banner.dataset.scratchFeedback=prize>cost?'profit':prize>0?'return':'empty';
   banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
@@ -74,7 +83,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   const multiplier=cost>0?prize/cost:0;
   if(isActive()&&!document.hidden)window.AVEDPersonalRecord?.show(gameHighlight);
   if(multiplier>=5)banner.dataset.scratchFeedback=multiplier>=50?'supreme':multiplier>=10?'jackpot':'big';
-  if(isActive()&&!document.hidden)showToast({prize,tax,multiplier});
+  if(isActive()&&!document.hidden)showToast({prize,tax,multiplier,superJackpot});
   if(isActive()&&!document.hidden){
    if(prize>cost){playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=20?'scratch-jackpot-major':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':mode==='all'?'scratch-win-all':'scratch-win');burst(multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:multiplier>=5?3:1);if(multiplier>=10)rain(multiplier);}
    else if(prize===0)playSfx('scratch-zero');
@@ -84,7 +93,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
  document.addEventListener('visibilitychange',()=>{if(document.hidden){clear();hideToast();}});
  document.addEventListener('click',e=>{if(e.target.closest('[data-nav],#scratch-back-lobby-btn')){clear();hideToast();}});
  document.addEventListener('aved-effects-change',()=>{if(!animated())clear();});
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){clear();hideToast();}});reduced.addEventListener('change',()=>{if(reduced.matches)clear();});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){clear();hideToast(true);}});reduced.addEventListener('change',()=>{if(reduced.matches)clear();});
  // Moving to another ticket dismisses ticket-specific UI, not ongoing award particles.
  function nextTicket(){window.AVEDScratchBomb?.clear();hideToast();}
  return {reveal,settle,clear,nextTicket};

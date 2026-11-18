@@ -37,7 +37,12 @@ export function installBarDrinking({db,clock,preferences,name}){
  function visit(id){
   const now=clock(),row=db.prepare('SELECT last_seen,cleared_through FROM bar_table_state WHERE employee_id=?').get(id),latest=db.prepare('SELECT id,created_at FROM bar_orders WHERE employee_id=? AND id>COALESCE((SELECT cleared_through FROM bar_table_state WHERE employee_id=?),0) ORDER BY id DESC LIMIT 1').get(id,id);
   const last=row?.last_seen??(latest?Date.parse(latest.created_at):now),cleared=now-last>=BAR_ABSENCE_MS?(latest?.id||0):(row?.cleared_through||0);
+  db.exec('SAVEPOINT bar_table_visit');
+  try{
   db.prepare('INSERT INTO bar_table_state(employee_id,last_seen,cleared_through) VALUES(?,?,?) ON CONFLICT(employee_id) DO UPDATE SET last_seen=excluded.last_seen,cleared_through=MAX(cleared_through,excluded.cleared_through)').run(id,now,cleared);
+   if(now-last>=BAR_ABSENCE_MS&&preferences.get(id).glassId)preferences.save(id,{glassId:null});
+   db.exec('RELEASE bar_table_visit');
+  }catch(error){db.exec('ROLLBACK TO bar_table_visit; RELEASE bar_table_visit');throw error;}
   orderCache.delete(id);
  }
  function seen(id,{force=false}={}){

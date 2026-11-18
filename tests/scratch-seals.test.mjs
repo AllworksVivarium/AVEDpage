@@ -17,7 +17,7 @@ test('every actual lucky outcome prints a base prize whose stamped value equals 
    if(outcome.penaltyMultiplier){assert.equal(ticket.penalty,tier.cost*outcome.penaltyMultiplier*outcome.sealMultiplier);assert.equal(ticket.totalPayout,0);assert.equal(ticket.cells.filter(c=>c.isBomb).length,1);}
    payout+=ticket.totalPayout*outcome.weight;penalties+=(ticket.penalty||0)*outcome.weight;total+=outcome.weight;
   }
-  assert.ok(Math.abs((payout-penalties)/(total*tier.cost)-1.2)<1e-8);
+  assert.ok(Math.abs((payout-penalties)/(total*tier.cost)-1.15)<1e-8);
  }
 });
 test('rate configuration remains a valid bounded distribution including seal multiplication',()=>{

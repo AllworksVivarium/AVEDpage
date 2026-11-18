@@ -3,10 +3,11 @@ window.AVEDSlotEffects=function({panel,grid,playSfx=()=>{}}){
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),symbols=['eye','rad','lock','file','dna','pill'];
  const visible=()=>!document.hidden&&!panel.classList.contains('hidden')&&!document.getElementById('view-casino').classList.contains('hidden');
  const motion=()=>visible()&&!reduced.matches&&window.AVEDEffectsEnabled?.()!==false;
+ const confetti=window.AVEDAwardConfetti?.({isActive:visible});
  let run=null,award=null,awardTimer=null;
  const icon=id=>window.AVEDPixelIcons.render(id);
  function cancel(){if(!run)return;run.active=false;for(const task of run.tasks){clearTimeout(task.id);task.resolve();}run.tasks.clear();run.overlay?.remove();for(const [el,disabled]of run.controls)el.disabled=disabled;grid.classList.remove('slot-is-spinning');grid.removeAttribute('aria-busy');run=null;}
- function clearAward(){clearTimeout(awardTimer);award?.remove();award=null;if(panel.classList.contains('slot-power-up')||panel.classList.contains('slot-overloaded'))panel.classList.remove('slot-power-up','slot-overloaded');}
+ function clearAward(){confetti?.clear();clearTimeout(awardTimer);award?.remove();award=null;if(panel.classList.contains('slot-power-up')||panel.classList.contains('slot-overloaded'))panel.classList.remove('slot-power-up','slot-overloaded');}
  function start(){
   cancel();clearAward();const current={active:true,started:performance.now(),tasks:new Set(),controls:[],overlay:null};run=current;
   for(const el of panel.querySelectorAll('input,[data-slot-chip],#slot5x3-minus-btn,#slot5x3-plus-btn,#slot5x3-double-btn')){current.controls.push([el,el.disabled]);el.disabled=true;}
@@ -47,10 +48,11 @@ window.AVEDSlotEffects=function({panel,grid,playSfx=()=>{}}){
   if(motion()&&(profit||penalty)){
    panel.classList.add(penalty?'slot-overloaded':'slot-power-up');
   }
+  if(motion()&&profit&&!penalty&&multiplier>=5){confetti?.burst(multiplier>=100?7:multiplier>=50?6:multiplier>=20?5:multiplier>=10?4:3);if(multiplier>=50)confetti?.rain(multiplier);}
   if(penalty)playSfx('scratch-bomb-3');else if(profit)playSfx(multiplier>=50?'scratch-jackpot-supreme':multiplier>=10?'scratch-jackpot':multiplier>=5?'scratch-big':'scratch-win');
   grid.append(layer);award=layer;awardTimer=setTimeout(clearAward,penalty?3400:multiplier>=10?5000:profit?3200:1800);
  }
- function check(){if(!visible()){cancel();clearAward();}else if(!motion())cancel();}
+ function check(){if(!visible()){cancel();clearAward();}else if(!motion()){cancel();confetti?.clear();}}
  document.addEventListener('visibilitychange',check);document.addEventListener('aved-effects-change',check);reduced.addEventListener('change',check);
  new MutationObserver(check).observe(panel,{attributes:true,attributeFilter:['class']});
  new MutationObserver(check).observe(document.getElementById('view-casino'),{attributes:true,attributeFilter:['class']});
