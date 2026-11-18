@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="76" height="128" viewBox="0 0 76 128" shape-rendering="crispEdges">
+<title>临时女性调酒师</title>
+<!-- Chestnut hair and clean warm face. -->
+<path fill="#242324" d="M25 3h25v3h8v5h5v10h3v42h-3v15h-6v9H13V74H9V42h3V22h3V12h5V7h5z"/>
+<path fill="#43332e" d="M25 7h25v3h8v9h4v42h-4v15h-7V57H22v23h-8V45h2V23h4V14h5z"/>
+<path fill="#65483b" d="M25 11h23v3H28v4h-7v15h-4V23h4V16h4zM57 25h4v35h-4v12h-4V40h4zM15 48h4v25h-4z"/>
+<path fill="#87604a" d="M28 11h15v2H28zm-6 9h4v8h-4zm34 18h2v20h-2zM16 54h2v13h-2z"/>
+<path fill="#c89778" d="M20 34h5v17h-5zm34 0h5v17h-5zM31 59h16v17H31z"/>
+<path fill="#ecc5a1" d="M26 22h24v5h5v25h-4v7h-6v4H32v-4h-6v-7h-3V31h3z"/>
+<path fill="#f5d7b4" d="M29 29h20v5h3v17h-4v6H32v-5h-5V36h2zM34 62h10v9H34z"/>
+<path fill="#d9aa8b" d="M24 35h3v17h-3zm27-3h3v19h-3zM29 56h4v4h-4z"/>
+<!-- Side-swept fringe and brass hair clip. -->
+<path fill="#43332e" d="M24 17h27v5h5v13h-6v-7h-7v-5h-5v6h-6v5h-7v6h-4V27h3z"/>
+<path fill="#765341" d="M27 19h17v3H33v6h-5v5h-3v-9h2zM46 23h5v8h-3v-5h-2z"/>
+<path fill="#d6b473" d="M16 32h7v2h-7zm1 3h6v2h-6z"/>
+<!-- Brows, lashes, irises and highlights. -->
+<path fill="#795448" d="M28 36h7v1h-7zm15 0h7v1h-7z"/>
+<path fill="#382c2b" d="M27 40h8v2h-6v4h-2zm16 0h8v2h-2v4h-2v-4h-4z"/>
+<path fill="#684d43" d="M30 42h4v5h-4zm14 0h4v5h-4z"/>
+<path fill="#f9e9d0" d="M30 42h2v2h-2zm14 0h2v2h-2z"/>
+<path fill="#d7a189" d="M38 46h2v3h-2z"/>
+<path fill="#e3aa96" d="M27 49h6v2h-6zm19 0h6v2h-6z"/>
+<path fill="#bc7c72" d="M36 54h6v1h-6z"/>
+<path fill="#e6c587" d="M21 48h2v5h-2zm35 0h2v5h-2z"/>
+<!-- Ivory blouse, vest, ribbon and pin. -->
+<path fill="#242729" d="M26 71h24v3h9v5h6v13h3v32H8V92h3V80h7v-5h8z"/>
+<path fill="#eee5d2" d="M26 73h7l6 6 6-6h7v5h8v8h4v28H12V86h5v-8h9z"/>
+<path fill="#c4bdac" d="M18 82h4v28h-7V92h3zm39 0h4v10h3v18h-7zM30 74h3l6 6-5 7-8-9zM45 74h4l4 4-9 9-5-7z"/>
+<path fill="#3b4140" d="M23 80h4l9 10h6l10-10h3v43H23z"/>
+<path fill="#555c54" d="M25 84h3v26h-3zm26 0h2v25h-2zM39 92h2v30h-2z"/>
+<path fill="#774844" d="m33 81 6 2 6-2v8l-6-3-6 3zM38 86h3v9h-3z"/>
+<path fill="#b47d6a" d="M34 82h3v2h-3zm7 1h3v2h-3z"/>
+<path fill="#d6b473" d="M49 91h4v4h-4zM38 101h2v2h-2zm0 10h2v2h-2z"/>
+<!-- Rolled cuffs and hands at the counter. -->
+<path fill="#d2cab7" d="M10 106h12v9H10zm45 0h11v9H55z"/>
+<path fill="#f1e8d4" d="M11 107h10v4H11zm45 0h9v4h-9z"/>
+<path fill="#d3a386" d="M12 114h10v4h8v6H12zm43 0h9v10H46v-6h9z"/>
+<path fill="#edc6a5" d="M14 115h7v5h7v2H14zm43 0h6v7H48v-2h9z"/>
+<path fill="#bc8b71" d="M22 120h5v1h-5zm27 0h6v1h-6z"/>
+</svg>

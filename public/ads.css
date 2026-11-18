@@ -40,3 +40,12 @@
 @media(max-width:480px){.ad-example-previews>div{grid-template-columns:repeat(2,minmax(0,1fr))}.ad-text-example{flex-wrap:wrap;gap:8px}.ad-text-example .ad-creative{flex-basis:calc(100% - 75px)}.ad-text-example>button{margin-left:auto}}
 
 @layer aved-popup-density{body .ad-text-strip .ad-creative .ad-copy{font-family:var(--type-ui,sans-serif)!important;font-size:12px!important;line-height:1.7!important}body .ad-text-strip .ad-creative .ad-creative-title{font-size:14px!important;line-height:1.5!important}body .ad-text-strip .ad-creative .ad-signature{font-size:11px!important;line-height:1.6!important}}
+
+/* The selected auction quote remains separate from the amount being submitted. */
+.ad-current-quote{margin:18px 0;border:2px solid var(--inner-border);background:var(--inner-card-bg);padding:18px 20px;color:var(--inner-text-main)}
+.ad-current-quote-heading,.ad-current-quote-next{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px 16px}
+.ad-current-quote-heading b{padding:3px 8px;background:var(--inner-accent);color:var(--inner-accent-text)}
+.ad-current-quote-value{display:grid;gap:5px;margin:16px 0}
+.ad-current-quote-next{border-top:1px solid var(--inner-border-soft);padding-top:12px}
+@layer aved-popup-density{body dialog.ad-market-dialog .ad-current-quote-value>strong{font-family:var(--type-code,monospace)!important;font-size:34px!important;line-height:1.3!important;font-weight:700!important;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}body dialog.ad-market-dialog .ad-current-quote-value>span{font:600 13px/1.5 var(--type-ui,sans-serif)!important}body dialog.ad-market-dialog .ad-current-quote-heading,body dialog.ad-market-dialog .ad-current-quote-next{font:12px/1.6 var(--type-ui,sans-serif)!important}body dialog.ad-market-dialog .ad-slot-grid strong{font-size:22px!important;font-variant-numeric:tabular-nums;line-height:1.3!important}@media(max-width:480px){body dialog.ad-market-dialog .ad-current-quote-value>strong{font-size:30px!important}body dialog.ad-market-dialog .ad-slot-grid strong{font-size:17px!important}}}
+@media(max-width:480px){.ad-current-quote{padding:15px 16px}}

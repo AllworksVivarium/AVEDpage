@@ -1,0 +1,12 @@
+[Unit]
+Description=AVED disk pressure email alert via SES
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/aved-disk-alert.lock /usr/bin/python3 /usr/local/lib/aved/disk-alert.py
+StateDirectory=aved-disk-alert
+UMask=0077
+TimeoutStartSec=240
+Nice=15
