@@ -10,14 +10,14 @@ const previous={
 };
 test('ordinary wins replace large prizes and bombs without adding blanks in any scratch game',()=>{
  for(const tier of defaultEconomy().scratch){
-  assert.equal(tier.returnPercent,115);
+  assert.equal(tier.returnPercent,120);
   for(const [type,pool] of Object.entries(tier.variants)){
    const total=pool.reduce((sum,x)=>sum+x.weight,0),prob=f=>pool.filter(f).reduce((sum,x)=>sum+x.weight,0)/total;
-   assert.ok(Math.abs(expectedReturn(pool)-1.15)<1e-8);
+   assert.ok(Math.abs(expectedReturn(pool)-1.20)<1e-8);
    assert.ok(pool.every(x=>Number.isSafeInteger(x.weight)&&x.weight>=0));
    assert.ok(prob(x=>x.multiplier>0&&x.multiplier<5)>previous[type].ordinary+.025);
    const large=prob(x=>x.multiplier>=5);
-   assert.ok(large>previous[type].large*.7&&large<previous[type].large*.83);
+   assert.ok(type==='step_climb'?large>.07&&large<.09:large>previous[type].large*.7&&large<previous[type].large*.83);
    assert.ok(prob(x=>!x.multiplier&&!x.penaltyMultiplier)<previous[type].zero);
    assert.equal(prob(x=>x.penaltyMultiplier),.015);
    for(const [fee,chance] of [[2,.009],[10,.0045],[100,.0015]])assert.equal(prob(x=>x.penaltyMultiplier===fee),chance);

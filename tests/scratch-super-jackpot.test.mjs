@@ -14,7 +14,7 @@ test('each tier and game has one 2000x award at exactly one in 12.5 million with
   const total=pool.reduce((sum,x)=>sum+x.weight,0),awards=pool.filter(x=>x.superJackpot);assert.equal(awards.length,1);
   const award=awards[0];assert.equal(award.multiplier,2000);assert.equal(award.sealMultiplier,1);assert.equal(award.weight/total,1/12500000);
   assert.equal(Math.max(...pool.filter(x=>x.weight>0).map(x=>x.multiplier)),2000);
-  assert.ok(Math.abs(expectedReturn(pool)-1.15)<1e-8);assert.equal(pool.filter(x=>x.penaltyMultiplier).reduce((sum,x)=>sum+x.weight,0)/total,.015);
+  assert.ok(Math.abs(expectedReturn(pool)-1.20)<1e-8);assert.equal(pool.filter(x=>x.penaltyMultiplier).reduce((sum,x)=>sum+x.weight,0)/total,.015);
   const ordinary=pool.filter(x=>!x.superJackpot);assert.equal(Math.max(...ordinary.map(x=>x.multiplier)),type==='lucky_num'?500:100);
   // Force the actual weighted draw's rare interval, avoiding millions of random trials.
   const start=pool.slice(0,pool.indexOf(award)).reduce((sum,x)=>sum+x.weight,0);

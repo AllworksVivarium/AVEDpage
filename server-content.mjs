@@ -7,9 +7,9 @@ export const scratchTiers = [
         { id: 't5', name: '董事特批', cost: 50000, internalEv: 0.74, mult: 50 },
         { id: 't6', name: 'O5最高秘钥', cost: 100000, internalEv: 0.80, mult: 100 }
       ];
-export const scratchReturnPercent=115;
+export const scratchReturnPercent=120;
 export const scratchSuperJackpot=Object.freeze({multiplier:2000,chance:1/12500000});
-export const scratchClimbMultipliers=Object.freeze([0,.5,1.2,5,20,100]);
+export const scratchClimbMultipliers=Object.freeze([0,.2,.5,.8,1,1.2,2,3,5,10,20,50,100]);
 // Probabilities are per ticket, before the lucky-number stamp multiplies fees.
 export const scratchBombRules = Object.freeze({
   chance: .015,
@@ -57,17 +57,17 @@ export const scratchGameTypes = [
         },
         {
           type: 'step_climb',
-          sub: '五站巡签',
+          sub: '十二站巡签',
           title: '步步添彩',
-          tagline: '五站升降，按终点层数领取津贴',
+          tagline: '十二站升降，按终点层数领取津贴',
           icon: '⚡',
-          cellsCount: 5,
+          cellsCount: 12,
           baseTopPrize: 325000,
           bgBand: 'bg-[#4a1612] text-white',
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、从 0 层出发，刮开五站的升降步数',
+            '一、从 0 层出发，刮开十二站的升降步数',
             '二、上升加层、回落减层，停留不变',
             '三、按最终到达的层数领取对应津贴'
           ]

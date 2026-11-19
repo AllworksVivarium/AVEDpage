@@ -8,10 +8,10 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {DatabaseSync} from 'node:sqlite';
 const rng=()=>{let seed=1234567;return()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return(seed>>>0)/4294967296;};};
-test('all tiers have 1.5% bombs and 115% effective RTP including lucky seal deductions',()=>{
+test('all tiers have 1.5% bombs and 120% effective RTP including lucky seal deductions',()=>{
  for(const tier of defaultEconomy().scratch)for(const [type,pool] of Object.entries(tier.variants)){
   const total=pool.reduce((s,x)=>s+x.weight,0);assert.ok(pool.every(x=>x.weight>=0&&Number.isSafeInteger(x.weight)));
-  assert.ok(Math.abs(expectedReturn(pool)-1.15)<1e-8);
+  assert.ok(Math.abs(expectedReturn(pool)-1.20)<1e-8);
   assert.equal(pool.filter(x=>x.penaltyMultiplier).reduce((s,x)=>s+x.weight,0)/total,.015);
   for(const [mult,chance] of [[2,.009],[10,.0045],[100,.0015]])assert.ok(Math.abs(pool.filter(x=>x.penaltyMultiplier===mult).reduce((s,x)=>s+x.weight,0)/total-chance)<1e-12);
   if(type==='lucky_num')for(const [m,p] of [[1,.7],[2,.2],[3,.08],[5,.02]])assert.equal(pool.filter(x=>x.sealMultiplier===m).reduce((s,x)=>s+x.weight,0)/total,p);

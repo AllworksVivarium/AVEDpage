@@ -5,8 +5,8 @@
   let cells,climb;
   if(gameType.type==='lucky_num')cells=[...['#18','#36','#72'].map(n=>({role:'LUCKY',label:'领赏号 '+n,sub:'公司核准'})),{role:'MULT',label:'×1 倍',sub:'核准印'},...Array.from({length:9},(_,i)=>({role:'PLAYER',label:'#'+(41+i),sub:money(tier.cost*(i%4+1))}))];
   else if(gameType.type==='step_climb'){
-   let floor=0;cells=[2,0,-1,1,-2].map((delta,idx)=>{floor+=delta;return {role:'STEP_RIGHT',step:idx+1,stepDelta:delta,stepFloor:floor,label:delta>0?'↑ +'+delta+' 层':delta<0?'↓ '+delta+' 层':'— 停留',sub:idx===4?money(0):'第'+(idx+1)+'站'};});
-   climb={startFloor:0,finishFloor:0,topFloor:5,levels:[0,.5,1.2,5,20,100].map(x=>Math.floor(tier.cost*x+1e-7))};
+   let floor=0;cells=[2,0,-1,1,2,-1,0,2,-2,1,-2,-2].map((delta,idx)=>{floor+=delta;return {role:'STEP_RIGHT',step:idx+1,stepDelta:delta,stepFloor:floor,label:delta>0?'↑ +'+delta+' 层':delta<0?'↓ '+delta+' 层':'— 停留',sub:idx===11?money(0):'第'+(idx+1)+'站'};});
+   climb={startFloor:0,finishFloor:0,topFloor:12,levels:[0,.2,.5,.8,1,1.2,2,3,5,10,20,50,100].map(x=>Math.floor(tier.cost*x+1e-7))};
   }
   else cells=Array.from({length:12},(_,i)=>({label:marks[i%marks.length],sub:money(tier.cost*(i%5+1))}));
   cells.forEach((c,idx)=>Object.assign(c,{idx,revealed:false,isWinPart:false}));

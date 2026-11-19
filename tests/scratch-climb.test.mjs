@@ -9,7 +9,7 @@ import {generateOutcomeTicket,generateSealedTicket} from '../server-ticket.mjs';
 const game=scratchGameTypes.find(g=>g.type==='step_climb');
 const rng=seed=>()=>((seed=Math.imul(seed,1664525)+1013904223)>>>0)/2**32;
 function verify(ticket){
- assert.equal(ticket.cells.length,5);
+ assert.equal(ticket.cells.length,12);
  let floor=0;
  ticket.cells.forEach((cell,index)=>{
   assert.equal(cell.idx,index);assert.equal(cell.step,index+1);assert.equal(cell.role,'STEP_RIGHT');
@@ -24,12 +24,12 @@ function verify(ticket){
  const amount=ticket.cells.filter(c=>c.isWinPart).reduce((sum,c)=>sum+Number(c.sub.match(/¤ ([\d,]+)/)[1].replaceAll(',','')),0);
  assert.equal(amount,ticket.totalPayout);
 }
-test('five moves reach exactly the paid floor for every configured prize, tier and bomb',()=>{
+test('twelve moves reach exactly the paid floor for every configured prize, tier and bomb',()=>{
  for(const tier of defaultEconomy().scratch)for(const outcome of tier.variants.step_climb)for(let seed=1;seed<=64;seed++){
   const ticket=generateOutcomeTicket(tier,game,'proof',rng(seed*7919),outcome);verify(ticket);
   assert.equal(ticket.totalPayout,Math.floor(tier.cost*outcome.multiplier+1e-7));
-  const expected=scratchClimbMultipliers.map(x=>Math.floor(tier.cost*x+1e-7));if(outcome.superJackpot)expected[5]=tier.cost*2000;
-  assert.deepEqual(ticket.climb.levels,expected);assert.equal(ticket.climb.topFloor,5);
+  const expected=scratchClimbMultipliers.map(x=>Math.floor(tier.cost*x+1e-7));if(outcome.superJackpot)expected[12]=tier.cost*2000;
+  assert.deepEqual(ticket.climb.levels,expected);assert.equal(ticket.climb.topFloor,12);
   assert.equal(ticket.penalty||0,tier.cost*(outcome.penaltyMultiplier||0));
   assert.equal(ticket.cells.filter(c=>c.isBomb).length,outcome.penaltyMultiplier?1:0);
  }
@@ -62,13 +62,13 @@ test('manual reveals hide later floors until the route connects; reveal-all expo
  t.cells[0].revealed=true;assert.equal(ui.state(t).known,1);
  t.cells.forEach(c=>c.revealed=true);
  assert.equal(ui.state(t).done,true);assert.equal(ui.state(t).floor,t.climb.finishFloor);
- assert.equal((ui.ladder(t,ui.state(t)).match(/data-climb-level=/g)||[]).length,5);
+ assert.equal((ui.ladder(t,ui.state(t)).match(/data-climb-level=/g)||[]).length,12);
  const position={},graph={},end={classList:{toggle(){}}},host={querySelector:s=>s==='[data-climb-position]'?position:s==='[data-climb-end]'?end:graph};ui.update(host,t);
- assert.equal(position.textContent,'终点 · 第3层');
- assert.match(ui.prizeTable(scratchClimbMultipliers,1000),/5层/);
+ assert.equal(position.textContent,'终点 · 第8层');
+ assert.match(ui.prizeTable(scratchClimbMultipliers,1000),/12层/);
  assert.match(ui.prizeTable(scratchClimbMultipliers,1000),/2,000,000/);
  t.cells.forEach(c=>c.revealed=false);ui.update(host,t);
- assert.equal(position.textContent,'已刮 0/5');
+ assert.equal(position.textContent,'已刮 0/12');
 });
 test('final result identifies the reached floor once and keeps bomb fees separate',()=>{
  const ctx={};vm.runInNewContext(readFileSync(new URL('../public/game-results.js',import.meta.url),'utf8'),ctx);
@@ -77,7 +77,7 @@ test('final result identifies the reached floor once and keeps bomb fees separat
  assert.match(ctx.AVEDGameResults.text({...normal,prize:2000000,superJackpot:true,climb:{finishFloor:5,topFloor:5}}),/^登顶第5层 · 超级大奖/);
  assert.doesNotMatch(ctx.AVEDGameResults.text({...normal,prize:0,penalty:2000}),/终点|登顶/);
 });
-test('five-floor odds keep total probability, configured return and rare-award odds',()=>{
+test('twelve-floor odds keep total probability, configured return and rare-award odds',()=>{
  for(const percent of [0,.000001,.00001,.001,.01,.1,1,5,65,100,110,120,135,150]){
   const pool=returnRatePool(percent,'t1','step_climb');
   assert.equal(pool.reduce((sum,x)=>sum+x.weight,0),100000000);
@@ -88,4 +88,14 @@ test('five-floor odds keep total probability, configured return and rare-award o
  const p=defaultEconomy().scratch[0].variants.step_climb;
  assert.equal(p.filter(x=>x.penaltyMultiplier).reduce((sum,x)=>sum+x.weight,0)/1e8,.015);
  assert.equal(p.find(x=>x.superJackpot).weight/1e8,1/12500000);
+});
+
+
+test('all twelve prize floors have distinct increasing awards and nonzero default odds',()=>{
+ assert.equal(scratchClimbMultipliers.length,13);
+ const pool=defaultEconomy().scratch[0].variants.step_climb;
+ for(let floor=1;floor<=12;floor++){assert.ok(scratchClimbMultipliers[floor]>scratchClimbMultipliers[floor-1]);assert.ok(pool.some(x=>!x.superJackpot&&x.multiplier===scratchClimbMultipliers[floor]&&x.weight>0));}
+ const ui=client();assert.equal((ui.mini().match(/sp-covered/g)||[]).length,12);
+ const legacy={cost:1000,cells:Array.from({length:5},(_,idx)=>({stepDelta:idx===0?1:0,revealed:true})),climb:{topFloor:5,levels:[0,500,1200,5000,20000,100000]}};
+ assert.equal(ui.state(legacy).done,true);assert.equal((ui.ladder(legacy,ui.state(legacy)).match(/data-climb-level=/g)||[]).length,5);
 });

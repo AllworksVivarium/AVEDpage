@@ -32,16 +32,17 @@ function withClimbFloors(pool){
  }
  // Adjacent-floor rounding preserves the distribution's shape. Correct its
  // tiny integer-weight remainder using 0, 0.5 and 1.2 awards (50/120 cents).
+ const half=floors.findIndex(x=>x.multiplier===.5),onePointTwo=floors.findIndex(x=>x.multiplier===1.2);
  const cents=items=>items.reduce((sum,x)=>sum+Math.round(x.multiplier*100)*x.weight,0);
  const difference=cents(ordinary)-cents(floors),nearest=Math.round(difference/10);
  let corrected=false;
  for(const offset of [0,1,-1,2,-2,3,-3,4,-4]){
   const units=nearest+offset,a0=((units*3)%5+5)%5,b0=(units-7*a0)/5;
-  const min=Math.max(Math.ceil((b0-floors[0].weight)/7),Math.ceil((-floors[2].weight-a0)/5));
-  const max=Math.floor((floors[1].weight+b0-a0)/12);
+  const min=Math.max(Math.ceil((b0-floors[0].weight)/7),Math.ceil((-floors[onePointTwo].weight-a0)/5));
+  const max=Math.floor((floors[half].weight+b0-a0)/12);
   if(min>max)continue;
   const k=Math.min(max,Math.max(min,0)),a=a0+5*k,b=b0-7*k;
-  floors[0].weight-=b;floors[1].weight+=b-a;floors[2].weight+=a;corrected=true;break;
+  floors[0].weight-=b;floors[half].weight+=b-a;floors[onePointTwo].weight+=a;corrected=true;break;
  }
  if(!corrected)throw Error('巡签奖池无法保持整数权重。');
  return [...floors,...specials];
@@ -54,9 +55,10 @@ export function returnRatePool(percent,tierId='t1',type='three_match'){
  if(!Number.isFinite(nominal)||nominal<0||nominal>MAX_RETURN_PERCENT)throw Error('返还率应为 0% 至 150%。');
  if(!scratchPrizeMultipliers[tierId])throw Error('票种编号无效。');
  const rows=[[.03,3],[.05,3],[.08,3],[.14,3],[.26,5],[.38,5],[.55,6.5],[.72,5],[.9,4.9],[1.05,15.76],[1.12,15],[1.2,7.54],[1.68,10],[2.2,5],[2.8,3],[4,1],[5,1.8],[10,.6],[20,.2],[30,.08],[50,.015],[100,.005]];
- const scale=Math.min(percent/scratchReturnPercent,1);
+ // Keep the calibrated award shape independent of the default target RTP.
+ const shapeBaseline=115,scale=Math.min(percent/shapeBaseline,1);
  const pool=rows.map(([multiplier,p])=>({multiplier,weight:Math.round(p*1000000*scale*(multiplier>=5?.8:1))}));
- if(percent>scratchReturnPercent)pool.at(-1).weight+=Math.round((percent-scratchReturnPercent)/100/100*1e8);
+ if(percent>shapeBaseline)pool.at(-1).weight+=Math.round((percent-shapeBaseline)/100/100*1e8);
  pool.push(...scratchBombRules.outcomes.map(({penaltyMultiplier,chance})=>({multiplier:0,penaltyMultiplier,weight:Math.round(chance*1e8*(nominal>0?1:0))})));
  if(percent<.01){for(const x of pool)x.weight=0;pool[0].weight=Math.round(percent/100*1e8/.03);}
  // Keep the advertised bomb odds fixed. Shift small wins to 5x awards instead
