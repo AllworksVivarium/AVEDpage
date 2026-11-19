@@ -57,3 +57,16 @@ test('an early requested-track ending waits for the shared boundary instead of i
 test('an empty catalogue cannot start the retired synthetic music even with the legacy flag',async()=>{
  const f=fixture();try{f.setInside(true);f.player.configure({enabled:true,previewFallback:true,tracks:[]});await f.player.play();assert.equal(f.plays(),0);assert.equal(f.errors(),1);assert.equal(f.hasSyntheticMusic(),false);}finally{f.player.stop();}
 });
+
+test('full local preview uses the original audio and yields to the current public request only when closed',async()=>{
+ const f=fixture();try{
+  f.setInside(true);const now=Date.now(),tracks=[{id:1,url:'/room.mp3'},{id:2,url:'/original-full.mp3'}];
+  f.player.configure({enabled:true,tracks,serverTime:now,request:{id:'room-a',trackId:1,startsAt:now-20000,endsAt:now+60000}});await f.player.play();
+  await f.player.preview(tracks[1]);assert.equal(f.media[1].src,'/original-full.mp3');assert.equal(f.media[0].paused,true);assert.equal(f.plays(),2);
+  f.player.configure({enabled:true,tracks,serverTime:now+10000,request:{id:'room-b',trackId:1,startsAt:now-10000,endsAt:now+90000}});assert.equal(f.plays(),2,'shared updates cannot interrupt private playback');
+  f.player.stopPreview();assert.equal(f.media[1].paused,true);assert.equal(f.media[0].src,'/room.mp3');assert.equal(f.plays(),3);f.media[0].duration=180;f.media[0].onloadedmetadata();assert.ok(f.media[0].currentTime>=20);
+ }finally{f.player.stop();}
+});
+test('leaving the bar stops local preview and never revives muted public music',async()=>{
+ const f=fixture();try{f.setInside(true);f.player.configure({enabled:true,tracks:[{id:1,url:'/full.mp3'}]});await f.player.preview({id:1,url:'/full.mp3'});f.player.stopPreview();assert.equal(f.plays(),1);await f.player.preview({id:1,url:'/full.mp3'});f.setInside(false);f.player.stop();assert.ok(f.media.every(m=>m.paused));assert.equal(f.plays(),2);}finally{f.player.stop();}
+});

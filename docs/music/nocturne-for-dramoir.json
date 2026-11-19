@@ -1,0 +1,127 @@
+{
+  "providedOn": "2026-11-19",
+  "provenance": "User-provided 音乐文件.zip; no license document was included. Metadata comes from ID3 tags or supplied filenames; missing performers are left empty.",
+  "albums": [
+    {
+      "id": "nocturne-for-dramoir",
+      "title": "Nocturne for Dramoir",
+      "albumArtist": "Various Artists",
+      "artist": "Various Artists",
+      "license": "",
+      "licenseUrl": "",
+      "sourceUrl": "",
+      "tracks": [
+        {
+          "title": "Autumn In New York",
+          "artist": "Bill Charlap",
+          "trackNumber": 1,
+          "durationSeconds": 412,
+          "file": "Autumn In New York - Bill Charlap.mp3",
+          "bytes": 4941972,
+          "sha256": "be6362768524e46fbb4dce5632eadf8a609bab49ed6a73c060c86bcfcb084ec7",
+          "originalAlbum": ""
+        },
+        {
+          "title": "切ないSandglass Piano Ver.",
+          "artist": "诗心",
+          "trackNumber": 2,
+          "durationSeconds": 216,
+          "file": "诗心+-+切ないSandglass+Piano+Ver._667784462.mp3",
+          "bytes": 8611131,
+          "sha256": "af55f4cf8be134a54536fd97edf89ca21b2eb9cf9dd2abc69b615f0adc57c228",
+          "originalAlbum": ""
+        },
+        {
+          "title": "Body and Soul",
+          "artist": "Billy Taylor",
+          "trackNumber": 3,
+          "durationSeconds": 380,
+          "file": "Body and Soul - Billy Taylor.mp3",
+          "bytes": 6067765,
+          "sha256": "771736394ab0d11309610f5a86364ec28dee9b282457cb3a46f74354c0b8469a",
+          "originalAlbum": "Music Caravan"
+        },
+        {
+          "title": "Georgia on My Mind",
+          "artist": "Oscar Peterson",
+          "trackNumber": 4,
+          "durationSeconds": 223,
+          "file": "Georgia On My Mind - Oscar Peterson.mp3",
+          "bytes": 8886074,
+          "sha256": "dc7159cdfcf059b4d38bd54fe0dc6378bf474bf0e33eb90626df373e842207c5",
+          "originalAlbum": "Night Train"
+        },
+        {
+          "title": "The Way We Were",
+          "artist": "山本刚三重奏",
+          "trackNumber": 5,
+          "durationSeconds": 327,
+          "file": "The Way We Were - 山本刚.mp3",
+          "bytes": 5227202,
+          "sha256": "bf701903bf66e1e30fc55b9be97a9ed73ce0cb4ee1ad1d5f6f8f058287b4b2e0",
+          "originalAlbum": ""
+        },
+        {
+          "title": "Cry Me A River",
+          "artist": "Dexter Gordon",
+          "trackNumber": 6,
+          "durationSeconds": 228,
+          "file": "Cry Me A River - Dexter Gordon.mp3",
+          "bytes": 9089848,
+          "sha256": "3be53f89513a149c9104ec7c7440c42fd0f3108ee81ceee35f1f411940d2dece",
+          "originalAlbum": "Dexter Gordon: Cry Me A River"
+        },
+        {
+          "title": "Pure Imagination",
+          "artist": "Bill Charlap",
+          "trackNumber": 7,
+          "durationSeconds": 198,
+          "file": "Pure Imagination - Bill Charlap.mp3",
+          "bytes": 7901792,
+          "sha256": "210a6a853b7dbe567e9bdc2f90f92b1ef88ec9d19c052a2533a7d73a53308d60",
+          "originalAlbum": "All Through The Night"
+        },
+        {
+          "title": "STAR BEAT!〜ホシノコドウ〜 (Piano)",
+          "artist": "",
+          "trackNumber": 8,
+          "durationSeconds": 186,
+          "file": "STAR BEAT!〜ホシノコドウ〜 (Piano ）.mp3",
+          "bytes": 2973906,
+          "sha256": "9281a0ac6d44b1ab33681b902b50171ac39c79a1e0b5dcd2edc46c507e6a7980",
+          "originalAlbum": ""
+        },
+        {
+          "title": "Stormy Weather",
+          "artist": "Red Garland",
+          "trackNumber": 9,
+          "durationSeconds": 640,
+          "file": "Stormy Weather - Red Garland.mp3",
+          "bytes": 25566861,
+          "sha256": "7196396118d8f7e6e17f57745d1a8890f79665a15cdf7e341652164a014f68c5",
+          "originalAlbum": "All Kinds of Weather (Album of 1958)"
+        },
+        {
+          "title": "Fly Me To The Moon (Cafe Style Standard ver.)",
+          "artist": "Relaxing Jazz Trio/Cafe Ensemble Project/Café Lounge Resort",
+          "trackNumber": 10,
+          "durationSeconds": 159,
+          "file": "Fly Me To The Moon - Cafe lounge Jazz - Cafe lounge Jazz.mp3",
+          "bytes": 2534508,
+          "sha256": "604220280d8042cf3d99da93f97f975f2479a9213a9bf3ec5c77bfc44cbe87f5",
+          "originalAlbum": "大人の読書時間を彩るジャズスタンダード"
+        },
+        {
+          "title": "That's All",
+          "artist": "Ben Webster",
+          "trackNumber": 11,
+          "durationSeconds": 229,
+          "file": "That's All - Ben Webster.mp3",
+          "bytes": 9121182,
+          "sha256": "60518353f4515975a6e3b2d936f66e5d5e9f0eab68f43d683cb1af9159b138a3",
+          "originalAlbum": "Quiet Now : Until Tonight"
+        }
+      ]
+    }
+  ]
+}

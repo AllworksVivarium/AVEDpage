@@ -27,3 +27,7 @@
 [data-juke-queue]{max-height:200px;overflow:auto;scrollbar-width:thin}
 [data-juke-queue]:empty{display:none}
 @media(max-width:480px){.bar-album-grid{gap:8px}.bar-album-grid .bar-album-cover{padding:11px}.bar-album-cover b{font-size:14px}.bar-album-disc{width:86px;height:86px}.bar-album-tracks>button{padding:9px 8px;gap:6px}.bar-album-tracks .bar-track-number{flex-basis:16px}}
+
+.bar-track-row{display:flex;align-items:stretch;gap:5px;min-width:0}.bar-track-row>[data-song]{display:flex;align-items:center;flex:1;min-width:0;text-align:left;gap:10px}.bar-track-row>[data-song]>small{flex:none}.bar-track-row>.bar-track-preview{flex:none;padding:6px 10px;font-size:11px}
+
+[data-juke-local-preview] audio{display:block;width:100%;max-width:100%;margin:10px 0;height:40px}

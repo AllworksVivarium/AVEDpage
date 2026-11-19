@@ -54,3 +54,13 @@ test('legacy music schema migrates, metadata roundtrips and album order reaches 
  await call('/api/admin/bar-music/'+id,{enabled:true},'PUT');assert.equal(service.playlist().tracks.find(t=>t.id===id).artist,'Artist');assert.deepEqual(service.playlist().albums[0].trackIds,[id]);
  assert.equal((await call('/api/admin/bar-music/'+id,{sourceUrl:'javascript:bad'},'PUT')).status,400);assert.equal(service.playlist().tracks.find(t=>t.id===id).sourceUrl,'https://example.com/album');
 });
+
+test('a compilation stays one album while each recording retains its own performer',async t=>{
+ const tracks=[{id:1,artist:'Bill Charlap',albumArtist:'Various Artists',album:'Nocturne for Dramoir',trackNumber:1},{id:2,artist:'Billy Taylor',albumArtist:'Various Artists',album:'Nocturne for Dramoir',trackNumber:2}];
+ const groups=groupMusicAlbums(tracks);assert.equal(groups.length,1);assert.equal(groups[0].artist,'Various Artists');assert.equal(groups[0].tracks[1].artist,'Billy Taylor');
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());let body;
+ const service=installBarMusic({db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async()=>body,requireEmployee:()=>true,requireAdmin:()=>true,dataDir:'.'});
+ const call=async(path,data,method='POST')=>{body=data;const res={};await service.handle({method},res,new URL(path,'http://localhost'));return res;};
+ const result=await call('/api/admin/bar-music',{title:'One',url:'https://example.com/one.mp3',...tracks[0]});assert.equal(result.status,201);
+ await call('/api/admin/bar-music/'+result.data.id,{enabled:false},'PUT');await call('/api/admin/bar-music/'+result.data.id,{enabled:true},'PUT');assert.equal(service.playlist().tracks[0].albumArtist,'Various Artists');
+});

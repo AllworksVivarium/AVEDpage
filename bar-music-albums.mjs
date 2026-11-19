@@ -4,8 +4,8 @@ export function groupMusicAlbums(tracks){
  const groups=new Map();
  for(const track of tracks){
   if(!track.album)continue;
-  const id=createHash('sha256').update(JSON.stringify([track.artist||'',track.album])).digest('hex').slice(0,24);
-  if(!groups.has(id))groups.set(id,{id,title:track.album,artist:track.artist||'',tracks:[]});
+  const id=createHash('sha256').update(JSON.stringify([track.albumArtist||track.artist||'',track.album])).digest('hex').slice(0,24);
+  if(!groups.has(id))groups.set(id,{id,title:track.album,artist:track.albumArtist||track.artist||'',tracks:[]});
   groups.get(id).tracks.push(track);
  }
  return [...groups.values()].map(album=>({...album,tracks:album.tracks.sort((a,b)=>(a.trackNumber||9999)-(b.trackNumber||9999)||a.id-b.id)}));
@@ -13,7 +13,7 @@ export function groupMusicAlbums(tracks){
 
 export function musicMetadata(data,previous={}){
  const out={};
- for(const [field,max] of [['artist',100],['album',100],['license',100],['licenseUrl',2048],['sourceUrl',2048]]){
+ for(const [field,max] of [['artist',100],['albumArtist',100],['album',100],['license',100],['licenseUrl',2048],['sourceUrl',2048]]){
   const value=data[field]===undefined?previous[field]||'':data[field];
   if(typeof value!=='string'||value.trim().length>max||/[\u0000-\u001f]/.test(value))throw Error('音乐署名或专辑信息无效。');
   out[field]=value.trim();
