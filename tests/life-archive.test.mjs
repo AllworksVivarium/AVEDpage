@@ -165,3 +165,19 @@ test('support scheduler staggers different works, keeps quota and renamed defaul
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM life_tags WHERE name='日常'").get().n,0);assert.equal(db.prepare("SELECT COUNT(*) AS n FROM life_tags WHERE name='随笔'").get().n,1);
   now+=3*DAY;assert.equal(restarted.sweep(),1);now+=10*DAY;assert.equal(restarted.sweep(),0);
 });
+
+
+test('preview defaults center legacy and new works while explicitly chosen edges survive edits and restarts',async t=>{
+ const {db,call}=fixture();t.after(()=>db.close());
+ assert.equal((await call('/api/player/life/1')).data.previewPosition,50);
+ const payload={title:'裁切测试',kind:'article',body:'正文',tags:['日常']};
+ const created=await call('/api/player/life','POST',payload);assert.equal(created.status,201);
+ const id=created.data.id;assert.equal((await call('/api/player/life/'+id)).data.previewPosition,50);
+ await call('/api/player/life/'+id,'PUT',{...payload,previewPosition:0,revision:1});
+ assert.equal((await call('/api/player/life/'+id)).data.previewPosition,0);
+ await call('/api/player/life/'+id,'PUT',{...payload,revision:2});
+ assert.equal((await call('/api/player/life/'+id)).data.previewPosition,0);
+ installLife({db,send(){},readBody:async req=>req.body,log(){}});
+ assert.equal((await call('/api/player/life/'+id)).data.previewPosition,0);
+ assert.equal((await call('/api/player/life/1')).data.previewPosition,50);
+});

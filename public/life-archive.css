@@ -12,7 +12,7 @@ body.theme-inner:has(#inner-app-view:not(.hidden) #view-life:not(.hidden)) #view
 .life-board-tools{justify-content:space-between}.life-board-tools button{min-height:30px;padding:4px 12px}.life-load-actions{justify-content:center;margin-top:20px}
 .life-board-caption{display:grid;gap:3px;min-width:0}
 .life-paper-kicker{border-bottom:1px solid var(--life-rule);padding-bottom:6px}
-.life-board-tools .section-kicker{display:flex;gap:14px;align-items:center}.life-pattern{display:inline-block;width:38px;height:12px;opacity:.35}
+.life-board-tools .section-kicker{display:flex;gap:14px;align-items:center}
 #inner-app-view #view-life #life-filters .life-filter-row{grid-template-columns:repeat(4,minmax(0,1fr))}
 .life-board{padding:28px 22px 14px;border:1px solid var(--inner-border-soft);background-color:color-mix(in srgb,var(--inner-card-bg) 76%,var(--inner-text-main) 7%);background-image:repeating-linear-gradient(91deg,transparent 0,transparent 3px,color-mix(in srgb,var(--inner-text-main) 3%,transparent) 3px,color-mix(in srgb,var(--inner-text-main) 3%,transparent) 4px),repeating-linear-gradient(0deg,transparent 0,transparent 2px,color-mix(in srgb,var(--inner-text-main) 3%,transparent) 2px,color-mix(in srgb,var(--inner-text-main) 3%,transparent) 3px);box-shadow:inset 0 0 35px #0002}
 .life-masonry{position:relative;min-width:0;display:flex;flex-wrap:wrap;gap:0 18px}
@@ -25,7 +25,7 @@ body.theme-inner:has(#inner-app-view:not(.hidden) #view-life:not(.hidden)) #view
 .life-tile:nth-child(4n+2) .life-paper{transform:rotate(-.5deg)}
 .life-tile:nth-child(4n+3) .life-paper{transform:rotate(.5deg)}
 .life-image-open{display:block;padding:0;width:100%;border:0;background:transparent;color:inherit;overflow:hidden}
-.life-cover{display:block;width:100%;height:clamp(170px,24vw,280px);object-fit:cover;background:color-mix(in srgb,var(--life-ink) 12%,transparent)}
+.life-cover{display:block;width:100%;height:clamp(170px,24vw,280px);object-fit:cover;object-position:50% 50%;background:color-mix(in srgb,var(--life-ink) 12%,transparent)}
 .life-wide .life-cover{height:clamp(210px,30vw,360px)}
 .life-paper h3{font-family:var(--type-heading,serif);font-size:22px;line-height:1.45;font-weight:400;margin:12px 0 8px;color:inherit}
 .life-paper h3 button{text-align:left;font:inherit;color:inherit;padding:0;border:0;background:none}
@@ -61,7 +61,7 @@ body.theme-inner:has(#inner-app-view:not(.hidden) #view-life:not(.hidden)) #view
 .life-editor{color:var(--life-ink);background-color:var(--life-paper);min-height:220px;max-height:450px;overflow:auto;font-family:var(--type-archive,serif);font-size:16px}
 .life-editor .ql-editor{min-height:220px;font-size:16px;line-height:1.9;overflow-wrap:anywhere}.life-compose-dialog .ql-toolbar.ql-snow{background:var(--life-paper);color:var(--life-ink);border-color:var(--life-rule)}.life-compose-dialog .ql-container.ql-snow{border-color:var(--life-rule)}
 .life-compose-dialog .ql-snow .ql-stroke{stroke:var(--life-ink)}.life-compose-dialog .ql-snow .ql-fill{fill:var(--life-ink)}.life-compose-dialog .ql-snow .ql-picker{color:var(--life-ink)}.life-compose-dialog .ql-picker-options{background:var(--life-paper);color:var(--life-ink)}
-.life-image-preview{padding:12px;border:1px solid var(--inner-border-soft)}.life-image-preview img{display:block;width:100%;height:200px;object-fit:cover;object-position:50% 0;background:var(--inner-card-bg);margin-bottom:12px}.life-image-preview label{margin-bottom:10px}
+.life-image-preview{padding:12px;border:1px solid var(--inner-border-soft)}.life-image-preview img{display:block;width:100%;height:200px;object-fit:cover;object-position:50% 50%;background:var(--inner-card-bg);margin-bottom:12px}.life-image-preview label{margin-bottom:10px}
 .life-submit-actions{border-top:1px solid var(--inner-border-soft);padding-top:14px;justify-content:end}.life-submit-actions button[type=submit]{background:var(--inner-accent);color:var(--inner-accent-text)}
 @media(min-width:1300px){.life-sizer,.life-tile{width:calc((100% - 54px)/4)}.life-tile.life-wide{width:calc((100% - 54px)/4*2 + 18px)}}
 @media(max-width:850px){.life-sizer,.life-tile{width:calc((100% - 18px)/2)}.life-tile.life-wide{width:100%}.life-paper{padding:13px}.life-board{padding:25px 15px 8px}.life-cover{height:230px}}
