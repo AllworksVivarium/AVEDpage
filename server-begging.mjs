@@ -18,11 +18,13 @@ export function installBegging({db,send,readBody,requireEmployee,balanceFor,reco
   BEGIN SELECT RAISE(ABORT,'对同一位员工只能乞讨一次。');END;`);
  const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
  const name=id=>{
-  const row=db.prepare(`SELECT e.display_name,COALESCE(NULLIF(p.anonymous_name,''),'匿名员工-'||e.id) AS anonymous_name,q.ranking_identity
-   FROM employees e LEFT JOIN profiles p ON p.employee_id=e.id LEFT JOIN employee_preferences q ON q.employee_id=e.id WHERE e.id=?`).get(id);
+  const row=db.prepare(`SELECT e.display_name,COALESCE(r.codename,NULLIF(p.anonymous_name,''),'匿名员工-'||e.id) AS anonymous_name,q.ranking_identity
+   FROM employees e LEFT JOIN profiles p ON p.employee_id=e.id LEFT JOIN employee_preferences q ON q.employee_id=e.id LEFT JOIN company_robots r ON r.employee_id=e.id WHERE e.id=?`).get(id);
   return row&&!isContainment(id)&&row.ranking_identity==='real'?row.display_name:row?.anonymous_name||'员工';
  };
  const eligible=id=>!!db.prepare('SELECT 1 FROM employees e WHERE e.id=? AND e.enabled=1 AND e.is_npc=0 AND NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id)').get(id);
+ // Company roster accounts accept requests just like other visible employees.
+ const requestable=id=>!!db.prepare('SELECT 1 FROM employees e WHERE e.id=? AND ((e.enabled=1 AND e.is_npc=0) OR EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id))').get(id);
  const item=row=>({id:row.id,senderId:row.sender_id,recipientId:row.recipient_id,senderName:name(row.sender_id),recipientName:name(row.recipient_id),status:row.status,requestedAmount:row.requested_amount,amount:row.amount,createdAt:row.created_at});
  const inbox=id=>({items:db.prepare("SELECT * FROM employee_begging_requests WHERE recipient_id=? AND status='pending' ORDER BY id").all(id).map(item),rewards:db.prepare("SELECT * FROM employee_begging_requests WHERE sender_id=? AND status='accepted' AND sender_seen_at IS NULL ORDER BY id").all(id).map(item)});
  const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(error){db.exec('ROLLBACK');throw error;}};
@@ -45,7 +47,7 @@ export function installBegging({db,send,readBody,requireEmployee,balanceFor,reco
     const result=transaction(()=>{
      const key=user.id+':'+data.requestId,previous=db.prepare('SELECT * FROM employee_begging_requests WHERE request_key=?').get(key);
      if(previous){if(previous.recipient_id!==data.recipientId||previous.requested_amount!==data.amount)fail('这份请求凭据已使用。',409);return previous;}
-     if(!eligible(data.recipientId)||!highest(user.id).some(row=>row.id===data.recipientId))fail('该员工当前无法接收请求，请刷新财神榜。');
+     if(!requestable(data.recipientId)||!highest(user.id).some(row=>row.id===data.recipientId))fail('该员工当前无法接收请求，请刷新财神榜。');
      const previousRequest=db.prepare('SELECT 1 FROM employee_begging_requests WHERE sender_id=? AND recipient_id=? LIMIT 1').get(user.id,data.recipientId);
      if(previousRequest)fail('对同一位员工只能乞讨一次。',409);
      const inserted=db.prepare('INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,created_at,requested_amount) VALUES(?,?,?,?,?)').run(user.id,data.recipientId,key,clock(),data.amount);

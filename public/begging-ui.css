@@ -13,3 +13,5 @@
 #inner-app-view .welfare-begging-dialog [data-beg-error]{color:var(--inner-crimson);font-size:12px}
 
 #inner-app-view .welfare-begging-dialog :is([data-beg-error],[data-beg-status]):empty{display:none}
+
+#inner-app-view .welfare-begging-dialog .begging-reward-amount{display:inline-block;white-space:nowrap}

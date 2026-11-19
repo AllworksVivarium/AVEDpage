@@ -154,3 +154,13 @@ test('cup choice never caps a pour, including larger old servings and partially 
  const filled=await pour(f,1,id,'adaptive-cup-pour001',{capacityMl:1,amountMl:1});assert.equal(filled.status,200);assert.equal(filled.data.pourReceipt.amountMl,700);assert.equal(filled.data.myDrink.glassMl,900);assert.equal(filled.data.myDrink.bottleMl,0);
  assert.equal((await pour(f,1,id,'adaptive-cup-pour001')).data.myDrink.glassMl,900);assert.equal((await sip(f,1,id,'adaptive001')).data.myDrink.glassMl,675);assert.equal(f.balanceFor(1),100000);
 });
+
+
+test('an emptied poured drink can stow its cup, switch source back and stay stowed after restart',async t=>{
+ const f=fixture(t);await prefs(f,1,'highball');const bought=await order(f,1,'mineral-water','stow-empty-drink-order'),id=bought.data.myDrink.id;await pour(f,1,id,'stow-empty-drink-pour');
+ assert.equal((await prefs(f,1,null)).status,400);
+ for(let i=0;i<4;i++)assert.equal((await sip(f,1,id,'stow-empty-drink-'+i)).status,200);
+ const empty=(await f.req(1)).data;assert.equal(empty.myDrink.glassMl,0);assert.equal(empty.myDrink.remainingMl,0);
+ const stowed=await prefs(f,1,null);assert.equal(stowed.status,200);assert.equal(stowed.data.barPreferences.glassId,null);assert.equal(stowed.data.myDrink.drinkFrom,'bottle');assert.equal(stowed.data.myDrink.remainingMl,0);assert.equal(f.balanceFor(1),100000);
+ f.restart();const restored=(await f.req(1)).data;assert.equal(restored.barPreferences.glassId,null);assert.equal(restored.myDrink.remainingMl,0);
+});

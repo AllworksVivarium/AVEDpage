@@ -51,9 +51,22 @@ test('persistent begging requests are recipient-only, capped, conserved, idempot
   assert.equal((await api(stranger.cookie,'/api/player/begging/'+pendingId,'POST',{decision:'accepted',amount:1})).status,404);
   assert.equal((await api(sender.cookie,'/api/player/begging/'+pendingId,'POST',{decision:'declined'})).status,404);
   await stop();await start();const inbox=await api(payer.cookie,'/api/player/begging');assert.equal(inbox.status,200);assert.equal(inbox.data.items[0].id,pendingId);assert.equal(inbox.data.items[0].requestedAmount,500);
-  const robot=await api(admin,'/api/admin/company-robots','POST',{codename:'机器人测试',balance:5000000});assert.equal(robot.status,200);
-  const ranking=(await api(sender.cookie,'/api/player/welfare')).data.highest.find(e=>e.id===robot.data.id);assert.equal(ranking.canReceiveBegging,0);
-  assert.equal((await api(sender.cookie,'/api/player/begging','POST',{recipientId:robot.data.id,amount:1,requestId:randomUUID()})).status,400);
+  const robot=await api(admin,'/api/admin/company-robots','POST',{codename:'夜班员工',balance:5000000});assert.equal(robot.status,200);
+  const ranking=(await api(sender.cookie,'/api/player/welfare')).data.highest.find(e=>e.id===robot.data.id);assert.equal(ranking.canReceiveBegging,1);assert.equal(ranking.hasBegged,false);
+  for(const key of ['isRobot','isNpc','is_npc','is_robot','robot'])assert.equal(Object.hasOwn(ranking,key),false);
+  const before={sender:await balance(sender),robot:db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(robot.data.id).balance,ledger:db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n};
+  const robotBody={recipientId:robot.data.id,amount:1000000,requestId:randomUUID()},createdRobot=await api(sender.cookie,'/api/player/begging','POST',robotBody);
+  assert.equal(createdRobot.status,200);assert.equal(createdRobot.data.status,'pending');assert.equal(createdRobot.data.recipientName,ranking.name);assert.equal(createdRobot.data.requestedAmount,1000000);
+  assert.deepEqual(Object.keys(createdRobot.data).sort(),Object.keys(created.data).sort());
+  assert.equal((await api(sender.cookie,'/api/player/begging','POST',robotBody)).data.id,createdRobot.data.id);
+  assert.equal((await api(sender.cookie,'/api/player/begging','POST',{...robotBody,requestId:randomUUID()})).status,409);
+  assert.equal((await api(stranger.cookie,'/api/player/begging','POST',{...robotBody,requestId:randomUUID()})).status,200,'another employee may independently ask the same recipient');
+  const used=(await api(sender.cookie,'/api/player/welfare')).data.highest.find(e=>e.id===robot.data.id);assert.equal(used.hasBegged,true);assert.equal(used.canReceiveBegging,1);
+  assert.equal((await api(payer.cookie,'/api/player/begging/'+createdRobot.data.id,'POST',{decision:'accepted',amount:1})).status,404);
+  await stop();await start();
+  const stored=db.prepare('SELECT status,amount,donation_id,resolved_at FROM employee_begging_requests WHERE id=?').get(createdRobot.data.id);assert.equal(stored.status,'pending');assert.equal(stored.amount,0);assert.equal(stored.donation_id,null);assert.equal(stored.resolved_at,null);
+  assert.equal((await api(sender.cookie,'/api/player/begging')).data.rewards.length,0);
+  assert.equal(await balance(sender),before.sender);assert.equal(db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?').get(robot.data.id).balance,before.robot);assert.equal(db.prepare('SELECT COUNT(*) n FROM balance_ledger').get().n,before.ledger);
  });
  await t.test('invalid amounts never pay; declining does not transfer anything and cannot later be changed',async()=>{
   for(const amount of [0,-1,1.5,1000001,'100',null])assert.equal((await api(payer.cookie,'/api/player/begging/'+pendingId,'POST',{decision:'accepted',amount})).status,400);
@@ -74,7 +87,7 @@ test('persistent begging requests are recipient-only, capped, conserved, idempot
   assert.ok(results.every(r=>r.status===200));assert.equal(await balance(payer),1000000);assert.equal(await balance(beneficiary),1000010);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM employee_donations').get().n,1);
   assert.equal((await api(beneficiary.cookie,'/api/player/begging','POST',{recipientId:payer.id,amount:1,requestId:randomUUID()})).status,409,'an acceptance also consumes the allowance permanently');
-  const rewards=(await api(beneficiary.cookie,'/api/player/begging')).data.rewards;assert.equal(rewards.length,1);assert.equal(rewards[0].amount,1000000);assert.equal(rewards[0].requestedAmount,1234,'the receiver may give a different amount without changing the original request');
+  const rewards=(await api(beneficiary.cookie,'/api/player/begging')).data.rewards;assert.equal(rewards.length,1);assert.equal(rewards[0].amount,1000000);assert.equal(rewards[0].recipientId,payer.id);assert.equal(typeof rewards[0].recipientName,'string');assert.ok(rewards[0].recipientName);assert.ok(!rewards[0].recipientName.includes('保密实名'));assert.equal(rewards[0].requestedAmount,1234,'the receiver may give a different amount without changing the original request');
   assert.equal((await api(payer.cookie,'/api/player/begging/'+pendingId+'/read','POST',{})).status,404);
   assert.equal((await api(stranger.cookie,'/api/player/begging/'+pendingId+'/read','POST',{})).status,404);
   await stop();await start();assert.equal((await api(beneficiary.cookie,'/api/player/begging')).data.rewards[0].id,pendingId,'the offline sender must still receive the success notification after a restart');
