@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {barDrinks} from './server-bar-catalog.mjs';
+import {groupMusicAlbums} from './bar-music-albums.mjs';
 
 export const JUKEBOX_PRICE=30000;
 const WEEK=7*86400000;
@@ -11,6 +12,8 @@ export function installBarExtras({db,clock,balanceFor,recordLedger,name,isContai
  CREATE INDEX IF NOT EXISTS bar_stored_drinks_sender ON bar_stored_drinks(sender_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_jukebox_requests(id TEXT PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id),track_id INTEGER NOT NULL,title TEXT NOT NULL,alias TEXT NOT NULL,identity_mode TEXT NOT NULL,message TEXT NOT NULL,price INTEGER NOT NULL,created_at INTEGER NOT NULL,starts_at INTEGER NOT NULL,ends_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active',request_key TEXT NOT NULL,UNIQUE(employee_id,request_key));
  CREATE INDEX IF NOT EXISTS bar_jukebox_queue ON bar_jukebox_requests(status,ends_at);`);
+ const jukeColumns=new Set(db.prepare('PRAGMA table_info(bar_jukebox_requests)').all().map(c=>c.name));
+ for(const column of ['batch_id','album_key'])if(!jukeColumns.has(column))db.exec(`ALTER TABLE bar_jukebox_requests ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
  const columns=new Set(db.prepare('PRAGMA table_info(employees)').all().map(x=>x.name));
  const eligibility=[columns.has('enabled')?'e.enabled=1':'1',columns.has('is_npc')?'e.is_npc=0':'1',columns.has('identity_kind')?"e.identity_kind IN ('player_employee','player_containment','planning_member')":'1',db.prepare("SELECT 1 FROM sqlite_master WHERE name='company_robots'").get()?'NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id)':'1'].join(' AND ');
  const atomic=fn=>{const own=!db.isTransaction;if(own)db.exec('BEGIN IMMEDIATE');try{const out=fn();if(own)db.exec('COMMIT');return out;}catch(e){if(own)db.exec('ROLLBACK');throw e;}};
@@ -71,21 +74,31 @@ export function installBarExtras({db,clock,balanceFor,recordLedger,name,isContai
   const ids=new Set(music.enabled?music.tracks.map(t=>t.id):[]);
   const invalid=db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>?").all(clock()).filter(row=>!ids.has(row.track_id));
   if(invalid.length)atomic(()=>{for(const row of invalid){recordLedger(row.employee_id,row.price,'点播曲目下架退回');db.prepare("UPDATE bar_jukebox_requests SET status='cancelled' WHERE id=? AND status='active'").run(row.id);}let end=clock();for(const row of db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY starts_at,id").all(clock())){if(row.starts_at<=clock()){end=Math.max(end,row.ends_at);continue;}const duration=row.ends_at-row.starts_at;db.prepare('UPDATE bar_jukebox_requests SET starts_at=?,ends_at=? WHERE id=?').run(end,end+duration,row.id);end+=duration;}});
-  const items=db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY starts_at,id LIMIT 20").all(clock()).map(row=>({id:row.id,trackId:row.track_id,title:row.title,alias:row.alias,identityMode:row.identity_mode,message:row.message,startsAt:row.starts_at,endsAt:row.ends_at,isContainment:isContainment(row.employee_id)}));
+  const catalog=new Map(music.tracks.map(t=>[t.id,t]));
+  const items=db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY starts_at,id LIMIT 100").all(clock()).map(row=>({id:row.id,trackId:row.track_id,title:row.title,artist:catalog.get(row.track_id)?.artist||'',album:catalog.get(row.track_id)?.album||'',batchId:row.batch_id||row.id,albumRequest:!!row.album_key,alias:row.alias,identityMode:row.identity_mode,message:row.message,startsAt:row.starts_at,endsAt:row.ends_at,isContainment:isContainment(row.employee_id)}));
   return {price:JUKEBOX_PRICE,queue:items};
  }
  function requestSong(actor,data){
   const key=requestKey(data.requestId),kind=mode(data.identityMode??'anonymous'),message=text(data.message,'点播留言');
+  const albumRequest=typeof data.albumId==='string'&&data.albumId.length>0;
+  if(albumRequest&&(data.albumId.length>100||data.trackId!==undefined))throw Error('请选择单曲或整张专辑。');
   return atomic(()=>{
    const old=db.prepare('SELECT * FROM bar_jukebox_requests WHERE employee_id=? AND request_key=?').get(actor.id,key);
-   if(old){if(old.track_id!==data.trackId||old.identity_mode!==kind||old.message!==message)throw Error('这份点播凭据已使用。');return {ok:true};}
-   const music=getMusic(),track=music.enabled&&music.tracks.find(t=>t.id===data.trackId);if(!track)throw Error('这首歌暂时不能点播，请选择已上架曲目。');
-   queue(music);const now=clock(),pending=db.prepare("SELECT employee_id,ends_at FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY ends_at DESC").all(now);
-   if(pending.length>=20||pending.filter(r=>r.employee_id===actor.id).length>=2)throw Error('点播队列暂满；每位客人最多同时点播两首。');
-   if(balanceFor(actor.id)<JUKEBOX_PRICE)throw Error('点播一首需要 30,000 ¤。');
-   const start=Math.max(now,pending[0]?.ends_at||now),duration=Math.max(30,Math.min(900,Number(track.durationSeconds)||180))*1000;
-   recordLedger(actor.id,-JUKEBOX_PRICE,'酒吧点播：'+track.title);
-   db.prepare('INSERT INTO bar_jukebox_requests(id,employee_id,track_id,title,alias,identity_mode,message,price,created_at,starts_at,ends_at,request_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(randomUUID(),actor.id,track.id,track.title,author(actor.id,kind),kind,message,JUKEBOX_PRICE,now,start,start+duration,key);
+   if(old){if((albumRequest?old.album_key!==data.albumId:!!old.album_key||old.track_id!==data.trackId)||old.identity_mode!==kind||old.message!==message)throw Error('这份点播凭据已使用。');return {ok:true};}
+   const music=getMusic(),album=albumRequest&&groupMusicAlbums(music.tracks).find(a=>a.id===data.albumId),selected=albumRequest?album?.tracks:music.tracks.filter(t=>t.id===data.trackId);
+   if(!music.enabled||!selected?.length)throw Error('这首歌或专辑暂时不能点播，请选择已上架曲目。');
+   if(selected.length>50)throw Error('一张专辑最多点播 50 首。');
+   queue(music);const now=clock(),pending=db.prepare("SELECT id,batch_id,employee_id,ends_at FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY ends_at DESC").all(now),batches=new Set(pending.map(r=>r.batch_id||r.id)),mine=new Set(pending.filter(r=>r.employee_id===actor.id).map(r=>r.batch_id||r.id));
+   if(batches.size>=20||mine.size>=2||pending.length+selected.length>100)throw Error('点播队列暂满；每位客人最多保留两份点播（两首单曲、两张专辑或各一份）。');
+   const price=JUKEBOX_PRICE*selected.length;
+   if(balanceFor(actor.id)<price)throw Error(`余额不足，本次点播需要 ${price.toLocaleString('en-US')} ¤。`);
+   let start=Math.max(now,pending[0]?.ends_at||now);const batch=randomUUID(),alias=author(actor.id,kind);
+   recordLedger(actor.id,-price,'酒吧点播：'+(albumRequest?album.title:selected[0].title));
+   const insert=db.prepare('INSERT INTO bar_jukebox_requests(id,employee_id,track_id,title,alias,identity_mode,message,price,created_at,starts_at,ends_at,request_key,batch_id,album_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+   for(const [index,track] of selected.entries()){
+    const duration=Math.max(30,Math.min(900,Number(track.durationSeconds)||180))*1000;
+    insert.run(randomUUID(),actor.id,track.id,track.title,alias,kind,message,JUKEBOX_PRICE,now,start,start+duration,index===0?key:key+':'+index,batch,albumRequest?data.albumId:'');start+=duration;
+   }
    return {ok:true};
   });
  }

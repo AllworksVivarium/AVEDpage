@@ -2,6 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {existsSync,statSync,createReadStream} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {createHash} from 'node:crypto';
+import {groupMusicAlbums,musicMetadata} from './bar-music-albums.mjs';
 
 const formats={'.mp3':'audio/mpeg','.m4a':'audio/mp4','.aac':'audio/aac','.ogg':'audio/ogg','.wav':'audio/wav'};
 function audioUrl(value){
@@ -16,11 +17,14 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
  CREATE TABLE IF NOT EXISTS bar_music_settings(id INTEGER PRIMARY KEY CHECK(id=1),enabled INTEGER NOT NULL DEFAULT 1,preview_fallback INTEGER NOT NULL DEFAULT 1);
  INSERT OR IGNORE INTO bar_music_settings(id) VALUES(1);`);
  if(!db.prepare('PRAGMA table_info(bar_music)').all().some(c=>c.name==='duration_seconds'))db.exec('ALTER TABLE bar_music ADD COLUMN duration_seconds INTEGER NOT NULL DEFAULT 180');
+ const existing=new Set(db.prepare('PRAGMA table_info(bar_music)').all().map(c=>c.name));
+ for(const [column,type] of Object.entries({artist:"TEXT NOT NULL DEFAULT ''",album:"TEXT NOT NULL DEFAULT ''",track_number:'INTEGER NOT NULL DEFAULT 0',license:"TEXT NOT NULL DEFAULT ''",license_url:"TEXT NOT NULL DEFAULT ''",source_url:"TEXT NOT NULL DEFAULT ''"}))if(!existing.has(column))db.exec(`ALTER TABLE bar_music ADD COLUMN ${column} ${type}`);
+ const saveMetadata=(id,data,previous)=>{const m=musicMetadata(data,previous);db.prepare('UPDATE bar_music SET artist=?,album=?,track_number=?,license=?,license_url=?,source_url=? WHERE id=?').run(m.artist,m.album,m.trackNumber,m.license,m.licenseUrl,m.sourceUrl,id);};
  const duration=value=>{if(value===undefined)return 180;if(!Number.isSafeInteger(value)||value<30||value>900)throw Error('曲目时长须为 30–900 秒的整数。');return value;};
  const directory=resolve(dataDir,'bar-music');
  const settings=()=>{const row=db.prepare('SELECT enabled,preview_fallback AS previewFallback FROM bar_music_settings WHERE id=1').get();return {enabled:!!row.enabled,previewFallback:!!row.previewFallback};};
- const tracks=(admin=false)=>db.prepare(`SELECT id,title,url,file_name AS fileName,mime,byte_size AS byteSize,enabled,duration_seconds AS durationSeconds,created_at AS createdAt FROM bar_music WHERE deleted_at='' ${admin?'':'AND enabled=1'} ORDER BY id`).all().map(({fileName,...row})=>({...row,enabled:!!row.enabled,source:fileName?'upload':'url',url:fileName?'/api/player/bar-music/files/'+row.id:row.url}));
- const playlist=()=>({...settings(),tracks:tracks()});
+ const tracks=(admin=false)=>db.prepare(`SELECT id,title,url,file_name AS fileName,mime,byte_size AS byteSize,enabled,duration_seconds AS durationSeconds,created_at AS createdAt,artist,album,track_number AS trackNumber,license,license_url AS licenseUrl,source_url AS sourceUrl FROM bar_music WHERE deleted_at='' ${admin?'':'AND enabled=1'} ORDER BY id`).all().map(({fileName,...row})=>({...row,enabled:!!row.enabled,source:fileName?'upload':'url',url:fileName?'/api/player/bar-music/files/'+row.id:row.url}));
+ const playlist=()=>{const items=tracks();return {...settings(),tracks:items,albums:groupMusicAlbums(items).map(({tracks,...album})=>({...album,trackIds:tracks.map(t=>t.id),durationSeconds:tracks.reduce((sum,t)=>sum+t.durationSeconds,0)}))};};
  return {playlist,async handle(req,res,url){
   const file=url.pathname.match(/^\/api\/player\/bar-music\/files\/(\d+)$/),admin=url.pathname.startsWith('/api/admin/bar-music');if(!file&&!admin)return false;
   if(!(admin?requireAdmin(req,res):requireEmployee(req,res)))return true;
@@ -43,22 +47,23 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
     const data=await readBody(req);if(typeof data.enabled!=='boolean'||typeof data.previewFallback!=='boolean')throw Error('音乐开关设置无效。');db.prepare('UPDATE bar_music_settings SET enabled=?,preview_fallback=? WHERE id=1').run(data.enabled?1:0,data.previewFallback?1:0);onChange();send(res,200,{ok:true});return true;
    }
    if(path==='/api/admin/bar-music/upload'&&method==='POST'){
-    const data=await readBody(req,29*1024*1024),name=title(data.title),seconds=duration(data.durationSeconds),extension=extname(String(data.fileName||'')).toLowerCase(),mime=formats[extension];
+    const data=await readBody(req,29*1024*1024),name=title(data.title),seconds=duration(data.durationSeconds),extension=extname(String(data.fileName||'')).toLowerCase(),mime=formats[extension];musicMetadata(data);
     if(!mime||typeof data.data!=='string'||data.data.length>28*1024*1024||! /^[A-Za-z0-9+/]+={0,2}$/.test(data.data))throw Error('请选择 MP3、M4A、AAC、OGG 或 WAV 音频。');
     const buffer=Buffer.from(data.data,'base64');if(buffer.length<16||buffer.length>20*1024*1024)throw Error('音频大小须在 16 字节至 20 MB 之间。');
     const prefix=buffer.subarray(0,16),signature=extension==='.wav'?prefix.toString('ascii',0,4)==='RIFF'&&prefix.toString('ascii',8,12)==='WAVE':extension==='.ogg'?prefix.toString('ascii',0,4)==='OggS':extension==='.m4a'?prefix.toString('ascii',4,8)==='ftyp':prefix.toString('ascii',0,3)==='ID3'||prefix[0]===255&&(prefix[1]&224)===224;
     if(!signature)throw Error('文件内容与音频格式不符。');
     const fileName=createHash('sha256').update(buffer).digest('hex')+extension;await mkdir(directory,{recursive:true});await writeFile(resolve(directory,fileName),buffer,{flag:'w'});
-    const result=db.prepare('INSERT INTO bar_music(title,file_name,mime,byte_size,duration_seconds) VALUES(?,?,?,?,?)').run(name,fileName,mime,buffer.length,seconds);onChange();send(res,201,{id:Number(result.lastInsertRowid)});return true;
+    const result=db.prepare('INSERT INTO bar_music(title,file_name,mime,byte_size,duration_seconds) VALUES(?,?,?,?,?)').run(name,fileName,mime,buffer.length,seconds);saveMetadata(Number(result.lastInsertRowid),data);onChange();send(res,201,{id:Number(result.lastInsertRowid)});return true;
    }
    if(path==='/api/admin/bar-music'&&method==='POST'){
-    const data=await readBody(req),name=title(data.title),link=audioUrl(data.url),seconds=duration(data.durationSeconds);const result=db.prepare('INSERT INTO bar_music(title,url,duration_seconds) VALUES(?,?,?)').run(name,link,seconds);onChange();send(res,201,{id:Number(result.lastInsertRowid)});return true;
+    const data=await readBody(req),name=title(data.title),link=audioUrl(data.url),seconds=duration(data.durationSeconds);musicMetadata(data);const result=db.prepare('INSERT INTO bar_music(title,url,duration_seconds) VALUES(?,?,?)').run(name,link,seconds);saveMetadata(Number(result.lastInsertRowid),data);onChange();send(res,201,{id:Number(result.lastInsertRowid)});return true;
    }
    const record=path.match(/^\/api\/admin\/bar-music\/(\d+)$/);
    if(record&&method==='PUT'){
     const row=db.prepare("SELECT * FROM bar_music WHERE id=? AND deleted_at=''").get(record[1]);if(!row){send(res,404,{error:'曲目不存在。'});return true;}
     const data=await readBody(req);if(data.enabled!==undefined&&typeof data.enabled!=='boolean')throw Error('播放开关无效。');
-    db.prepare('UPDATE bar_music SET title=?,url=?,enabled=?,duration_seconds=? WHERE id=?').run(data.title===undefined?row.title:title(data.title),data.url===undefined||row.file_name?row.url:audioUrl(data.url),data.enabled===undefined?row.enabled:data.enabled?1:0,data.durationSeconds===undefined?row.duration_seconds:duration(data.durationSeconds),row.id);onChange();send(res,200,{ok:true});return true;
+    const metadata=musicMetadata(data,{...row,trackNumber:row.track_number,licenseUrl:row.license_url,sourceUrl:row.source_url});
+    db.prepare('UPDATE bar_music SET title=?,url=?,enabled=?,duration_seconds=? WHERE id=?').run(data.title===undefined?row.title:title(data.title),data.url===undefined||row.file_name?row.url:audioUrl(data.url),data.enabled===undefined?row.enabled:data.enabled?1:0,data.durationSeconds===undefined?row.duration_seconds:duration(data.durationSeconds),row.id);saveMetadata(row.id,metadata);onChange();send(res,200,{ok:true});return true;
    }
    if(record&&method==='DELETE'){db.prepare("UPDATE bar_music SET deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'),enabled=0 WHERE id=? AND deleted_at=''").run(record[1]);onChange();send(res,200,{ok:true});return true;}
    send(res,405,{error:'指令无效。'});return true;

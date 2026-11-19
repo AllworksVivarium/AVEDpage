@@ -1,0 +1,195 @@
+{
+  "downloadedOn": "2026-11-19",
+  "albums": [
+    {
+      "id": "city-nights",
+      "title": "City Nights",
+      "sourceUrl": "https://purrplecat.itch.io/city-nights",
+      "tracks": [
+        {
+          "title": "Crescent Moon",
+          "file": "city-nights/Crescent Moon.mp3",
+          "trackNumber": 1,
+          "durationSeconds": 143,
+          "byteSize": 5759896,
+          "sha256": "f22ed3076b331e5c88bf11fee7238f90fc104ac7bf671dea5bbf578fa44705a5"
+        },
+        {
+          "title": "Star Bright",
+          "file": "city-nights/Star Bright.mp3",
+          "trackNumber": 2,
+          "durationSeconds": 150,
+          "byteSize": 6025296,
+          "sha256": "9ebedfd942bd891d2e84869fb8ebde613ee4b53741099d6c792b087a4e34636a"
+        },
+        {
+          "title": "Solitude",
+          "file": "city-nights/Solitude.mp3",
+          "trackNumber": 3,
+          "durationSeconds": 150,
+          "byteSize": 6033649,
+          "sha256": "9f037d04bfdd9e18749c0a70b6bea405780f346d31b7ab534762d525b8b1d563"
+        },
+        {
+          "title": "Wish You Were Here",
+          "file": "city-nights/Wish You Were Here.mp3",
+          "trackNumber": 4,
+          "durationSeconds": 167,
+          "byteSize": 6688820,
+          "sha256": "c4a80f92bcefb818a7482958d8a99d78d8bdd3f11dbe3cc758efed06d97eb481"
+        },
+        {
+          "title": "Visions",
+          "file": "city-nights/Visions.mp3",
+          "trackNumber": 5,
+          "durationSeconds": 162,
+          "byteSize": 6502807,
+          "sha256": "8410b0c7c448fda0f24830abebc11976dac0e6bd796d827606a00d711808b222"
+        },
+        {
+          "title": "Can't Sleep",
+          "file": "city-nights/Can't Sleep.mp3",
+          "trackNumber": 6,
+          "durationSeconds": 173,
+          "byteSize": 6955255,
+          "sha256": "4c7093501c67cf23e14a43f2e381d647d8ce99c6c448a224082be45d1a0cf47d"
+        },
+        {
+          "title": "Dark Corners",
+          "file": "city-nights/Dark Corners.mp3",
+          "trackNumber": 7,
+          "durationSeconds": 211,
+          "byteSize": 8443192,
+          "sha256": "a304ecdc4b69c40d9884099043ccbc5f7256bedff648eced99b7c590999f8cde"
+        },
+        {
+          "title": "Streetlights",
+          "file": "city-nights/Streetlights.mp3",
+          "trackNumber": 8,
+          "durationSeconds": 140,
+          "byteSize": 5614653,
+          "sha256": "9a87054a0af0d2c980d61b1e15bb21c4edc17bea846eed02f308d2a2b3ed6987"
+        },
+        {
+          "title": "Time to Think",
+          "file": "city-nights/Time to Think.mp3",
+          "trackNumber": 9,
+          "durationSeconds": 180,
+          "byteSize": 7221708,
+          "sha256": "832c100baf95eb32e0228ed0d02289556319cd414b875e5d0360af6b3f1eab47"
+        },
+        {
+          "title": "Alley Cat",
+          "file": "city-nights/Alley Cat.mp3",
+          "trackNumber": 10,
+          "durationSeconds": 177,
+          "byteSize": 7082730,
+          "sha256": "790373076b829ca8982b1a9bd1479389035d6bc1c206c5851dd4be1776c4b55b"
+        },
+        {
+          "title": "Dancing Shadows",
+          "file": "city-nights/Dancing Shadows.mp3",
+          "trackNumber": 11,
+          "durationSeconds": 141,
+          "byteSize": 5652277,
+          "sha256": "2335503a2dad9ee8955a772925b63add9474aa6dfae41231cd57ee8d6e7a2fd0"
+        }
+      ],
+      "artist": "Purrple Cat",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "artistUrl": "https://purrplecat.com/"
+    },
+    {
+      "id": "multiverse",
+      "title": "Multiverse",
+      "sourceUrl": "https://purrplecat.itch.io/multiverse",
+      "tracks": [
+        {
+          "title": "Starseed",
+          "file": "multiverse/Starseed.mp3",
+          "trackNumber": 1,
+          "durationSeconds": 212,
+          "byteSize": 8514075,
+          "sha256": "0e3f6e4d8b92cf504a8d492d59fba576d43e3179b4896534639d3d2d87c2cd0e"
+        },
+        {
+          "title": "Creation",
+          "file": "multiverse/Creation.mp3",
+          "trackNumber": 2,
+          "durationSeconds": 194,
+          "byteSize": 7792051,
+          "sha256": "9229257f668289db66294a910d9c7ec4f38807ac0bcb466054ccc2cbaec02445"
+        },
+        {
+          "title": "Otherworldly",
+          "file": "multiverse/Otherworldly.mp3",
+          "trackNumber": 3,
+          "durationSeconds": 225,
+          "byteSize": 9025038,
+          "sha256": "80539b47f51e7a1bea298dc0dcae814495cb085d43c662738a8ec194ee44f646"
+        },
+        {
+          "title": "Fourth Dimension",
+          "file": "multiverse/Fourth Dimension.mp3",
+          "trackNumber": 4,
+          "durationSeconds": 178,
+          "byteSize": 7144230,
+          "sha256": "1ebc6fcdd8d1a385b5786b59f945cd2cb7eb1a79657fa7007146e147e54bfae0"
+        },
+        {
+          "title": "Rift in Time",
+          "file": "multiverse/Rift in Time.mp3",
+          "trackNumber": 5,
+          "durationSeconds": 217,
+          "byteSize": 8702165,
+          "sha256": "7830cb02dc6c583de46299034f58ad11e35b6c1a9de74649e570e506b3c63c7c"
+        },
+        {
+          "title": "Stasis",
+          "file": "multiverse/Stasis.mp3",
+          "trackNumber": 6,
+          "durationSeconds": 149,
+          "byteSize": 6003181,
+          "sha256": "6875c76ac0306940c14bc316eeb476bb10f14166dc266c6c0e7b67b951389cf0"
+        },
+        {
+          "title": "Exhale",
+          "file": "multiverse/Exhale.mp3",
+          "trackNumber": 7,
+          "durationSeconds": 176,
+          "byteSize": 7082561,
+          "sha256": "e8bf64969caa9738ff0e3295a66bfe1238593862fc3d415d981d7788b98a99a6"
+        },
+        {
+          "title": "Planetary Alignment",
+          "file": "multiverse/Planetary Alignment.mp3",
+          "trackNumber": 8,
+          "durationSeconds": 182,
+          "byteSize": 7313510,
+          "sha256": "5d9116c5c04442376237649300e9750c0c7614dc1dc2987648cbd116bb179a6d"
+        },
+        {
+          "title": "Cosmic Echoes",
+          "file": "multiverse/Cosmic Echoes.mp3",
+          "trackNumber": 9,
+          "durationSeconds": 161,
+          "byteSize": 6466085,
+          "sha256": "644e07f88a7839cbcd112eb5dedd13d2c0671b864906c403d276390d2f3f993e"
+        },
+        {
+          "title": "UFO",
+          "file": "multiverse/UFO.mp3",
+          "trackNumber": 10,
+          "durationSeconds": 189,
+          "byteSize": 7589332,
+          "sha256": "b78d60916c10d37129122dd323cf3326b564e97ac56c420fe4b89b016a7e7a7b"
+        }
+      ],
+      "artist": "Purrple Cat",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "artistUrl": "https://purrplecat.com/"
+    }
+  ]
+}

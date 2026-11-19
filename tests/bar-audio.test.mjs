@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 function fixture(){
- let inside=false,errors=0,plays=0,stops=0;const media=[];
+ let inside=false,errors=0,plays=0,stops=0;const media=[],heard=[];
  class Audio{constructor(){media.push(this);}pause(){this.paused=true;}removeAttribute(){this.src='';}load(){}play(){this.paused=false;plays++;return Promise.resolve();}}
  const scope=vm.createContext({Audio,setTimeout,clearTimeout});scope.window=scope;vm.runInContext(readFileSync(new URL('../public/bar-audio.js',import.meta.url),'utf8'),scope);
  scope.AVEDBarPreviewAudio=()=>({volume(){},play(){plays++;return Promise.resolve();},stop(){stops++;}});
- const player=scope.AVEDBarAudio({canPlay:()=>inside,onError:()=>errors++});
- return {player,media,setInside:value=>inside=value,plays:()=>plays,stops:()=>stops,errors:()=>errors};
+ const player=scope.AVEDBarAudio({canPlay:()=>inside,onError:()=>errors++,onTrack:track=>heard.push(track)});
+ return {player,media,heard,setInside:value=>inside=value,plays:()=>plays,stops:()=>stops,errors:()=>errors};
 }
 test('bar music remains silent outside the room, including when a playlist refresh arrives',async()=>{
  const f=fixture();try{
@@ -36,5 +36,12 @@ test('requested music seeks to shared progress and heartbeat updates do not rest
   const now=Date.now(),request={id:'request-a',trackId:2,startsAt:now-20000,endsAt:now+60000},settings={enabled:true,tracks:[{id:1,url:'/one.mp3'},{id:2,url:'/two.mp3'}],request,serverTime:now};
   f.setInside(true);f.player.configure(settings);await f.player.play();assert.equal(f.media[0].src,'/two.mp3');f.media[0].duration=180;f.media[0].onloadedmetadata();assert.ok(f.media[0].currentTime>=20&&f.media[0].currentTime<21);
   f.player.configure({...settings,serverTime:now+1000});assert.equal(f.plays(),1);f.player.stop();f.player.configure({...settings,request:{...request,id:'request-b'}});assert.equal(f.plays(),1);
+ }finally{f.player.stop();}
+});
+test('playing-track attribution follows the selected recording and clears when music stops',async()=>{
+ const f=fixture();try{
+  const tracks=[{id:1,title:'First',artist:'Artist',url:'/first.mp3'},{id:2,title:'Second',artist:'Artist',url:'/second.mp3'}];
+  f.setInside(true);f.player.configure({enabled:true,tracks});await f.player.play();const first=f.heard.at(-1);assert.ok(first.artist==='Artist'&&first.title);
+  f.media[0].onended();assert.notEqual(f.heard.at(-1).id,first.id);f.player.stop();assert.equal(f.heard.at(-1),null);
  }finally{f.player.stop();}
 });
