@@ -5,7 +5,7 @@ import {installBar} from './server-bar.mjs';
 import {installBarMusic} from './server-bar-music.mjs';
 import {installAchievementAlerts} from './server-achievement-alerts.mjs';
 import {installGameTax} from './server-game-tax.mjs';
-import {installDossierContent,normalizeDossierContent,dossierView} from './server-dossier-content.mjs';
+import {installDossierContent,normalizeDossierContent,normalizeDossierCode,dossierView} from './server-dossier-content.mjs';
 import {installContainmentDossiers,listDossiers} from './server-containment-dossiers.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
@@ -694,8 +694,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/admin/dossiers' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
-      const dossierData=await readBody(req,2500000);const { code,title,department,status,summary,imageData } = dossierData;
-      let image,content;try{image=await normalizeDossierImage(imageData);content=normalizeDossierContent(dossierData);}catch(error){return send(res,400,{error:error.message});}
+      const dossierData=await readBody(req,2500000);const { title,department,status,summary,imageData } = dossierData;
+      let image,content,code;try{image=await normalizeDossierImage(imageData);content=normalizeDossierContent(dossierData);code=normalizeDossierCode(dossierData);}catch(error){return send(res,400,{error:error.message});}
       if (!validText(code,30)||!validText(title,100)||!validText(summary,12000)) return send(res,400,{error:'请填写档案编号、名称和内容。'});
       try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary,image_data,classification,procedures,sections_json,abstract) VALUES (?,?,?,?,?,?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim(),image,content.classification,content.procedures,content.sectionsJSON,content.abstract); return send(res,201,{id:Number(result.lastInsertRowid)}); }
       catch { return send(res,409,{error:'档案编号已存在。'}); }

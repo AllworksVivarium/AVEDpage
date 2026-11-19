@@ -18,6 +18,33 @@ test('albums group by artist, keep stable IDs and use server track order',()=>{
  const tracks=[{id:4,album:'Shared',artist:'B',trackNumber:1},{id:2,album:'Shared',artist:'A',trackNumber:2},{id:1,album:'Shared',artist:'A',trackNumber:1},{id:9,title:'Loose'}],albums=groupMusicAlbums(tracks);
  assert.equal(albums.length,2);assert.deepEqual(albums[1].tracks.map(t=>t.id),[1,2]);assert.equal(groupMusicAlbums([...tracks].reverse()).find(a=>a.artist==='A').id,albums[1].id);assert.notEqual(albums[0].id,albums[1].id);
 });
+
+test('song chart counts started requests once, excludes waiting songs and survives restart',t=>{
+ const f=fixture(t);assert.deepEqual(f.service.queue().ranking,[]);
+ const first={trackId:1,requestId:'chart-request-first-01'};f.service.requestSong({id:1},first);
+ f.service.requestSong({id:2},{trackId:2,requestId:'chart-request-next-001'});
+ assert.deepEqual(f.service.queue().ranking.map(r=>[r.trackId,r.plays]),[[1,1]]);
+ f.service.queue();f.restart();f.service.requestSong({id:1},first);
+ assert.deepEqual(f.service.queue().ranking.map(r=>[r.trackId,r.plays]),[[1,1]]);
+ f.advance(31000);assert.deepEqual(f.service.queue().ranking.map(r=>[r.trackId,r.plays]),[[1,1],[2,1]]);
+ f.advance(45000);f.service.requestSong({id:1},{trackId:2,requestId:'chart-request-again-01'});
+ assert.deepEqual(f.service.queue().ranking.map(r=>[r.trackId,r.plays]),[[2,2],[1,1]]);
+ assert.deepEqual(Object.keys(f.service.queue().ranking[0]).sort(),['artist','plays','title','trackId']);
+});
+
+test('album chart advances per recording and never counts refunded waiting tracks',t=>{
+ const f=fixture(t);f.service.requestSong({id:1},{albumId:f.album,requestId:'chart-album-request-01'});
+ assert.deepEqual(f.service.queue().ranking.map(r=>r.trackId),[1]);
+ f.music.tracks=f.music.tracks.filter(t=>t.id!==2);f.service.queue();
+ f.advance(31000);assert.deepEqual(f.service.queue().ranking.map(r=>r.trackId),[1,3]);
+ f.advance(60000);f.restart();assert.equal(f.service.queue().ranking.reduce((sum,r)=>sum+r.plays,0),2);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_jukebox_plays').get().n,2);
+});
+
+test('song chart retains historical totals independently of request cleanup',t=>{
+ const f=fixture(t);f.service.requestSong({id:1},{trackId:1,requestId:'chart-cleanup-request1'});f.service.queue();
+ f.db.exec('DELETE FROM bar_jukebox_requests');f.restart();assert.equal(f.service.queue().ranking[0].plays,1);
+});
 test('music metadata rejects executable links, control characters and invalid ordering',()=>{
  assert.throws(()=>musicMetadata({sourceUrl:'javascript:alert(1)'}));assert.throws(()=>musicMetadata({artist:'a\nb'}));assert.throws(()=>musicMetadata({trackNumber:1.5}));
  assert.equal(musicMetadata({album:' New '},{artist:'Artist',license:'CC BY 4.0'}).artist,'Artist');

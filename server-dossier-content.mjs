@@ -1,4 +1,14 @@
 const types=['note','discovery','experiment','incident','interview','story'];
+export function normalizeDossierCode(data,previous={}){
+ if(data.codeLetters===undefined&&data.codeNumber===undefined)return data.code??previous.code;
+ const letters=data.codeLetters,number=data.codeNumber;
+ if(letters===''&&number===''&&previous.code&&!/^(SAFE|EUCLID|KETER)-[A-Za-z]+-[0-9]+$/.test(previous.code))return previous.code;
+ const classification=normalizeContainmentClassification(data.classification??previous.classification??'');
+ if(!classification||typeof letters!=='string'||! /^[A-Za-z]+$/.test(letters.trim())||typeof number!=='string'||! /^[0-9]+$/.test(number.trim()))throw Error('请选择收容分类，并填写字母段与数字段。');
+ const code=classification+'-'+letters.trim().toUpperCase()+'-'+number.trim();
+ if(code.length>30)throw Error('组合后的档案编号最多 30 字符。');
+ return code;
+}
 export function normalizeContainmentClassification(value=''){
  if(!['','SAFE','EUCLID','KETER'].includes(value))throw Error('请选择有效的收容物分类。');
  return value;
@@ -10,6 +20,15 @@ export function installDossierContent(db){
  if(!db.prepare("SELECT 1 FROM dossier_content_migrations WHERE name='classification-v1'").get()){
   db.exec("UPDATE dossiers SET classification=status WHERE classification='' AND status IN ('SAFE','EUCLID','KETER');INSERT INTO dossier_content_migrations VALUES('classification-v1')");
  }
+ db.exec(`CREATE TRIGGER IF NOT EXISTS dossier_code_classification AFTER UPDATE OF classification ON dossiers
+ WHEN NEW.classification IN ('SAFE','EUCLID','KETER') AND NEW.classification IS NOT OLD.classification
+ AND substr(NEW.code,1,instr(NEW.code,'-')-1) IN ('SAFE','EUCLID','KETER') BEGIN
+  UPDATE dossiers SET code=NEW.classification||substr(NEW.code,instr(NEW.code,'-')) WHERE id=NEW.id AND EXISTS(
+   SELECT 1 FROM (SELECT substr(NEW.code,instr(NEW.code,'-')+1) AS suffix)
+   WHERE instr(suffix,'-')>1 AND substr(suffix,1,instr(suffix,'-')-1) NOT GLOB '*[^A-Za-z]*'
+   AND substr(suffix,instr(suffix,'-')+1)<>'' AND substr(suffix,instr(suffix,'-')+1) NOT GLOB '*[^0-9]*'
+  );
+ END;`);
 }
 export function dossierView(row){const {sections_json,hasImage,...rest}=row;let sections=[];try{sections=JSON.parse(sections_json||'[]');}catch{}return {...rest,...(hasImage?{imageUrl:`/api/dossiers/${row.id}/image`}:{}),sections:Array.isArray(sections)?sections:[]};}
 export function normalizeDossierContent(data,previous={}){

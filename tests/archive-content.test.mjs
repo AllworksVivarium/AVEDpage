@@ -11,7 +11,7 @@ import vm from 'node:vm';
 import {installDossierContent,normalizeDossierContent} from '../server-dossier-content.mjs';
 
 test('classification migrates once; optional blocks retain order, whitespace and plain-text escaping',()=>{
- const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE dossiers(id INTEGER PRIMARY KEY,status TEXT);INSERT INTO dossiers VALUES(1,'SAFE')");installDossierContent(db);assert.equal(db.prepare('SELECT classification FROM dossiers').get().classification,'SAFE');db.exec("UPDATE dossiers SET classification=''");installDossierContent(db);assert.equal(db.prepare('SELECT classification FROM dossiers').get().classification,'');db.close();
+ const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE dossiers(id INTEGER PRIMARY KEY,status TEXT,code TEXT);INSERT INTO dossiers VALUES(1,'SAFE','LEGACY')");installDossierContent(db);assert.equal(db.prepare('SELECT classification FROM dossiers').get().classification,'SAFE');db.exec("UPDATE dossiers SET classification=''");installDossierContent(db);assert.equal(db.prepare('SELECT classification FROM dossiers').get().classification,'');db.close();
  assert.throws(()=>normalizeDossierContent({classification:'<script>'}));assert.throws(()=>normalizeDossierContent({sections:Array(25).fill({})}));
  const c={window:{}};vm.runInNewContext(readFileSync(new URL('../public/dossier-content.js',import.meta.url),'utf8'),c);
  const item=c.window.AVEDDossierContent.map({code:'TEST',title:'示例',summary:'第一段\n\n第二段',status:'观察中',sections:[{type:'note',author:'古登野',date:'20xx 更新',body:'<script>unsafe</script>'},{type:'story',body:'小故事'}]});

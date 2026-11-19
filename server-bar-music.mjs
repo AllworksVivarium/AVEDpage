@@ -34,12 +34,16 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
     if(!['GET','HEAD'].includes(req.method)){send(res,405,{error:'指令无效。'});return true;}
     const row=db.prepare('SELECT file_name AS fileName,mime FROM bar_music WHERE id=?').get(file[1]);if(!row?.fileName){send(res,404,{error:'音频不存在。'});return true;}
     const path=resolve(directory,row.fileName);if(!existsSync(path)){send(res,404,{error:'音频文件未找到。'});return true;}
-    const size=statSync(path).size,range=req.headers.range;let start=0,end=size-1,status=200;
+    const stat=statSync(path),size=stat.size,etag='"'+createHash('sha256').update(row.fileName+':'+size+':'+stat.mtimeMs).digest('hex')+'"';
+    const cacheHeaders={'Cache-Control':'private, max-age=604800','ETag':etag,'Accept-Ranges':'bytes'};
+    const unchanged=req.headers['if-none-match']?.split(',').some(value=>value.trim()==='*'||value.trim().replace(/^W\//,'')===etag);
+    if(unchanged){res.writeHead(304,cacheHeaders);res.end();return true;}
+    const range=req.method==='GET'&&(!req.headers['if-range']||req.headers['if-range']===etag)?req.headers.range:undefined;let start=0,end=size-1,status=200;
     if(range){const match=/^bytes=(\d*)-(\d*)$/.exec(range);if(!match||!match[1]&&!match[2]){res.writeHead(416,{'Content-Range':'bytes */'+size});res.end();return true;}
      if(!match[1]){start=Math.max(0,size-Number(match[2]));}else{start=Number(match[1]);if(match[2])end=Math.min(end,Number(match[2]));}
      if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>=size||end<start){res.writeHead(416,{'Content-Range':'bytes */'+size});res.end();return true;}status=206;
     }
-    res.writeHead(status,{'Content-Type':row.mime,'X-Content-Type-Options':'nosniff','Cache-Control':'private, max-age=3600','Accept-Ranges':'bytes','Content-Length':end-start+1,...(status===206?{'Content-Range':`bytes ${start}-${end}/${size}`}:{})});
+    res.writeHead(status,{'Content-Type':row.mime,'X-Content-Type-Options':'nosniff',...cacheHeaders,'Content-Length':end-start+1,...(status===206?{'Content-Range':`bytes ${start}-${end}/${size}`}:{})});
     if(req.method==='HEAD')res.end();else{const stream=createReadStream(path,{start,end});stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());stream.pipe(res);}return true;
    }
    const path=url.pathname,method=req.method;

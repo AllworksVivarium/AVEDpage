@@ -57,10 +57,15 @@ test('account creation, admin dossier editing and player archives share the same
  const read=async()=>(await a('/api/admin/dossiers')).data.items.find(d=>d.employeeId===owner);
  let dossier=await read();assert.ok(dossier);const id=dossier.id;
  assert.equal(dossier.identityKind,'player_containment');assert.equal(dossier.summary,'初始简介');assert.equal(dossier.classification,'SAFE');
- const edit={code:dossier.code,title:'新版收容样本',department:'收容部',status:'观察中',summary:'管理端完整正文。'.repeat(100),classification:'KETER',procedures:'新的收容措施',sections:[{type:'note',body:'补充记录'}],employeeId:999};
+ const edit={code:'ignored-client-preview',codeLetters:'abc',codeNumber:'001',title:'新版收容样本',department:'收容部',status:'观察中',summary:'管理端完整正文。'.repeat(100),classification:'KETER',procedures:'新的收容措施',sections:[{type:'note',body:'补充记录'}],employeeId:999};
  assert.equal((await a('/api/admin/dossiers/'+id,'PUT',edit)).status,200);
  let state=(await p('/api/player/state?section=containment')).data;
  const shared=state.dossiers.find(d=>d.employeeId===owner);
+ assert.equal(shared.code,'KETER-ABC-001');
+ assert.equal((await a('/api/admin/dossiers/'+id,'PUT',{...edit,codeNumber:'1e3'})).status,400);
+ const standalone=await a('/api/admin/dossiers','POST',{...edit,title:'独立卷宗',codeLetters:'XY',classification:'SAFE'});assert.equal(standalone.status,201);
+ assert.equal((await a('/api/admin/dossiers')).data.items.find(d=>d.id===standalone.data.id).code,'SAFE-XY-001');
+ assert.equal((await a('/api/admin/dossiers','POST',{...edit,title:'重复编号'})).status,409);
  assert.equal((await p('/api/dossiers')).data.items.find(d=>d.employeeId===owner).id,id);
  assert.equal(shared.id,id);assert.equal(shared.title,edit.title);assert.equal(shared.summary,edit.summary);assert.equal(shared.procedures,edit.procedures);assert.equal(shared.sections[0].body,'补充记录');
  assert.equal(state.employee.displayName,edit.title);assert.equal(state.employee.containmentClassification,'KETER');
@@ -71,6 +76,7 @@ test('account creation, admin dossier editing and player archives share the same
  assert.equal((await read()).summary,edit.summary,'profile editing cannot overwrite the full archive');
  assert.equal((await a('/api/admin/employees/'+owner,'PUT',{displayName:'账号处更名',containmentClassification:'EUCLID'})).status,200);
  dossier=await read();assert.equal(dossier.id,id);assert.equal(dossier.title,'账号处更名');assert.equal(dossier.classification,'EUCLID');assert.equal(dossier.summary,edit.summary);
+ assert.equal(dossier.code,'EUCLID-ABC-001');
  const system=await a('/api/admin/employees','POST',{identityKind:'company_containment',displayName:'系统收容样本',containmentClassification:'KETER',archiveBio:'系统简介'});assert.equal(system.status,201);
  assert.ok((await a('/api/admin/dossiers')).data.items.some(d=>d.employeeId===system.data.id&&d.identityKind==='company_containment'));
  const ordinary=await a('/api/admin/employees','POST',{username:'converted',password,displayName:'转换样本'});assert.equal(ordinary.status,201);

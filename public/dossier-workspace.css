@@ -65,6 +65,9 @@ body dialog.dossier-editor-dialog{--popup-size:1400px;--popup-padding:0px;width:
 .dossier-editor-form :is(input,select,textarea){box-sizing:border-box;width:100%;min-width:0;font-family:inherit;font-size:13px;line-height:1.7;color:var(--admin-ink);background:var(--admin-input);border:1px solid var(--admin-line);padding:8px 10px;border-radius:0}
 .dossier-editor-form textarea{resize:vertical;min-height:70px}.dossier-editor-form textarea[name=summary]{min-height:230px}
 .dossier-base-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dossier-designation{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.dossier-designation .dossier-code-preview{grid-column:1/-1}
+.dossier-designation input[name=code]{font-family:'IBM Plex Mono',monospace;letter-spacing:.05em}
 .dossier-editor-preview{min-width:0;padding:22px;background:var(--admin-bg);overflow:auto;border-left:1px solid var(--admin-line)}
 .dossier-editor-preview .dossier-paper{--inner-text-main:var(--admin-ink);--inner-card-bg:var(--admin-panel);--inner-border-soft:var(--admin-line);padding:24px}
 .dossier-editor-preview .dossier-document-copy{font-size:13px;line-height:1.95;white-space:pre-wrap}

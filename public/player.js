@@ -1661,7 +1661,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       const forumReplies=AVEDForumReplies({api,container:byId('forum-detail-replies-list'),count:byId('forum-detail-reply-count'),
         enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
         onLoading:(busy,loaded)=>{if(busy&&!loaded&&forumDetail?.preview)forumMainLoading.start();if(!busy)forumMainLoading.end();},
-        onError:message=>{if(forumDetail?.preview)byId('forum-detail-main-post').textContent='主题加载失败，请重试。';showToast(message,'warn');},onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},onSeen:ids=>forumSocialUI?.seenReplies(currentForumThreadId,ids),
+        onError:message=>{if(forumDetail?.preview)byId('forum-detail-main-post').textContent='主题加载失败，请重试。';showToast(message,'warn');},onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},
         renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} · ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
       function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}${forumReactionsUI.markup('thread',th.id,th.reactions)}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
       let forumListPosition=null,forumListMarkup='',forumRestoring=false;
@@ -1700,12 +1700,12 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           history.pushState({...history.state,avedForum:{owner:currentUser.id,thread:String(id),reply:replyId||null}},'',location.href);
         }
         currentForumThreadId=String(id);forumDetail=forumThreads.find(t=>String(t.id)===String(id))||{id,preview:true};
-        await renderForumView(replyId);
-        if(String(currentForumThreadId)!==String(id)||!forumDetail||forumDetail.preview)return;
+        const loaded=await renderForumView(replyId);
+        if(!loaded||String(currentForumThreadId)!==String(id)||!forumDetail||forumDetail.preview)return false;
         api('/api/player/forum/'+encodeURIComponent(id)+'/view',{method:'POST',body:{}}).then(data=>{
           const preview=forumThreads.find(t=>String(t.id)===String(id));if(preview)preview.viewCount=data.viewCount;
           if(String(forumDetail?.id)===String(id))forumDetail.viewCount=data.viewCount;
-        }).catch(()=>{});
+        }).catch(()=>{});return true;
       }
       function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind,tax:result.tax||0};});renderSlot5x3History();}
 

@@ -12,6 +12,7 @@ export function installBarExtras({db,clock,balanceFor,recordLedger,name,isContai
  CREATE INDEX IF NOT EXISTS bar_stored_drinks_sender ON bar_stored_drinks(sender_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_jukebox_requests(id TEXT PRIMARY KEY,employee_id INTEGER NOT NULL REFERENCES employees(id),track_id INTEGER NOT NULL,title TEXT NOT NULL,alias TEXT NOT NULL,identity_mode TEXT NOT NULL,message TEXT NOT NULL,price INTEGER NOT NULL,created_at INTEGER NOT NULL,starts_at INTEGER NOT NULL,ends_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active',request_key TEXT NOT NULL,UNIQUE(employee_id,request_key));
  CREATE INDEX IF NOT EXISTS bar_jukebox_queue ON bar_jukebox_requests(status,ends_at);`);
+ db.exec(`CREATE TABLE IF NOT EXISTS bar_jukebox_plays(request_id TEXT PRIMARY KEY,track_id INTEGER NOT NULL,started_at INTEGER NOT NULL);CREATE INDEX IF NOT EXISTS bar_jukebox_plays_track ON bar_jukebox_plays(track_id);`);
  const jukeColumns=new Set(db.prepare('PRAGMA table_info(bar_jukebox_requests)').all().map(c=>c.name));
  for(const column of ['batch_id','album_key'])if(!jukeColumns.has(column))db.exec(`ALTER TABLE bar_jukebox_requests ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
  const columns=new Set(db.prepare('PRAGMA table_info(employees)').all().map(x=>x.name));
@@ -76,7 +77,9 @@ export function installBarExtras({db,clock,balanceFor,recordLedger,name,isContai
   if(invalid.length)atomic(()=>{for(const row of invalid){recordLedger(row.employee_id,row.price,'点播曲目下架退回');db.prepare("UPDATE bar_jukebox_requests SET status='cancelled' WHERE id=? AND status='active'").run(row.id);}let end=clock();for(const row of db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY starts_at,id").all(clock())){if(row.starts_at<=clock()){end=Math.max(end,row.ends_at);continue;}const duration=row.ends_at-row.starts_at;db.prepare('UPDATE bar_jukebox_requests SET starts_at=?,ends_at=? WHERE id=?').run(end,end+duration,row.id);end+=duration;}});
   const catalog=new Map(music.tracks.map(t=>[t.id,t]));
   const items=db.prepare("SELECT * FROM bar_jukebox_requests WHERE status='active' AND ends_at>? ORDER BY starts_at,id LIMIT 100").all(clock()).map(row=>({id:row.id,trackId:row.track_id,title:row.title,artist:catalog.get(row.track_id)?.artist||'',album:catalog.get(row.track_id)?.album||'',batchId:row.batch_id||row.id,albumRequest:!!row.album_key,alias:row.alias,identityMode:row.identity_mode,message:row.message,startsAt:row.starts_at,endsAt:row.ends_at,isContainment:isContainment(row.employee_id)}));
-  return {price:JUKEBOX_PRICE,queue:items};
+  db.prepare("INSERT OR IGNORE INTO bar_jukebox_plays(request_id,track_id,started_at) SELECT id,track_id,starts_at FROM bar_jukebox_requests WHERE status='active' AND starts_at<=?").run(clock());
+  const ranking=db.prepare('SELECT track_id AS trackId,COUNT(*) AS plays,MIN(started_at) AS firstPlayed FROM bar_jukebox_plays GROUP BY track_id ORDER BY plays DESC,firstPlayed,track_id').all().filter(row=>catalog.has(row.trackId)).slice(0,20).map(({trackId,plays})=>{const track=catalog.get(trackId);return {trackId,title:track.title,artist:track.artist||'',plays};});
+  return {price:JUKEBOX_PRICE,queue:items,ranking};
  }
  function requestSong(actor,data){
   const key=requestKey(data.requestId),kind=mode(data.identityMode??'anonymous'),message=text(data.message,'点播留言');

@@ -92,7 +92,8 @@ test('forum replies, private notifications, real avatars and authorized persona 
 
  const quoted=(await post(planner,thread,'回复读者',{replyToId:reply,personaId:persona.id,identityMode:'real'})).data.id;
  assert.equal((await as(reader,'/api/player/forum/notifications')).data.unread,1);
- assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,2);
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,1);
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.items[0].count,2,'ordinary replies share one thread notice');
  let detail=(await as(owner,'/api/player/forum/'+thread)).data,item=detail.items.find(r=>r.id===quoted);
  assert.equal(item.replyToId,reply);assert.equal(item.replyToBody,'读者回复');assert.equal(item.anonymousName,'演绎角色甲');assert.equal(item.balance,12345);assert.equal(item.avatarUrl,'');assert.equal(item.canEdit,0);
  assert.equal((await as(planner,'/api/player/forum/'+thread)).data.items.find(r=>r.id===quoted).canEdit,1);
@@ -110,6 +111,34 @@ test('forum replies, private notifications, real avatars and authorized persona 
  const readSnapshot=(await as(owner,'/api/player/forum/'+thread)).data.thread.readThrough;
  await as(owner,'/api/player/forum/'+thread+'/read','POST',{through:readSnapshot});assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,0);
  assert.equal((await a('/api/admin/moderation/reply/'+hidden,'POST',{action:'approve'})).status,200);assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,1);
+ // A direct reply is independent even when its recipient also owns the thread.
+ const directA=(await post(reader,thread,'专门回复作者的评论甲',{replyToId:own})).data.id;
+ const directB=(await post(reader,thread,'专门回复作者的评论乙',{replyToId:own})).data.id;
+ for(let i=0;i<10;i++)await post(reader,thread,'普通回复 '+i);
+ inbox=(await as(owner,'/api/player/forum/notifications')).data;
+ assert.equal(inbox.unread,3);assert.equal(inbox.items.filter(n=>n.unread).length,3);
+ const summary=inbox.items.find(n=>n.kind==='thread'&&n.unread),directs=inbox.items.filter(n=>n.kind==='reply'&&n.unread);
+ assert.equal(summary.count,11);assert.equal(directs.length,2);assert.ok(directs.every(n=>n.count===1));
+ await as(owner,'/api/player/forum/'+thread+'?reply='+directA);
+ await as(owner,'/api/player/forum/notifications','POST',{...sync,activity:'forum'});
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,3,'loading and polling never acknowledge notices');
+ await as(reader,'/api/player/forum/'+thread+'/read','POST',{replyIds:[directA],through:summary.through});
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,3,'another account cannot clear the recipient inbox');
+ const duringOpen=(await post(reader,thread,'点击汇总之后才到达')).data.id;
+ await as(owner,'/api/player/forum/'+thread+'/read','POST',{through:summary.through});
+ inbox=(await as(owner,'/api/player/forum/notifications')).data;
+ assert.equal(inbox.unread,3,'a thread snapshot leaves both direct replies and concurrent arrivals unread');
+ assert.equal(inbox.items.find(n=>n.kind==='thread'&&n.unread).count,1);
+ await as(owner,'/api/player/forum/'+otherThread+'/read','POST',{replyIds:[directA]});
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,3,'cross-thread receipts cannot clear a reply');
+ await as(owner,'/api/player/forum/'+thread+'/read','POST',{replyIds:[directA]});
+ inbox=(await as(owner,'/api/player/forum/notifications')).data;assert.equal(inbox.unread,2);
+ assert.equal(inbox.items.find(n=>n.replyId===directA).unread,0);
+ assert.equal(inbox.items.find(n=>n.replyId===directB).unread,1,'only the clicked direct reply is read');
+ await a('/api/admin/forum/replies/'+duringOpen,'DELETE');
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,1,'deleted replies do not leave a phantom unread count');
+ assert.equal((await as(owner,'/api/player/forum/'+thread+'/read','POST',{replyIds:[directB]})).status,200);
+ assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,0);
  const script={requestId:'forum-script-request-0001',threadId:null,title:'演绎对话测试',lines:[{personaId:persona.id,body:'甲先发言'},{personaId:second.id,body:'乙再回应'}]};
  const published=await as(planner,'/api/player/forum/workshop','POST',script);assert.equal(published.status,201,JSON.stringify(published.data));assert.equal(published.data.replyIds.length,1);
  const repeated=await as(planner,'/api/player/forum/workshop','POST',script);assert.deepEqual(repeated.data,published.data);

@@ -75,11 +75,26 @@ export function installForumSocialSchema(db){
  }
  migrateHistoricalRobotPersonas(db);
  if(!db.prepare('PRAGMA table_info(forum_threads)').all().length)return;
+ // Migrate legacy timestamps/watermarks once; new notices use a binary read flag.
+ db.exec('SAVEPOINT forum_notice_state');
+ try{
+  const columns=db.prepare('PRAGMA table_info(forum_notifications)').all();
+  if(!columns.some(c=>c.name==='is_read')){
+   db.exec("ALTER TABLE forum_notifications ADD COLUMN is_read INTEGER NOT NULL DEFAULT 0 CHECK(is_read IN (0,1));UPDATE forum_notifications SET is_read=1 WHERE read_at<>'' OR id<=COALESCE((SELECT last_notification_id FROM forum_notification_reads v WHERE v.employee_id=forum_notifications.employee_id AND v.thread_id=forum_notifications.thread_id),0)");
+  }
+  if(!columns.some(c=>c.name==='kind')){
+   db.exec("ALTER TABLE forum_notifications ADD COLUMN kind TEXT NOT NULL DEFAULT 'thread' CHECK(kind IN ('thread','reply'));UPDATE forum_notifications SET kind='reply' WHERE EXISTS(SELECT 1 FROM forum_replies r JOIN forum_replies q ON q.id=r.reply_to_id WHERE r.id=forum_notifications.reply_id AND q.employee_id=forum_notifications.employee_id)");
+  }
+  db.exec('RELEASE forum_notice_state');
+ }catch(error){db.exec('ROLLBACK TO forum_notice_state;RELEASE forum_notice_state');throw error;}
+ db.exec('DROP TRIGGER IF EXISTS forum_notify_insert;DROP TRIGGER IF EXISTS forum_notify_publish');
  for(const event of ['INSERT','UPDATE OF status,moderation,deleted_at'])db.exec(`CREATE TRIGGER IF NOT EXISTS forum_notify_${event==='INSERT'?'insert':'publish'} AFTER ${event} ON forum_replies
  WHEN NEW.status='published' AND NEW.moderation='approved' AND NEW.deleted_at='' BEGIN
- INSERT OR IGNORE INTO forum_notifications(employee_id,reply_id,thread_id)
- SELECT employee_id,NEW.id,NEW.thread_id FROM forum_threads WHERE id=NEW.thread_id AND employee_id<>NEW.employee_id
- UNION SELECT employee_id,NEW.id,NEW.thread_id FROM forum_replies WHERE id=NEW.reply_to_id AND thread_id=NEW.thread_id AND employee_id<>NEW.employee_id;
+ INSERT OR IGNORE INTO forum_notifications(employee_id,reply_id,thread_id,kind)
+ SELECT employee_id,NEW.id,NEW.thread_id,CASE WHEN MAX(direct)=1 THEN 'reply' ELSE 'thread' END FROM (
+ SELECT employee_id,0 AS direct FROM forum_threads WHERE id=NEW.thread_id
+ UNION ALL SELECT employee_id,1 AS direct FROM forum_replies WHERE id=NEW.reply_to_id AND thread_id=NEW.thread_id
+ ) WHERE employee_id<>NEW.employee_id GROUP BY employee_id;
  END;`);
 }
 
@@ -102,10 +117,28 @@ export function installForumSocial(db){
  function persona(id,value){if(value==null||value==='')return null;requireWorkshop(id);if(!Number.isSafeInteger(value)||!db.prepare('SELECT p.id FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id WHERE p.id=?').get(value))throw Error('演绎机器人不存在，请刷新后重新选择。');return value;}
  function target(thread,value){if(value==null||value==='')return null;if(!Number.isSafeInteger(value)||!db.prepare("SELECT id FROM forum_replies WHERE id=? AND thread_id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(value,thread))throw Error('回复对象不存在或不在本帖中。');return value;}
  const visible=`FROM forum_notifications n JOIN forum_threads t ON t.id=n.thread_id JOIN forum_replies r ON r.id=n.reply_id
- LEFT JOIN forum_notification_reads v ON v.employee_id=n.employee_id AND v.thread_id=n.thread_id
  WHERE n.employee_id=? AND r.employee_id<>n.employee_id
  AND t.status='published' AND t.moderation='approved' AND t.deleted_at='' AND r.status='published' AND r.moderation='approved' AND r.deleted_at=''`;
- const unread="n.read_at='' AND n.id>COALESCE(v.last_notification_id,0)";
+ const inboxSQL=`WITH notices AS (
+ SELECT n.id AS notificationId,1-n.is_read AS unread,n.kind,n.thread_id AS threadId,t.title,n.reply_id AS replyId,r.created_at AS createdAt,
+ ${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
+ (SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor,
+ CASE WHEN n.kind='reply' THEN n.reply_id ELSE n.thread_id END AS groupKey ${visible}
+ ), ranked AS (
+ SELECT *,SUM(unread) OVER group_window AS pendingCount,COUNT(*) OVER group_window AS totalCount,
+ MAX(notificationId) OVER group_window AS through,
+ ROW_NUMBER() OVER (PARTITION BY kind,groupKey ORDER BY unread DESC,notificationId DESC) AS chosen
+ FROM notices WINDOW group_window AS (PARTITION BY kind,groupKey)
+ ), groups AS (
+ SELECT notificationId,(pendingCount>0) AS unread,kind,threadId,title,replyId,createdAt,authorName,excerpt,floor,through,
+ CASE WHEN pendingCount>0 THEN pendingCount ELSE totalCount END AS count FROM ranked WHERE chosen=1
+ ), limited AS (
+ SELECT *,SUM(unread) OVER () AS unreadTotal,ROW_NUMBER() OVER (PARTITION BY unread ORDER BY through DESC) AS position FROM groups
+ ) SELECT * FROM limited WHERE position<=CASE WHEN unread=1 THEN 20 ELSE 5 END ORDER BY unread DESC,through DESC`;
+ function readVisible(id,thread,condition,args){
+  db.prepare(`UPDATE forum_notifications SET is_read=1 WHERE employee_id=? AND thread_id=? AND ${condition}
+   AND id IN (SELECT n.id ${visible})`).run(id,thread,...args,id);
+ }
  return {allowed,persona,target,
   list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
   create(id){requireWorkshop(id);throw Error('请在管理端的公司机器人中新增或修改演绎身份。');},
@@ -126,16 +159,21 @@ export function installForumSocial(db){
     const result={threadId,replyIds};db.prepare('INSERT INTO forum_workshop_requests VALUES(?,?,?)').run(id,data.requestId,JSON.stringify(result));db.exec('COMMIT');return result;
    }catch(e){db.exec('ROLLBACK');throw e;}
   },
-  inbox(id){return {unread:db.prepare('SELECT COUNT(*) AS n '+visible+' AND '+unread).get(id).n,items:db.prepare(`SELECT n.id AS notificationId,(${unread}) AS unread,n.thread_id AS threadId,t.title,1 AS count,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
-   CASE WHEN EXISTS(SELECT 1 FROM forum_replies q WHERE q.id=r.reply_to_id AND q.employee_id=n.employee_id) THEN 'reply' ELSE 'thread' END AS kind,
-   (SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor
-   ${visible} AND ${unread} ORDER BY n.id DESC LIMIT 20`).all(id).concat(db.prepare(`SELECT n.id AS notificationId,0 AS unread,n.thread_id AS threadId,t.title,n.reply_id AS replyId,r.created_at AS createdAt,${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,CASE WHEN EXISTS(SELECT 1 FROM forum_replies q WHERE q.id=r.reply_to_id AND q.employee_id=n.employee_id) THEN 'reply' ELSE 'thread' END AS kind,(SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=r.thread_id AND f.id<=r.id) AS floor ${visible} AND NOT (${unread}) ORDER BY n.id DESC LIMIT 5`).all(id))};},
+  inbox(id){
+   const rows=db.prepare(inboxSQL).all(id);
+   return {unread:rows[0]?.unreadTotal||0,items:rows.map(({unreadTotal,position,...item})=>item)};
+  },
   readReplies(id,thread,ids){
    if(!Array.isArray(ids)||ids.length>20||ids.some(n=>!Number.isSafeInteger(n)||n<1))throw Error('无效的已读楼层。');
-   if(ids.length)db.prepare(`UPDATE forum_notifications SET read_at=CURRENT_TIMESTAMP WHERE employee_id=? AND thread_id=? AND reply_id IN (${ids.map(()=>'?').join(',')})`).run(id,thread,...ids);
+   if(ids.length)readVisible(id,thread,`reply_id IN (${ids.map(()=>'?').join(',')})`,ids);
    return {ok:true};
   },
-  readThrough(thread,viewer){return db.prepare('SELECT COALESCE(MAX(id),0) AS id FROM forum_notifications WHERE thread_id=? AND employee_id=?').get(thread,viewer).id;},
-  read(id,thread,through){if(!Number.isSafeInteger(through)||through<0)throw Error('无效阅读位置。');if(!db.prepare("SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread))throw Error('帖子不存在。');const max=db.prepare('SELECT COALESCE(MAX(id),0) AS id FROM forum_notifications WHERE thread_id=? AND employee_id=?').get(thread,id).id;db.prepare('INSERT INTO forum_notification_reads VALUES(?,?,?) ON CONFLICT(employee_id,thread_id) DO UPDATE SET last_notification_id=MAX(last_notification_id,excluded.last_notification_id)').run(id,thread,Math.min(through,max));return {ok:true};}
+  readThrough(thread,viewer){return db.prepare("SELECT COALESCE(MAX(id),0) AS id FROM forum_notifications WHERE thread_id=? AND employee_id=? AND kind='thread'").get(thread,viewer).id;},
+  read(id,thread,through){
+   if(!Number.isSafeInteger(through)||through<0)throw Error('无效阅读位置。');
+   if(!db.prepare("SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(thread))throw Error('帖子不存在。');
+   // A snapshot can only clear ordinary thread notices, never direct replies or later arrivals.
+   readVisible(id,thread,"kind='thread' AND id<=?",[through]);return {ok:true};
+  }
  };
 }
