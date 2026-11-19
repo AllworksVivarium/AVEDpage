@@ -1,13 +1,14 @@
+import {businessDayEnd} from './server-business-day.mjs';
 export const DAILY_REWARD=8000;
 export const HOURLY_REWARD=2000;
-const HOUR=3600000,DAY=24*HOUR,DAY_OFFSET=8*HOUR;
+const HOUR=3600000;
 
-// Check-ins reset at midnight; supplies are independently claimable every hour.
+// Check-ins reset at Beijing 04:00; supplies are independently claimable every hour.
 export function installHourlyRewards({db,recordLedger,clock=Date.now}) {
  const current=db.prepare('SELECT 1 FROM hourly_claims WHERE employee_id=? AND hour=?');
  const insert=db.prepare('INSERT OR IGNORE INTO hourly_claims(employee_id,hour,reward) VALUES(?,?,?)');
  function state(id,now=clock()) {
-  const hour=Math.floor(now/HOUR),dayStart=Math.floor((now+DAY_OFFSET)/DAY)*DAY-DAY_OFFSET,dailyResetAt=dayStart+DAY;
+  const hour=Math.floor(now/HOUR),dailyResetAt=businessDayEnd(now);
   return {serverTime:now,dailyReward:DAILY_REWARD,dailyResetAt,hourlyReward:HOURLY_REWARD,
    hourlyClaimed:!!current.get(id,hour),hourlyResetAt:(hour+1)*HOUR};
  }

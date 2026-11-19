@@ -1,3 +1,4 @@
+import {businessDayStart} from './server-business-day.mjs';
 import { randomBytes, createHmac } from 'node:crypto';
 import {installMarketBulletins} from './server-market-bulletins.mjs';
 
@@ -20,7 +21,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
   let observedVersion='',lastQuoteAt=db.prepare('SELECT quoted_at FROM stock_quote_clock WHERE id=1').get().quoted_at;
   let publicKey='',publicQuotes;const historyCache=new Map();
   function quotes(){
-    const start=Math.floor((clock()+28800000)/86400000)*86400000-28800000,key=version()+':'+start;
+    const start=businessDayStart(clock()),key=version()+':'+start;
     if(!db.isTransaction&&key===publicKey)return {key,values:publicQuotes};
     const openings=new Map(db.prepare('SELECT c.code,c.open FROM stock_candles c JOIN (SELECT code,MIN(bucket) AS bucket FROM stock_candles WHERE bucket>=? GROUP BY code) first ON first.code=c.code AND first.bucket=c.bucket').all(start).map(r=>[r.code,r.open]));
     const index=indexValue(),values=new Map(db.prepare('SELECT code,price FROM stock_prices').all().map(row=>{const price=row.code==='KARMA'?index:row.price,opening=openings.get(row.code)||price;return [row.code,{code:row.code,price,change:opening?Math.round((price/opening-1)*10000)/100:0}];}));

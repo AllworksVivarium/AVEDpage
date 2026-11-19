@@ -14,7 +14,8 @@ export const funAchievementCatalog=[
  ['fun-last-round','《最后一把》','十五分钟内完成十局有投入的小游戏。最后一把的解释权归本人所有。']
 ].map(([code,title,description])=>({code,title,description,metric:code.replaceAll('-','_'),threshold:1}));
 
-const day="date('now','+8 hours')";
+// SQLite equivalent of the shared Beijing 04:00 business-day key.
+const day="date('now','+4 hours')";
 const award=(code,condition)=>`INSERT INTO gameplay_achievement_metrics(employee_id,metric,value)
  SELECT employee_id,'${code.replaceAll('-','_')}',1 FROM fun_achievement_state WHERE employee_id=NEW.employee_id AND (${condition})
  ON CONFLICT(employee_id,metric) DO UPDATE SET value=1;`;

@@ -3,17 +3,21 @@ import {spawn} from 'node:child_process';import {randomBytes,randomUUID} from 'n
 import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import {createServer} from 'node:net';import {DatabaseSync} from 'node:sqlite';
 import {installBegging} from '../server-begging.mjs';
 
-test('earlier request history migrates without being discarded, while the new pair rule rejects further requests',()=>{
+test('earlier request history migrates without being discarded, while the current business-day pair rule rejects further requests',()=>{
  const db=new DatabaseSync(':memory:');try{
   db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY);CREATE TABLE employee_donations(id INTEGER PRIMARY KEY);
    CREATE TABLE employee_begging_requests(id INTEGER PRIMARY KEY,sender_id INTEGER,recipient_id INTEGER,request_key TEXT,status TEXT,amount INTEGER,donation_id INTEGER,created_at INTEGER,resolved_at INTEGER);
-   INSERT INTO employee_begging_requests VALUES(1,1,2,'legacy-a','accepted',10,NULL,1,2),(2,1,2,'legacy-b','declined',0,NULL,3,4);`);
+   INSERT INTO employee_begging_requests VALUES(1,1,2,'legacy-a','accepted',10,NULL,1,2),(2,1,2,'legacy-b','declined',0,NULL,3,4);
+   CREATE UNIQUE INDEX begging_pending_pair ON employee_begging_requests(sender_id,recipient_id) WHERE status='pending';
+   CREATE TRIGGER begging_one_per_person BEFORE INSERT ON employee_begging_requests WHEN EXISTS(SELECT 1 FROM employee_begging_requests WHERE sender_id=NEW.sender_id AND recipient_id=NEW.recipient_id) BEGIN SELECT RAISE(ABORT,'legacy lifetime limit');END;`);
   installBegging({db});
   assert.equal(db.prepare('SELECT COUNT(*) n FROM employee_begging_requests').get().n,2);
   assert.equal(db.prepare('SELECT requested_amount,sender_seen_at FROM employee_begging_requests WHERE id=1').get().requested_amount,null,'old requests must not acquire a fabricated requested amount');
   assert.throws(()=>db.exec("INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,status,amount,created_at) VALUES(1,2,'new','pending',0,5)"),/只能乞讨一次/);
   db.exec("INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,status,amount,created_at,requested_amount) VALUES(1,3,'other','pending',0,5,1000000)");
   assert.equal(db.prepare('SELECT COUNT(*) n FROM employee_begging_requests').get().n,3);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('begging_pending_pair','begging_one_per_person')").get().n,0);
+  db.exec("INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,status,amount,created_at,requested_amount) VALUES(1,2,'next-day','pending',0,86400005,100)");
  }finally{db.close();}
 });
 
@@ -86,7 +90,7 @@ test('persistent begging requests are recipient-only, capped, conserved, idempot
   const results=await Promise.all([1,2].map(()=>api(payer.cookie,'/api/player/begging/'+pendingId,'POST',{decision:'accepted',amount:1000000})));
   assert.ok(results.every(r=>r.status===200));assert.equal(await balance(payer),1000000);assert.equal(await balance(beneficiary),1000010);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM employee_donations').get().n,1);
-  assert.equal((await api(beneficiary.cookie,'/api/player/begging','POST',{recipientId:payer.id,amount:1,requestId:randomUUID()})).status,409,'an acceptance also consumes the allowance permanently');
+  assert.equal((await api(beneficiary.cookie,'/api/player/begging','POST',{recipientId:payer.id,amount:1,requestId:randomUUID()})).status,409,'an acceptance also consumes the allowance for the current business day');
   const rewards=(await api(beneficiary.cookie,'/api/player/begging')).data.rewards;assert.equal(rewards.length,1);assert.equal(rewards[0].amount,1000000);assert.equal(rewards[0].recipientId,payer.id);assert.equal(typeof rewards[0].recipientName,'string');assert.ok(rewards[0].recipientName);assert.ok(!rewards[0].recipientName.includes('保密实名'));assert.equal(rewards[0].requestedAmount,1234,'the receiver may give a different amount without changing the original request');
   assert.equal((await api(payer.cookie,'/api/player/begging/'+pendingId+'/read','POST',{})).status,404);
   assert.equal((await api(stranger.cookie,'/api/player/begging/'+pendingId+'/read','POST',{})).status,404);
@@ -109,7 +113,7 @@ test('persistent begging requests are recipient-only, capped, conserved, idempot
   assert.equal(await balance(payer),1000000);assert.equal(db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE employee_id=? AND reason='员工捐赠'").get(payer.id).n,1);
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);assert.equal(db.prepare('PRAGMA quick_check').get().quick_check,'ok');
  });
- await t.test('a receiver can retain many incoming requests and each sender may approach different people only once',async()=>{
+ await t.test('a receiver can retain many incoming requests and each sender may approach different people once per business day',async()=>{
   for(let i=0;i<25;i++){const requester=await user('many-begging-'+i,0);const response=await api(requester.cookie,'/api/player/begging','POST',{recipientId:payer.id,amount:1,requestId:randomUUID()});assert.equal(response.status,200);}
   assert.equal((await api(payer.cookie,'/api/player/begging')).data.items.length,25,'there is no receiver inbox cap');
   assert.equal((await api(sender.cookie,'/api/player/begging','POST',{recipientId:stranger.id,amount:1,requestId:randomUUID()})).status,200,'a previous refusal by one person does not block a different recipient');

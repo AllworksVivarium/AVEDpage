@@ -1,3 +1,4 @@
+import {businessDay} from './server-business-day.mjs';
 import {installAds} from './server-ads.mjs';
 import {DAILY_REWARD} from './server-rewards.mjs';
 import {installBar} from './server-bar.mjs';
@@ -240,7 +241,7 @@ const requireAdmin = (req, res) => {
 const validText = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max;
 const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 const balanceFor = employeeId => personal ? personal.balance(employeeId) : db.prepare('SELECT COALESCE(SUM(delta),0) AS balance FROM balance_ledger WHERE employee_id=?').get(employeeId).balance;
-const today = () => new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Shanghai' }).format(new Date());
+const today = () => businessDay();
 const secureRoll = (seedHex, range) => {
   const seed = Buffer.from(seedHex, 'hex');
   const limit = Math.floor(0x100000000 / range) * range;

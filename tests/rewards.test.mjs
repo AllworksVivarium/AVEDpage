@@ -31,7 +31,7 @@ test('midnight opens a new hourly slot and missed hours never accrue',t=>{
  f.at('2026-11-18T23:59:59.999+08:00');assert.equal(f.service.claim(1).reward,0);
  assert.equal(f.service.state(1).hourlyResetAt,Date.parse('2026-11-19T00:00:00+08:00'));
  f.advance(1);assert.equal(f.service.state(1).hourlyClaimed,false);assert.equal(f.service.claim(1).reward,2000);
- assert.equal(f.service.state(1).dailyResetAt,Date.parse('2026-11-20T00:00:00+08:00'));
+ assert.equal(f.service.state(1).dailyResetAt,Date.parse('2026-11-19T04:00:00+08:00'));
  f.at('2026-11-19T23:59:00+08:00');assert.equal(f.service.claim(1).reward,2000);assert.equal(f.service.claim(1).reward,0);assert.equal(f.total(),10000);
 });
 

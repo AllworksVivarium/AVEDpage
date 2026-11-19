@@ -10,7 +10,7 @@ function fixture(t){
  CREATE TABLE company_fund(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,amount INTEGER,kind TEXT,source_ledger_id INTEGER REFERENCES balance_ledger(id) ON DELETE SET NULL,request_key TEXT UNIQUE);
  INSERT INTO employees(id,identity_kind) VALUES(1,'player_employee'),(2,'planning_member'),(3,'player_containment'),(4,'company_containment'),(5,'player_employee'),(6,'planning_member'),(7,'player_employee');UPDATE employees SET enabled=0 WHERE id=5;UPDATE employees SET is_npc=1 WHERE id IN (4,6);INSERT INTO company_robots VALUES(7);`);
  const balanceFor=id=>db.prepare('SELECT COALESCE(SUM(delta),0) n FROM balance_ledger WHERE employee_id=?').get(id).n;
- let now=Date.parse('2026-11-17T15:59:00Z'),index=0;
+ let now=Date.parse('2026-11-17T19:59:00Z'),index=0;
  const deps={db,balanceFor,recordLedger:(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,delta,reason),clock:()=>now,roll:()=>index++%3,readBody:async req=>req.body,send:(res,status,data)=>Object.assign(res,{status,data}),requireAdmin:(req,res)=>{if(req.id!==1){res.status=403;return null;}return {id:1};},requireEmployee:(req,res)=>{if(!req.id){res.status=401;return null;}return {id:req.id};}};
  const service=installPayrollIntrusion(deps);
  const request=async(path,method='GET',body,id=3)=>{const res={};assert.equal(await service.handle({id,method,body},res,new URL(path,'http://localhost')),true);return res;};
@@ -32,7 +32,7 @@ test('payroll excludes containment, NPC, disabled and robots; batches are atomic
  db.exec("CREATE TRIGGER fail_salary BEFORE INSERT ON balance_ledger WHEN NEW.employee_id=2 BEGIN SELECT RAISE(ABORT,'injected failure');END;");
  assert.equal((await request('/api/admin/payroll','POST',{...body,requestId:'salary-test-0003'},1)).status,400);assert.equal(balanceFor(1),400000);assert.equal(db.prepare('SELECT COUNT(*) n FROM payroll_batches').get().n,2);
 });
-test('intrusion shares manual and automatic daily quota, conserves funds and resets at Beijing midnight',async t=>{
+test('intrusion shares manual and automatic daily quota, conserves funds and resets at Beijing 04:00',async t=>{
  const {request,balanceFor,service,advance,db,deps}=fixture(t);
  assert.equal((await request('/api/player/intrusion')).data.claimed,false);
  const first=await request('/api/player/intrusion','POST');assert.equal(first.data.reward,60000);

@@ -7,7 +7,7 @@ window.AVEDIntrusionUI=function({api,getUser,onBalance}){
    const button=host.querySelector('[data-intrusion]'),toggle=host.querySelector('[data-intrusion-auto]');
    button.disabled=busy||!state||state.claimed;button.textContent=state?.claimed?'今日已黑入':'黑入基金';
    toggle.checked=!!state?.automatic;toggle.disabled=busy||!state;
-   const status=host.querySelector('[role=status]'),full=state?(state.claimed?'今日转入 '+money(state.amount)+' · 零点重置':'[基金链路开放] 每日一次'):'[正在接入基金链路]';
+   const status=host.querySelector('[role=status]'),full=state?(state.claimed?'今日转入 '+money(state.amount)+' · 04:00重置':'[基金链路开放] 每日一次'):'[正在接入基金链路]';
    status.textContent=host.classList.contains('hud-intrusion')?(state?(state.claimed?'+'+money(state.amount):'每日一次'):'连接中'):full;status.title=full;
   }
  }
@@ -45,7 +45,7 @@ window.AVEDIntrusionUI=function({api,getUser,onBalance}){
    // Credit only after the visible access sequence, using the server's daily quota.
    const result=await api('/api/player/intrusion',automatic===undefined?{method:'POST'}:{method:'PUT',body:{automatic}});
    if(!current(id))throw Error('当前身份连接已结束。');
-   state=result;readAt=Date.now();phase(result.reward?'转入完成':'今日链路已使用',['[转入回执已接收]','[原始身份记录未变更]','[本日通道关闭；零点重置]'],100,'complete');
+   state=result;readAt=Date.now();phase(result.reward?'转入完成':'今日链路已使用',['[转入回执已接收]','[原始身份记录未变更]','[本日通道关闭；04:00重置]'],100,'complete');
    const receipt=d.querySelector('[data-intrusion-receipt]');receipt.textContent=(result.reward?'+ ':'今日已转入 ')+money(result.reward||result.amount)+' ¤';receipt.hidden=false;d.querySelector('[data-intrusion-code]').textContent='RECEIPT ACCEPTED';onBalance(result.balance);
   }catch(e){phase('连接中断',['[未取得有效转入回执]',e.message],0,'error');d.querySelector('[data-intrusion-code]').textContent='LINK INTERRUPTED';readAt=0;}
   finally{busy=false;paint();close.disabled=false;close.textContent='关闭连接';close.focus();if(!readAt)refresh();}

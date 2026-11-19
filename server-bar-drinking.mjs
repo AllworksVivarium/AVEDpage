@@ -1,9 +1,10 @@
+import {businessDay} from './server-business-day.mjs';
 import {barToleranceOptions} from './server-bar-preferences.mjs';
 import {barDrinks} from './server-bar-catalog.mjs';
 
 export const BAR_ABSENCE_MS=30*60*1000;
 export const BAR_RECOVERY_STEP_MS=10*60*1000;
-export const barBusinessDay=time=>new Date(time+4*3600000).toISOString().slice(0,10);
+export const barBusinessDay=businessDay;
 export const servingRecipe=id=>barDrinks.find(drink=>drink.id===id)?.serving||(id==='energy-jelly'?{volume:180,sips:3,strength:0}:id==='mineral-water'?{volume:500,sips:4,strength:0}:id==='onyx-shot'?{volume:0,sips:0,strength:0}:id.endsWith('-shot')?{volume:30,sips:1,strength:400}:id==='lemon-cocktail'?{volume:200,sips:4,strength:80}:id.endsWith('-highball')?{volume:350,sips:4,strength:70}:id==='amber-brew'?{volume:330,sips:3,strength:50}:id.endsWith('-fizz')?{volume:330,sips:4,strength:30}:{volume:500,sips:4,strength:50});
 
 export function installBarDrinking({db,clock,preferences,name}){

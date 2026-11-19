@@ -1,3 +1,4 @@
+import {businessDayStart,businessDayEnd} from './server-business-day.mjs';
 export function installBegging({db,send,readBody,requireEmployee,balanceFor,recordLedger,highest,isContainment,clock=Date.now}){
  db.exec(`CREATE TABLE IF NOT EXISTS employee_begging_requests(
   id INTEGER PRIMARY KEY,sender_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
@@ -6,16 +7,18 @@ export function installBegging({db,send,readBody,requireEmployee,balanceFor,reco
   amount INTEGER NOT NULL DEFAULT 0 CHECK(amount BETWEEN 0 AND 1000000),requested_amount INTEGER CHECK(requested_amount BETWEEN 1 AND 1000000),
   donation_id INTEGER REFERENCES employee_donations(id) ON DELETE SET NULL,created_at INTEGER NOT NULL,resolved_at INTEGER,sender_seen_at INTEGER,
   CHECK(sender_id<>recipient_id));
-  CREATE UNIQUE INDEX IF NOT EXISTS begging_pending_pair ON employee_begging_requests(sender_id,recipient_id) WHERE status='pending';
   CREATE INDEX IF NOT EXISTS begging_recipient ON employee_begging_requests(recipient_id,status,id);`);
  if(!db.prepare('PRAGMA table_info(employee_begging_requests)').all().some(column=>column.name==='sender_seen_at'))db.exec('ALTER TABLE employee_begging_requests ADD COLUMN sender_seen_at INTEGER');
  if(!db.prepare('PRAGMA table_info(employee_begging_requests)').all().some(column=>column.name==='requested_amount'))db.exec('ALTER TABLE employee_begging_requests ADD COLUMN requested_amount INTEGER CHECK(requested_amount BETWEEN 1 AND 1000000)');
  db.exec('CREATE INDEX IF NOT EXISTS begging_sender_unread ON employee_begging_requests(sender_id,status,sender_seen_at)');
- // Preserve existing history, including requests made before the once-per-person rule.
- db.exec(`CREATE INDEX IF NOT EXISTS begging_pair_history ON employee_begging_requests(sender_id,recipient_id);
-  CREATE TRIGGER IF NOT EXISTS begging_one_per_person BEFORE INSERT ON employee_begging_requests
-  WHEN EXISTS(SELECT 1 FROM employee_begging_requests WHERE sender_id=NEW.sender_id AND recipient_id=NEW.recipient_id)
-  BEGIN SELECT RAISE(ABORT,'对同一位员工只能乞讨一次。');END;`);
+ // Keep existing requests; pending requests from earlier business days do not block a new day.
+ db.exec(`DROP TRIGGER IF EXISTS begging_one_per_person;
+  DROP INDEX IF EXISTS begging_pending_pair;
+  CREATE INDEX IF NOT EXISTS begging_pair_day ON employee_begging_requests(sender_id,recipient_id,created_at);
+  CREATE TRIGGER IF NOT EXISTS begging_one_per_day BEFORE INSERT ON employee_begging_requests
+  WHEN EXISTS(SELECT 1 FROM employee_begging_requests WHERE sender_id=NEW.sender_id AND recipient_id=NEW.recipient_id
+   AND CAST((created_at+14400000)/86400000 AS INTEGER)=CAST((NEW.created_at+14400000)/86400000 AS INTEGER))
+  BEGIN SELECT RAISE(ABORT,'对同一位员工每日只能乞讨一次，04:00重置。');END;`);
  const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
  const name=id=>{
   const row=db.prepare(`SELECT e.display_name,COALESCE(r.codename,NULLIF(p.anonymous_name,''),'匿名员工-'||e.id) AS anonymous_name,q.ranking_identity
@@ -45,12 +48,12 @@ export function installBegging({db,send,readBody,requireEmployee,balanceFor,reco
     if(!Number.isSafeInteger(data.amount)||data.amount<1||data.amount>1000000)fail('乞讨金额须为 1 至 1,000,000 的整数。');
     if(typeof data.requestId!=='string'||!/^[-a-zA-Z0-9]{8,80}$/.test(data.requestId))fail('请重新提交乞讨请求。');
     const result=transaction(()=>{
-     const key=user.id+':'+data.requestId,previous=db.prepare('SELECT * FROM employee_begging_requests WHERE request_key=?').get(key);
+     const now=clock(),key=user.id+':'+data.requestId,previous=db.prepare('SELECT * FROM employee_begging_requests WHERE request_key=?').get(key);
      if(previous){if(previous.recipient_id!==data.recipientId||previous.requested_amount!==data.amount)fail('这份请求凭据已使用。',409);return previous;}
      if(!requestable(data.recipientId)||!highest(user.id).some(row=>row.id===data.recipientId))fail('该员工当前无法接收请求，请刷新财神榜。');
-     const previousRequest=db.prepare('SELECT 1 FROM employee_begging_requests WHERE sender_id=? AND recipient_id=? LIMIT 1').get(user.id,data.recipientId);
-     if(previousRequest)fail('对同一位员工只能乞讨一次。',409);
-     const inserted=db.prepare('INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,created_at,requested_amount) VALUES(?,?,?,?,?)').run(user.id,data.recipientId,key,clock(),data.amount);
+     const previousRequest=db.prepare('SELECT 1 FROM employee_begging_requests WHERE sender_id=? AND recipient_id=? AND created_at>=? AND created_at<? LIMIT 1').get(user.id,data.recipientId,businessDayStart(now),businessDayEnd(now));
+     if(previousRequest)fail('对同一位员工每日只能乞讨一次，04:00重置。',409);
+     const inserted=db.prepare('INSERT INTO employee_begging_requests(sender_id,recipient_id,request_key,created_at,requested_amount) VALUES(?,?,?,?,?)').run(user.id,data.recipientId,key,now,data.amount);
      return db.prepare('SELECT * FROM employee_begging_requests WHERE id=?').get(inserted.lastInsertRowid);
     });send(res,200,item(result));return true;
    }

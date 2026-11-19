@@ -1,14 +1,15 @@
+import {businessDay,businessDayEnd} from './server-business-day.mjs';
 import {randomInt} from 'node:crypto';
 
 export function installPayrollIntrusion({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,clock=Date.now,roll=randomInt}){
  db.exec(`CREATE TABLE IF NOT EXISTS payroll_batches(request_key TEXT PRIMARY KEY,created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,recipient_count INTEGER NOT NULL,total INTEGER NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
  CREATE TABLE IF NOT EXISTS containment_intrusion_preferences(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,automatic INTEGER NOT NULL DEFAULT 0 CHECK(automatic IN (0,1)));
  CREATE TABLE IF NOT EXISTS containment_intrusions(employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,day TEXT NOT NULL,amount INTEGER NOT NULL,ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),PRIMARY KEY(employee_id,day));`);
- const day=()=>new Date(clock()+28800000).toISOString().slice(0,10);
+ const day=()=>businessDay(clock());
  const eligible=id=>!!db.prepare("SELECT 1 FROM employees WHERE id=? AND identity_kind='player_containment' AND enabled=1 AND is_npc=0").get(id);
  const recipients=()=>db.prepare("SELECT id FROM employees WHERE enabled=1 AND is_npc=0 AND identity_kind IN ('player_employee','planning_member') AND NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=employees.id) ORDER BY id").all();
  function transaction(task){db.exec('BEGIN IMMEDIATE');try{const result=task();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
- function status(id){const date=day(),claim=db.prepare('SELECT amount FROM containment_intrusions WHERE employee_id=? AND day=?').get(id,date);return {day:date,claimed:!!claim,amount:claim?.amount||0,automatic:!!db.prepare('SELECT automatic FROM containment_intrusion_preferences WHERE employee_id=?').get(id)?.automatic,balance:balanceFor(id),resetAt:(Math.floor((clock()+28800000)/86400000)+1)*86400000-28800000};}
+ function status(id){const date=day(),claim=db.prepare('SELECT amount FROM containment_intrusions WHERE employee_id=? AND day=?').get(id,date);return {day:date,claimed:!!claim,amount:claim?.amount||0,automatic:!!db.prepare('SELECT automatic FROM containment_intrusion_preferences WHERE employee_id=?').get(id)?.automatic,balance:balanceFor(id),resetAt:businessDayEnd(clock())};}
  function steal(id){return transaction(()=>{
   if(!eligible(id))throw Error('此接入方式仅对收容物开放。');
   const date=day(),existing=db.prepare('SELECT amount FROM containment_intrusions WHERE employee_id=? AND day=?').get(id,date);
