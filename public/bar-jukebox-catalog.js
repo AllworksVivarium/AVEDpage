@@ -1,5 +1,7 @@
 window.AVEDBarJukeboxCatalog=function({root,esc,onChange,onPreview=()=>{}}){
  const host=root.querySelector('[data-juke-tracks]');host.classList.add('bar-jukebox-library');
+ let previewId=null;
+ function paintPreview(){for(const button of host.querySelectorAll('[data-song]')){const active=Number(button.dataset.song)===previewId;button.closest('.bar-track-row').classList.toggle('is-previewing',active);if(active)button.setAttribute('aria-current','true');else button.removeAttribute('aria-current');}}
  let albumId=null,trackId=null,whole=false,catalog=[],albums=[],renderKey='';
  const time=seconds=>Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
  const credit=track=>track.artist?' <span class="bar-track-artist">— '+esc(track.artist)+'</span>':'';
@@ -20,6 +22,7 @@ window.AVEDBarJukeboxCatalog=function({root,esc,onChange,onPreview=()=>{}}){
     '<div class="bar-album-tracks">'+album.tracks.map((t,index)=>`<div class="bar-track-row"><button type="button" data-song="${t.id}" aria-pressed="${!whole&&trackId===t.id}"><span class="bar-track-number">${String(index+1).padStart(2,'0')}</span><span class="bar-track-copy">${esc(t.title)}${credit(t)}</span><small>${time(t.durationSeconds||180)}</small></button><button type="button" class="bar-track-preview" data-song-preview="${t.id}" aria-label="试听 ${esc(t.title)}">试听</button></div>`).join('')+'</div>'+
     (album.tracks[0]?.sourceUrl?`<p class="bar-album-license"><a href="${esc(album.tracks[0].sourceUrl)}" target="_blank" rel="noopener noreferrer">曲目来源 ↗</a>${album.tracks[0].licenseUrl?`<a href="${esc(album.tracks[0].licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(album.tracks[0].license||'许可')} ↗</a>`:''}</p>`:'');
   }
+  paintPreview();
   return whole&&album&&album.id!=='singles'?{request:{albumId:album.id},count:album.tracks.length}:trackId?{request:{trackId},count:1}:null;
  }
  root.addEventListener('click',event=>{
@@ -32,5 +35,5 @@ window.AVEDBarJukeboxCatalog=function({root,esc,onChange,onPreview=()=>{}}){
   else {trackId=Number(button.dataset.song);whole=false;const track=catalog.find(t=>t.id===trackId);if(track)onPreview(track);focus='[data-song="'+trackId+'"]';}
   onChange();host.querySelector(focus)?.focus({preventScroll:true});
  });
- return {render,clearSelection(){trackId=null;whole=false;}};
+ return {render,setPreviewTrack(id){previewId=id;paintPreview();},clearSelection(){trackId=null;whole=false;}};
 };

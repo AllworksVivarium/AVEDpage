@@ -15,3 +15,5 @@
 .bar-host-payment{padding:8px 14px;margin:0;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .bar-host-payment label{display:flex;align-items:center;gap:8px}.bar-host-payment input{accent-color:#b69a76}
 .bar-room .bar-menu-tools{flex-wrap:wrap}
+.bar-room .bar-host-notice{position:relative}
+.bar-room .bar-host-notice.has-unread::after{content:'';position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:#f04444;box-shadow:0 0 0 2px #211a1e;pointer-events:none}

@@ -33,7 +33,7 @@ React Bits 的 Gradient ASCII 页面曾作为字符背景的效果参考。当�
 | 作者 / 合辑 | 专辑 | 来源与记录 |
 | --- | --- | --- |
 | Purrple Cat | City Nights、Multiverse | [曲目与来源清单](music/purrple-cat-albums.json)、[CC BY 4.0 原文](licenses/purrple-cat-music-CC-BY-4.0.txt) |
-| Tomality | Free Game Music Sampler Vol. 1 | [项目来源与许可记录](licenses/tomality-free-sampler-20261119.txt)、[曲目清单](music/additional-free-albums.json) |
+| Tomality | Neon Reverie（原素材包 Free Game Music Sampler Vol. 1） | [项目来源与许可记录](licenses/tomality-free-sampler-20261119.txt)、[曲目清单](music/additional-free-albums.json) |
 | Voltz Supreme | Analog Ambience | [项目来源与许可记录](licenses/voltz-supreme-analog-ambience-20261119.txt)、[曲目清单](music/additional-free-albums.json) |
 | 用户提供合辑 / Various Artists | Nocturne for Dramoir，11 首 | [曲目、演奏者、时长和 SHA-256](music/nocturne-for-dramoir.json)；来自用户提供的“音乐文件.zip”，未附许可或来源网址，不标注为 CC 或免版权音乐 |
 
@@ -50,3 +50,13 @@ Nocturne for Dramoir 保留每首原有演奏者；专辑作者统一为 Various
 - 数据备份继续采用每日一份、五日一份的既定规则，不生成更新前快照。
 
 线上代理需要在管理域名的 HTTPS server 内接入 deploy/nginx-music-upload-location.conf，仅对音乐上传接口允许 48 MiB Base64 JSON 请求；其他路由继续原有大小限制。修改后先 nginx -t，再 reload。应用仍强制单个音频不超过 32 MiB，代理放宽不等于绕过管理身份或文件校验。
+
+## 酒吧进门铃声
+
+- 素材：Shop door bell，775noise / freesound_community。
+- 来源：https://pixabay.com/sound-effects/film-special-effects-shop-door-bell-6405/
+- 许可：https://pixabay.com/service/license-summary/ （Pixabay Content License）。
+- 使用文件：public/assets/bar/shop-door-bell-short.mp3。
+- 处理：取原件 0.30–1.50 秒的第一声门铃，保留约 1.2 秒；头部 10 ms 淡入、末尾 250 ms 淡出，音量乘 0.7。未加入其他来源音频。
+- 仅对在座列表中新加入的其他客人播放；初次进入及相同快照不补响。
+- 离线裁剪工具：FFmpeg（通过 npm ffmpeg-static 取得），仅用于开发时生成短门铃，不作为网页运行依赖或随网站分发。

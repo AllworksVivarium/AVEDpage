@@ -5,6 +5,7 @@ window.AVEDBarHospitality=function({root,api,esc,getSnapshot,getIdentity,apply,o
  const entry=document.createElement('button');entry.type='button';entry.textContent='请客';entry.dataset.barHospitality='';root.querySelector('.bar-menu-tools').prepend(entry);
  const notice=document.createElement('button');notice.type='button';notice.className='bar-host-notice';notice.hidden=true;root.querySelector('.bar-chat-header').append(notice);
  const money=n=>'¤ '+Number(n||0).toLocaleString(),$=s=>dialog.querySelector(s);
+ const seenInvites=new Set();
  let busy=false,generation=0,guest=null,pendingRound=null,receivedAt=0,budgetInitialized=false;
  const error=message=>{$('.bar-host-error').textContent=message;$('.bar-host-error').hidden=!message;};
  function show(selected=null){guest=selected;for(const other of root.querySelectorAll('dialog[open]'))other.close();error('');paint();dialog.showModal();}
@@ -14,6 +15,8 @@ window.AVEDBarHospitality=function({root,api,esc,getSnapshot,getIdentity,apply,o
   const now=data.serverTime+Math.max(0,Date.now()-receivedAt),r=data.hostedRound&&data.hostedRound.endsAt>now?data.hostedRound:null;
   const gifts=(data.hospitality?.gifts||[]).filter(x=>x.expiresAt>now),incoming=gifts.filter(x=>x.direction==='incoming');
   notice.hidden=!r&&!incoming.length;notice.textContent=[r?`${r.alias} 请全场 · ${Math.max(1,Math.ceil((r.endsAt-now)/60000))} 分钟`:'',incoming.length?`${incoming.length} 份请客邀请`:''].filter(Boolean).join(' · ');
+  if(dialog.open&&!guest)for(const invite of incoming)seenInvites.add(invite.id);
+  notice.classList.toggle('has-unread',incoming.some(invite=>!seenInvites.has(invite.id)));
   entry.textContent=incoming.length?'请客 · '+incoming.length:'请客';
   if(!dialog.open&&!guest)return;
   $('[data-host-title]').textContent=guest?guest.alias:'请客';$('[data-host-title]').classList.toggle('bar-containment-name',guest?.isContainment===true);$('[data-host-main]').hidden=!!guest;$('[data-host-guest]').hidden=!guest;

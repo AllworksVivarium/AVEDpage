@@ -3,7 +3,7 @@
   "albums": [
     {
       "id": "tomality-sampler",
-      "title": "Free Game Music Sampler Vol. 1",
+      "title": "Neon Reverie",
       "artist": "Tomality",
       "license": "Tomality Free Sampler License",
       "licenseUrl": "https://tomality.itch.io/free-sampler-pack-1",
@@ -119,7 +119,8 @@
           "originalSha256": "55cbad45d1f6439306324921ea1782c8eb20dc00f714e82c7ebaa1d044546b52",
           "conversion": "Original MP3, unchanged"
         }
-      ]
+      ],
+      "originalTitle": "Free Game Music Sampler Vol. 1"
     },
     {
       "id": "analog-ambience",

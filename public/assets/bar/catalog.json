@@ -584,12 +584,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-A.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -644,12 +644,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-B.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -766,12 +766,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-C.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -1069,12 +1069,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-D.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -1432,12 +1432,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-E.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -1797,12 +1797,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-F.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {
@@ -1827,12 +1827,12 @@
     "alpha": true,
     "sourcePack": "familiar",
     "sourceFile": "small-G.png",
-    "displayScale": 0.65,
+    "displayScale": 0.5644736842105263,
     "contentBox": [
-      0,
-      0,
-      130,
-      190
+      10,
+      10,
+      110,
+      165
     ]
   },
   {

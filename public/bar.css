@@ -112,3 +112,5 @@ html.bar-room-root-open{overflow:hidden!important}
 
 /* True account identity is supplied by the server, including anonymous aliases. */
 .bar-room .bar-containment-name{color:#f22b3d!important;text-shadow:0 0 5px #9f102950}
+.nav-tab-btn[data-nav=bar]{position:relative}.bar-unread-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;background:#e64747;border:1px solid var(--inner-text-main);border-radius:50%;pointer-events:none}
+.bar-room .bar-header{position:relative}.bar-sound-panel{position:absolute;right:12px;top:calc(100% + 8px);z-index:8;width:260px;max-width:calc(100vw - 24px);padding:14px;background:#211b20;border:1px solid var(--bar-line);box-shadow:0 8px 24px #0008}.bar-sound-panel[hidden]{display:none}.bar-sound-switch{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:32px;font-size:12px}.bar-sound-switch input{accent-color:var(--bar-gold);width:16px;height:16px}.bar-sound-level{display:grid;gap:8px;font-size:11px;color:var(--bar-muted);padding:6px 0}.bar-sound-level input{width:100%;accent-color:var(--bar-gold)}.bar-sound-effects{border-top:1px solid var(--bar-line);margin-top:10px;padding-top:8px}

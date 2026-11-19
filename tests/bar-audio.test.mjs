@@ -2,12 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+test('local preview highlights follow actual playback and ignore stale audio events',async()=>{
+ const f=fixture();f.setInside(true);
+ try{
+  const first={id:1,title:'First',url:'/first.mp3'},second={id:2,title:'Second',url:'/second.mp3'};
+  await f.player.preview(first);const a=f.media.at(-1);assert.equal(f.previewed.at(-1),null);
+  a.onplaying();assert.equal(f.previewed.at(-1).id,1);
+  await f.player.preview(second);const b=f.media.at(-1);assert.equal(f.previewed.at(-1),null);
+  b.onplaying();assert.equal(f.previewed.at(-1).id,2);a.onended();assert.equal(f.previewed.at(-1).id,2);
+  b.onpause();assert.equal(f.previewed.at(-1),null);b.onplaying();assert.equal(f.previewed.at(-1).id,2);
+  b.onended();assert.equal(f.previewed.at(-1),null);b.onplaying();f.player.stopPreview();assert.equal(f.previewed.at(-1),null);
+ }finally{f.player.stop();}
+});
 function fixture(){
- let inside=false,errors=0,plays=0;const media=[],heard=[];
+ let inside=false,errors=0,plays=0;const media=[],heard=[],previewed=[];
  class Audio{constructor(){media.push(this);}pause(){this.paused=true;}removeAttribute(){this.src='';}load(){}play(){this.paused=false;plays++;return Promise.resolve();}}
  const scope=vm.createContext({Audio,setTimeout,clearTimeout});scope.window=scope;vm.runInContext(readFileSync(new URL('../public/bar-audio.js',import.meta.url),'utf8'),scope);
- const player=scope.AVEDBarAudio({canPlay:()=>inside,onError:()=>errors++,onTrack:track=>heard.push(track)});
- return {player,media,heard,setInside:value=>inside=value,plays:()=>plays,hasSyntheticMusic:()=>typeof scope.AVEDBarPreviewAudio==='function',errors:()=>errors};
+ const player=scope.AVEDBarAudio({canPlay:()=>inside,onError:()=>errors++,onTrack:track=>heard.push(track),onPreviewTrack:track=>previewed.push(track)});
+ return {player,media,heard,previewed,setInside:value=>inside=value,plays:()=>plays,hasSyntheticMusic:()=>typeof scope.AVEDBarPreviewAudio==='function',errors:()=>errors};
 }
 test('bar music remains silent outside the room, including when a playlist refresh arrives',async()=>{
  const f=fixture();try{

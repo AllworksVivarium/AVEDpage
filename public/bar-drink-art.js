@@ -9,6 +9,12 @@ window.AVEDBarDrinkArt=(()=>{
  const color=id=>typeof id==='object'&&id? id.liquidColor||colors[id.id]||'#ddc9a4':colors[id]||'#ddc9a4';
  const canPour=drink=>drink?.pourable??!!(drink&&drink.id!=='energy-jelly'&&drink.id!=='lemon-cocktail'&&!drink.id.endsWith('-shot'));
  const imageFor=(drink,serving)=>drink?.images?.length?drink.images[(Number.isSafeInteger(serving?.id)&&serving.id>=0?serving.id:0)%drink.images.length]:drink?.image;
+ const softContainer=drink=>['pouch','bag','carton'].includes(drink?.container);
+ const clinkSound=cups=>cups.length===2&&cups.every(cup=>cup.dataset.clinkSound!=='muted');
+ function nativeSprite(drink,serving,m,esc,{clink=true,sip=true}={}){
+  const shot=drink.id.endsWith('-shot'),fill=ratio(serving),style=`width:${m.fullWidth}px;height:${m.fullHeight}px;left:${m.x}px;top:${m.y}px`;
+  return `<span class="bar-drink-sprite" ${clink?'data-drink-motion':''} ${sip?'data-sip-motion':''} data-vessel="${softContainer(drink)?'pouch':drink.container||'native'}" data-clink-sound="${softContainer(drink)?'muted':'glass'}" data-order-id="${serving.id}" data-fill-ratio="${fill}" data-splash-color="${color(drink)}" style="width:${m.width}px;height:${m.height}px"><img src="${esc(shot?'/assets/bar/onyx-shot.png':drink.image)}" style="${style}" alt="">${shot&&fill>0?`<img src="${esc(drink.image)}" style="${style};clip-path:inset(${15+(1-fill)*48}% 0 0 0)" alt="" aria-hidden="true">`:''}</span>`;
+ }
  function lemon(drink,serving,m,esc,owner,alt){
   if(drink.id!=='lemon-cocktail')return '';
   const id='bar-lemon-'+owner,fill=ratio(serving),source=`<image href="${esc(drink.image)}" width="520" height="400"/>`;
@@ -50,15 +56,17 @@ window.AVEDBarDrinkArt=(()=>{
   return `<span class="bar-drink-sprite bar-drink-layered bar-drink-lift" ${clink?'data-drink-motion':''} ${sip?'data-sip-motion':''} data-vessel="${canPour(drink)?'bottle':'native'}" data-order-id="${serving.id}" data-fill-ratio="${fill}" data-level-top="${top}" data-level-bottom="${bottom}" data-splash-color="${ink}" style="position:relative;width:${m.width}px;height:${m.height}px" role="img" aria-label="${esc(alt)}">${svg(defs+`<path d="${art.inside}" fill="#d6e6df" fill-opacity=".10"/><g mask="url(#${id}-shell)">${source}</g>`)}<span class="bar-drink-liquid" style="clip-path:inset(${fill<=0?100:top+(1-fill)*(bottom-top)}% 0 0 0)">${svg(`<g clip-path="url(#${id}-inside)">${source}</g>`)}</span>${art.details?svg(`<g clip-path="url(#${id}-details)">${source}</g>`):''}</span>`;
  }
  function render(drink,serving,m,esc,owner,alt,{glassId=null,unit=80}={}) {
-  if(!glassId)return drink?.pixelArt?pixelContainer(drink,serving,m,esc,owner,alt):drink?.id==='mineral-water'?water(drink,serving,m,esc,owner,alt):drink?lemon(drink,serving,m,esc,owner,alt):'';
+  if(!glassId)return drink?.pixelArt?pixelContainer(drink,serving,m,esc,owner,alt):drink?.id==='mineral-water'?water(drink,serving,m,esc,owner,alt):drink?.id==='lemon-cocktail'?lemon(drink,serving,m,esc,owner,alt):drink?`<span role="img" aria-label="${esc(alt)}">${nativeSprite(drink,serving,m,esc)}</span>`:'';
   const fixed=drink&&!canPour(drink),{height,width}=cupMetrics(glassId,unit),left=drink?m.width+(fixed?12:8):0,wholeWidth=drink?Math.max(m.width,left+width):width,wholeHeight=Math.max(drink?m.height:0,height),fill=fixed?0:cupFill(glassId,serving),fromGlass=!fixed&&serving?.drinkFrom==='glass';
   const bottleServing=serving?{...serving,remainingMl:serving.bottleMl??serving.remainingMl}:null;
   let bottle='';
   if(drink?.pixelArt)bottle=pixelContainer(drink,bottleServing,m,esc,owner,alt,{clink:fixed,sip:!fromGlass});
   else if(drink?.id==='mineral-water')bottle=water(drink,bottleServing,m,esc,owner,alt,{clink:false,sip:!fromGlass});
   else if(drink?.id==='lemon-cocktail')bottle=lemon(drink,bottleServing,m,esc,owner,alt).replace('data-drink-motion','data-drink-motion data-sip-motion');
-  else if(drink){const shot=drink.id.endsWith('-shot'),style=`width:${m.fullWidth}px;height:${m.fullHeight}px;left:${m.x}px;top:${m.y}px`,ratio=bottleServing.volumeMl?bottleServing.remainingMl/bottleServing.volumeMl:0;bottle=`<span class="bar-drink-sprite" ${fixed?'data-drink-motion data-sip-motion':fromGlass?'':'data-sip-motion'} data-fill-ratio="${ratio}" data-splash-color="${color(drink)}" style="width:${m.width}px;height:${m.height}px"><img src="${esc(shot?'/assets/bar/onyx-shot.png':drink.image)}" style="${style}" alt="">${shot&&ratio>0?`<img src="${esc(drink.image)}" style="${style};clip-path:inset(${15+(1-ratio)*48}% 0 0 0)" alt="">`:''}</span>`;}
-  return `<span class="bar-drink-sprite bar-drink-layered bar-poured-serving" style="width:${wholeWidth}px;height:${wholeHeight}px" role="img" aria-label="${esc(alt)}">${drink?`<span class="bar-source-container" style="width:${m.width}px;height:${m.height}px">${bottle}</span>`:''}<span class="bar-cup-position" style="left:${left}px;width:${width}px;height:${height}px">${cupArt(glassId,fill,color(drink||'mineral-water'),esc,owner,serving?.id,{sip:fromGlass,clink:!fixed,height,drinkId:drink?.id,withIce:drink?.ice,withFoam:['brew','bottled'].includes(drink?.menuGroup?.id)})}</span></span>`;
+  else if(drink)bottle=nativeSprite(drink,bottleServing,m,esc,{clink:fixed,sip:!fromGlass});
+  // Put the two transparent rows below the cup base beneath the tabletop anchor.
+  const foot=height*2/(glassId==='beer-mug'?54:48);
+  return `<span class="bar-drink-sprite bar-drink-layered bar-poured-serving" style="width:${wholeWidth}px;height:${wholeHeight}px" role="img" aria-label="${esc(alt)}">${drink?`<span class="bar-source-container" style="width:${m.width}px;height:${m.height}px">${bottle}</span>`:''}<span class="bar-cup-position" style="left:${left}px;width:${width}px;height:${height}px;bottom:${-foot}px">${cupArt(glassId,fill,color(drink||'mineral-water'),esc,owner,serving?.id,{sip:fromGlass,clink:!fixed,height,drinkId:drink?.id,withIce:drink?.ice,withFoam:['brew','bottled'].includes(drink?.menuGroup?.id)})}</span></span>`;
  }
  function settle(root,previous){
   if(document.hidden||document.body.classList.contains('effects-off')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -72,7 +80,8 @@ window.AVEDBarDrinkArt=(()=>{
  }
  function splash(root,cups){
   if(root.hidden||document.hidden||document.body.classList.contains('effects-off')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const layer=root.querySelector('[data-bar-glasses]'),bounds=layer.getBoundingClientRect(),sx=bounds.width/layer.clientWidth||1,sy=bounds.height/layer.clientHeight||1,visible=cups.filter(cup=>cup.isConnected),boxes=visible.map(cup=>cup.getBoundingClientRect());
+  const layer=root.querySelector('[data-bar-glasses]'),bounds=layer.getBoundingClientRect(),sx=bounds.width/layer.clientWidth||1,sy=bounds.height/layer.clientHeight||1,visible=cups.filter(cup=>cup.isConnected&&cup.dataset.vessel!=='pouch'),boxes=visible.map(cup=>cup.getBoundingClientRect());
+  if(!visible.length)return;
   const contact=boxes.reduce((sum,box,i)=>sum+box.left+box.width*Number(visible[i].dataset.rimX||.5),0)/visible.length;
   for(const [index,cup] of visible.entries()){
    const box=boxes[index],x=(contact-bounds.left)/sx,y=(box.top+box.height*Number(cup.dataset.rim||.12)-bounds.top)/sy,ink=cup.closest('.bar-glass').classList.contains('own')?cup.dataset.splashColor:'#b9aea0';
@@ -83,5 +92,5 @@ window.AVEDBarDrinkArt=(()=>{
    }
   }
  }
- return {render,settle,splash,color,cupMetrics,imageFor,canPour};
+ return {render,settle,splash,color,cupMetrics,imageFor,canPour,clinkSound};
 })();
