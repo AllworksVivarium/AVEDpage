@@ -469,7 +469,7 @@
 
         if(target==='casino')communityUI.showGame(game||'home');
         const gameTitle=target==='casino'&&game!=='home'?document.querySelector('[data-game="'+game+'"]')?.getAttribute('aria-label'):'';
-        document.title=gameTitle?gameTitle+' · '+playerPageTitle:playerPageTitle;
+        document.title=gameTitle?gameTitle+' '+playerPageTitle:playerPageTitle;
         if(target==='profile')renderProfile();
         if (target === 'containment') {
           if(enteringContainment){scpBoardSelection=null;selectedScpId=null;}renderScpArchives();
@@ -584,7 +584,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
 
 
       // One short redaction sequence per entry into the archive view.
-      let scpBoardSelection=null;
+      let scpBoardSelection=null,scpBoardPosition=null,scpReading=false;
       function triggerScpTitleRedactionGlitch() {
         AVEDArchiveBoard.glitch({document,enabled:!document.body.classList.contains('effects-off')&&!prefersReducedMotion});
       }
@@ -592,7 +592,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       function renderScpArchives() {
         AVEDArchiveBoard.cancel();
         const dossierRoute=window.AVEDDossierReader?.route(location.hash);
-        if(dossierRoute){AVEDDossierReader.mount({container:document.getElementById('view-containment'),item:scpItemsData.find(x=>Number(x.dbId)===dossierRoute.id),selection:dossierRoute,loading:!deferredSections.has('containment')});return;}
+        if(dossierRoute){
+          const item=scpItemsData.find(x=>Number(x.dbId)===dossierRoute.id);scpReading=true;
+          if(item){selectedScpId=item.id;renderScpDiscussion(item);if(!item.commentsLoaded){item.commentsLoaded=true;loadDossierComments(item).catch(e=>{item.commentsLoaded=false;showToast(e.message);});}}
+          AVEDDossierReader.mount({container:document.getElementById('view-containment'),item,selection:dossierRoute,loading:!deferredSections.has('containment')});return;
+        }
+        const returning=scpReading;scpReading=false;
+        if(returning&&scpBoardPosition){const saved=scpBoardPosition;requestAnimationFrame(()=>{forumScrollRoot().scrollTo({top:saved.top,behavior:'instant'});document.querySelector('[data-scp-id="'+CSS.escape(saved.id)+'"] a')?.focus({preventScroll:true});});}
         window.AVEDDossierReader?.close();
         document.querySelectorAll('.scp-filter-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===selectedScpFilter)));
         const listEl = document.getElementById('scp-list-container');
@@ -654,29 +660,24 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         }
 
         listEl.innerHTML = filtered.map(item => {
-          const active = item.id === selectedScpId;
-          const fullTitle = `${item.id} ${item.codeName}`;
+          const fullTitle = item.codeName;
           return `
-            <div data-scp-id="${item.id}" aria-current="${active}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 ${active ? 'border-[#9e1b1b] shadow-lg' : 'border-black/60 opacity-90 hover:opacity-100'} transition cursor-pointer select-none flex flex-col justify-between">
+            <div data-scp-id="${item.id}" class="scp-item-card relative p-4 bg-[#f4f1ea] text-[#141413] border-2 border-black/60 opacity-90 hover:opacity-100 transition cursor-pointer select-none flex flex-col justify-between">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="archive-item-code font-mono-tech">${item.id}</span>
                   <span class="scp-status-stamp">${item.level}</span>
                 </div>
 
-                <div class="archive-evidence-strip bg-[#141413] text-[#e8e3d5] p-2 mb-2 font-mono-tech text-[10px] flex items-center justify-between border border-black">
-                  <span>${item.polaroidTag}</span>
-
-                </div>
-
                 <!-- 磁吸式收容物名称标题按钮 + 随机黑块乱码目标 -->
-                <button type="button" class="magnetic-cta scp-glitchable-title font-bold text-sm font-serif-sc text-left text-[#141413] hover:text-[#9e1b1b] mb-1 py-0.5"
+                <a href="${AVEDDossierReader.path(item.dbId)}" class="scp-glitchable-title font-bold text-sm font-serif-sc text-left text-[#141413] hover:text-[#9e1b1b] mb-1 py-0.5"
                   data-orig-title="${fullTitle}" data-scp-name="${item.codeName}">
                   ${fullTitle}
-                </button>
+                </a>
                 <p class="scp-glitchable-summary text-xs text-[#4a463f] line-clamp-1 leading-relaxed mb-2">${item.summary}</p>
               </div>
 
+              <footer class="scp-card-register"><span lang="en">A.V.E.D. / CONTAINMENT FILE</span><span>${item.department}</span></footer>
               ${item.clues.length?`<div class="archive-clues pt-2 border-t border-black/15 space-y-1.5">
 
                 <div class="flex flex-wrap gap-1">
@@ -690,32 +691,21 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         listEl.querySelectorAll('.scp-item-card').forEach(card => {
           card.addEventListener('click', () => {
             selectedScpId = card.getAttribute('data-scp-id');
+            scpBoardPosition={id:selectedScpId,top:forumScrollRoot().scrollTop};
             playSfx('click');
-            renderScpArchives();
+            const item=scpItemsData.find(x=>x.id===selectedScpId);if(item)location.hash=AVEDDossierReader.path(item.dbId);
           });
         });
 
-        const currentScp = scpItemsData.find(i => i.id === selectedScpId) || scpItemsData[0];
-        detailEl.innerHTML = `
-          <div class="scp-dossier-heading flex items-center justify-between text-[11px] font-mono-tech opacity-65 border-b border-[var(--inner-border-soft)] pb-2 mb-3">
-            <span>收容物卷宗</span><a class="dossier-open-link" href="${AVEDDossierReader.path(currentScp.dbId)}">完整卷宗 ↗</a>
-          </div>
+        detailEl.replaceChildren();
+      }
 
-          <div class="border-b-2 border-[var(--inner-border)] pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div class="text-[10px] font-mono-tech opacity-65">ITEM DESIGNATION</div>
-              <h3 class="scp-glitchable-title text-lg sm:text-xl font-bold font-serif-sc" data-orig-title="${currentScp.id} — ${currentScp.codeName}">
-                ${currentScp.id} — ${currentScp.codeName}
-              </h3>
-            </div>
-            <div class="dossier-status-tags">${currentScp.classification?`<span class="dossier-classification">${currentScp.classification}</span>`:''}<span class="scp-status-stamp">${currentScp.level}</span></div>
-          </div>
-
-          ${currentScp.department?`<div class="scp-dossier-meta inner-card-alt p-3 mb-4 text-xs"><span>所属部门：</span><strong>${currentScp.department}</strong></div>`:''}
-          ${AVEDDossierContent.render(currentScp)}
-        `;
-
-        AVEDDossierContent.play(detailEl,containmentVisit+':'+currentScp.id,!document.body.classList.contains('effects-off')&&!prefersReducedMotion);
+      function renderScpDiscussion(currentScp){
+        const commentsListEl=document.getElementById('scp-realname-comments-list');
+        const hintEl=document.getElementById('scp-comment-identity-hint');
+        if(currentUser&&hintEl)hintEl.textContent=`实名签署身份：${currentUser.name}[${currentUser.bracketTag}]`;
+        document.getElementById('scp-realname-comment-form').hidden=false;
+        document.getElementById('scp-comment-submit').hidden=false;
         if (commentsListEl) {
           if (!currentScp.realComments || currentScp.realComments.length === 0) {
             commentsListEl.innerHTML = `<div class="text-xs opacity-60 font-mono-tech py-3 text-center">暂无实名评议记录，可在下方签署发表。</div>`;
@@ -1144,7 +1134,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
 
       function renderSlot5x3History() {
-        document.getElementById('slot5x3-history-header').textContent = `— 运转记录 共 ${slot5x3State.history.length} 转${slot5x3State.history.length>20?' · 展示最近 20 转':''}`;
+        document.getElementById('slot5x3-history-header').textContent = `— 运转记录 共 ${slot5x3State.history.length} 转${slot5x3State.history.length>20?' 展示最近 20 转':''}`;
         const listEl = document.getElementById('slot5x3-history-list');
         if (!listEl) return;
         if (slot5x3State.history.length === 0) {
@@ -1329,7 +1319,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         playSfx('click');
 
 
-        document.getElementById('ticket-modal-sublabel').textContent = `选票 · ${scratchTierName(selectedTier)}档 · ${g.sub}`;
+        document.getElementById('ticket-modal-sublabel').textContent = `选票 ${scratchTierName(selectedTier)}档 ${g.sub}`;
         document.getElementById('ticket-modal-title').textContent = g.title;
         document.getElementById('ticket-modal-tagline').textContent = g.tagline;
         document.getElementById('ticket-modal-price').textContent = fmtMoney(selectedTier.cost);
@@ -1374,7 +1364,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         if(tk.gameType.type==='step_climb'&&tk.cells.length===5)AVEDScratchClimb.update(board,tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
-          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'试刮 · ':'')+AVEDGameResults.html(tk);
+          tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'试刮 ':'')+AVEDGameResults.html(tk);
           scratchFeedback.settle(byId('active-ticket-result-banner'),tk);
         }
       }
@@ -1459,7 +1449,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const orderedStocks=[...stocksData].sort((a,b)=>Number(b.code==='KARMA')-Number(a.code==='KARMA'));
         container.innerHTML=orderedStocks.map(stock=>`<button type="button" class="stock-list-row" data-stock-chart-code="${esc(stock.code)}" aria-pressed="${marketCode===stock.code}"><span><b>${esc(stock.name)}</b><small>${esc(stock.code)}</small></span><strong class="${stock.change>=0?'market-up':'market-down'}">${fmtMoney(stock.price)}</strong><span class="stock-list-change ${stock.change>=0?'market-up':'market-down'}">${stock.change>=0?'+':''}${stock.change.toFixed(2)}%</span></button>`).join('');
         const tradeSelect=byId('stock-trade-symbol'),oldCode=tradeSelect.value;
-        tradeSelect.innerHTML=orderedStocks.map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+' · '+esc(stock.code)+'</option>').join('');
+        tradeSelect.innerHTML=orderedStocks.map(stock=>'<option value="'+esc(stock.code)+'">'+esc(stock.name)+' '+esc(stock.code)+'</option>').join('');
         tradeSelect.value=stocksData.some(s=>s.code===marketCode)?marketCode:stocksData.some(s=>s.code===oldCode)?oldCode:stocksData[0]?.code||'';
         renderTradeTicket();
         stocksData.forEach(stock=>previousQuotePrices.set(stock.code,stock.price));
@@ -1476,7 +1466,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           draftCode=code;
         }
         const longHolding=stock?.longHolding??Math.max(0,stock?.holding||0),shortHolding=stock?.shortHolding??Math.max(0,-(stock?.holding||0));
-        byId('stock-trade-position').textContent=stock?'现价 '+fmtMoney(stock.price)+' · 多仓 '+longHolding.toLocaleString()+' / 空仓 '+shortHolding.toLocaleString()+(code==='KARMA'?' 份':' 股'):'请选择证券';
+        byId('stock-trade-position').textContent=stock?'现价 '+fmtMoney(stock.price)+' 多仓 '+longHolding.toLocaleString()+' / 空仓 '+shortHolding.toLocaleString()+(code==='KARMA'?' 份':' 股'):'请选择证券';
         const amount=(stock?.price||0)*(Number(byId('stock-trade-quantity').value)||0),leverage=Number(byId('stock-trade-leverage').value)||1;
         byId('stock-est-trade').textContent=fmtMoney(amount);
         byId('stock-est-margin').textContent=fmtMoney(Math.ceil(amount/leverage));
@@ -1570,7 +1560,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           if(section==='casino'){slot5x3Mechanisms.forEach((m,i)=>m.discovered=(data.slotProtocols||[]).includes(i));renderSlot5x3Board();marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
-          if(section==='containment'){deferredSections.add(section);renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();const dossier=scpItemsData.find(d=>d.id===selectedScpId);if(dossier&&!byId('view-containment').classList.contains('hidden'))await loadDossierComments(dossier);}
+          if(section==='containment'){deferredSections.add(section);renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();}
           deferredSections.add(section);
         }).catch(error=>{if(section==='forum'&&currentUser?.id===owner)forumBrowser.endSeed(error);throw error;}).finally(()=>{deferredRequests.delete(section);panel?.removeAttribute('aria-busy');});
         deferredRequests.set(section,task);return task;
@@ -1662,7 +1652,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
         onLoading:(busy,loaded)=>{if(busy&&!loaded&&forumDetail?.preview)forumMainLoading.start();if(!busy)forumMainLoading.end();},
         onError:message=>{if(forumDetail?.preview)byId('forum-detail-main-post').textContent='主题加载失败，请重试。';showToast(message,'warn');},onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},
-        renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} · ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
+        renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
       function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}${forumReactionsUI.markup('thread',th.id,th.reactions)}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
       let forumListPosition=null,forumListMarkup='',forumRestoring=false;
       function forumScrollRoot(){
@@ -1684,13 +1674,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const th=currentForumThreadId?(forumDetail||forumThreads.find(t=>String(t.id)===String(currentForumThreadId))):null;
         byId('forum-list-subview').classList.toggle('hidden',!!th);byId('forum-detail-subview').classList.toggle('hidden',!th);
         for(const id of ['forum-global-back','forum-toolbar-back'])if(byId(id))byId(id).hidden=!th;byId('forum-refresh-skeleton-btn').hidden=false;
-        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box forum-thread-row"><a href="#/forum" data-cloud-thread="${t.id}" class="forum-thread-link"><div class="forum-thread-heading"><h3 class="forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><span class="forum-thread-date">${AVEDTime.markup(t.createdAt)}</span></div><p class="forum-card-excerpt">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><div class="forum-thread-footer"><div class="forum-post-meta"><span>${forumAuthor(t)}</span></div><div class="forum-thread-counts"><span>回帖 <b>${Number(t.replyCount)||0}</b></span><span>浏览 <b>${Number(t.viewCount)||0}</b></span><span aria-hidden="true">›</span></div></div></a></article>`).join('')||(forumBrowser.hasData()?'<p class="p-5">暂无帖子。</p>':''));
+        if(!th){currentForumThreadId=null;forumSocialUI?.cancelReply();forumReplies.reset();const markup=(forumThreads.map(t=>`<article data-forum-thread="${t.id}" class="retro-corner-box forum-thread-row"><a href="#/forum" data-cloud-thread="${t.id}" class="forum-thread-link"><div class="forum-thread-heading"><h3 class="forum-card-title" title="${esc(t.title)}">${esc(t.title)}</h3><span class="forum-thread-date">${AVEDTime.markup(t.createdAt)}</span></div><p class="forum-card-excerpt">${esc(Array.from(t.body||'').slice(0,70).join(''))}${(t.truncated||Array.from(t.body||'').length>70)?'…':''}</p><div class="forum-thread-footer"><div class="forum-post-meta"><span>${forumAuthor(t)}</span></div><div class="forum-thread-counts"><span>回帖 <b>${Number(t.replyCount)||0}</b></span><span>浏览 <b>${Number(t.viewCount)||0}</b></span><span aria-hidden="true">›</span></div></div></a></article>`).join('')||'');
           if(markup!==forumListMarkup){forumListMarkup=markup;byId('forum-threads-list-container').innerHTML=markup;}
           return;}
         byId('forum-detail-thread-id-badge').textContent='THREAD #'+th.id;
         if(th.preview){byId('forum-detail-main-post').textContent='';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
-      function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
+      function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> ${fmtMoney(item.balance)}</span>`;}
       function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',official=item.isForumAdmin===1&&!item.personaId,real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author"${official?' data-forum-admin="true" data-contamination-exempt data-type-ignore':''} data-forum-presence="${esc(item.presenceKey||'')}" data-online="false">${real&&item.avatarUrl?`<span class="forum-author-avatar"><img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async"></span>`:''}<i class="forum-online-dot" aria-label="在线" hidden></i><b${official?' class="forum-admin-badge"':''}>${official?'['+esc(name)+']':esc(name)}</b>${real&&!official?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
 
       async function refreshForum(){if(currentForumThreadId)return forumReplies.refresh();return forumBrowser.load();}
@@ -1754,7 +1744,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       },true);
       async function loadDossierComments(dossier){const owner=currentUser?.id,d=await api('/api/player/dossiers/'+dossier.dbId+'/comments');if(currentUser?.id!==owner||!scpItemsData.includes(dossier))return;dossier.realComments=d.items.map(c=>({id:String(c.id),authorName:esc(c.displayName),authorRole:esc(c.department),time:AVEDTime.markup(c.createdAt),text:esc(c.body)}));renderScpArchives();}
       document.addEventListener('click',event=>{
-        const card=event.target.closest('[data-scp-id]');if(card){const dossier=scpItemsData.find(d=>d.id===card.dataset.scpId);if(dossier)loadDossierComments(dossier).catch(e=>showToast(e.message));}
         const button=event.target.closest('button,a');if(!button)return;const id=button.id;
         if(button.dataset.cloudNews){stop(event);currentNewsId=button.dataset.cloudNews;renderCompanyNewsView();byId('news-detail-subview').scrollIntoView({block:'start'});return;}
         if(button.dataset.cloudThread){stop(event);rememberForumPosition(button);openForumThread(button.dataset.cloudThread);byId('view-forum').scrollIntoView({block:'start'});return;}
@@ -1777,7 +1766,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
             byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');
             byId('ticket-confirm-modal').classList.add('hidden');byId('ticket-confirm-modal').classList.remove('flex');
             byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
-            byId('active-ticket-result-banner').textContent='尚未扣款 · 首次刮开时扣除票价，可免费跳过。';renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='下一张';if(id==='ticket-modal-confirm-btn')byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
+            byId('active-ticket-result-banner').textContent='尚未扣款 首次刮开时扣除票价，可免费跳过。';renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='下一张';if(id==='ticket-modal-confirm-btn')byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
           }else if(id==='slot5x3-spin-btn'){
             if(!pendingSlotRequest||pendingSlotRequest.owner!==currentUser.id)pendingSlotRequest={owner:currentUser.id,bet:Number(byId('slot5x3-bet-input').value),requestKey:crypto.randomUUID()};
             slotEffects.start();
@@ -1836,12 +1825,12 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const draft=activeIssuedTicket,owner=currentUser?.id;scratchActivating=true;byId('scratch-next-ticket').disabled=true;
         try{const d=await api('/api/player/games/scratch',{method:'POST',body:{tier:draft.tier.id,type:draft.gameType.type,cost:draft.cost,revision:draft.revision,requestKey:draft.requestKey}});
           if(currentUser?.id!==owner||activeIssuedTicket!==draft)return false;
-          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,tax:d.tax||d.result.tax||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 · 刮开查看结果。';byId('scratch-next-ticket').textContent='下一张';return true;
+          activeIssuedTicket={...d.result,cells:d.result.cells.map(c=>({...c,revealed:false})),gameType:scratchGameTypes.find(g=>g.type===d.result.gameType.type)||d.result.gameType,cost:d.cost,prize:d.prize,penalty:d.penalty||0,tax:d.tax||d.result.tax||0,gameHighlight:d.gameHighlight};currentUser.balance=d.balance;syncUserHeaderUI();byId('active-ticket-result-banner').textContent='票券已结算 刮开查看结果。';byId('scratch-next-ticket').textContent='下一张';return true;
         }catch(e){showToast(e.message);byId('scratch-next-ticket').disabled=false;return false;}finally{scratchActivating=false;}
       }
       function checkAndSettleScratchTicket(mode='manual'){if(!activeIssuedTicket||activeIssuedTicket.settled||!activeIssuedTicket.cells.every(c=>c.revealed))return;
         const ticket=activeIssuedTicket;ticket.settled=true;
-        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'试刮 · ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;if(!ticket.demo)window.AVEDIncomeVoice?.changed();};
+        const finish=()=>{if(activeIssuedTicket!==ticket)return;byId('active-ticket-result-banner').innerHTML=(ticket.demo?'试刮 ':'')+AVEDGameResults.html(ticket);if(!ticket.bombFeedbackPlayed)scratchFeedback.settle(byId('active-ticket-result-banner'),ticket,mode);byId('scratch-next-ticket').disabled=false;if(!ticket.demo)window.AVEDIncomeVoice?.changed();};
         finish();}
       const profileButton=document.createElement('button');profileButton.id='cloud-profile-open';profileButton.type='button';profileButton.dataset.nav='profile';profileButton.className='nav-tab-btn w-full px-3 py-3 flex items-center gap-3 text-left cursor-pointer';profileButton.setAttribute('aria-label','个人主页');profileButton.innerHTML='<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="sidebar-label truncate">个人主页</span>';byId('left-sidebar').querySelector('[data-nav="news"]').before(profileButton);
       const profileSection=document.createElement('section');profileSection.id='view-profile';profileSection.className='hidden';byId('view-news').parentElement.append(profileSection);mainViews.push('profile');
@@ -1856,7 +1845,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           scratchFeedback.clear();activeIssuedTicket=window.AVEDScratchBombDemo.make({tier:selectedTier,gameType,totalLoss:1+bombs[demoIndex++%bombs.length].penaltyMultiplier});
           modal.classList.add('hidden');modal.classList.remove('flex');
           byId('scratch-lobby-view').classList.add('hidden');byId('scratch-play-table-view').classList.remove('hidden');byId('scratch-back-lobby-btn').classList.remove('hidden');
-          byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='试刮票 · 待刮开';
+          byId('active-ticket-result-banner').removeAttribute('data-scratch-feedback');byId('active-ticket-result-banner').textContent='试刮票 待刮开';
           renderActiveScratchTicketBoard();byId('scratch-next-ticket').disabled=false;byId('scratch-next-ticket').textContent='下一张';
           byId('scratch-back-lobby-btn').scrollIntoView({block:'start',behavior:'instant'});
         };

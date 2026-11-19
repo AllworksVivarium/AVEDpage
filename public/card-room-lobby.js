@@ -29,7 +29,7 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
   active.innerHTML=current?'<span>你已在'+(current.mode==='solo'?'电脑对局桌':esc(current.hostName||'员工')+'的牌桌')+'</span><button type="button" data-room-action="resume">回到牌桌 →</button>':'';
   root.querySelector('[data-room-list]').innerHTML=items.map(room=>{
    const own=current?.id===room.id,phase=room.canJoin?'等待入座':room.phase==='waiting'||room.phase==='ended'?'已坐满':'对局中';
-   return '<article><div><strong>'+esc(room.hostName)+'的牌桌</strong><small>'+room.size+' 人桌 · 底注 '+(room.base||100)+' · '+phase+'</small></div><span>'+room.players+' / '+room.size+'</span><button type="button" data-room-id="'+esc(room.id)+'" '+(!own&&(busy||current||!room.canJoin)?'disabled':'')+'>'+(own?'返回':'入座')+'</button><button type="button" data-room-watch="'+esc(room.id)+'" '+(current||busy?'disabled':'')+'>旁观</button></article>';
+   return '<article><div><strong>'+esc(room.hostName)+'的牌桌</strong><small>'+room.size+' 人桌 底注 '+(room.base||100)+' '+phase+'</small></div><span>'+room.players+' / '+room.size+'</span><button type="button" data-room-id="'+esc(room.id)+'" '+(!own&&(busy||current||!room.canJoin)?'disabled':'')+'>'+(own?'返回':'入座')+'</button><button type="button" data-room-watch="'+esc(room.id)+'" '+(current||busy?'disabled':'')+'>旁观</button></article>';
   }).join('')||'<p class="card-room-empty ui-help-note">暂无员工牌桌，开一桌等同事入座。</p>';
  }}
  async function refresh(force=false){

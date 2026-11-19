@@ -11,7 +11,7 @@ export function installStockMargin({db,lots,balanceFor,recordLedger}){
   if(balanceFor(employeeId)<amount)throw Error('可用余额不足。');
   const aggregate=db.prepare('SELECT SUM(margin_used) AS margin,SUM(position_notional) AS notional FROM stock_lots WHERE employee_id=? AND code=? AND quantity<>0').get(employeeId,lot.code);
   if(!Number.isSafeInteger(lot.marginUsed+amount)||!Number.isSafeInteger(aggregate.margin+amount))throw Error('追加金额超出限额。');
-  recordLedger(employeeId,-amount,(automatic?'自动追加保证金 ':'追加保证金 ')+lot.code+' · #'+lot.id);
+  recordLedger(employeeId,-amount,(automatic?'自动追加保证金 ':'追加保证金 ')+lot.code+' #'+lot.id);
   db.prepare('UPDATE stock_lots SET margin_used=margin_used+? WHERE id=? AND employee_id=?').run(amount,lot.id,employeeId);
   const margin=aggregate.margin+amount;
   db.prepare('UPDATE stock_holdings SET margin_used=?,cost_basis=?,leverage=? WHERE employee_id=? AND code=?').run(margin,margin,aggregate.notional/margin,employeeId,lot.code);

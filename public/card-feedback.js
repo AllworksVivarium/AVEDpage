@@ -44,13 +44,13 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
   panel.querySelectorAll('.ddz-actor-tag').forEach(el=>el.remove());
   panel.querySelectorAll('.is-last-play').forEach(el=>el.classList.remove('is-last-play'));
   if(active&&state.last)anchor(state.last.seat,state)?.classList.add('is-last-play');
-  if(active){const node=anchor(state.turn,state);if(node&&!(mine&&manual)){const tag=document.createElement('span');tag.className='ddz-actor-tag';tag.textContent=(state.phase==='bidding'?'正在叫分':'正在出牌')+(mine&&state.seats[state.seat]?.auto?' · 托管':'');node.append(tag);}}
+  if(active){const node=anchor(state.turn,state);if(node&&!(mine&&manual)){const tag=document.createElement('span');tag.className='ddz-actor-tag';tag.textContent=(state.phase==='bidding'?'正在叫分':'正在出牌')+(mine&&state.seats[state.seat]?.auto?' 托管':'');node.append(tag);}}
   const waiting=state&&!state.spectating&&['ended','waiting'].includes(state.phase);
   result.hidden=state?.phase!=='ended';
   if(!result.hidden){
    const won=!state.spectating&&((state.winner==='landlord')===(state.seat===state.landlord)),receipt=state.money?.settlement;
    result.classList.toggle('is-win',won);
-   result.innerHTML=`<small>${state.spectating?'ROUND COMPLETE':won?'YOU WIN':'NEXT TIME'}</small><strong>${state.spectating?(state.winner==='landlord'?'太姥获胜':'少姥获胜'):won?'你赢了！':'下次一定……'}</strong>${receipt?`<b class="ddz-result-net">本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()}</b>${window.AVEDGameResults.taxNote(receipt.tax)}${receipt.autoOnly?'<span>'+ (state.money.rules.autoProfitPolicy==='manual-play-v1'?'旧局规则':'托管 · 正常结算')+'</span>':''}`:'<span>本局结束</span>'}`;
+   result.innerHTML=`<small>${state.spectating?'ROUND COMPLETE':won?'YOU WIN':'NEXT TIME'}</small><strong>${state.spectating?(state.winner==='landlord'?'太姥获胜':'少姥获胜'):won?'你赢了！':'下次一定……'}</strong>${receipt?`<b class="ddz-result-net">本局获得 ¤ ${(receipt.reward+(receipt.tax||0)).toLocaleString()}</b>${window.AVEDGameResults.taxNote(receipt.tax)}${receipt.autoOnly?'<span>'+ (state.money.rules.autoProfitPolicy==='manual-play-v1'?'旧局规则':'托管 正常结算')+'</span>':''}`:'<span>本局结束</span>'}`;
   }
   round.hidden=!waiting;panel.classList.toggle('ddz-intermission',!!waiting);
   if(waiting)round.after($('[data-ddz-actions]'));else $('.ddz-selection').after($('[data-ddz-actions]'));
@@ -58,7 +58,7 @@ window.AVEDCardFeedbackUI=function({panel,esc,getUser}){
    const host=String(state.host)===String(getUser()?.id),notReady=state.seats.filter(p=>p&&!p.bot&&p.id!==state.host&&!p.ready),empty=state.seats.filter(p=>!p).length;
    const ownReady=state.seats[state.seat]?.ready;
    const instruction=host&&!ownReady?'请先准备，再等待其他同事就绪后手动开局。':host?notReady.length?`还有 ${notReady.length} 位同事未准备${empty?'，可先补齐电脑':''}，全部准备后由你手动开局。`:empty?'可等待同事入座，或先“补齐电脑”，再手动确认开局。':'全员就绪，点击下方金色按钮确认开局。':ownReady?'你已准备，等待房主确认开局。':'点击下方准备按钮，再由房主确认开局。';
-   round.innerHTML=`<header><small>${state.phase==='ended'?'ROUND COMPLETE':'TABLE READY'}</small><strong>${state.phase==='ended'||state.readyCycle?'本局结束 · 下一局准备':state.mode==='solo'?'电脑房已创建 · 等待开局':'联机房已创建 · 等待入座'}</strong></header><div class="ddz-ready-seats">${state.seats.map(p=>`<span class="${p?.ready?'is-ready':''}">${p?esc(p.name):'空座位'}<b>${!p?'待入座':p.bot?'电脑就绪':(p.id===state.host?'房主 · ':'')+(p.ready?'已准备':'未准备')}</b>${p?.readyDeadline&&!p.ready?`<small class="ddz-ready-clock" data-ready-deadline="${p.readyDeadline}"></small>`:''}</span>`).join('')}</div><p>${instruction}</p>${state.readyCycle?'<p>未准备者 60 秒后自动离桌；房主超时会移交给其他真人。</p>':''}${state.hostStartDeadline?`<small class="ddz-ready-clock" data-ready-kind="start" data-ready-deadline="${state.hostStartDeadline}"></small>`:''}`;
+   round.innerHTML=`<header><small>${state.phase==='ended'?'ROUND COMPLETE':'TABLE READY'}</small><strong>${state.phase==='ended'||state.readyCycle?'本局结束 下一局准备':state.mode==='solo'?'电脑房已创建 等待开局':'联机房已创建 等待入座'}</strong></header><div class="ddz-ready-seats">${state.seats.map(p=>`<span class="${p?.ready?'is-ready':''}">${p?esc(p.name):'空座位'}<b>${!p?'待入座':p.bot?'电脑就绪':(p.id===state.host?'房主 ':'')+(p.ready?'已准备':'未准备')}</b>${p?.readyDeadline&&!p.ready?`<small class="ddz-ready-clock" data-ready-deadline="${p.readyDeadline}"></small>`:''}</span>`).join('')}</div><p>${instruction}</p>${state.readyCycle?'<p>未准备者 60 秒后自动离桌；房主超时会移交给其他真人。</p>':''}${state.hostStartDeadline?`<small class="ddz-ready-clock" data-ready-kind="start" data-ready-deadline="${state.hostStartDeadline}"></small>`:''}`;
   }
   const ev=state?.event,key=state?state.id+':'+(ev?.id||JSON.stringify([ev,state.last?.cards?.map(c=>c.id)])):'';
   const fresh=!!previous&&previous.id===state?.id&&key!==lastKey;

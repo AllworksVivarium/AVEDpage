@@ -23,15 +23,15 @@
   const roles=rows.map(([id,name,description,desktop,mobile,line,weight,selector])=>({id,name,description,selector,render:['page','section','card','body'].includes(id)?'print':'plain',defaults:{desktop,mobile,line,weight,spacing:0,zh:id==='cover'?'serifTC':'serif',en:'mono',he:'hebrew',enItalic:['brandNote','eyebrow'].includes(id)}}));
   const priority=['brandNote','cover','navigation','field','chart','number','symbol','gameLabel','meta','eyebrow','system','page','brand','action','label','section','card','body'];
   const fonts=[
-    {id:'serif',name:'Noto Serif SC · 现有中文宋体',family:'Noto Serif SC',languages:['zh']},
-    {id:'serifTC',name:'Noto Serif TC · 繁体品牌',family:'Noto Serif TC',languages:['zh']},
+    {id:'serif',name:'Noto Serif SC 现有中文宋体',family:'Noto Serif SC',languages:['zh']},
+    {id:'serifTC',name:'Noto Serif TC 繁体品牌',family:'Noto Serif TC',languages:['zh']},
     {id:'mono',name:'IBM Plex Mono',url:'/assets/fonts/IBMPlexMono-Regular.woff2',languages:['en']},
     {id:'sans',name:'IBM Plex Sans',url:'/assets/fonts/IBMPlexSansSC-Regular.woff2',languages:['zh','en']},
     {id:'hebrew',name:'IBM Plex Hebrew',url:'/assets/fonts/IBMPlexSansHebrew-Regular.woff2',languages:['he']},
     {id:'silver',name:'Silver 像素',url:'/assets/fonts/study/silver.woff2',adjust:'145%',languages:['zh','en']},
-    {id:'diamond',name:'点点像素 · 菱形',url:'/assets/fonts/study/dots-diamond.woff2',languages:['zh','en']},
-    {id:'round',name:'点点像素 · 圆形',url:'/assets/fonts/study/dots-round.woff',languages:['zh','en']},
-    {id:'square',name:'点点像素 · 方形',url:'/assets/fonts/study/dots-square.woff',languages:['zh','en']},
+    {id:'diamond',name:'点点像素 菱形',url:'/assets/fonts/study/dots-diamond.woff2',languages:['zh','en']},
+    {id:'round',name:'点点像素 圆形',url:'/assets/fonts/study/dots-round.woff',languages:['zh','en']},
+    {id:'square',name:'点点像素 方形',url:'/assets/fonts/study/dots-square.woff',languages:['zh','en']},
     {id:'ipix',name:'IPix 中文像素',url:'/assets/fonts/study/ipix.woff',languages:['zh','en']}
   ];
   function defaults(){return Object.fromEntries(roles.map(r=>[r.id,{...r.defaults}]));}

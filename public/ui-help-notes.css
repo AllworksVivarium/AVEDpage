@@ -1,9 +1,17 @@
 /* Explicit opt-in only: excludes settlements, status text and gameplay rules. */
-@layer aved-type-system {
+@layer aved-typography {
  body #inner-app-view .ui-help-note,
+ body #inner-app-view .ui-help-note[lang=en],
+ body #inner-app-view .forum-upload-note,
+ body #inner-app-view .palette-mode-note,
+ body #inner-app-view .ranking-help,
+ body #inner-app-view #department-archive .division-description-en,
+ body .life-compose-dialog .life-mode-note,
+ body .life-reader-dialog .ui-help-note,
+ body .life-compose-dialog .ui-help-note,
  body .hud-dialog .ui-help-note,
  body .welfare-transfer-dialog .ui-help-note {
-  font-family:var(--terminal-copy,sans-serif)!important;
+  font-family:var(--type-ui,var(--terminal-copy,sans-serif))!important;
   font-size:11px!important;
   font-style:italic!important;
   font-weight:400!important;

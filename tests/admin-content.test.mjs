@@ -75,7 +75,7 @@ test('content edits reach players, removals survive restart, and balance rejects
  for(const item of (await p('/api/dossiers')).data.items)assert.ok(!('hasImage' in item)&&!('imageData' in item)&&!('image_data' in item));
  for(const item of (await p('/api/player/state?page=containment')).data.dossiers)assert.ok(!('imageData' in item)&&!('image_data' in item));
  const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
- const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData,tags:[]})).data.id;
+ const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData:validDossierImage,tags:[]})).data.id;
  const queue=(await a('/api/admin/moderation')).data.items;
  for(const [kind,id,board] of [['thread',thread,'匿名聊天论坛'],['life',life,'生活记录']]){const item=queue.find(x=>x.kind===kind&&x.id===id);assert.equal(item.sourceBoard,board);assert.equal(item.username,'content-player');assert.equal(item.displayName,'投稿玩家');assert.equal(item.employeeId,emp.data.id);}
  assert.equal((await a('/api/admin/moderation/thread/'+thread,'POST',{action:'approve'})).status,200);

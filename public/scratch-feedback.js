@@ -63,7 +63,7 @@ window.AVEDScratchFeedback=function({playSfx=()=>{},isActive=()=>true}={}){
   state.timer=null;state.pinned=superJackpot;state.el.dataset.pinned=String(superJackpot);
   if(!state.taxNote&&tax>0){state.taxNote=document.createElement('small');state.taxNote.className='game-tax-note';state.taxNote.setAttribute('data-type-ignore','');state.body.append(state.taxNote);}
   if(state.taxNote){state.taxNote.textContent='已扣税 ¤ '+Number(tax).toLocaleString();state.taxNote.hidden=!(tax>0);}
-  const category=superJackpot?'超级大奖 · 2,000 倍':multiplier>=50?'刮出超级大奖了！':multiplier>=5?'刮出大奖了！':'开奖结果';
+  const category=superJackpot?'超级大奖 2,000 倍':multiplier>=50?'刮出超级大奖了！':multiplier>=5?'刮出大奖了！':'开奖结果';
   const special=penalty>0||multiplier>=5;
   state.el.dataset.tone='inverse';if(state.caption)state.caption.textContent='A.V.E.D. / RESULT';
   state.el.dataset.outcome=penalty>0?'bomb':'award';state.el.dataset.presentation=special?'special':'ordinary';

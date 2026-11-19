@@ -73,18 +73,18 @@
     function line(key,scale,color){return '<polyline class="market-indicator-line" fill="none" stroke="var(--market-'+color+')" points="'+metrics.map((m,i)=>xAt(i).toFixed(2)+','+scale(m[key]).toFixed(2)).join(' ')+'"/>';}
     const magnitude=Math.max(.000001,...metrics.flatMap(m=>[Math.abs(m.dif),Math.abs(m.dea),Math.abs(m.macd)]))*1.15;
     const my=value=>macdTop+(magnitude-value)/(2*magnitude)*(macdBottom-macdTop);
-    svg+=panel(macdTop,macdBottom,'MACD 12 / 26 / 9 · DIF / DEA');
+    svg+=panel(macdTop,macdBottom,'MACD 12 / 26 / 9 DIF / DEA');
     for(const value of [-magnitude,0,magnitude])svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+my(value)+'" y2="'+my(value)+'" class="market-grid"/><text x="'+(left-7)+'" y="'+(my(value)+3)+'" text-anchor="end" class="market-axis">'+price(value)+'</text>';
     metrics.forEach((m,i)=>{const zero=my(0),value=my(m.macd);svg+='<rect x="'+(xAt(i)-candleWidth/2)+'" y="'+Math.min(zero,value)+'" width="'+candleWidth+'" height="'+Math.max(.5,Math.abs(zero-value))+'" fill="var(--market-'+(m.macd>=0?'up':'down')+')" opacity=".65"/>';});
     svg+=line('dif',my,'indicator-k')+line('dea',my,'indicator-d');
     const kMin=Math.min(0,...metrics.map(m=>m.j)),kMax=Math.max(100,...metrics.map(m=>m.j)),ky=value=>kdjTop+(kMax-value)/(kMax-kMin)*(kdjBottom-kdjTop);
-    svg+=panel(kdjTop,kdjBottom,'KDJ 9 / 3 / 3 · K / D / J');
+    svg+=panel(kdjTop,kdjBottom,'KDJ 9 / 3 / 3 K / D / J');
     for(const value of [20,50,80])svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+ky(value)+'" y2="'+ky(value)+'" class="market-grid"/><text x="'+(left-7)+'" y="'+(ky(value)+3)+'" text-anchor="end" class="market-axis">'+value+'</text>';
     svg+=line('k',ky,'indicator-k')+line('d',ky,'indicator-d')+line('j',ky,'indicator-j')+'</svg>';
     container.innerHTML=svg;
     container.style.position='relative';
     const readout=root.document.getElementById('market-trade-readout')||root.document.createElement('p');readout.id='market-trade-readout';readout.className='market-trade-readout';readout.setAttribute('role','status');
-    readout.textContent=trades.length?'我的近期成交 · B 买入 / S 卖出 · 点标记查阅（最多 300 笔）':'当前图中暂无我的成交';container.after(readout);
+    readout.textContent=trades.length?'我的近期成交 B 买入 / S 卖出 点标记查阅（最多 300 笔）':'当前图中暂无我的成交';container.after(readout);
     const showTrades=index=>{const list=groups[index]||[];if(!list.length)return;container._selectedTradeBucket=rows[index].bucket;readout.textContent=list.slice(0,20).sort((a,b)=>a.tradedAt-b.tradedAt).map(t=>root.AVEDTime.clock(t.tradedAt)+' '+(t.action==='buy'?'买入':'卖出')+' '+number(t.quantity)+' 股 @ '+number(t.price)+' ¤').join('\n')+(list.length>20?'\n该时段另有 '+(list.length-20)+' 笔成交。':'');};
     const selectedIndex=rows.findIndex(c=>c.bucket===container._selectedTradeBucket);if(selectedIndex>=0)showTrades(selectedIndex);
     details(rows.at(-1));
@@ -126,8 +126,8 @@
         '<div>高 '+price(candle.high)+' ｜ 低 '+price(candle.low)+'</div>'+
         '<div class="'+(change>=0?'market-up':'market-down')+'">变化 '+(change>=0?'+':'')+change.toFixed(2)+'%</div>'+
         '<div>成交量 '+number(candle.volume)+'</div>'+
-        '<div class="market-indicator-readout"><span>DIF '+price(metrics[safeIndex].dif)+'</span> · <span>DEA '+price(metrics[safeIndex].dea)+'</span></div>'+
-        '<div class="market-indicator-readout">K '+number(metrics[safeIndex].k)+' · D '+number(metrics[safeIndex].d)+' · J '+number(metrics[safeIndex].j)+'</div>';
+        '<div class="market-indicator-readout"><span>DIF '+price(metrics[safeIndex].dif)+'</span> <span>DEA '+price(metrics[safeIndex].dea)+'</span></div>'+
+        '<div class="market-indicator-readout">K '+number(metrics[safeIndex].k)+' D '+number(metrics[safeIndex].d)+' J '+number(metrics[safeIndex].j)+'</div>';
 
       tooltip.hidden=false;
       const placeTooltip=()=>{

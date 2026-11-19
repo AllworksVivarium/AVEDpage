@@ -30,7 +30,7 @@ export function installAudit(db){
     const image=columns.includes('image_data');
     const category=image?"CASE WHEN NEW.image_data<>'' THEN 'image' ELSE 'speech' END":"'speech'";
     // Image bytes remain in the source table; audit pages load metadata only.
-    const snapshot=columns.flatMap(n=>[`'${n}'`,n==='image_data'?"CASE WHEN NEW.image_data<>'' THEN '[image]' ELSE '' END":`NEW.${n}`]).join(',');
+    const snapshot=columns.flatMap(n=>[`'${n}'`,['image_data','thumbnail_data'].includes(n)?`CASE WHEN NEW.${n}<>'' THEN '[image]' ELSE '' END`:`NEW.${n}`]).join(',');
     db.exec(`DROP TRIGGER IF EXISTS audit_${table}_INSERT;
       CREATE TRIGGER audit_${table}_INSERT AFTER INSERT ON ${table} BEGIN
       INSERT INTO activity_logs(employee_id,username,action,target,category,details)

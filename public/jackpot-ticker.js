@@ -33,7 +33,7 @@ window.AVEDCreateJackpotTicker=function({api,enabled=()=>true}){
   if(item){
    const bomb=isBomb(item),event=bomb?'开出炸弹':Number((item.prize/item.cost).toFixed(2))+'倍大奖';
    strip.dataset.outcome=bomb?'bomb':'award';
-   text.textContent=`${item.alias} · ${names[item.game]||'游戏'} · ${event} · ${bomb?'−':'+'}¤ ${Number(bomb?item.penalty:item.prize).toLocaleString()}`;
+   text.textContent=`${item.alias} ${names[item.game]||'游戏'} ${event} ${bomb?'−':'+'}¤ ${Number(bomb?item.penalty:item.prize).toLocaleString()}`;
   }else{strip.dataset.outcome='notice';text.textContent=notice;}
   text.title=text.textContent;row.classList.remove('aved-jackpot-message');text.classList.remove('is-overflowing');viewport.scrollLeft=0;void row.offsetWidth;fit(true);row.classList.add('aved-jackpot-message');
  }

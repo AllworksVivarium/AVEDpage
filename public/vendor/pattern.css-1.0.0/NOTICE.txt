@@ -1,0 +1,8 @@
+pattern.css 1.0.0
+Author: bansal-io <hello@bansal.io>
+Source: https://github.com/bansal/pattern.css
+Documentation: https://bansal.io/pattern-css
+Package: https://registry.npmjs.org/pattern.css/-/pattern.css-1.0.0.tgz
+The original package.json declares "license": "MIT".
+The original npm archive does not include a separate license text.
+Only the unchanged dist/pattern.min.css is redistributed here.

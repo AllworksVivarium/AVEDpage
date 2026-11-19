@@ -32,3 +32,22 @@ test('long archive pages preserve every character and stable links identify the 
  assert.equal(r.route(r.path(42,2)).id,42);assert.equal(r.route(r.path(42,2)).page,2);
  assert.equal(r.route('#/containment/not-a-record'),null);assert.equal(r.route('#/containment/42?page=999999').page,999);
 });
+
+test('section numbers and anchors retain their document position on later sheets',()=>{
+ const {AVEDDossierContent:c,AVEDDossierReader:r}=runtime();
+ const item=c.map({id:9,code:'AVED-009',title:'记录',summary:'观察。'.repeat(1100),sections:[{type:'experiment',title:'实验',body:'结果。'.repeat(1100)},{type:'interview',body:'员工：结束'}]});
+ const sheets=r.pages(item),later=sheets.find(s=>s.some(p=>p.type==='interview'));
+ const html=c.render(item,{sections:later,image:false});
+ assert.match(html,/id="dossier-section-2"/);
+ assert.match(html,/dossier-section-number" aria-hidden="true">03<\/span>/);
+ assert.equal(sheets.flat().filter(x=>x.type==='description').map(x=>x.body).join(''),item.description);
+});
+
+
+test('status presets keep legacy custom values and escape them in the editor',()=>{
+ const context={window:{}};vm.runInNewContext(readFileSync(new URL('../public/admin-dossier-content.js',import.meta.url),'utf8'),context);
+ const ui=context.window.AVEDAdminDossierContent;
+ const preset=ui.status({status:'待补充'});assert.match(preset,/<option selected>待补充<\/option>/);assert.match(preset,/name="status" value="待补充"/);
+ const custom=ui.status({status:'复核中"<img>'});assert.match(custom,/<option value="custom" selected>/);assert.ok(custom.includes('复核中&quot;&lt;img&gt;'));assert.ok(!custom.includes('<img>'));
+ assert.match(ui.status({}),/<option selected>观察中<\/option>/);
+});

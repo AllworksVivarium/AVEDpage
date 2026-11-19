@@ -18,6 +18,6 @@ export function spinSlot(cost,random){
  if(new Set(board[1].map(s=>s.id)).size===5){tenths+=cost*30;mechanisms.push(2);}
  let prize=Math.floor(tenths/10),partialReturn=0;
  if(tenths===0&&random()>=slotRules.emptyReturnChance){const percent=Math.round(100*slotPartialReturns[Math.floor(random()*slotPartialReturns.length)]);partialReturn=Math.floor(cost*percent/100);prize=partialReturn;notes.push('小额返还');}
- const penalty=random()<slotRules.overloadChance?cost*slotRules.overloadMultiplier:0;if(penalty)notes.push('回路过载 · 维修费');
+ const penalty=random()<slotRules.overloadChance?cost*slotRules.overloadMultiplier:0;if(penalty)notes.push('回路过载 维修费');
  return {prize,result:{board,winningCells,notes,mechanisms,partialReturn,penalty,penaltyKind:penalty?'overload':null}};
 }

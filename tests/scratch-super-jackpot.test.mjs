@@ -54,11 +54,11 @@ test('super jackpot notification has no expiry and survives ordinary awards, nav
  vm.runInNewContext(readFileSync(new URL('../public/scratch-feedback.js',import.meta.url),'utf8'),ctx);
  const fx=ctx.window.AVEDScratchFeedback(),banner=element();fx.settle(banner,{cost:1000,prize:5000});const staleTimer=timers.at(-1);
  fx.settle(banner,{cost:1000,prize:2000000,superJackpot:true});const toast=ctx.window.AVEDScratchToast;
- assert.equal(toast.pinned,true);assert.equal(toast.timer,null);assert.equal(timers.length,1);assert.equal(toast.label.textContent,'超级大奖 · 2,000 倍');assert.match(toast.amount.textContent,/2,000,000/);
+ assert.equal(toast.pinned,true);assert.equal(toast.timer,null);assert.equal(timers.length,1);assert.equal(toast.label.textContent,'超级大奖 2,000 倍');assert.match(toast.amount.textContent,/2,000,000/);
  staleTimer.fn();fx.nextTicket();fx.settle(banner,{cost:1000,prize:50000});documentEvents.get('click')({target:{closest:()=>({})}});document.hidden=true;documentEvents.get('visibilitychange')();
- assert.equal(toast.el.hidden,false);assert.equal(toast.label.textContent,'超级大奖 · 2,000 倍');
+ assert.equal(toast.el.hidden,false);assert.equal(toast.label.textContent,'超级大奖 2,000 倍');
  toast.close.events.get('click')();assert.equal(toast.el.hidden,true);assert.equal(toast.pinned,false);
  document.hidden=false;fx.settle(banner,{cost:1000,prize:2000000,superJackpot:true});documentEvents.get('keydown')({key:'Escape'});assert.equal(toast.el.hidden,true);
  const copy={};vm.runInNewContext(readFileSync(new URL('../public/game-results.js',import.meta.url),'utf8'),copy);
- assert.match(copy.AVEDGameResults.text({cost:1000,prize:2000000,superJackpot:true}),/超级大奖 · 2,000 倍/);
+ assert.match(copy.AVEDGameResults.text({cost:1000,prize:2000000,superJackpot:true}),/超级大奖 2,000 倍/);
 });

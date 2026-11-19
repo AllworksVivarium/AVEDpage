@@ -9,7 +9,7 @@ export function installGameTax({db,recordLedger}){
   const previous=db.prepare('SELECT cost,prize,penalty,tax FROM game_tax_receipts WHERE employee_id=? AND game=? AND settlement_key=?').get(employeeId,game,String(key));
   if(previous){if(previous.cost!==cost||previous.prize!==prize||previous.penalty!==penalty)throw Error('税费结算不匹配。');return previous.tax;}
   const row=db.prepare('INSERT INTO game_tax_receipts(employee_id,game,settlement_key,cost,prize,penalty,tax) VALUES(?,?,?,?,?,?,?)').run(employeeId,game,String(key),cost,prize,penalty,tax);
-  const ledger=recordLedger(employeeId,-tax,'小游戏净收益税 3% · '+game+' #'+row.lastInsertRowid);
+  const ledger=recordLedger(employeeId,-tax,'小游戏净收益税 3% '+game+' #'+row.lastInsertRowid);
   db.prepare("INSERT INTO company_fund(employee_id,amount,kind,source_ledger_id,request_key) VALUES(?,?,'game_tax',?,?)").run(employeeId,tax,Number(ledger.lastInsertRowid),'game-tax:'+row.lastInsertRowid);
   return tax;
  }

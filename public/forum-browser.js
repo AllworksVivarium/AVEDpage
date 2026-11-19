@@ -14,7 +14,7 @@ window.AVEDForumBrowser=function({api,getUser,onData,onError}){
  bar.querySelector('form').onsubmit=e=>{e.preventDefault();load({page:1,q:input.value.trim()},true);};sort.onchange=()=>load({page:1,sort:sort.value},true);
  async function load(patch={},scroll=false){
   const owner=getUser()?.id;if(!owner)return;touched=true;seedBusy=false;const wanted={...state,...patch},token=++request;busy=true;retry.hidden=true;status.textContent=hasData&&!Object.keys(patch).length?'正在刷新帖子…':'正在加载帖子…';loading?.start({replace:!hasData||Object.keys(patch).length>0});paint();
-  try{const d=await api('/api/player/forum?'+new URLSearchParams({page:wanted.page,sort:wanted.sort,q:wanted.q}));if(token!==request||getUser()?.id!==owner)return;state={...state,...d};hasData=true;onData(d);status.textContent=d.total?'共 '+d.total+' 个主题':'没有找到符合条件的帖子';if(scroll)bar.scrollIntoView({block:'start',behavior:'instant'});}
+  try{const d=await api('/api/player/forum?'+new URLSearchParams({page:wanted.page,sort:wanted.sort,q:wanted.q}));if(token!==request||getUser()?.id!==owner)return;state={...state,...d};hasData=true;onData(d);status.textContent=d.total?'共 '+d.total+' 个主题':wanted.q?'没有找到符合条件的帖子':'暂无帖子。';if(scroll)bar.scrollIntoView({block:'start',behavior:'instant'});}
   catch(error){if(token===request&&getUser()?.id===owner){failedPatch=patch;status.textContent='帖子加载失败。';retry.hidden=false;sort.value=state.sort;onError(error.message);}}
   finally{if(token===request){busy=false;loading?.end();paint();}}
  }

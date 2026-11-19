@@ -34,7 +34,7 @@
   })();
   </script>
   <link rel="stylesheet" href="/paper-stamps.css?v=paper-tax-20261110b">
-  <link rel="stylesheet" href="/typography.css?v=compact-forum-tools-20261119">
+  <link rel="stylesheet" href="/typography.css?v=notice-restore-20261120">
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=visible-gateway-20261114">
@@ -51,7 +51,7 @@
   <link rel="stylesheet" href="/player-art-restoration.css?v=frameless-ticket-3">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=intrusion-sequence-20261117">
-  <link rel="stylesheet" href="/notice-document.css?v=notice-compact-5sec-20261112">
+  <link rel="stylesheet" href="/notice-document.css?v=notice-restore-20261120">
   <link rel="stylesheet" href="/section-mastheads.css?v=tax-achievements-20261111">
   <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
@@ -392,6 +392,9 @@
   </style>
   <link rel="stylesheet" href="/player-layout.css?v=containment-discussion-left-20261118">
   <link rel="stylesheet" href="/community.css?v=sfx-only-1">
+  <link rel="stylesheet" href="/vendor/quill-2.0.3/quill.snow.css">
+  <link rel="stylesheet" href="/vendor/pattern.css-1.0.0/pattern.min.css">
+  <link rel="stylesheet" href="/life-archive.css?v=interaction-polish-20261120">
 <link rel="stylesheet" href="/economy.css?v=compact-margin-row-20261113">
 <link rel="stylesheet" href="/welfare.css?v=rank-pockets-20261118">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
@@ -412,14 +415,14 @@
   <script src="/forum-emoji.js?v=native-restored-4" defer></script>
 <link rel="stylesheet" href="/terminal-textures.css?v=pattern-detail-20261119">
 <link rel="stylesheet" href="/archive-content.css?v=archive-effects-20261111">
-<link rel="stylesheet" href="/dossier-workspace.css?v=paper-reader-20261119">
-<script src="/image-upload.js?v=copy-20261116" defer></script>
+<link rel="stylesheet" href="/dossier-workspace.css?v=interaction-polish-20261120">
+<script src="/image-upload.js?v=life-long-image-20261119" defer></script>
 <link rel="stylesheet" href="/social-economy-refinements.css?v=profit-tax-20261111">
 <script src="/achievement-alerts.js?v=player-admin-copy-20261118" defer></script>
-  <link rel="stylesheet" href="/ui-help-notes.css?v=20261114">
+  <link rel="stylesheet" href="/ui-help-notes.css?v=editorial-type-20261120">
   <link rel="stylesheet" href="/sound-settings.css?v=web-sound-20261116">
   <link rel="stylesheet" href="/department-archive.css?v=department-no-register-20261119">
-  <script src="/department-archive.js?v=department-no-register-20261119" defer></script>
+  <script src="/department-archive.js?v=interaction-polish-20261120" defer></script>
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
   <script>window.AVEDGateway?.apply();</script>
@@ -549,7 +552,7 @@
         </button>
       </div>
 
-<div class="px-6 py-3 border-b border-white/15 text-xs">万业内网 · 员工接入认证</div>
+<div class="px-6 py-3 border-b border-white/15 text-xs">万业内网 员工接入认证</div>
 
       <div id="panel-account-login" class="p-6 space-y-4">
         <form id="account-login-form" action="/api/login" method="post" autocomplete="on" class="space-y-4">
@@ -571,7 +574,7 @@
 
           </div>
           <button type="submit" class="press-cta w-full py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] uppercase transition cursor-pointer font-mono-tech">
-            &gt; 提交凭证 · 接入内网 &lt;
+            &gt; 提交凭证 接入内网 &lt;
           </button>
           <p id="login-error" role="alert" class="text-xs text-red-300"></p>
         </form>
@@ -858,7 +861,7 @@
             <!-- 左侧 6 列：收容物档案板列表区（有数据态与空状态高度一致 min-h-[460px] 避免跳动） -->
             <div class="archive-pinboard border-2 border-[var(--inner-border)] bg-[var(--board-bg)] p-4 sm:p-5 shadow-inner flex flex-col">
               <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3 pb-1.5 border-b border-black/20">
-                <span>在册收容物 · 点击查阅卷宗</span>
+                <span>在册收容物</span>
 
               </div>
 
@@ -1271,7 +1274,7 @@
 
                 <!-- 赔付簿与三处隐藏收容协议 -->
                 <div class="retro-corner-box game-rule-card p-5 space-y-4">
-                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 五线同押 · 从最左一轮连起</div>
+                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 五线同押 从最左一轮连起</div>
                   <h4 class="text-lg font-bold font-serif-sc">异常回路赔付簿</h4>
 
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -1400,7 +1403,7 @@
                ================================================================ -->
           <div id="game-panel-stocks" class="retro-corner-box hidden">
             <header class="stock-index-bar">
-              <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX · 指数</small><span class="stock-index-value"><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></span></button>
+              <button type="button" data-market-index aria-label="查看 KARMA 大盘指数"><small>KARMA INDEX 指数</small><span class="stock-index-value"><strong id="karma-index-val">—</strong><span id="karma-index-tick" class="market-tick-indicator tick-flat">•</span><span id="karma-index-delta">—</span></span></button>
               <div class="stock-index-actions"><button type="button" id="stock-help-btn" class="terminal-help-trigger" aria-haspopup="dialog" aria-label="股市与指数玩法说明" title="股市与指数玩法说明">玩法说明</button><button id="next-market-tick-btn" type="button">刷新行情</button></div>
             </header>
             <div class="stock-workspace">
@@ -1451,42 +1454,44 @@
   <script src="/http-client.js?v=network-input-20261110" defer></script>
   <script src="/game-clock.js?v=bounded-network-20261110" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=real-comments-4" defer></script>
-  <script src="/market-chart.js?v=currency-pig-salute-20261118" defer></script>
+  <script src="/notices-ui.js?v=notice-restore-20261120" defer></script>
+  <script src="/market-chart.js?v=interaction-polish-20261120" defer></script>
   <script src="/market-atmosphere.js?v=copy-20261116" defer></script>
   <link rel="stylesheet" href="/market-atmosphere.css?v=wire-5min-small-1">
   <script src="/terminology.js?v=signal-5" defer></script>
-  <script src="/player-community.js?v=company-play-ticker-20261113" defer></script>
+  <script src="/life-content.js?v=life-social-20261120" defer></script>
+  <script src="/life-archive.js?v=interaction-polish-20261120" defer></script>
+  <script src="/player-community.js?v=life-social-20261120" defer></script>
   <link rel="stylesheet" href="/game-results.css?v=gross-awards-20261113">
-  <script src="/game-results.js?v=five-floors-20261119" defer></script>
+  <script src="/game-results.js?v=interaction-polish-20261120" defer></script>
   <link rel="stylesheet" href="/forum-skeleton.css?v=2">
   <script src="/forum-skeleton.js?v=2" defer></script>
   <script src="/forum-replies.js?v=unified-inbox-chart-20261119" defer></script>
-  <script src="/forum-browser.js?v=skeleton-20261118" defer></script>
+  <script src="/forum-browser.js?v=editorial-type-20261120" defer></script>
   <script src="/forum-presence.js?v=casual-race-20261113" defer></script>
-  <script src="/forum-social.js?v=unified-inbox-chart-20261119" defer></script>
+  <script src="/forum-social.js?v=interaction-polish-20261120" defer></script>
 <link rel="stylesheet" href="/forum-social.css?v=system-admin-20261119">
   <script src="/personal-record.js?v=casual-race-20261113" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
-  <script src="/jackpot-ticker.js?v=casual-race-20261113" defer></script>
+  <script src="/jackpot-ticker.js?v=interaction-polish-20261120" defer></script>
 <script src="/pixel-game-icons.js?v=1" defer></script>
 <link rel="stylesheet" href="/scratch-ticket-art.css?v=twelve-floors-20261119">
 <link rel="stylesheet" href="/scratch-climb.css?v=twelve-floors-20261119">
-<script src="/scratch-climb.js?v=twelve-floors-20261119" defer></script>
-<script src="/scratch-ticket-art.js?v=twelve-floors-20261119" defer></script>
+<script src="/scratch-climb.js?v=interaction-polish-20261120" defer></script>
+<script src="/scratch-ticket-art.js?v=interaction-polish-20261120" defer></script>
 <script src="/scratch-board.js?v=read-render-upload-20261111" defer></script>
 <script src="/scratch-symbols.js?v=game-balance-1" defer></script>
 <script src="/scratch-bomb.js?v=web-sound-20261116" defer></script>
 <script src="/scratch-bomb-demo.js?v=twelve-floors-20261119" defer></script>
-<script src="/scratch-feedback.js?v=pinned-super-jackpot-20261119" defer></script>
+<script src="/scratch-feedback.js?v=interaction-polish-20261120" defer></script>
   <script src="/currency-symbol.js?v=currency-pig-salute-20261118" defer></script>
   <script src="/sky-scene.js?v=tax-achievements-20261111" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=copy-20261116" defer></script>
+<script src="/sky-ui.js?v=interaction-polish-20261120" defer></script>
   <script src="/stock-risk-notice.js?v=dismissible-1" defer></script>
-  <script src="/economy-ui.js?v=player-admin-copy-20261118" defer></script>
+  <script src="/economy-ui.js?v=interaction-polish-20261120" defer></script>
   <script src="/ranking-pixel-art.js?v=6" defer></script>
-  <script src="/containment-intrusion.js?v=business-day-0400-20261119" defer></script>
+  <script src="/containment-intrusion.js?v=interaction-polish-20261120" defer></script>
   <link rel="stylesheet" href="/begging-ui.css?v=reward-details-20261119">
   <script src="/begging-ui.js?v=reward-details-20261119" defer></script>
   <script src="/welfare-ui.js?v=begging-once-amount-20261119" defer></script>
@@ -1495,11 +1500,11 @@
   <script src="/contamination-haunt.js?v=beer-foam-pour-20261118" defer></script>
   <script src="/contamination-presence.js?v=away-frequency-20261117" defer></script>
   <script src="/containment-access.js?v=session-return-20261119" defer></script>
-  <script src="/personal-hud.js?v=pattern-detail-20261119" defer></script>
+  <script src="/personal-hud.js?v=interaction-polish-20261120" defer></script>
 <script src="/rewards-ui.js?v=reward-toasts-no-stamp-20261118" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
 <script src="/derby-scene.js?v=casual-race-20261113" defer></script>
-<script src="/derby-ui.js?v=copy-20261116" defer></script>
+<script src="/derby-ui.js?v=interaction-polish-20261120" defer></script>
 <script src="/interaction-motion.js?v=performance-audit-20261117" defer></script>
 <script src="/archive-board.js?v=linked-containment-dossiers-20261118" defer></script>
 <script src="/player-session.js?v=session-return-20261119" defer></script>
@@ -1513,38 +1518,38 @@
 <script src="/card-stakes.js?v=stake-cap-3" defer></script>
 <script src="/ddz-rules.js?v=card-table-1" defer></script>
 <script src="/card-reaction-rules.js?v=emoji-only-4" defer></script>
-<script src="/card-reactions.js?v=action-order-5" defer></script>
-<script src="/card-feedback.js?v=player-admin-copy-20261118" defer></script>
-<script src="/ddz-ui.js?v=pollution-timing-copy-20261116" defer></script>
-<script src="/card-room-lobby.js?v=ranking-identity-correction-20261117" defer></script>
+<script src="/card-reactions.js?v=interaction-polish-20261120" defer></script>
+<script src="/card-feedback.js?v=interaction-polish-20261120" defer></script>
+<script src="/ddz-ui.js?v=interaction-polish-20261120" defer></script>
+<script src="/card-room-lobby.js?v=interaction-polish-20261120" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=award-coin-size-20261113">
 <script src="/slot-effects.js?v=shared-slot-confetti-20261119" defer></script>
-<script src="/dossier-content.js?v=paper-reader-20261119" defer></script>
-<script src="/dossier-reader.js?v=paper-reader-20261119" defer></script>
+<script src="/dossier-content.js?v=editorial-type-20261120" defer></script>
+<script src="/dossier-reader.js?v=interaction-polish-20261120" defer></script>
 <link rel="stylesheet" href="/bar.css?v=own-drink-front-20261119">
 <link rel="stylesheet" href="/bar-night.css?v=bar-menu-four-columns-20261119">
 <script src="/bar-audio.js?v=preview-playing-row-20261119" defer></script>
 <script src="/bar-personal.js?v=stow-cup-action-fix-20261119" defer></script>
 <link rel="stylesheet" href="/bar-play.css?v=bar-department-details-20261118">
 <script src="/bar-drink-art.js?v=compact-guests-20261119" defer></script>
-<script src="/bar-play.js?v=adaptive-pour-button-20261119" defer></script>
+<script src="/bar-play.js?v=interaction-polish-20261120" defer></script>
 <link rel="stylesheet" href="/bar-hospitality.css?v=invite-dot-20261119">
-<script src="/bar-hospitality.js?v=invite-dot-20261119" defer></script>
+<script src="/bar-hospitality.js?v=interaction-polish-20261120" defer></script>
 <link rel="stylesheet" href="/bar-extras.css?v=unified-inbox-chart-20261119">
-<script src="/bar-jukebox-catalog.js?v=preview-playing-row-20261119" defer></script>
-<script src="/bar-extras.js?v=unified-inbox-chart-20261119" defer></script>
+<script src="/bar-jukebox-catalog.js?v=interaction-polish-20261120" defer></script>
+<script src="/bar-extras.js?v=interaction-polish-20261120" defer></script>
 <script src="/bar-menu-catalog.js?v=bar-menu-four-columns-20261119" defer></script>
 <script src="/bar-notifications.js?v=door-sound-20261119" defer></script>
-<script src="/bar-ui.js?v=gift-drinks-compact-guests-20261119" defer></script>
+<script src="/bar-ui.js?v=interaction-polish-20261120" defer></script>
   <script src="/receipt-audio.js?v=receipt-timing-20261116" defer></script>
   <script src="/income-speech.js?v=receipt-dedup-20261119" defer></script>
 <link rel="stylesheet" href="/forum-reactions.css?v=four-price-rows-original-grin-20261119">
 <script src="/forum-reaction-art.js?v=four-price-rows-original-grin-20261119" defer></script>
 <script src="/forum-reactions.js?v=four-price-rows-original-grin-20261119" defer></script>
 <link rel="stylesheet" href="/ads.css?v=chinese-ad-entry-20261119">
-<script src="/ads-ui.js?v=session-return-20261119" defer></script>
-<script src="/player.js?v=unified-inbox-chart-20261119" defer></script>
-  <script src="/page-headings.js?v=scoped-observer-9" defer></script>
+<script src="/ads-ui.js?v=interaction-polish-20261120" defer></script>
+<script src="/player.js?v=interaction-polish-20261120" defer></script>
+  <script src="/page-headings.js?v=notice-restore-20261120" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>
   <script src="/terminal-pattern-art.js?v=pattern-detail-20261119" defer></script>

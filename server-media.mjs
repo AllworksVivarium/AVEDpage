@@ -29,7 +29,7 @@ export function installMedia({db,send,requireEmployee}) {
     if(kind==='avatar')row=db.prepare('SELECT avatar_url AS value,1 AS public FROM profiles WHERE employee_id=?').get(id);
     if(kind==='thread')row=db.prepare("SELECT image_data AS value,(status='published' AND moderation='approved' AND deleted_at='') AS public FROM forum_threads WHERE id=?").get(id);
     if(kind==='reply')row=db.prepare("SELECT r.image_data AS value,(r.status='published' AND r.moderation='approved' AND r.deleted_at='' AND t.status='published' AND t.moderation='approved' AND t.deleted_at='') AS public FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id WHERE r.id=?").get(id);
-    if(kind==='life')row=db.prepare("SELECT image_data AS value,(moderation='approved' AND deleted_at='') AS public FROM life_records WHERE id=?").get(id);
+    if(kind==='life')row=db.prepare(`SELECT ${url.searchParams.get('preview')==='1'?"COALESCE(NULLIF(thumbnail_data,''),image_data)":'image_data'} AS value,(deleted_at='' AND (moderation='approved' OR employee_id=?)) AS public FROM life_records WHERE id=?`).get(employee.id,id);
     if(!row||(!row.public&&employee.role!=='admin')){send(res,404,{error:'影像不存在或尚未开放。'});return true;}
     const image=String(row.value||'').match(imagePattern);
     if(!image){send(res,404,{error:'影像不存在。'});return true;}

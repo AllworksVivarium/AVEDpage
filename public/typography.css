@@ -11,12 +11,18 @@
 :root{
  --type-ui:'AVED UI Latin','AVED UI Hebrew','AVED UI Chinese','PingFang SC','Microsoft YaHei',sans-serif;
  --type-heading:'AVED UI Latin','AVED UI Hebrew','Noto Serif SC','Source Han Serif SC',serif;
- --type-archive:'AVED UI Latin','AVED UI Hebrew','AVED Archive Song','Noto Serif SC','Songti SC',serif;
+ --type-archive:var(--type-ui);
  --type-code:'AVED Plex Mono','AVED UI Hebrew','AVED UI Chinese',monospace;
  --type-hebrew:'AVED UI Hebrew','AVED UI Latin',sans-serif;
  --type-entry:'AVED UI Latin','AVED UI Hebrew','PingFang SC','Microsoft YaHei',sans-serif;
 }
+#view-news{--type-archive:'AVED UI Latin','AVED UI Hebrew','AVED Archive Song','Noto Serif SC','Songti SC',serif;}
 @layer aved-typography{
+ /* Main-site prose, ordinary labels and form copy share the existing Plex family.
+    Headings, monospaced readings and illustrated game lettering keep their roles. */
+ #inner-app-view{--terminal-copy:var(--type-ui);font-family:var(--type-ui)}
+ #inner-app-view :is(.dossier-document-copy,.dossier-entry-meta,.scp-card-register,.life-paper,.life-byline,.life-tags,.life-paper-kicker,.life-board-caption,.forum-load-status){font-family:var(--type-ui)!important}
+ .life-reader-dialog,.life-compose-dialog{--terminal-copy:var(--type-ui);--window-copy:var(--type-ui)}
  /* Page owners: no body, universal selector or topbar inheritance changes. */
  #view-news,#view-departments,#view-containment,#view-life,#view-forum,#view-profile,#view-casino{
   --terminal-copy:var(--type-ui);--terminal-type:var(--type-code);

@@ -9,6 +9,9 @@
 | Node.js / SQLite | 服务端运行时与数据库 | Node.js 内置 SQLite；运行版本见 Dockerfile |
 | Sharp 0.35.5 | 图片读取、缩放、压缩、头像处理 | package.json、package-lock.json；依赖内附 Apache-2.0 许可 |
 | Tailwind CSS 3.4.17 | 构建既有工具类样式 | package.json；MIT |
+| Quill 2.0.3 / Slab | 生活记录文字编辑，按需加载 | https://quilljs.com/ 、https://github.com/slab/quill ；public/vendor/quill-2.0.3/LICENSE，BSD-3-Clause |
+| Masonry 4.2.2 / David DeSandro | 生活记录大小卡片自动布局，按需加载 | https://masonry.desandro.com/ ；public/vendor/masonry-layout-4.2.2/LICENSE.html，MIT；打包依赖版权声明保留在源码内 |
+| pattern.css 1.0.0 / bansal | 生活记录页小型网格纹样 | https://github.com/bansal/pattern.css 、https://bansal.io/pattern-css ；原包 package.json 声明 MIT，见 public/vendor/pattern.css-1.0.0/NOTICE.txt |
 | NFraw / Tongzhuo | 斗地主牌型分类参考，已适配本站四人规则 | public/ddz-rules.js 文件头记录原文件与 blob；[MIT 原文](../public/licenses/tongzhuo.txt) |
 | Radix Colors | 既有调色与控件色彩基础 | [许可原文](../public/licenses/radix-colors.txt)；当前主题由本站配色配置维护 |
 | emoji-picker-element 1.29.1 / emoji-picker-element-data | 论坛表情选择器与中文表情数据 | public/vendor/emoji-picker-element-1.29.1 中的 LICENSE、DATA-LICENSE，Apache-2.0 |

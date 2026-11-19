@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -119,7 +120,7 @@ test('persistent identities, editable player containment, and lazy categorized a
  assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===employeeId).enabled,1,'employee editing no longer toggles account activation');
  const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cL/0AAAAASUVORK5CYII=';
  assert.equal((await player('/api/player/forum','POST',{title:'图文',body:'图片记录',imageData:img})).status,201);
- assert.equal((await player('/api/player/life','POST',{title:'作品',body:'画作',kind:'art',tags:[],imageData:img})).status,201);
+ assert.equal((await player('/api/player/life','POST',{title:'作品',body:'画作',kind:'art',tags:[],imageData:'data:image/png;base64,'+(await sharp({create:{width:8,height:8,channels:3,background:'#997744'}}).png().toBuffer()).toString('base64')})).status,201);
  assert.equal((await player('/api/posts','POST',{announcementId:state.announcements[0].id,body:'发言记录'})).status,201);
  db=new DatabaseSync(join(folder,'wanyehui.db'));
  db.prepare("INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,123,'反作弊核查')").run(playerId);

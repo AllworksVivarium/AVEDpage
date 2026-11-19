@@ -175,7 +175,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
     if(plan.openQuantity&&available<plan.openMargin+fee)throw new Error('可用余额不足。');
     if(!Number.isSafeInteger(available-plan.openMargin-fee))throw new Error('交易结果超出限额。');
     const actualLeverage=plan.openQuantity?leverage:plan.changes.length===1?plan.changes[0].lot.leverage:Math.round(plan.closeNotional/Math.max(1,plan.closeMargin)*100)/100;
-    recordLedger(id,plan.closeMargin+plan.pnl-plan.openMargin-fee,(plan.openQuantity?'开仓 ':'平仓 ')+stock.code+' × '+Math.abs(delta)+' @'+actualLeverage+'x · 手续费 '+fee+(reason?(' · '+reason):''));
+    recordLedger(id,plan.closeMargin+plan.pnl-plan.openMargin-fee,(plan.openQuantity?'开仓 ':'平仓 ')+stock.code+' × '+Math.abs(delta)+' @'+actualLeverage+'x 手续费 '+fee+(reason?(' '+reason):''));
     stockLots.apply(id,stock.code,delta,leverage,stopLoss,takeProfit,plan);
     const aggregateLeverage=plan.nextMargin?plan.nextNotional/plan.nextMargin:0;
     db.prepare('INSERT INTO stock_holdings(employee_id,code,quantity,cost_basis,position_notional,margin_used,realized_pnl,leverage,stop_loss,take_profit) VALUES(?,?,?,?,?,?,?,?,NULL,NULL) ON CONFLICT(employee_id,code) DO UPDATE SET quantity=excluded.quantity,cost_basis=excluded.cost_basis,position_notional=excluded.position_notional,margin_used=excluded.margin_used,realized_pnl=excluded.realized_pnl,leverage=excluded.leverage,stop_loss=NULL,take_profit=NULL').run(id,stock.code,plan.next,plan.nextMargin,plan.nextNotional,plan.nextMargin,nextRealized,aggregateLeverage);

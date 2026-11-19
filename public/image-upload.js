@@ -15,15 +15,16 @@ window.AVEDImageUpload=(()=>{
   try{
    const width=image.width||image.naturalWidth,height=image.height||image.naturalHeight;
    if(!width||!height)throw Error('图片尺寸无法读取。');
-   if(kind!=='avatar'&&width*height>16000000)throw Error('请将图片缩小至 1600 万像素以内。');
+  if(kind!=='avatar'&&width*height>(kind==='life'?32000000:16000000))throw Error(kind==='life'?'请将图片缩小至 3200 万像素以内。':'请将图片缩小至 1600 万像素以内。');
    const edge=kind==='avatar'?512:1536;
    // A resized bitmap does not change the original file: avatars must always be encoded.
-   if(kind!=='avatar'&&Math.max(width,height)<=edge&&file.size<=maxBytes)return file;
-   canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');if(!ctx)throw Error('当前浏览器无法处理图片。');let scale=Math.min(1,edge/Math.max(width,height));
+   const targetBytes=kind==='life'?1400000:maxBytes;
+   if(kind!=='avatar'&&(kind==='life'?width<=1600&&height<=24000:Math.max(width,height)<=edge)&&file.size<=targetBytes)return file;
+   canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');if(!ctx)throw Error('当前浏览器无法处理图片。');let scale=kind==='life'?Math.min(1,1600/width,24000/height):Math.min(1,edge/Math.max(width,height));
    for(let attempt=0;attempt<7;attempt++){
     canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(image,0,0,canvas.width,canvas.height);
     const quality=Math.max(.62,.88-attempt*.05),blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
-    if(!blob)throw Error('图片压缩失败，请换一张图片。');if(blob.size<=maxBytes&&types.includes(blob.type))return blob;scale*=.8;
+    if(!blob)throw Error('图片压缩失败，请换一张图片。');if(blob.size<=targetBytes&&types.includes(blob.type))return blob;scale*=.8;
    }
    throw Error('图片仍然过大，请先缩小后重试。');
   }finally{image.close?.();if(canvas){canvas.width=canvas.height=1;}}

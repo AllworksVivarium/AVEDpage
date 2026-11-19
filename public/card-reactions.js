@@ -41,7 +41,7 @@ window.AVEDCardReactionsUI=function({panel,api,esc,portrait,getState}){
   const remove=()=>{node.remove();expiries.delete(expiry);if(bubbles.get(event.seat)?.node===node)bubbles.delete(event.seat);};
   const expiry=setTimeout(remove,Math.max(0,rules.lifetime-age));expiries.add(expiry);
   node.addEventListener('animationend',()=>{clearTimeout(expiry);remove();},{once:true});
-  for(const img of node.querySelectorAll('img'))img.onerror=()=>img.replaceWith(document.createTextNode('·'));
+  for(const img of node.querySelectorAll('img'))img.onerror=()=>img.replaceWith(document.createTextNode(' '));
  }
  function render(state){
   if(state?.id!==roomId){clear();roomId=state?.id||null;lastSent=-Infinity;}

@@ -16,9 +16,9 @@ function art(kind){
  return `<svg class="hero-art" viewBox="0 0 360 190" aria-hidden="true" shape-rendering="crispEdges">${scene}${spark}</svg>`;
 }
 
-const kinds={lucky_num:'lucky',three_match:'seals',step_climb:'steps'},english={lucky_num:'LUCKY NUMBER',three_match:'THREE SECRET SEALS',step_climb:'TWELVE LUCKY STATIONS'},slogans={lucky_num:'凭号领赏 · 好运加倍',three_match:'三印同开 · 好彩成串',step_climb:'一路巡签 · 步步添彩'};
+const kinds={lucky_num:'lucky',three_match:'seals',step_climb:'steps'},english={lucky_num:'LUCKY NUMBER',three_match:'THREE SECRET SEALS',step_climb:'TWELVE LUCKY STATIONS'},slogans={lucky_num:'凭号领赏 好运加倍',three_match:'三印同开 好彩成串',step_climb:'一路巡签 步步添彩'};
 const arts=Object.fromEntries(Object.values(kinds).map(k=>[k,art(k).replaceAll('hero-art','sp-hero-art')]));
-function header(game){const type=game.type;return '<div class="sp-stock-strip"><span>万业携生 / 员工福利票券</span><span>AVED · 007</span></div><header class="sp-hero">'+arts[kinds[type]]+'<div class="sp-hero-kicker">A.V.E.D. / EMPLOYEE LOTTERY</div><h2 class="sp-name"><strong>'+esc(game.title)+'</strong></h2><div class="sp-ribbon">'+slogans[type]+'</div><div class="sp-hero-en">'+english[type]+'</div></header>';}
+function header(game){const type=game.type;return '<div class="sp-stock-strip"><span>万业携生 / 员工福利票券</span><span>AVED 007</span></div><header class="sp-hero">'+arts[kinds[type]]+'<div class="sp-hero-kicker">A.V.E.D. / EMPLOYEE LOTTERY</div><h2 class="sp-name"><strong>'+esc(game.title)+'</strong></h2><div class="sp-ribbon">'+slogans[type]+'</div><div class="sp-hero-en">'+english[type]+'</div></header>';}
 function footer(){return '<div class="sp-paper-end"><span>AVED / AFTER HOURS<br>请核对票面规则</span><div class="sp-barcode" aria-hidden="true"></div></div><div class="sp-endband"></div>';}
 function mini(game){const foil='<span class="sp-coat">'+AVEDPixelIcons.render('eye','pixel-icon')+'<b>刮开好运</b></span>',cell=()=>'<span class="sp-cell sp-covered">'+foil+'</span>';
 if(game.type==='lucky_num')return '<div class="sp-refs">'+Array.from({length:4},cell).join('')+'</div><div class="sp-nums">'+Array.from({length:9},cell).join('')+'</div>';

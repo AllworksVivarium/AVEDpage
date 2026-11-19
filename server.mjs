@@ -304,6 +304,7 @@ const barMusic=installBarMusic({db,send,readBody,requireEmployee,requireAdmin,da
 const bar=installBar({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,isContainment:isPlayerContainment,getMusic:()=>barMusic.playlist()});
 const derby=installDerby({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,highlights,companyRobots,gameTax});
 const community=installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log:playerService.log});
+const lifeSupportTimer=setInterval(()=>{try{community.tickLife();}catch(error){console.error('Life support:',error.message);}},60000);lifeSupportTimer.unref();
 const radioRetention=installRadioRetention(db);
 const logRetention=installLogRetention(db);
 const dossierImages=installDossierImages({db,send,requireAdmin,requireEmployee});

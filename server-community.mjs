@@ -1,3 +1,4 @@
+import {installLife} from './server-life.mjs';
 import {normalizeDossierContent,normalizeDossierCode} from './server-dossier-content.mjs';
 import {normalizeDossierImage} from './server-dossier-images.mjs';
 import {forumPersonaNameSQL} from './server-forum-social.mjs';
@@ -36,6 +37,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     insert.run('公共区域广播与设备巡检通告','公共广播线路已完成例行巡检。发现异常回声、重复呼号或无人值守设备自行启动时，请立即联系设施值班人员。',new Date(Date.now()-86400000).toISOString());
     db.prepare("INSERT INTO community_migrations VALUES('bulletins-v2')").run();
   }
+  const life=installLife({db,send,readBody,log});
   const audit=installAudit(db);
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
   const image=s=>{if(!s)return '';if(typeof s!=='string'||s.length>2200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(s))throw new Error('图片须为不超过 1.5 MB 的 PNG、JPG 或 WEBP。');return s;};
@@ -61,14 +63,14 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     }
     return [data.pattern,data.replacement,data.isRegex?1:0,data.enabled===false?0:1];
   }
-  return {async handle(req,res,url) {
+  return {tickLife:life.sweep,async handle(req,res,url) {
     const path=url.pathname,method=req.method;
     const edit=path.match(/^\/api\/player\/forum\/(thread|reply)\/(\d+)$/);
     const adminDelete=path.match(/^\/api\/admin\/(?:forum\/(threads|replies)|(?:speech\/)?(posts|dossier_comments|chat_messages|life_records))\/(\d+)$/);
     const dossierEdit=path.match(/^\/api\/admin\/dossiers\/(\d+)$/);
     const review=path.match(/^\/api\/admin\/moderation\/life\/(\d+)$/);
     const forumAdmin=path.match(/^\/api\/admin\/forum(?:\/(\d+))?$/);
-    const handles=(forumAdmin&&method==='GET')||/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||path==='/api/player/life'||path==='/api/admin/life'||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
+    const handles=(forumAdmin&&method==='GET')||/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||/^\/api\/player\/life(?:\/(?:\d+(?:\/like)?|catalog|notifications))?$/.test(path)||/^\/api\/admin\/life(?:\/(?:settings|tags(?:\/\d+)?))?$/.test(path)||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
     if(!handles)return false;
     const user=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!user)return true;
     try {
@@ -119,18 +121,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         if(previous.employee_id&&d.title.trim().length>80)throw Error('关联账号的收容物名称最多 80 字。');
         if(!db.prepare('UPDATE dossiers SET code=?,title=?,department=?,status=?,summary=?,image_data=COALESCE(?,image_data),classification=?,procedures=?,sections_json=?,abstract=? WHERE id=?').run(d.code.trim(),d.title.trim(),String(d.department||'').slice(0,80),String(d.status||'观察中').slice(0,80),d.summary.trim(),image??null,content.classification,content.procedures,content.sectionsJSON,content.abstract,dossierEdit[1]).changes)throw new Error('档案不存在。');send(res,200,{ok:true});return true;
       }
-      if(path==='/api/player/life'||path==='/api/admin/life') {
-        if(method==='GET') {
-          const q='%'+(url.searchParams.get('q')||'').slice(0,120)+'%',kind=url.searchParams.get('kind')||'',department=url.searchParams.get('department')||'',order=url.searchParams.get('order')==='oldest'?'ASC':'DESC',before=Number(url.searchParams.get('before'))||0;
-          const rows=db.prepare(`SELECT l.id,l.title,l.body,l.kind,l.tags,l.image_data AS imageData,l.moderation,l.created_at AS createdAt,p.anonymous_name AS anonymousName FROM life_records l JOIN profiles p ON p.employee_id=l.employee_id WHERE l.deleted_at='' ${path.includes('/admin/')?'':"AND l.moderation='approved'"} AND (?='' OR kind=?) AND (title LIKE ? OR body LIKE ?) AND (?='' OR EXISTS(SELECT 1 FROM json_each(l.tags) WHERE value=?)) AND (?=0 OR l.id${order==='ASC'?'>':'<'}?) ORDER BY l.id ${order} LIMIT 21`).all(kind,kind,q,q,department,department,before,before);
-          send(res,200,{items:rows.slice(0,20).map(r=>({...r,tags:JSON.parse(r.tags),imageData:mediaReference('life',r.id,r.imageData)})),next:rows.length>20?rows[19].id:null});return true;
-        }
-        if(method==='POST'&&path==='/api/player/life') {
-          const d=await readBody(req,2500000),img=image(d.imageData),tags=Array.isArray(d.tags)?[...new Set(d.tags.map(x=>String(x).trim()).filter(Boolean))]:[];
-          if(!valid(d.title,120)||typeof d.body!=='string'||d.body.length>10000||!['article','art'].includes(d.kind)||(d.kind==='art'&&!img)||(d.kind==='article'&&!d.body.trim())||tags.length>8||tags.some(t=>t.length>40))throw new Error('请填写标题和作品，标签最多八项。');
-          const r=db.prepare('INSERT INTO life_records(employee_id,title,body,kind,tags,image_data,moderation) VALUES(?,?,?,?,?,?,?)').run(user.id,d.title.trim(),d.body.trim(),d.kind,JSON.stringify(tags),img,img?'pending':'approved');log(user.id,'life.submit',String(r.lastInsertRowid),{kind:d.kind,pending:!!img});send(res,201,{id:Number(r.lastInsertRowid),pending:!!img});return true;
-        }
-      }
+      if(await life.handle(req,res,url,user))return true;
       if(path==='/api/admin/moderation'&&method==='GET') {
         const items=db.prepare(`SELECT 'thread' AS kind,f.id,f.title,f.body,f.image_data AS imageData,f.employee_id AS employeeId,e.username,e.display_name AS displayName,f.created_at AS createdAt FROM forum_threads f JOIN employees e ON e.id=f.employee_id WHERE f.moderation='pending' AND f.deleted_at=''
           UNION ALL SELECT 'reply',r.id,t.title,r.body,r.image_data,r.employee_id,e.username,e.display_name,r.created_at FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id JOIN employees e ON e.id=r.employee_id WHERE r.moderation='pending' AND r.deleted_at='' AND t.deleted_at=''

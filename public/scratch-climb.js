@@ -13,7 +13,7 @@ window.AVEDScratchClimb=(()=>{
   if(!c.revealed)return '<button type="button" data-scratch-cell="'+c.idx+'" aria-label="'+station+'，刮开" class="scratch-cell-foil sp-cell sp-covered"><span class="sp-coat">'+window.AVEDPixelIcons.render('eye')+'<b>刮开好运</b></span></button>';
   const current=state(ticket),known=c.idx<current.known;
   const mark=c.isBomb?window.AVEDPixelIcons.render('bomb','scratch-printed-mark'):esc(c.label);
-  const status=c.isBomb?'追加 '+money(ticket.penalty):station+' · '+(known?'第'+c.stepFloor+'层':'待连通');
+  const status=c.isBomb?'追加 '+money(ticket.penalty):station+' '+(known?'第'+c.stepFloor+'层':'待连通');
   return '<div data-revealed-cell="'+c.idx+'" class="scratch-revealed-cell sp-cell'+(c.isWinPart?' is-winning':'')+(c.isBomb?' is-bomb':'')+'"><div>'+mark+'</div><div>'+esc(status)+'</div></div>';
  }
  function frame(cells){
@@ -27,13 +27,13 @@ window.AVEDScratchClimb=(()=>{
  }
  function update(host,ticket){
   const current=state(ticket),position=host.querySelector('[data-climb-position]'),levels=host.querySelector('[data-climb-levels]'),end=host.querySelector('[data-climb-end]');
-  if(position)position.textContent=current.done?(current.floor===(ticket.climb?.topFloor??normal.length-1)?'登顶 · ':'终点 · ')+'第'+current.floor+'层':current.known?'第'+current.floor+'层 · '+current.revealed+'/'+ticket.cells.length:'已刮 '+current.revealed+'/'+ticket.cells.length;
+  if(position)position.textContent=current.done?(current.floor===(ticket.climb?.topFloor??normal.length-1)?'登顶 ':'终点 ')+'第'+current.floor+'层':current.known?'第'+current.floor+'层 '+current.revealed+'/'+ticket.cells.length:'已刮 '+current.revealed+'/'+ticket.cells.length;
   if(levels)levels.innerHTML=ladder(ticket,current);
   if(end){end.innerHTML=current.done?'<div>第'+current.floor+'层</div><div>'+money(ticket.totalPayout??ticket.prize??0)+'</div>':'<div>终点</div><div>?</div>';end.classList.toggle('is-winning',current.done&&current.floor>0);}
  }
  function prizeTable(multipliers,cost){
   if(!multipliers?.length)return '';
-  return '<div class="scratch-climb-prizes" aria-label="层数对应津贴">'+multipliers.slice(1).map((multiplier,index)=>'<span><small>'+(index+1)+'层 · ×'+multiplier+'</small><b>'+money(Math.floor(cost*multiplier+1e-7))+'</b></span>').join('')+'<span><small>12层超级大奖 · ×2,000</small><b>'+money(cost*2000)+'</b></span></div>';
+  return '<div class="scratch-climb-prizes" aria-label="层数对应津贴">'+multipliers.slice(1).map((multiplier,index)=>'<span><small>'+(index+1)+'层 ×'+multiplier+'</small><b>'+money(Math.floor(cost*multiplier+1e-7))+'</b></span>').join('')+'<span><small>12层超级大奖 ×2,000</small><b>'+money(cost*2000)+'</b></span></div>';
  }
  function mini(){
   const foil='<span class="sp-coat">'+window.AVEDPixelIcons.render('eye','pixel-icon')+'<b>刮开好运</b></span>';

@@ -18,8 +18,8 @@ test('records begin with the player ID and finish the adaptive scroll before swi
   for(let round=0;round<2;round++){
    for(let i=0;i<count;i++){
     assert.match(h.text.textContent,new RegExp('员工'+(i+1)));
-    if(i===1){assert.equal(h.text.textContent,'员工2 · 刮刮乐 · 开出炸弹 · −¤ 2,000');assert.equal(h.strip.dataset.outcome,'bomb');}
-    else {assert.equal(h.strip.dataset.outcome,'award');assert.equal(h.text.textContent,`员工${i+1} · 刮刮乐 · 5倍大奖 · +¤ 5,000`);}
+    if(i===1){assert.equal(h.text.textContent,'员工2 刮刮乐 开出炸弹 −¤ 2,000');assert.equal(h.strip.dataset.outcome,'bomb');}
+    else {assert.equal(h.strip.dataset.outcome,'award');assert.equal(h.text.textContent,`员工${i+1} 刮刮乐 5倍大奖 +¤ 5,000`);}
     const before=h.text.textContent,duration=parseInt(h.text.style['--ticker-duration']);assert.ok(duration>=5000&&duration<=8000);h.tick(duration-1);assert.equal(h.text.textContent,before);h.tick(1);
    }
    assert.match(h.text.textContent,/^员工1/);assert.equal(h.strip.hidden,false);
@@ -38,10 +38,10 @@ test('only five-times awards and scratch bombs appear; repair fees are never bom
   {ticketId:6,game:'sky',cost:100,prize:625},
   {ticketId:7,game:'scratch',cost:100,prize:0,penalty:200}
  ]);await h.ready();
- assert.equal(h.strip.dataset.outcome,'award');assert.match(h.text.textContent,/异常回路 · 5倍大奖/);
- h.tick(8000);assert.match(h.text.textContent,/高空速降 · 6.25倍大奖/);
- h.tick(8000);assert.equal(h.strip.dataset.outcome,'bomb');assert.match(h.text.textContent,/刮刮乐 · 开出炸弹/);
- h.tick(8000);assert.match(h.text.textContent,/异常回路 · 5倍大奖/);
+ assert.equal(h.strip.dataset.outcome,'award');assert.match(h.text.textContent,/异常回路 5倍大奖/);
+ h.tick(8000);assert.match(h.text.textContent,/高空速降 6.25倍大奖/);
+ h.tick(8000);assert.equal(h.strip.dataset.outcome,'bomb');assert.match(h.text.textContent,/刮刮乐 开出炸弹/);
+ h.tick(8000);assert.match(h.text.textContent,/异常回路 5倍大奖/);
 });
 
 test('short text stays put; mobile overflow always travels far enough to reveal the final amount',()=>{

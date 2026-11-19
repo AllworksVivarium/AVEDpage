@@ -19,9 +19,9 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  function paintAction(){
   const data=getSnapshot(),drink=data?.myDrink,menu=data?.menu||[],item=menu.find(item=>item.id===drink?.drinkId);
   const fixed=drink?.canPour===false,pouch=item?.container==='pouch',unit=pouch?'g':'mL',glass=data?.barPreferences?.glassId,available=drink?.drinkFrom==='glass'?drink.glassMl:drink?.bottleMl??drink?.remainingMl;action.querySelector('[data-serving-name]').textContent=item?.name||(glass?'空杯已经放好了':'我的这一杯');action.querySelector('[data-serving-remaining]').textContent=drink?`${drink.remainingMl??0} / ${drink.volumeMl??0} ${unit}`:'还没有点酒';
-  action.querySelector('[data-serving-today]').textContent=`本日已饮用 ${data?.drinking?.totalMl||0} mL · ${drunkStatus(data?.drinking).levelLabel}`;
+  action.querySelector('[data-serving-today]').textContent=`本日已饮用 ${data?.drinking?.totalMl||0} mL ${drunkStatus(data?.drinking).levelLabel}`;
   const sipDisabled=busy||!(available>0),sipLabel=busy?'稍等…':drink?.remainingMl===0?(pouch?'已吃完':'已喝完'):drink?.drinkFrom==='glass'&&available===0?'杯中已空':pouch?'吃一口':'喝一口';
-  action.querySelector('[data-pour-summary]').textContent=fixed?'使用原杯 · 所选杯具先留作备用':drink?'杯中 '+(drink.glassMl||0)+' mL · 原容器 '+(drink.bottleMl??drink.remainingMl)+' mL'+(drink.drinkFrom==='glass'?' · 正在用杯子喝':' · 直接饮用'):glass?'杯子可以先留着，想喝什么再点。':'空杯免费，也可以只坐一会儿。';
+  action.querySelector('[data-pour-summary]').textContent=fixed?'使用原杯 所选杯具先留作备用':drink?'杯中 '+(drink.glassMl||0)+' mL 原容器 '+(drink.bottleMl??drink.remainingMl)+' mL'+(drink.drinkFrom==='glass'?' 正在用杯子喝':' 直接饮用'):glass?'杯子可以先留着，想喝什么再点。':'空杯免费，也可以只坐一会儿。';
   action.querySelector('[data-pour-summary]').hidden=pouch;action.querySelector('[data-bar-pour]').hidden=pouch;action.querySelector('[data-bar-from-glass]').hidden=pouch;
   action.querySelector('[data-bar-pour]').disabled=busy||fixed||!glass||!(drink?.bottleMl>0);
   action.querySelector('[data-bar-stow-glass]').disabled=busy||!glass||drink?.glassMl>0;action.querySelector('[data-bar-glassware]').disabled=busy;
@@ -76,14 +76,14 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  };
  coaster.querySelector('textarea').addEventListener('input',()=>{coaster.querySelector('[type=submit]').textContent='留下留言';});
  function paintRanking(board){
-  if(!board)return;ranking.querySelector('[data-ranking-date]').textContent=board.day+' · 每日 04:00 换榜';
+  if(!board)return;ranking.querySelector('[data-ranking-date]').textContent=board.day+' 每日 04:00 换榜';
   const list=ranking.querySelector('[data-ranking-list]'),self=getSnapshot()?.selfId,key=JSON.stringify([board.items,self]);if(list.dataset.key!==key){list.dataset.key=key;list.innerHTML=board.items.length?board.items.map(item=>`<li class="${item.employeeId===self?'mine':''}"><span>${item.rank}</span><b data-contamination-exempt data-type-ignore data-alias="${esc(item.alias)}" class="${item.isContainment?'bar-containment-name containment-ranking-alias':''}">${esc(item.alias)}</b><small>${item.totalMl} mL</small></li>`).join(''):'<li class="bar-ranking-empty">今晚还没有饮用记录。</li>';}
   ranking.querySelector('[data-ranking-mine]').textContent='我本日已饮用 '+(getSnapshot()?.drinking?.totalMl||0)+' mL';
   paintBoard(board);
  }
  function paintBoard(data){
   if(board.hidden||!data)return;const self=getSnapshot()?.selfId,list=board.querySelector('[data-board-ranking]'),items=data.items.slice(0,5),key=JSON.stringify([items,self]);if(list.dataset.key===key)return;list.dataset.key=key;
-  list.innerHTML=items.length?items.map(item=>`<li class="${item.employeeId===self?'mine':''}" title="${esc(item.alias)} · ${item.totalMl} mL"><span>${item.rank}</span><b data-contamination-exempt data-type-ignore data-alias="${esc(item.alias)}" class="${item.isContainment?'bar-containment-name containment-ranking-alias':''}">${esc(item.alias)}</b><small>${item.totalMl}</small></li>`).join(''):'<li class="bar-board-empty">尚无人上榜</li>';
+  list.innerHTML=items.length?items.map(item=>`<li class="${item.employeeId===self?'mine':''}" title="${esc(item.alias)} ${item.totalMl} mL"><span>${item.rank}</span><b data-contamination-exempt data-type-ignore data-alias="${esc(item.alias)}" class="${item.isContainment?'bar-containment-name containment-ranking-alias':''}">${esc(item.alias)}</b><small>${item.totalMl}</small></li>`).join(''):'<li class="bar-board-empty">尚无人上榜</li>';
  }
  function setBoard(visible){board.hidden=!visible;root.dataset.rankBoardOpen=String(visible);for(const button of root.querySelectorAll('[data-bar-ranking]')){button.textContent=visible?'收起榜单':'展开榜单';button.setAttribute('aria-expanded',String(visible));}if(visible){for(const opened of root.querySelectorAll('dialog[open]'))opened.close();paintBoard(getSnapshot()?.leaderboard);}}
  function openRanking(){setBoard(board.hidden);}

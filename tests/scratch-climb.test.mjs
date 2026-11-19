@@ -64,7 +64,7 @@ test('manual reveals hide later floors until the route connects; reveal-all expo
  assert.equal(ui.state(t).done,true);assert.equal(ui.state(t).floor,t.climb.finishFloor);
  assert.equal((ui.ladder(t,ui.state(t)).match(/data-climb-level=/g)||[]).length,12);
  const position={},graph={},end={classList:{toggle(){}}},host={querySelector:s=>s==='[data-climb-position]'?position:s==='[data-climb-end]'?end:graph};ui.update(host,t);
- assert.equal(position.textContent,'终点 · 第8层');
+ assert.equal(position.textContent,'终点 第8层');
  assert.match(ui.prizeTable(scratchClimbMultipliers,1000),/12层/);
  assert.match(ui.prizeTable(scratchClimbMultipliers,1000),/2,000,000/);
  t.cells.forEach(c=>c.revealed=false);ui.update(host,t);
@@ -73,8 +73,8 @@ test('manual reveals hide later floors until the route connects; reveal-all expo
 test('final result identifies the reached floor once and keeps bomb fees separate',()=>{
  const ctx={};vm.runInNewContext(readFileSync(new URL('../public/game-results.js',import.meta.url),'utf8'),ctx);
  const normal={cost:1000,prize:5000,climb:{finishFloor:3,topFloor:5}};
- assert.match(ctx.AVEDGameResults.text(normal),/^终点第3层 · 本局获得 ¤ 5,000/);
- assert.match(ctx.AVEDGameResults.text({...normal,prize:2000000,superJackpot:true,climb:{finishFloor:5,topFloor:5}}),/^登顶第5层 · 超级大奖/);
+ assert.match(ctx.AVEDGameResults.text(normal),/^终点第3层 本局获得 ¤ 5,000/);
+ assert.match(ctx.AVEDGameResults.text({...normal,prize:2000000,superJackpot:true,climb:{finishFloor:5,topFloor:5}}),/^登顶第5层 超级大奖/);
  assert.doesNotMatch(ctx.AVEDGameResults.text({...normal,prize:0,penalty:2000}),/终点|登顶/);
 });
 test('twelve-floor odds keep total probability, configured return and rare-award odds',()=>{

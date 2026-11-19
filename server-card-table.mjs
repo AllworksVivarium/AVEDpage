@@ -55,7 +55,7 @@ export function tableAction(s,seat,action,body={}){
  const cards=ids.map(id=>s.hands[seat].find(c=>c.id===id));if(cards.some(c=>!c))throw Error('手牌已经变化，请重新选择。');
  const p=R.classify(cards,s.size);if(!p)throw Error('这些牌不能组成有效牌型。');if(!R.beats(p,s.last))throw Error('需要同牌型、同张数并且点数更大，或使用炸弹。');
  s.hands[seat]=s.hands[seat].filter(c=>!ids.includes(c.id));s.last={...p,cards,seat};s.passes=0;s.plays[seat]++;
- s.seatPlays[seat]={text:p.label+' · '+cards.length+' 张',cards};s.event={id:randomUUID(),seat,text:p.label+' · '+cards.length+' 张',type:p.type};
+ s.seatPlays[seat]={text:p.label+' '+cards.length+' 张',cards};s.event={id:randomUUID(),seat,text:p.label+' '+cards.length+' 张',type:p.type};
  if(p.type==='bomb'||p.type==='rocket')s.multiplier=Math.min(64,s.multiplier*2);
  if(!s.hands[seat].length){s.phase='ended';s.winner=seat===s.landlord?'landlord':'farmers';s.spring=s.winner==='landlord'?s.plays.every((v,i)=>i===s.landlord||v===0):s.plays[s.landlord]===1;if(s.spring)s.multiplier=Math.min(64,s.multiplier*2);return;}
  s.turn=(seat+1)%s.size;
