@@ -456,3 +456,6 @@
  #view-profile.personal-hud .hud-intrusion small{display:block;opacity:.75}
  @container(max-width:259px){#view-profile.personal-hud .hud-intrusion{left:8px}#view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])){padding-bottom:14px!important}#view-profile.personal-hud .hud-balance-row:has(.hud-intrusion:not([hidden])) #hub-balance{margin:0}}
 }
+
+/* Align the compact terminal readout with its header baseline. */
+@container(max-width:499px){#view-profile.personal-hud .hud-top-terminal .hud-terminal-lines{transform:translateY(2px)}}

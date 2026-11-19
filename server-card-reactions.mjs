@@ -105,6 +105,7 @@ export function createCardReactions({clock=()=>Date.now(),random=Math.random}={}
     }
    }
   },
+  forget(roomId){tables.delete(roomId);},
   close(){tables.clear();}
  };
 }

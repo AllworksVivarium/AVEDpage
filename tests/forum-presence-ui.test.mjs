@@ -22,3 +22,12 @@ test('own posts get a marker, personas do not; anonymous posts never borrow a re
  html=render({anonymousName:'机器人',canEdit:true,personaId:3});assert.doesNotMatch(html,/我的发言/);
  html=render({anonymousName:'员工',identityMode:'real',avatarUrl:'/avatar'});assert.match(html,/src="\/avatar"/);
 });
+
+test('only a server-verified system identity gets the bracketed red seal; personas and same-name players do not',()=>{
+ const source=fs.readFileSync(new URL('../public/player.js',import.meta.url),'utf8'),fn=source.match(/function forumAuthor\(item\)\{[^\n]+\}/)[0];
+ const render=vm.runInNewContext('('+fn+')',{esc:s=>String(s).replaceAll('<','&lt;')});
+ const official=render({anonymousName:'系统管理员',isForumAdmin:1,identityMode:'real'});
+ assert.match(official,/>\[系统管理员\]</);assert.match(official,/forum-admin-badge/);assert.match(official,/data-contamination-exempt/);assert.doesNotMatch(official,/forum-real-badge/);
+ for(const data of [{anonymousName:'系统管理员'},{anonymousName:'[系统管理员]',isForumAdmin:0},{anonymousName:'角色',isForumAdmin:1,personaId:2}])assert.doesNotMatch(render(data),/forum-admin-badge|data-forum-admin/);
+ assert.match(render({anonymousName:'<系统管理员>',isForumAdmin:1}),/&lt;系统管理员>/);
+});

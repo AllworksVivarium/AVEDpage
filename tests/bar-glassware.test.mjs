@@ -13,6 +13,23 @@ const prefs=(f,id,glassId)=>f.req(id,'/api/player/bar/preferences',{glassId});
 const order=(f,id,drinkId,key='glassware-order-0001')=>f.req(id,'/api/player/bar/orders',{drinkId,requestId:key});
 const pour=(f,id,orderId,requestId='glassware-pour-0001',extra={})=>f.req(id,'/api/player/bar/pour',{orderId,requestId,...extra});
 const sip=(f,id,orderId,key)=>f.req(id,'/api/player/bar/sip',{orderId,requestId:'glassware-sip-'+key});
+test('energy jelly costs 800 once, retains its serving, and never adds alcohol',async t=>{
+ const f=fixture(t),jelly=barDrinks.find(d=>d.id==='energy-jelly');assert.equal(jelly.price,800);assert.equal(barDrinks.filter(d=>d.container==='pouch').length,5);
+ const bought=await order(f,1,jelly.id,'energy-jelly-purchase01');assert.equal(bought.status,200);const id=bought.data.myDrink.id;
+ assert.equal(f.balanceFor(1),99200);assert.equal(bought.data.myDrink.volumeMl,180);
+ assert.equal(bought.data.myDrink.canPour,false);await prefs(f,1,'highball');
+ assert.equal((await pour(f,1,id,'jelly-cannot-pour01')).status,400);
+ assert.equal((await pour(f,1,id,'jelly-cannot-source01',{action:'source',source:'glass'})).status,400);
+ assert.equal((await f.req(1)).data.myDrink.glassMl,0);
+ const retry=await order(f,1,jelly.id,'energy-jelly-purchase01');assert.equal(retry.status,200);assert.equal(retry.data.myDrink.id,id);assert.equal(f.balanceFor(1),99200);
+ const first=await sip(f,1,id,'energy-jelly01');assert.equal(first.status,200);assert.equal(first.data.receipt.amountMl,60);assert.equal(first.data.myDrink.remainingMl,120);
+ assert.equal((await sip(f,1,id,'energy-jelly01')).data.myDrink.remainingMl,120);
+ f.restart();assert.equal((await f.req(1)).data.myDrink.id,id);assert.equal((await f.req(1)).data.myDrink.remainingMl,120);
+ assert.equal((await sip(f,1,id,'energy-jelly02')).status,200);const last=await sip(f,1,id,'energy-jelly03');assert.equal(last.status,200);assert.equal(last.data.myDrink.remainingMl,0);
+ assert.equal(last.data.drinking.intoxicationUnits,0);assert.equal(last.data.drinking.totalMl,0);assert.equal(f.balanceFor(1),99200);
+ assert.equal(f.db.prepare('SELECT SUM(amount_ml) ml,SUM(weighted_units) units FROM bar_sips WHERE order_id=?').get(id).ml,180);
+ assert.equal(f.db.prepare('SELECT SUM(weighted_units) units FROM bar_sips WHERE order_id=?').get(id).units,0);
+});
 
 test('free empty glasses are visible to other guests and can clink without buying a drink',async t=>{
  const f=fixture(t);assert.equal((await prefs(f,1,'highball')).status,200);assert.equal((await prefs(f,2,'beer-mug')).status,200);
@@ -41,7 +58,7 @@ test('water pours conserve volume, use server capacities, survive restart and ne
 test('switching between cup and bottle preserves separate amounts, alcohol metrics and transaction rollback',async t=>{
  const f=fixture(t);await prefs(f,1,'highball');const bought=await order(f,1,'amber-brew'),id=bought.data.myDrink.id,balance=bought.data.balance;
  // Earlier partially poured orders retain separate sources after the capacity upgrade.
- f.db.prepare("UPDATE bar_servings SET glass_ml=200,drink_from='glass' WHERE order_id=?").run(id);f.restart();let state=(await pour(f,1,id,'glassware-source-0001',{action:'source',source:'bottle'})).data;
+ f.db.prepare("UPDATE bar_servings SET volume_ml=330,remaining_ml=330,strength=50,glass_ml=200,drink_from='glass' WHERE order_id=?").run(id);f.restart();let state=(await pour(f,1,id,'glassware-source-0001',{action:'source',source:'bottle'})).data;
  assert.deepEqual([state.myDrink.remainingMl,state.myDrink.glassMl,state.myDrink.bottleMl],[330,200,130]);
  state=(await sip(f,1,id,'bottle01')).data;assert.deepEqual([state.myDrink.remainingMl,state.myDrink.glassMl,state.myDrink.bottleMl],[220,200,20]);assert.equal(state.drinking.totalMl,110);
  await pour(f,1,id,'glassware-source-0002',{action:'source',source:'glass'});state=(await sip(f,1,id,'cup0001')).data;
@@ -54,7 +71,7 @@ test('switching between cup and bottle preserves separate amounts, alcohol metri
 
 test('lemon cocktail and all shots retain their original glass; advance glass selection still works for other drinks',async t=>{
  const f=fixture(t);await prefs(f,1,'beer-mug');
- for(const drink of barDrinks.filter(d=>d.id==='lemon-cocktail'||d.id.endsWith('-shot')&&d.orderable!==false)){
+ for(const drink of barDrinks.filter(d=>!d.pourable&&d.orderable!==false)){
   f.advance(61000);const bought=await order(f,1,drink.id,'fixed-glass-order-'+drink.id),current=bought.data.myDrink;
   assert.equal(current.canPour,false);assert.equal(current.glassMl,0);assert.equal((await prefs(f,1,'highball')).status,200,'choosing a spare glass remains allowed');
   assert.equal((await pour(f,1,current.id,'fixed-glass-pour-'+drink.id)).status,400);
@@ -63,7 +80,7 @@ test('lemon cocktail and all shots retain their original glass; advance glass se
   assert.equal((await sip(f,1,current.id,'original-'+drink.id)).status,200);
  }
  f.advance(61000);const bought=await order(f,1,'amber-brew','fixed-glass-following-beer');assert.equal(bought.data.myDrink.canPour,true);
- const poured=await pour(f,1,bought.data.myDrink.id,'fixed-glass-following-pour');assert.equal(poured.status,200);assert.equal(poured.data.myDrink.glassMl,330);
+ const poured=await pour(f,1,bought.data.myDrink.id,'fixed-glass-following-pour');assert.equal(poured.status,200);assert.equal(poured.data.myDrink.glassMl,500);
 });
 
 test('the earlier preview tumbler and poured cocktail migrate without changing remaining volume',async t=>{
@@ -74,11 +91,12 @@ test('the earlier preview tumbler and poured cocktail migrate without changing r
 });
 
 test('every current bottle fits either empty glass in a single pour without creating liquid',async t=>{
- const f=fixture(t);
+ const f=fixture(t);f.db.prepare('UPDATE employees SET balance=1000000 WHERE id=1').run();
  for(const glassId of ['highball','beer-mug']){
   f.db.exec('UPDATE bar_servings SET glass_ml=0');f.restart();await prefs(f,1,glassId);
-  for(const drink of barDrinks.filter(d=>d.orderable!==false&&d.id!=='lemon-cocktail'&&!d.id.endsWith('-shot'))){
+  for(const drink of barDrinks.filter(d=>d.orderable!==false&&d.pourable)){
    f.advance(61000);const bought=await order(f,1,drink.id,'whole-bottle-'+glassId+'-'+drink.id),current=bought.data.myDrink;
+   assert.equal(current.volumeMl,500);
    const filled=await pour(f,1,current.id,'whole-pour-'+glassId+'-'+drink.id);assert.equal(filled.status,200);assert.equal(filled.data.myDrink.bottleMl,0);assert.equal(filled.data.myDrink.glassMl,current.volumeMl);assert.equal(filled.data.myDrink.remainingMl,current.volumeMl);
   }
  }
@@ -106,4 +124,33 @@ test('an empty selected cup is also removed after thirty minutes away',async t=>
  f.advance(30*60000);const state=(await f.req(1)).data;
  assert.equal(state.myDrink,null);assert.equal(state.barPreferences.glassId,null);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_orders').get().n,0);assert.equal(f.balanceFor(1),100000);
+});
+
+test('new spirit bottles use configured strength and preserve alcohol and volume through pouring',async t=>{
+ const f=fixture(t);await prefs(f,1,'highball');
+ for(const drink of barDrinks.filter(d=>d.menuGroup?.id==='spirits')){
+  f.advance(61000);const bought=await order(f,1,drink.id,'pack-order-'+drink.id),id=bought.data.myDrink.id;
+  assert.equal(bought.status,200);assert.equal(bought.data.myDrink.volumeMl,drink.serving.volume);
+  const balance=f.balanceFor(1),filled=await pour(f,1,id,'pack-pour-'+drink.id);assert.equal(filled.status,200);assert.equal(filled.data.myDrink.drinkFrom,'glass');
+  const first=await sip(f,1,id,'pack-'+drink.id);assert.equal(first.status,200);assert.equal(first.data.receipt.amountMl,100);
+  assert.equal(first.data.myDrink.glassMl,400);assert.equal(first.data.myDrink.bottleMl,0);assert.equal(f.balanceFor(1),balance);
+  const row=f.db.prepare('SELECT SUM(amount_ml) ml,SUM(weighted_units) units FROM bar_sips WHERE order_id=?').get(id);assert.equal(row.ml,100);assert.equal(row.units,100*drink.serving.strength);
+  f.restart();assert.equal((await f.req(1)).data.myDrink.glassMl,400);
+  for(let step=2;step<=5;step++){const consumed=await sip(f,1,id,'pack-'+step+'-'+drink.id);assert.equal(consumed.status,200);assert.equal(consumed.data.receipt.amountMl,100);assert.equal(consumed.data.myDrink.remainingMl,500-step*100);}
+  const total=f.db.prepare('SELECT COUNT(*) n,SUM(amount_ml) ml,SUM(weighted_units) units FROM bar_sips WHERE order_id=?').get(id);assert.equal(total.n,5);assert.equal(total.ml,500);assert.equal(total.units,500*drink.serving.strength);f.restart();assert.equal((await f.req(1)).data.myDrink.glassMl,0);
+ }
+});
+
+test('old poured jelly returns to its pouch on restart without restoring consumed amount',async t=>{
+ const f=fixture(t),bought=await order(f,1,'energy-jelly'),id=bought.data.myDrink.id;
+ f.db.prepare("UPDATE bar_servings SET remaining_ml=120,glass_ml=80,drink_from='glass' WHERE order_id=?").run(id);
+ f.restart();const state=(await f.req(1)).data;assert.equal(state.myDrink.remainingMl,120);assert.equal(state.myDrink.bottleMl,120);assert.equal(state.myDrink.glassMl,0);assert.equal(state.myDrink.canPour,false);
+ assert.equal((await pour(f,1,id,'jelly-after-restart01')).status,400);assert.equal((await sip(f,1,id,'pouch-restart01')).data.myDrink.remainingMl,60);
+});
+
+test('cup choice never caps a pour, including larger old servings and partially filled cups',async t=>{
+ const f=fixture(t);await prefs(f,1,'highball');const bought=await order(f,1,'mineral-water'),id=bought.data.myDrink.id;
+ f.db.prepare("UPDATE bar_servings SET volume_ml=900,remaining_ml=900,glass_ml=200,drink_from='glass' WHERE order_id=?").run(id);f.restart();
+ const filled=await pour(f,1,id,'adaptive-cup-pour001',{capacityMl:1,amountMl:1});assert.equal(filled.status,200);assert.equal(filled.data.pourReceipt.amountMl,700);assert.equal(filled.data.myDrink.glassMl,900);assert.equal(filled.data.myDrink.bottleMl,0);
+ assert.equal((await pour(f,1,id,'adaptive-cup-pour001')).data.myDrink.glassMl,900);assert.equal((await sip(f,1,id,'adaptive001')).data.myDrink.glassMl,675);assert.equal(f.balanceFor(1),100000);
 });

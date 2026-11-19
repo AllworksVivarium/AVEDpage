@@ -22,7 +22,9 @@ import {mediaReference,installMedia} from './server-media.mjs';
 import {normalizeAvatar} from './server-avatar.mjs';
 import {installCardTables} from './server-card-table.mjs';
 import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
+import {installSessionPolicy} from './server-session-policy.mjs';
 import {installSelfAccount} from './server-self-account.mjs';
+import {eraseEmployeeAccount} from './server-account-erasure.mjs';
 import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
 import { installPlayerService } from './player-service.mjs';
@@ -206,7 +208,6 @@ if (prod && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 
 }
 const secret = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 const sessionDigest = token => createHmac('sha256',secret).update(token).digest('hex');
-const sessionsTtl = 8 * 60 * 60 * 1000;
 // Enable only after HTTPS is working; HTTP IP/local previews keep working by default.
 const cookieSecurity = process.env.COOKIE_SECURE === 'true' ? '; Secure' : '';
 if(!db.prepare('PRAGMA table_info(sessions)').all().some(c=>c.name==='issued_at'))db.exec('ALTER TABLE sessions ADD COLUMN issued_at INTEGER NOT NULL DEFAULT 0');
@@ -215,27 +216,20 @@ const loginBursts=burstLimiter({limit:60,windowMs:60000}),actionBursts=burstLimi
 const readBody = (req, maxBytes=32768) => new Promise((resolveBody, reject) => {
   const chunks = []; let size = 0;
   req.on('data', chunk => { size += chunk.length; if (size > maxBytes) { reject(new Error('too large')); req.destroy(); } else chunks.push(chunk); });
-  req.on('end', () => { try { resolveBody(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(new Error('bad json')); } });
+  req.on('end', () => { if(req.avedEmployeeId&&sessionEmployee(req)?.id!==req.avedEmployeeId){reject(new Error('请先登录。'));return;}try { resolveBody(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(new Error('bad json')); } });
   req.on('error', reject);
 });
 const send = (res, status, body, headers={}) => {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', ...headers });
   res.end(JSON.stringify(body));
 };
-const sessionEmployee = req => {
-  const tokens=sessionTokens(req.headers.cookie),valid=[];
-  for(const [position,token] of tokens.entries()) {
-    const tokenHash=sessionDigest(token);
-    const session=db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.department,e.identity_kind AS identityKind,e.containment_classification AS containmentClassification,e.position_title AS positionTitle,e.role,e.enabled,s.expires_at,s.issued_at AS issuedAt FROM sessions s JOIN employees e ON e.id=s.employee_id WHERE s.token_hash=?`).get(tokenHash);
-    if(!session||session.expires_at<Date.now()||!session.enabled){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(tokenHash);continue;}
-    valid.push({session,position});
-  }
-  return valid.sort((a,b)=>b.session.issuedAt-a.session.issuedAt||b.position-a.position)[0]?.session||null;
-};
+const sessionPolicy=installSessionPolicy({db,digest:sessionDigest,secure:cookieSecurity});
+const sessionEmployee=req=>sessionPolicy.employee(req);
 const selfAccount=installSelfAccount({db,verifyPassword,hashPassword:hashPasswordAsync});
 const requireEmployee = (req, res) => {
   const employee = sessionEmployee(req);
   if (!employee) send(res, 401, { error:'请先登录。',code:sessionTokens(req.headers.cookie).length?'SESSION_EXPIRED':'SESSION_MISSING' });
+  if(employee)req.avedEmployeeId=employee.id;
   return employee;
 };
 const requireAdmin = (req, res) => {
@@ -342,8 +336,13 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       return;
     }
     if(url.pathname.startsWith('/api/')&&['POST','PUT','PATCH','DELETE'].includes(req.method)&&!adminMutation(req,res))return;
-    if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400)playerService.log(actor.id,req.method,url.pathname);});}
+    if(url.pathname.startsWith('/api/admin/')){const actor=sessionEmployee(req);if(actor)res.on('finish',()=>{if(res.statusCode<400&&!(req.method==='DELETE'&&/^\/api\/admin\/employees\/\d+$/.test(url.pathname)))playerService.log(actor.id,req.method,url.pathname);});}
     if(await playerDesign.handle(req,res,url))return;
+    if ((url.pathname==='/api/session'&&req.method==='GET')||(url.pathname==='/api/session/activity'&&req.method==='POST')) {
+      const result=sessionPolicy.inspect(req,{activity:req.method==='POST'});
+      if(!result)return send(res,401,{error:'请先登录。',code:sessionTokens(req.headers.cookie).length?'SESSION_EXPIRED':'SESSION_MISSING'});
+      return send(res,200,result.data,result.cookie?{'Set-Cookie':result.cookie}:{});
+    }
     if (url.pathname === '/api/login' && req.method === 'POST') {
       const limited=loginBursts(network.address);if(limited)return send(res,429,{error:'接入请求过于频繁，请稍后重试。',code:'LOGIN_LIMITED'},{'Retry-After':String(limited)});
       const now=Date.now();
@@ -363,10 +362,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(!valid){attempts.fail(attemptKey);playerService.log(employee?.id||null,'login.failed','terminal',{reason:employee?.enabled===0?'disabled':'credentials'});return send(res,401,{error:'账号或密码不正确，或该员工账号尚未启用。',code:'INVALID_CREDENTIALS'});}
       attempts.clear(attemptKey);
       const token = randomBytes(32).toString('base64url');
-      db.prepare('INSERT INTO sessions (token_hash,employee_id,expires_at,issued_at) VALUES (?,?,?,?)')
-        .run(sessionDigest(token), employee.id, now + (remember ? 30*86400000 : sessionsTtl),now);
+      const cookie=sessionPolicy.issue(employee.id,token,remember);
       playerService.log(employee.id,'login');
-      const cookie = `wy_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${remember ? 2592000 : 28800}${cookieSecurity}`;
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName,identity_kind AS identityKind FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if(req.method==='POST'&&(url.pathname.startsWith('/api/player/games/')||url.pathname==='/api/player/stocks'||url.pathname==='/api/player/chat'||url.pathname==='/api/player/card-table'||url.pathname.startsWith('/api/games/'))){
@@ -664,8 +661,15 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if (!requireAdmin(req,res)) return;
       const employeeId = Number(url.pathname.split('/').at(-1));
       if (!Number.isInteger(employeeId) || employeeId < 1) return send(res,400,{error:'员工编号无效。'});
-      const result = db.prepare('DELETE FROM employees WHERE id=?').run(employeeId);
-      if (!result.changes) return send(res,404,{error:'员工账号不存在。'});
+      const result = eraseEmployeeAccount({db,dataDir,employeeId,recordLedger});
+      if (!result) return send(res,404,{error:'员工账号不存在。'});
+      stockCaptureAccounts.delete(employeeId);
+      cardTables.forgetAccount(employeeId,result.rooms);
+      playerService.forgetAccount(employeeId);
+      bar.forgetAccount(employeeId);
+      sky.forgetAccount(employeeId);
+      derby.forgetAccount(employeeId);
+      media.forgetAccount(employeeId);
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/admin/employees/') && url.pathname.endsWith('/balance') && req.method === 'POST') {
@@ -692,7 +696,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const dossierData=await readBody(req,2500000);const { code,title,department,status,summary,imageData } = dossierData;
       let image,content;try{image=await normalizeDossierImage(imageData);content=normalizeDossierContent(dossierData);}catch(error){return send(res,400,{error:error.message});}
       if (!validText(code,30)||!validText(title,100)||!validText(summary,12000)) return send(res,400,{error:'请填写档案编号、名称和内容。'});
-      try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary,image_data,classification,procedures,sections_json) VALUES (?,?,?,?,?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim(),image,content.classification,content.procedures,content.sectionsJSON); return send(res,201,{id:Number(result.lastInsertRowid)}); }
+      try { const result=db.prepare('INSERT INTO dossiers (code,title,department,status,summary,image_data,classification,procedures,sections_json,abstract) VALUES (?,?,?,?,?,?,?,?,?,?)').run(code.trim(),title.trim(),String(department||'').slice(0,80),String(status||'可查阅').slice(0,40),summary.trim(),image,content.classification,content.procedures,content.sectionsJSON,content.abstract); return send(res,201,{id:Number(result.lastInsertRowid)}); }
       catch { return send(res,409,{error:'档案编号已存在。'}); }
     }
     if (url.pathname.startsWith('/api/admin/dossiers/') && req.method === 'DELETE') {

@@ -107,7 +107,7 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads","achievements"].includes(tab.dataset.tab),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads","achievements"].includes(tab.dataset.tab)||(tab.dataset.tab==='forumWorkshop'&&currentUser.username!=='AVED'),
         ),
       );
     show(dashboard);
@@ -297,7 +297,7 @@ async function deleteContent(path, label = "这条内容") {
 async function deleteEmployee(id, displayName, username) {
   const identity = displayName + "（" + username + "）";
   if (!await window.AVEDFeedback.confirm("确认删除员工“" + identity + "”吗？")) return;
-  if (!await window.AVEDFeedback.confirm("再次确认：删除后，该员工账号及其帖子、论坛发言、余额和签到记录都会一并删除，审计记录仍会保留。继续删除“" + identity + "”？")) return;
+  if (!await window.AVEDFeedback.confirm("再次确认：该账号及其关联发言、聊天、图片、曾用名、业务记录和后台留档将永久清除。继续删除“" + identity + "”？")) return;
   try {
     await api("/api/admin/employees/" + id, { method: "DELETE" });
     if (currentUser?.id === Number(id)) {

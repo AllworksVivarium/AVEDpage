@@ -89,7 +89,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
  function broadcast(){const race=current(),shared=sharedSnapshot(race),bets=new Map();if(streams.size)for(const row of db.prepare('SELECT employee_id,market,runner,cost,prize,settled FROM derby_wagers WHERE race_id=? ORDER BY market').all(race.id)){const {employee_id,...bet}=row;if(!bets.has(employee_id))bets.set(employee_id,[]);bets.get(employee_id).push(bet);}const context={bets,events:streams.size?highlights.roundEvents?.('derby',race.id):null};for(const s of streams)write(s,race,shared,context);arm(race);}
  function queueBroadcast(){if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;try{broadcast();}catch(e){console.error('Race update:',e.message);}});broadcastTask.unref();}
  const timer=setInterval(()=>{try{if(!streams.size&&!db.prepare('SELECT 1 FROM derby_wagers WHERE settled=0 LIMIT 1').get())return;broadcast();}catch(e){console.error('Shared derby:',e.message);}},1000);timer.unref();
- return {close(){clearInterval(timer);clearImmediate(broadcastTask);clearTimer(wakeTask);for(const s of streams)s.res.end();},async handle(req,res,url){
+ return {forgetAccount(id){taxDetails.delete(id);for(const s of streams)if(s.id===id){streams.delete(s);s.res.end();}queueBroadcast();},close(){clearInterval(timer);clearImmediate(broadcastTask);clearTimer(wakeTask);for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/games/derby'))return false;const employee=requireEmployee(req,res);if(!employee)return true;
   try {
    const path=url.pathname;if(path==='/api/player/games/derby/current'&&req.method==='GET'){send(res,200,snapshot(employee.id));return true;}

@@ -11,14 +11,14 @@ export function installBarPouring({db,clock,preferences,drinking}) {
   try {
    const order=drinking.currentOrder(actor.id),glass=barGlassware.find(g=>g.id===preferences.get(actor.id).glassId);
    if(!order||order.id!==data.orderId)throw Error('饮品已更换，请重新打开。');
-   if(order.canPour===false)throw Error('这份饮品使用原杯。备用杯可以先留着，其他饮品再倒进去。');
+   if(order.canPour===false)throw Error('这份饮品不能倒入杯中。');
    const old=db.prepare('SELECT order_id,action,source,amount_ml FROM bar_pours WHERE employee_id=? AND request_key=?').get(actor.id,data.requestId);
    if(old){if(old.order_id!==data.orderId||old.action!==action||old.source!==source)throw Error('倒入凭据已使用。');db.exec('COMMIT');return {amountMl:old.amount_ml};}
    let amount=0;
    if(action==='pour') {
     if(!glass)throw Error('先选一只杯子，再倒入饮品。');
-    amount=Math.min(glass.capacityMl-order.glassMl,order.bottleMl);
-    if(amount<=0)throw Error(order.bottleMl<=0?'原容器里已经没有剩余饮品了。':'杯子已经满了，先喝一口吧。');
+    amount=order.bottleMl;
+    if(amount<=0)throw Error('原容器里已经没有剩余饮品了。');
     db.prepare("UPDATE bar_servings SET glass_ml=glass_ml+?,drink_from='glass' WHERE order_id=?").run(amount,order.id);
    }else {
     if(source==='glass'&&(!glass||order.glassMl<=0))throw Error('杯中还是空的，先倒一点进去。');

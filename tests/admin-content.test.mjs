@@ -157,6 +157,6 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await a('/api/admin/activity?category=image')).data.items.length,3);
  const stored=new DatabaseSync(join(folder,'wanyehui.db'));stored.prepare('DELETE FROM life_records WHERE employee_id=?').run(emp.data.id);stored.prepare('DELETE FROM forum_threads WHERE employee_id=?').run(emp.data.id);stored.close();
  const removal=await a('/api/admin/employees/'+emp.data.id,'DELETE');await new Promise(r=>setTimeout(r,20));assert.equal(removal.status,200,JSON.stringify(removal.data)+' '+errors);
- assert.equal((await a('/api/admin/activity?category=image')).data.items.length,3);
- assert.deepEqual(await fetchArchive(oldArchiveId),originalBytes);
+ assert.equal((await a('/api/admin/activity?category=image')).data.items.length,0,'account erasure also removes retained image audits');
+ assert.equal((await fetch(base+'/api/admin/image-archive/'+oldArchiveId,{headers:{cookie:admin}})).status,404);
 });

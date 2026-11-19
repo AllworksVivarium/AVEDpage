@@ -5,6 +5,8 @@ const fail=(message,code,status=400)=>{throw Object.assign(Error(message),{code,
 export function assertAccountNameAvailable(db,id,username){
  if(typeof username!=='string'||!username.trim()||username.trim().length>40||/[\u0000-\u001f\u007f]/u.test(username))fail('登录用户名须为 1 至 40 个字符。','INVALID_USERNAME');
  const normalized=key(username);
+ // The system identity cannot be claimed through a player's account settings.
+ if(normalized==='aved')fail('这个登录用户名已被使用。','USERNAME_TAKEN',409);
  for(const row of db.prepare('SELECT id,username,display_name FROM employees WHERE id<>?').all(id)){
   if(key(row.username)===normalized)fail('这个登录用户名已被使用。','USERNAME_TAKEN',409);
   if(key(row.display_name)===normalized)fail('登录用户名不能与其他人的真名相同。','USERNAME_REALNAME_CONFLICT',409);

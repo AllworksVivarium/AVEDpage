@@ -1,9 +1,10 @@
 import {barToleranceOptions} from './server-bar-preferences.mjs';
+import {barDrinks} from './server-bar-catalog.mjs';
 
 export const BAR_ABSENCE_MS=30*60*1000;
 export const BAR_RECOVERY_STEP_MS=10*60*1000;
 export const barBusinessDay=time=>new Date(time+4*3600000).toISOString().slice(0,10);
-export const servingRecipe=id=>id==='mineral-water'?{volume:500,sips:4,strength:0}:id==='onyx-shot'?{volume:0,sips:0,strength:0}:id.endsWith('-shot')?{volume:30,sips:1,strength:400}:id==='lemon-cocktail'?{volume:200,sips:4,strength:80}:id.endsWith('-highball')?{volume:350,sips:4,strength:70}:id==='amber-brew'?{volume:330,sips:3,strength:50}:id.endsWith('-fizz')?{volume:330,sips:4,strength:30}:{volume:500,sips:4,strength:50};
+export const servingRecipe=id=>barDrinks.find(drink=>drink.id===id)?.serving||(id==='energy-jelly'?{volume:180,sips:3,strength:0}:id==='mineral-water'?{volume:500,sips:4,strength:0}:id==='onyx-shot'?{volume:0,sips:0,strength:0}:id.endsWith('-shot')?{volume:30,sips:1,strength:400}:id==='lemon-cocktail'?{volume:200,sips:4,strength:80}:id.endsWith('-highball')?{volume:350,sips:4,strength:70}:id==='amber-brew'?{volume:330,sips:3,strength:50}:id.endsWith('-fizz')?{volume:330,sips:4,strength:30}:{volume:500,sips:4,strength:50});
 
 export function installBarDrinking({db,clock,preferences,name}){
  db.exec(`CREATE TABLE IF NOT EXISTS bar_servings(
@@ -21,7 +22,8 @@ export function installBarDrinking({db,clock,preferences,name}){
  if(!servingColumns.includes('glass_ml'))db.exec('ALTER TABLE bar_servings ADD COLUMN glass_ml INTEGER NOT NULL DEFAULT 0 CHECK(glass_ml>=0)');
  if(!servingColumns.includes('drink_from'))db.exec("ALTER TABLE bar_servings ADD COLUMN drink_from TEXT NOT NULL DEFAULT 'bottle' CHECK(drink_from IN ('bottle','glass'))");
  // Fixed-cup drinks keep their total remaining volume in their original glass.
- db.exec("UPDATE bar_servings SET glass_ml=0,drink_from='bottle' WHERE (glass_ml<>0 OR drink_from<>'bottle') AND order_id IN (SELECT id FROM bar_orders WHERE drink_id='lemon-cocktail' OR drink_id LIKE '%-shot')");
+ const restoreOriginal=db.prepare("UPDATE bar_servings SET glass_ml=0,drink_from='bottle' WHERE (glass_ml<>0 OR drink_from<>'bottle') AND order_id IN (SELECT id FROM bar_orders WHERE drink_id=?)");
+ for(const drink of barDrinks.filter(drink=>!drink.pourable))restoreOriginal.run(drink.id);
  const migrateRecovery=!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='bar_intoxication'").get();
  db.exec(`CREATE INDEX IF NOT EXISTS bar_orders_employee_latest ON bar_orders(employee_id,id DESC);
  CREATE TABLE IF NOT EXISTS bar_table_state(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,last_seen INTEGER NOT NULL,cleared_through INTEGER NOT NULL DEFAULT 0);
@@ -56,7 +58,7 @@ export function installBarDrinking({db,clock,preferences,name}){
   if(!order)return null;const recipe=servingRecipe(order.drinkId);
   if(!db.prepare('SELECT 1 FROM bar_servings WHERE order_id=?').get(order.id))db.prepare('INSERT OR IGNORE INTO bar_servings(order_id,volume_ml,remaining_ml,sip_count,strength) VALUES(?,?,?,?,?)').run(order.id,recipe.volume,recipe.volume,recipe.sips,recipe.strength);
   const serving=db.prepare('SELECT volume_ml AS volumeMl,remaining_ml AS remainingMl,sip_count AS sipCount,sips_taken AS sipsTaken,glass_ml AS glassMl,drink_from AS drinkFrom FROM bar_servings WHERE order_id=?').get(order.id);
-  return {...order,...serving,bottleMl:serving.remainingMl-serving.glassMl,canPour:order.drinkId!=='lemon-cocktail'&&!order.drinkId.endsWith('-shot')};
+  return {...order,...serving,bottleMl:serving.remainingMl-serving.glassMl,canPour:barDrinks.find(drink=>drink.id===order.drinkId)?.pourable===true};
  }
  const currentOrder=id=>{const cached=orderCache.get(id);if(cached&&clock()-cached.at<5000)return cached.value;const value=decorate(rawOrder(id));orderCache.set(id,{at:clock(),value});if(orderCache.size>1000)orderCache.delete(orderCache.keys().next().value);return value;};
  function status(id){

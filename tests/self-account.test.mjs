@@ -16,6 +16,7 @@ test('stale password verification cannot overwrite a newer account change or kee
  INSERT INTO employees VALUES(1,'original','固定真名','old-hash',1),(2,'taken','他人真名','other-hash',1);
  INSERT INTO sessions VALUES(1,'keep'),(1,'other'),(2,'other-user');`);
  const service=installSelfAccount({db,verifyPassword:async()=>true,hashPassword:async()=> 'new-hash'}),employee={id:1,displayName:'固定真名'};
+ for(const username of ['AVED','aved','ＡＶＥＤ'])await assert.rejects(service.prepare(employee,{username,currentPassword:'old'}),e=>e.code==='USERNAME_TAKEN');
  const change=await service.prepare(employee,{username:'next',currentPassword:'old'});
  db.exec("UPDATE employees SET password_hash='changed-by-admin' WHERE id=1");
  assert.throws(()=>service.apply(employee,change,['keep']),e=>e.code==='ACCOUNT_CHANGED');

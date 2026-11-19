@@ -22,12 +22,12 @@ function setup(t){
  t.after(()=>{service.close();db.close();});return {db,request,balanceFor,setTime:value=>now=value,restart(){service.close();service=installBar(options);},get service(){return service;}};
 }
 test('bar purchases use server prices, survive reentry, and never debit a retried request twice',async t=>{
- const f=setup(t),drink=barDrinks[0],key='first-order-request-001';
+ const f=setup(t),drink=barDrinks.find(d=>d.id==='lemon-fizz'),key='first-order-request-001';
  assert.equal((await f.request(null)).status,401);
  const order=await f.request(1,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:key,price:0,balance:999999});assert.equal(order.status,200);assert.equal(f.balanceFor(1),10000-drink.price);
  for(let i=0;i<2;i++)assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:key})).data.receipt.id,order.data.receipt.id);
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM balance_ledger').get().n,1);
- assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:barDrinks[1].id,requestId:key})).status,400);
+ assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:'grape-fizz',requestId:key})).status,400);
  assert.equal((await f.request(3,'/api/player/bar/orders','POST',{drinkId:drink.id,requestId:'insufficient-order-01'})).status,400);
  f.restart();assert.equal((await f.request(1)).data.myDrink.drinkId,drink.id);assert.equal((await f.request(2)).data.myDrink,null);
  assert.equal((await f.request(1,'/api/player/bar/orders','POST',{drinkId:'__proto__',requestId:'invalid-drink-0001'})).status,400);

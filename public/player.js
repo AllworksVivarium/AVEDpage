@@ -4,7 +4,7 @@
       async function api(path,{method='GET',body,...options}={}) {
         const data=await AVEDHttp.request(path,{method,...options,body:body?JSON.stringify(body):undefined});
         if(path==='/api/logout')window.AVEDIncomeVoice?.setSession(null);
-        else if(!path.startsWith('/api/player/income-events')&&(method!=='GET'||typeof data.balance==='number'))window.AVEDIncomeVoice?.changed();
+        else if(!path.startsWith('/api/session')&&!path.startsWith('/api/player/income-events')&&(method!=='GET'||typeof data.balance==='number'))window.AVEDIncomeVoice?.changed();
         return data;
       }
       const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -372,8 +372,8 @@
           if(employee.account!==authenticated.employee.username)throw new Error('登录身份未能确认，请重新接入。');
           signalPhase('正在激活员工席位',85,'归属档案已确认，正在分配工作终端……');
           await nextPaint();
-          idleSession.start(true);
-          await completeEnterIntranet(employee);
+          const visit=await idleSession.start(employee.id,{fresh:true});
+          await completeEnterIntranet(employee,{freshLogin:true,newVisit:visit.newVisit});
           signalPhase('欢迎归岗，'+employee.name,100,'接入许可已签发。您的工作终端已就绪。');
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
           delete signalOverlay.dataset.assetLoading;
@@ -412,7 +412,7 @@
         if(location.hash==='#/bar'){barUI?.enter({fromRoute:true});return;}
         barUI?.leave({navigation:false});
         const route=AVEDStartup.resolveRoute(location.hash,['profile',...mainViews]);
-        switchMainView(route.page,{game:route.game,navigation:initial?'replace':'none'});
+        switchMainView(route.page,{game:route.game,dossierId:route.dossierId,dossierPage:route.dossierPage,navigation:initial?'replace':'none'});
         if(route.page==='forum'){
           const entry=history.state?.avedForum;
           if(entry?.owner===currentUser.id&&entry.thread)openForumThread(entry.thread,entry.reply,{navigation:false}).catch(e=>showToast(e.message,'warn'));
@@ -422,12 +422,12 @@
       window.addEventListener('hashchange',()=>restorePlayerRoute());
       window.addEventListener('popstate',()=>restorePlayerRoute());
       let containmentVisit=0;
-      function switchMainView(target,{game='home',navigation='push'}={}) {
+      function switchMainView(target,{game='home',navigation='push',dossierId=null,dossierPage=0}={}) {
         if(!currentUser)return;
         if(target!=='welcome'&&!['profile',...mainViews].includes(target))return;
         if(target==='welcome'){showProfile().catch(e=>showToast(e.message));return;}
         barUI?.leave({navigation:false});
-        const path=target==='casino'?(AVEDStartup.gamePath(game)||AVEDStartup.gamePath('home')):'#/'+target;
+        const path=target==='casino'?(AVEDStartup.gamePath(game)||AVEDStartup.gamePath('home')):target==='containment'&&dossierId?AVEDDossierReader.path(dossierId,dossierPage):'#/'+target;
         if(navigation==='none'&&renderedPlayerRoute===path&&location.hash===path)return;
         if(location.hash!==path){
           if(navigation==='push')history.pushState(null,'',path);
@@ -444,6 +444,7 @@
           if(visit===containmentVisit&&!document.getElementById('view-containment').classList.contains('hidden'))triggerScpTitleRedactionGlitch();
         }).catch(e=>showToast(e.message,'warn'));
         if(target==='departments'){window.avedDepartmentFilter='';window.AVEDDepartmentArchive?.reset();renderDepartmentsAndPersonnel();}
+        if(target==='profile'&&pendingHomeVisit){pendingHomeVisit=false;adsUI?.arrival();}
         if (target === 'classified' && (!currentUser || !currentUser.isAdmin)) return;
         playSfx('click');
         document.querySelectorAll('.nav-tab-btn').forEach(b => {
@@ -590,6 +591,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
 
       function renderScpArchives() {
         AVEDArchiveBoard.cancel();
+        const dossierRoute=window.AVEDDossierReader?.route(location.hash);
+        if(dossierRoute){AVEDDossierReader.mount({container:document.getElementById('view-containment'),item:scpItemsData.find(x=>Number(x.dbId)===dossierRoute.id),selection:dossierRoute,loading:!deferredSections.has('containment')});return;}
+        window.AVEDDossierReader?.close();
         document.querySelectorAll('.scp-filter-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===selectedScpFilter)));
         const listEl = document.getElementById('scp-list-container');
         const emptyBox = document.getElementById('scp-empty-state-box');
@@ -694,7 +698,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const currentScp = scpItemsData.find(i => i.id === selectedScpId) || scpItemsData[0];
         detailEl.innerHTML = `
           <div class="scp-dossier-heading flex items-center justify-between text-[11px] font-mono-tech opacity-65 border-b border-[var(--inner-border-soft)] pb-2 mb-3">
-            <span>收容物卷宗</span><span>${currentScp.id}</span>
+            <span>收容物卷宗</span><a class="dossier-open-link" href="${AVEDDossierReader.path(currentScp.dbId)}">完整卷宗 ↗</a>
           </div>
 
           <div class="border-b-2 border-[var(--inner-border)] pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1566,7 +1570,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           if(section==='casino'){slot5x3Mechanisms.forEach((m,i)=>m.discovered=(data.slotProtocols||[]).includes(i));renderSlot5x3Board();marketRiskRules=data.stockRiskRules;marketView=data.market;stocksData.splice(0,stocksData.length,...data.stocks);stockOrdersData.splice(0,stockOrdersData.length,...data.stockOrders);renderStocks();economyUI?.updateRisk(data.stockRisk);economyUI?.updatePreferences(data.stockPreferences);welfareUI.refresh().catch(()=>{});}
           if(section==='news')renderCompanyNewsView();
           if(section==='departments')renderDepartmentsAndPersonnel();
-          if(section==='containment'){renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();const dossier=scpItemsData.find(d=>d.id===selectedScpId);if(dossier&&!byId('view-containment').classList.contains('hidden'))await loadDossierComments(dossier);}
+          if(section==='containment'){deferredSections.add(section);renderScpArchives();if(!scpSearchInput.value)randomizeScpDualNamePlaceholder();const dossier=scpItemsData.find(d=>d.id===selectedScpId);if(dossier&&!byId('view-containment').classList.contains('hidden'))await loadDossierComments(dossier);}
           deferredSections.add(section);
         }).catch(error=>{if(section==='forum'&&currentUser?.id===owner)forumBrowser.endSeed(error);throw error;}).finally(()=>{deferredRequests.delete(section);panel?.removeAttribute('aria-busy');});
         deferredRequests.set(section,task);return task;
@@ -1591,19 +1595,21 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       async function refreshBalance(){const d=await api('/api/me');if(currentUser){currentUser.balance=d.balance;syncUserHeaderUI();}}
       async function performDailyCheckin(){try{const d=await api('/api/checkin',{method:'POST'});currentUser.balance=d.balance;currentUser.lastCheckinDate=getTodayDateString();syncUserHeaderUI();showToast('签到成功，已入账 '+fmtMoney(d.reward),'success');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
       async function performClaimRelief(){try{const d=await api('/api/player/relief',{method:'POST'});currentUser.balance=d.balance;syncUserHeaderUI();showToast('低保已入账 10,000。');welfareUI?.refresh().catch(()=>{});window.AVEDRewardsRefresh?.().catch(()=>{});}catch(e){showToast(e.message,'warn');}}
-      async function completeEnterIntranet(emp){
+      async function completeEnterIntranet(emp,{freshLogin=false,newVisit=false}={}){
         innerAppView.classList.add('intranet-preparing');
         try{
-        await window.AVEDContainmentAccess.identify(emp);
-        const art=await prepareTerminalArt();
+        await window.AVEDContainmentAccess.identify(emp,{animate:freshLogin});
+        const art=freshLogin?await prepareTerminalArt():{...(await terminalArtCache.prepare()),shown:false};
         currentUser=emp;aliasInputEl.value=playerProfile.anonymousName;
         document.querySelectorAll('link[data-inner-fonts]').forEach(link=>{if(!link.hasAttribute('href'))link.href=link.dataset.innerFonts;});
         // Prepare behind the connection screen; keep the gateway until rendering succeeds.
         innerAppView.classList.remove('hidden');
         syncUserHeaderUI();renderCompanyNewsView();renderDepartmentsAndPersonnel();renderScpArchives();renderForumView();
         renderScratchTiersAndLobby();initSlot5x3Game();
-        history.replaceState(null,'','#/profile');
-        switchMainView('profile',{navigation:'replace'});
+        const requestedDossier=window.AVEDDossierReader?.route(location.hash);
+        if(requestedDossier)switchMainView('containment',{navigation:'replace',dossierId:requestedDossier.id,dossierPage:requestedDossier.page});
+        else if(freshLogin||newVisit)switchMainView('profile',{navigation:'replace'});
+        else restorePlayerRoute(true);
         communityUI.refresh();
 
         // Chat streams open only while their game panel is visible.
@@ -1613,7 +1619,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         await nextPaint();
         if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
         document.documentElement.dataset.entryState='ready';
-        adsUI?.enter();
+        const atHome=!byId('view-profile').classList.contains('hidden');
+        pendingHomeVisit=newVisit&&!atHome;
+        adsUI?.enter({popup:newVisit&&atHome});
         }catch(error){
           window.AVEDContainmentAccess.reset();
           adsUI?.reset();currentUser=null;innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
@@ -1683,7 +1691,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         if(th.preview){byId('forum-detail-main-post').textContent='';delete byId('forum-detail-main-post').dataset.rendered;}else renderForumMain(th);return forumReplies.open(th.id,replyId);
       }
       function forumBalance(item){return item.balance==null?'':`<span class="forum-author-balance"> · ${fmtMoney(item.balance)}</span>`;}
-      function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author" data-forum-presence="${esc(item.presenceKey||'')}" data-online="false">${real&&item.avatarUrl?`<span class="forum-author-avatar"><img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async"></span>`:''}<i class="forum-online-dot" aria-label="在线" hidden></i><b>${esc(name)}</b>${real?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
+      function forumAuthor(item){const name=item.anonymousName||'未登记内网 ID',official=item.isForumAdmin===1&&!item.personaId,real=!item.personaId&&item.identityMode==='real';return `<span class="forum-author"${official?' data-forum-admin="true" data-contamination-exempt data-type-ignore':''} data-forum-presence="${esc(item.presenceKey||'')}" data-online="false">${real&&item.avatarUrl?`<span class="forum-author-avatar"><img src="${esc(item.avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async"></span>`:''}<i class="forum-online-dot" aria-label="在线" hidden></i><b${official?' class="forum-admin-badge"':''}>${official?'['+esc(name)+']':esc(name)}</b>${real&&!official?' <i class="forum-real-badge">实名</i>':''}${item.canEdit&&!item.personaId?'<small class="forum-mine-badge">我的发言</small>':''}<small class="forum-author-activity" hidden></small></span>`;}
 
       async function refreshForum(){if(currentForumThreadId)return forumReplies.refresh();return forumBrowser.load();}
       async function openForumThread(id,replyId,{navigation=true}={}){
@@ -1873,22 +1881,33 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       AVEDDerbyUI({api,esc,byId,getUser:()=>currentUser,onBalance:b=>{currentUser.balance=b;syncUserHeaderUI();},showToast,playSfx});
       AVEDCardRoomLobby({api,esc,getUser:()=>currentUser,cardTable:cardTableUI,openTable:()=>{communityUI.selectGame('doudizhu');cardTableUI.ensure();byId('game-panel-doudizhu').scrollIntoView({block:'start'});}});
       AVEDVisualStyle({byId});
-      const idleSession=AVEDPlayerSession.create({storage:localStorage,onExpire:async()=>{
-        adsUI?.reset();currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
-        document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
-        try{await apiLogout();}catch{}finally{location.reload();}
-      }});
-      for(const type of ['pointerdown','pointermove','keydown','wheel','touchstart'])document.addEventListener(type,()=>idleSession.activity(),{passive:true});
-      document.addEventListener('visibilitychange',()=>idleSession.check());
-      window.addEventListener('storage',event=>{if(event.key==='aved_last_activity_v1')idleSession.check();});
+      let pendingHomeVisit=false;
+      function returnToPersonalHome(){
+        if(!currentUser)return;
+        pendingHomeVisit=true;
+        // Keep an open editor/dialog intact; the arrival ad waits for the homepage.
+        if(document.querySelector('dialog[open]')||document.activeElement?.matches('textarea,[contenteditable="true"]'))return;
+        switchMainView('profile',{navigation:'replace'});
+      }
+      const idleSession=AVEDPlayerSession.create({storage:localStorage,
+        request:activity=>api(activity?'/api/session/activity':'/api/session',{method:activity?'POST':'GET',timeoutMs:10000,retries:0,keepalive:activity}),
+        onReturn:returnToPersonalHome,
+        onExpire:()=>{
+          adsUI?.reset();window.AVEDContainmentAccess.reset();currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');
+          document.body.classList.remove('theme-inner');document.body.classList.add('theme-landing');
+          document.documentElement.dataset.entryState='landing';
+        }
+      });
+      for(const type of ['pointerdown','keydown','wheel','touchstart'])document.addEventListener(type,event=>{if(event.isTrusted&&!document.hidden)idleSession.activity();},{passive:true});
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)idleSession.leave();else void idleSession.resume();});
+      window.addEventListener('pagehide',()=>idleSession.leave());
+      window.addEventListener('pageshow',event=>{if(event.persisted)void idleSession.resume();});
+      document.addEventListener('close',()=>{if(pendingHomeVisit)returnToPersonalHome();},true);
       (async()=>{
         window.AVEDEntryBoot?.begin();
         const entryState=await AVEDStartup.restoreSession({
-          load:async()=>{
-            if(idleSession.stale()){await api('/api/logout',{method:'POST',timeoutMs:10000,retries:0});throw Object.assign(new Error('员工会话已过期。'),{status:401,code:'SESSION_EXPIRED'});}
-            return loadPlayerData();
-          },
-          enter:async employee=>{await completeEnterIntranet(employee);idleSession.start();await nextPaint();},
+          load:()=>loadPlayerData(),
+          enter:async employee=>{const visit=await idleSession.start(employee.id,{active:!document.hidden});await completeEnterIntranet(employee,{newVisit:visit.newVisit});await nextPaint();},
           signedOut:()=>{
             window.AVEDContainmentAccess.reset();
             adsUI?.reset();currentUser=null;achievementAlerts?.ensure();innerAppView.classList.add('hidden');landingView.classList.remove('hidden');

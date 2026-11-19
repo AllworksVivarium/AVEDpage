@@ -13,5 +13,5 @@ export function createInputTiming({clock=()=>Date.now()}={}){
  function allowance(id,at=clock()){const recent=(samples.get(id)||[]).filter(p=>at-p.at<120000);return recent.length?Math.min(MAX_INPUT_COMPENSATION_MS,Math.floor(Math.min(...recent.map(p=>p.rtt))/2)):0;}
  function acknowledge(id,round,token){const now=clock(),probe=probes.get(id);if(!probe||probe.round!==round||probe.token!==token||now-probe.at>6000)throw Error('校时请求已失效。');if(probe.measured===null){const rtt=Math.max(0,now-probe.at);probe.measured=rtt;const recent=(samples.get(id)||[]).filter(p=>now-p.at<120000).slice(-4);recent.push({at:now,rtt});samples.set(id,recent);}return {round,compensationMs:allowance(id,now),serverTime:now};}
  const effectiveAt=(id,receivedAt,departAt)=>Math.max(departAt,receivedAt-allowance(id,receivedAt));
- return {issue,acknowledge,allowance,effectiveAt,clear(){probes.clear();samples.clear();}};
+ return {issue,acknowledge,allowance,effectiveAt,forget(id){probes.delete(id);samples.delete(id);},clear(){probes.clear();samples.clear();}};
 }

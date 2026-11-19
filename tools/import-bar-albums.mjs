@@ -23,8 +23,8 @@ export async function importBarAlbums({base,cookie,directory,manifestPath=new UR
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- const base=process.env.AVED_BAR_IMPORT_URL||'http://127.0.0.1:4173',directory=process.argv[2];
- if(!directory||!process.env.AVED_BAR_IMPORT_COOKIE)throw Error('Provide an audio folder and AVED_BAR_IMPORT_COOKIE for the intended local preview');
- if(!['localhost','127.0.0.1','[::1]'].includes(new URL(base).hostname))throw Error('This importer is restricted to local previews');
- console.log(JSON.stringify(await importBarAlbums({base,cookie:process.env.AVED_BAR_IMPORT_COOKIE,directory})));
+ const base=process.env.AVED_BAR_IMPORT_URL||'http://127.0.0.1:4173',directory=process.argv[2],manifestPath=process.argv[3]?resolve(process.argv[3]):undefined;
+ if(!directory||!process.env.AVED_BAR_IMPORT_COOKIE)throw Error('Provide an audio folder, optional manifest path and AVED_BAR_IMPORT_COOKIE');
+ if(!['localhost','127.0.0.1','[::1]'].includes(new URL(base).hostname))throw Error('Run this importer on the intended application host using its loopback URL');
+ console.log(JSON.stringify(await importBarAlbums({base,cookie:process.env.AVED_BAR_IMPORT_COOKIE,directory,manifestPath})));
 }

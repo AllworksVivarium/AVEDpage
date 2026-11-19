@@ -15,7 +15,7 @@ test('forum paging, searching and comment-targeted unread receipts',async t=>{
  t.after(async()=>{if(child.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}assert.ok(resolve(folder).startsWith(resolve(tmpdir())+sep));rmSync(folder,{recursive:true,force:true});});
  const base='http://127.0.0.1:'+port;let ready=false;
  for(let i=0;i<70;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,100));}assert.ok(ready,errors);
- async function login(identifier,password,remember=false){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password,remember})});assert.equal(r.status,200);if(remember)assert.match(r.headers.get('set-cookie'),/Max-Age=2592000/);return r.headers.get('set-cookie').split(';')[0];}
+ async function login(identifier,password,remember=false){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password,remember})});assert.equal(r.status,200);if(remember)assert.match(r.headers.get('set-cookie'),/Max-Age=604800/);return r.headers.get('set-cookie').split(';')[0];}
  const admin=await login('community-admin','community-review-123');
  const request=async(cookie,path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};};
  const a=(p,m,b)=>request(admin,p,m,b);

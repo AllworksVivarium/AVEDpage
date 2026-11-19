@@ -66,6 +66,19 @@ def clean(database, now_ms):
 
 
 def run(database, directory, now=None):
+    # Share a crash-safe SQLite writer lock with account erasure in the app.
+    database = Path(database)
+    if not database.is_file():
+        raise FileNotFoundError(database)
+    with closing(sqlite3.connect(database.parent / 'maintenance-lock.sqlite', timeout=30)) as lock:
+        lock.execute('BEGIN IMMEDIATE')
+        try:
+            return run_locked(database, directory, now)
+        finally:
+            lock.rollback()
+
+
+def run_locked(database, directory, now=None):
     database, directory = Path(database), Path(directory)
     if not database.is_file():
         raise FileNotFoundError(database)

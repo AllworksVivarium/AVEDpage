@@ -5,8 +5,8 @@ export const barToleranceOptions=Object.freeze([
  {id:'legend',label:'千杯不醉',multiplier:3}
 ]);
 export const barGlassware=Object.freeze([
- {id:'highball',name:'直杯',image:'/assets/bar/glass-highball.svg',capacityMl:500,width:32,height:48},
- {id:'beer-mug',name:'啤酒杯',image:'/assets/bar/glass-beer-mug.svg',capacityMl:600,width:48,height:54}
+ {id:'highball',name:'直杯',image:'/assets/bar/glass-highball.svg',width:32,height:48},
+ {id:'beer-mug',name:'啤酒杯',image:'/assets/bar/glass-beer-mug.svg',width:48,height:54}
 ]);
 export const barFeatures=Object.freeze({glassware:true,pouring:true,drinking:true,intoxication:true,coasters:true});
 

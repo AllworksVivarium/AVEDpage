@@ -1,9 +1,153 @@
 [
   {
+    "id": "mineral-water",
+    "name": "矿泉水",
+    "image": "/assets/bar/mineral-water.png",
+    "price": 0,
+    "width": 153,
+    "height": 451,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "fbba7b77249c2968d9336b7975af39d9.png",
+    "displayScale": 1.1,
+    "contentBox": [
+      0,
+      0,
+      153,
+      451
+    ],
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#d9e8e3"
+  },
+  {
+    "id": "meitei-28",
+    "name": "冰黑咖啡",
+    "price": 300,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#79533c",
+    "image": "/assets/bar/meitei-28.png",
+    "width": 140,
+    "height": 280,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_28.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      140,
+      280
+    ]
+  },
+  {
+    "id": "meitei-29",
+    "name": "拿铁咖啡",
+    "price": 320,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#79533c",
+    "image": "/assets/bar/meitei-29.png",
+    "width": 140,
+    "height": 280,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_29.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      140,
+      280
+    ]
+  },
+  {
+    "id": "meitei-30",
+    "name": "原味牛奶",
+    "price": 340,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/meitei-30.png",
+    "width": 140,
+    "height": 270,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_30.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      140,
+      270
+    ]
+  },
+  {
+    "id": "meitei-31",
+    "name": "红豆甜汤",
+    "price": 360,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#79533c",
+    "image": "/assets/bar/meitei-31.png",
+    "width": 180,
+    "height": 230,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_31.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      180,
+      230
+    ]
+  },
+  {
     "id": "lemon-fizz",
     "name": "柠檬气泡酒",
     "image": "/assets/bar/lemon-fizz.png",
-    "price": 420,
+    "price": 450,
     "width": 170,
     "height": 310,
     "alpha": true,
@@ -15,13 +159,26 @@
       0,
       170,
       310
-    ]
+    ],
+    "menuGroup": {
+      "id": "fizz",
+      "name": "气泡酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 19.8
+    },
+    "liquidColor": "#efce8b",
+    "ice": true
   },
   {
     "id": "grape-fizz",
     "name": "葡萄气泡酒",
     "image": "/assets/bar/grape-fizz.png",
-    "price": 460,
+    "price": 450,
     "width": 170,
     "height": 310,
     "alpha": true,
@@ -33,13 +190,26 @@
       0,
       170,
       310
-    ]
+    ],
+    "menuGroup": {
+      "id": "fizz",
+      "name": "气泡酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 19.8
+    },
+    "liquidColor": "#b8a0bd",
+    "ice": true
   },
   {
     "id": "apple-fizz",
     "name": "青苹果气泡酒",
     "image": "/assets/bar/apple-fizz.png",
-    "price": 460,
+    "price": 450,
     "width": 170,
     "height": 310,
     "alpha": true,
@@ -51,11 +221,55 @@
       0,
       170,
       310
-    ]
+    ],
+    "menuGroup": {
+      "id": "fizz",
+      "name": "气泡酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 19.8
+    },
+    "liquidColor": "#b6d68d",
+    "ice": true
+  },
+  {
+    "id": "meitei-02",
+    "name": "青柠气泡酒",
+    "price": 450,
+    "menuGroup": {
+      "id": "fizz",
+      "name": "气泡酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 19.8
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/meitei-02.png",
+    "width": 170,
+    "height": 310,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_2.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      170,
+      310
+    ],
+    "ice": true
   },
   {
     "id": "amber-brew",
-    "name": "琥珀麦酿",
+    "name": "琥珀麦芽啤酒",
     "image": "/assets/bar/amber-brew.png",
     "price": 600,
     "width": 170,
@@ -69,11 +283,83 @@
       0,
       170,
       310
+    ],
+    "menuGroup": {
+      "id": "brew",
+      "name": "麦酿"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 3,
+      "strength": 33
+    },
+    "liquidColor": "#efce8b"
+  },
+  {
+    "id": "deisui-38",
+    "name": "莓果能量饮料",
+    "price": 600,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#d49490",
+    "image": "/assets/bar/deisui-38.png",
+    "width": 140,
+    "height": 350,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_38.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      140,
+      350
+    ]
+  },
+  {
+    "id": "deisui-39",
+    "name": "青柠能量饮料",
+    "price": 640,
+    "menuGroup": {
+      "id": "soft",
+      "name": "软饮料"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 0
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/deisui-39.png",
+    "width": 140,
+    "height": 350,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_39.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      140,
+      350
     ]
   },
   {
     "id": "silver-brew",
-    "name": "银罐清酿",
+    "name": "银标生啤酒",
     "image": "/assets/bar/silver-brew.png",
     "price": 720,
     "width": 170,
@@ -87,11 +373,23 @@
       0,
       170,
       400
-    ]
+    ],
+    "menuGroup": {
+      "id": "brew",
+      "name": "麦酿"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b"
   },
   {
     "id": "red-brew",
-    "name": "赤焰麦酿",
+    "name": "赤星拉格啤酒",
     "image": "/assets/bar/red-brew.png",
     "price": 780,
     "width": 170,
@@ -105,11 +403,198 @@
       0,
       170,
       400
+    ],
+    "menuGroup": {
+      "id": "brew",
+      "name": "麦酿"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b"
+  },
+  {
+    "id": "energy-jelly",
+    "name": "青提能量果冻",
+    "image": "/assets/bar/energy-jelly-blue.png",
+    "price": 800,
+    "width": 128,
+    "height": 204,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "energy-jelly-20261119-five-packages",
+    "displayScale": 0.7,
+    "contentBox": [
+      0,
+      0,
+      128,
+      204
+    ],
+    "container": "pouch",
+    "pourable": false,
+    "menuGroup": {
+      "id": "jelly",
+      "name": "能量果冻"
+    },
+    "serving": {
+      "volume": 180,
+      "sips": 3,
+      "strength": 0
+    }
+  },
+  {
+    "id": "energy-jelly-purple",
+    "name": "葡萄矿物果冻",
+    "image": "/assets/bar/energy-jelly-purple.png",
+    "price": 800,
+    "width": 128,
+    "height": 204,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "energy-jelly-20261119-five-packages",
+    "displayScale": 0.7,
+    "contentBox": [
+      0,
+      0,
+      128,
+      204
+    ],
+    "container": "pouch",
+    "pourable": false,
+    "menuGroup": {
+      "id": "jelly",
+      "name": "能量果冻"
+    },
+    "serving": {
+      "volume": 180,
+      "sips": 3,
+      "strength": 0
+    }
+  },
+  {
+    "id": "energy-jelly-green",
+    "name": "西柚维生素果冻",
+    "image": "/assets/bar/energy-jelly-green.png",
+    "price": 800,
+    "width": 128,
+    "height": 204,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "energy-jelly-20261119-five-packages",
+    "displayScale": 0.7,
+    "contentBox": [
+      0,
+      0,
+      128,
+      204
+    ],
+    "container": "pouch",
+    "pourable": false,
+    "menuGroup": {
+      "id": "jelly",
+      "name": "能量果冻"
+    },
+    "serving": {
+      "volume": 180,
+      "sips": 3,
+      "strength": 0
+    }
+  },
+  {
+    "id": "energy-jelly-yellow",
+    "name": "柠檬能量果冻",
+    "image": "/assets/bar/energy-jelly-yellow.png",
+    "price": 800,
+    "width": 128,
+    "height": 204,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "energy-jelly-20261119-five-packages",
+    "displayScale": 0.7,
+    "contentBox": [
+      0,
+      0,
+      128,
+      204
+    ],
+    "container": "pouch",
+    "pourable": false,
+    "menuGroup": {
+      "id": "jelly",
+      "name": "能量果冻"
+    },
+    "serving": {
+      "volume": 180,
+      "sips": 3,
+      "strength": 0
+    }
+  },
+  {
+    "id": "energy-jelly-gold",
+    "name": "黄金能量果冻",
+    "image": "/assets/bar/energy-jelly-gold.png",
+    "price": 800,
+    "width": 128,
+    "height": 204,
+    "alpha": true,
+    "sourcePack": "user-provided",
+    "sourceFile": "energy-jelly-20261119-five-packages",
+    "displayScale": 0.7,
+    "contentBox": [
+      0,
+      0,
+      128,
+      204
+    ],
+    "container": "pouch",
+    "pourable": false,
+    "menuGroup": {
+      "id": "jelly",
+      "name": "能量果冻"
+    },
+    "serving": {
+      "volume": 180,
+      "sips": 3,
+      "strength": 0
+    }
+  },
+  {
+    "id": "familiar-small-A",
+    "name": "青提利口酒",
+    "price": 900,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/familiar-small-A.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-A.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
     ]
   },
   {
     "id": "gold-brew",
-    "name": "金罐麦酿",
+    "name": "金穗麦芽啤酒",
     "image": "/assets/bar/gold-brew.png",
     "price": 960,
     "width": 170,
@@ -123,11 +608,84 @@
       0,
       170,
       400
+    ],
+    "menuGroup": {
+      "id": "brew",
+      "name": "麦酿"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b"
+  },
+  {
+    "id": "familiar-small-B",
+    "name": "黑加仑利口酒",
+    "price": 1000,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#b8a0bd",
+    "image": "/assets/bar/familiar-small-B.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-B.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
     ]
   },
   {
+    "id": "meitei-10",
+    "name": "经典威士忌嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-10.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_10.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
     "id": "blue-brew",
-    "name": "蓝罐麦酿",
+    "name": "蓝星清爽啤酒",
     "image": "/assets/bar/blue-brew.png",
     "price": 1020,
     "width": 170,
@@ -141,11 +699,145 @@
       0,
       170,
       400
+    ],
+    "menuGroup": {
+      "id": "brew",
+      "name": "麦酿"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b"
+  },
+  {
+    "id": "meitei-11",
+    "name": "姜汁嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/meitei-11.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_11.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "familiar-small-C",
+    "name": "橙皮利口酒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#d49490",
+    "image": "/assets/bar/familiar-small-C.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-C.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
     ]
   },
   {
+    "id": "meitei-18",
+    "name": "琥珀红艾尔啤酒",
+    "price": 1110,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-18.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_18.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-12",
+    "name": "浓醇威士忌嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#d49490",
+    "image": "/assets/bar/meitei-12.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_12.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
     "id": "green-bottle",
-    "name": "青标瓶啤",
+    "name": "青柠拉格啤酒",
     "image": "/assets/bar/green-bottle.png",
     "price": 1140,
     "width": 150,
@@ -159,13 +851,176 @@
       0,
       150,
       480
+    ],
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b"
+  },
+  {
+    "id": "deisui-01",
+    "name": "清爽拉格啤酒",
+    "price": 1140,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-01.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_1.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
     ]
+  },
+  {
+    "id": "meitei-19",
+    "name": "干爽生啤酒",
+    "price": 1140,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-19.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_19.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "deisui-02",
+    "name": "山风皮尔森啤酒",
+    "price": 1170,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-02.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_2.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-20",
+    "name": "金麦拉格啤酒",
+    "price": 1170,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-20.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_20.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-13",
+    "name": "冰柠嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-13.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_13.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
   },
   {
     "id": "lemon-highball",
     "name": "柠檬嗨棒",
     "image": "/assets/bar/lemon-highball.png",
-    "price": 1200,
+    "price": 1100,
     "width": 170,
     "height": 400,
     "alpha": true,
@@ -177,42 +1032,351 @@
       0,
       170,
       400
+    ],
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "ice": true
+  },
+  {
+    "id": "familiar-small-D",
+    "name": "青苹果利口酒",
+    "price": 1200,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/familiar-small-D.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-D.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
     ]
   },
   {
-    "id": "grape-highball",
-    "name": "葡萄嗨棒",
-    "image": "/assets/bar/grape-highball.png",
-    "price": 1320,
+    "id": "deisui-03",
+    "name": "白桃小麦啤酒",
+    "price": 1200,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-03.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_3.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-21",
+    "name": "蜂蜜金艾尔啤酒",
+    "price": 1200,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-21.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_21.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "deisui-04",
+    "name": "橙香小麦啤酒",
+    "price": 1230,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-04.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_4.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-22",
+    "name": "烘麦琥珀啤酒",
+    "price": 1230,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-22.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_22.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-14",
+    "name": "双柠嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-14.png",
     "width": 170,
     "height": 400,
     "alpha": true,
-    "sourcePack": "deisui",
-    "sourceFile": "宅飲みスターターセット素材_泥酔版_14.png",
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_14.png",
     "displayScale": 1,
     "contentBox": [
       0,
       0,
       170,
       400
-    ]
+    ],
+    "ice": true
   },
   {
-    "id": "lemon-cocktail",
-    "name": "柠檬特调",
-    "image": "/assets/bar/lemon-cocktail.png",
-    "price": 2160,
-    "width": 520,
+    "id": "deisui-11",
+    "name": "青柚嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/deisui-11.png",
+    "width": 170,
     "height": 400,
     "alpha": true,
     "sourcePack": "deisui",
-    "sourceFile": "宅飲みスターターセット素材_泥酔版_40.png",
-    "displayScale": 0.82,
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_11.png",
+    "displayScale": 1,
     "contentBox": [
       0,
       0,
-      520,
+      170,
       400
+    ],
+    "ice": true
+  },
+  {
+    "id": "deisui-05",
+    "name": "松针IPA啤酒",
+    "price": 1260,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-05.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_5.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-23",
+    "name": "红麦艾尔啤酒",
+    "price": 1260,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-23.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_23.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "deisui-06",
+    "name": "花香小麦啤酒",
+    "price": 1290,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-06.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_6.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-24",
+    "name": "海盐拉格啤酒",
+    "price": 1290,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-24.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_24.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
     ]
   },
   {
@@ -232,11 +1396,617 @@
       100,
       160
     ],
-    "orderable": false
+    "orderable": false,
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 0,
+      "sips": 0,
+      "strength": 0
+    },
+    "liquidColor": "#d3e3dd"
+  },
+  {
+    "id": "familiar-small-E",
+    "name": "玫瑰荔枝酒",
+    "price": 1300,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#b8a0bd",
+    "image": "/assets/bar/familiar-small-E.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-E.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
+    ]
+  },
+  {
+    "id": "meitei-15",
+    "name": "青柠嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/meitei-15.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_15.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "grape-highball",
+    "name": "葡萄嗨棒",
+    "image": "/assets/bar/grape-highball.png",
+    "price": 1100,
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_14.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#b8a0bd",
+    "ice": true
+  },
+  {
+    "id": "deisui-12",
+    "name": "白桃嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#d49490",
+    "image": "/assets/bar/deisui-12.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_12.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "deisui-07",
+    "name": "青柚拉格啤酒",
+    "price": 1320,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-07.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_7.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-25",
+    "name": "薄荷青柠啤酒",
+    "price": 1320,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-25.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_25.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "deisui-08",
+    "name": "黑麦波特啤酒",
+    "price": 1350,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-08.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_8.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-26",
+    "name": "深焙黑啤酒",
+    "price": 1350,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-26.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_26.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-16",
+    "name": "咸柠嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-16.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_16.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "deisui-13",
+    "name": "青梅嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#b6d68d",
+    "image": "/assets/bar/deisui-13.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_13.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "deisui-09",
+    "name": "焦糖世涛啤酒",
+    "price": 1380,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-09.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_9.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "meitei-27",
+    "name": "窖藏麦芽啤酒",
+    "price": 1380,
+    "menuGroup": {
+      "id": "bottled",
+      "name": "瓶啤"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 50
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/meitei-27.png",
+    "width": 150,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_27.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      150,
+      480
+    ]
+  },
+  {
+    "id": "familiar-small-F",
+    "name": "蓝柑利口酒",
+    "price": 1400,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#8dd2cc",
+    "image": "/assets/bar/familiar-small-F.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-F.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
+    ]
+  },
+  {
+    "id": "familiar-small-G",
+    "name": "柠檬蜂蜜酒",
+    "price": 1500,
+    "menuGroup": {
+      "id": "small",
+      "name": "小瓶酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 40
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/familiar-small-G.png",
+    "width": 130,
+    "height": 190,
+    "alpha": true,
+    "sourcePack": "familiar",
+    "sourceFile": "small-G.png",
+    "displayScale": 0.65,
+    "contentBox": [
+      0,
+      0,
+      130,
+      190
+    ]
+  },
+  {
+    "id": "deisui-15",
+    "name": "乌龙嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#79533c",
+    "image": "/assets/bar/deisui-15.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_15.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "deisui-16",
+    "name": "橙香嗨棒",
+    "price": 1100,
+    "menuGroup": {
+      "id": "highball",
+      "name": "嗨棒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 4,
+      "strength": 49
+    },
+    "liquidColor": "#efce8b",
+    "image": "/assets/bar/deisui-16.png",
+    "width": 170,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_16.png",
+    "displayScale": 1,
+    "contentBox": [
+      0,
+      0,
+      170,
+      400
+    ],
+    "ice": true
+  },
+  {
+    "id": "tequila-sunrise",
+    "name": "龙舌兰日出",
+    "image": "/assets/bar/fflann-tequila-sunrise.png",
+    "price": 1600,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0003.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      10,
+      2,
+      17,
+      28
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 100
+    },
+    "liquidColor": "#ec9c47",
+    "pixelArt": {
+      "inside": "M12 9H20V27H12Z",
+      "top": 28,
+      "bottom": 85
+    },
+    "ice": false,
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "citrus-vodka-tonic",
+    "name": "柑橘伏特加汤力",
+    "image": "/assets/bar/fflann-citrus-vodka-tonic.png",
+    "price": 1680,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0004.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      10,
+      2,
+      13,
+      28
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 80
+    },
+    "liquidColor": "#dfcf86",
+    "pixelArt": {
+      "inside": "M12 9H20V27H12Z",
+      "top": 28,
+      "bottom": 85
+    },
+    "ice": false,
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "helm3t-kiwi-bull",
+    "name": "奇异果特调",
+    "image": "/assets/bar/helm3t-kiwi-bull.png",
+    "price": 1760,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v1-free",
+    "sourceFile": "cocktail_1.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      1,
+      1,
+      28,
+      30
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 100
+    },
+    "liquidColor": "#bd3886",
+    "pixelArt": {
+      "inside": "M6 10H26V14H24V16H21V18H18V20H12V18H9V16H7V14H6Z",
+      "top": 31,
+      "bottom": 62
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
   },
   {
     "id": "amber-shot",
-    "name": "琥珀 shot",
+    "name": "焦糖SHOT",
     "image": "/assets/bar/amber-shot.png",
     "price": 1800,
     "width": 110,
@@ -250,11 +2020,285 @@
       15,
       100,
       160
+    ],
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 30,
+      "sips": 1,
+      "strength": 400
+    },
+    "liquidColor": "#d5a663",
+    "orderable": true
+  },
+  {
+    "id": "deisui-17",
+    "name": "赤橡威士忌",
+    "price": 1800,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-17.png",
+    "width": 190,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_17.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      590
+    ]
+  },
+  {
+    "id": "helm3t-electric-lemonade",
+    "name": "电光柠檬",
+    "image": "/assets/bar/helm3t-electric-lemonade.png",
+    "price": 1840,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v2-free",
+    "sourceFile": "Electric Lemonade​.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      9,
+      1,
+      20,
+      30
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 70
+    },
+    "liquidColor": "#4ad3df",
+    "pixelArt": {
+      "inside": "M12 10H23V28H12Z",
+      "top": 31,
+      "bottom": 87
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "deisui-18",
+    "name": "麦香烧酒",
+    "price": 1860,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-18.png",
+    "width": 200,
+    "height": 560,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_18.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      200,
+      560
+    ]
+  },
+  {
+    "id": "helm3t-tropical-pineapple-cherry",
+    "name": "菠萝樱桃",
+    "image": "/assets/bar/helm3t-tropical-pineapple-cherry.png",
+    "price": 1880,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v1-free",
+    "sourceFile": "cocktail_2.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      6,
+      1,
+      19,
+      29
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 90
+    },
+    "liquidColor": "#e69a31",
+    "pixelArt": {
+      "inside": "M10 11H22V27H10Z",
+      "top": 34,
+      "bottom": 84
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "spiced-bloody-mary",
+    "name": "香料血腥玛丽",
+    "image": "/assets/bar/fflann-spiced-bloody-mary.png",
+    "price": 1920,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0005.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      10,
+      1,
+      15,
+      29
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 100
+    },
+    "liquidColor": "#bd4c38",
+    "pixelArt": {
+      "inside": "M12 9H20V27H12Z",
+      "top": 28,
+      "bottom": 85
+    },
+    "ice": false,
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "deisui-19",
+    "name": "黑麦威士忌",
+    "price": 1920,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-19.png",
+    "width": 200,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_19.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      200,
+      590
+    ]
+  },
+  {
+    "id": "helm3t-blue-lagoon",
+    "name": "蓝色泻湖",
+    "image": "/assets/bar/helm3t-blue-lagoon.png",
+    "price": 1960,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v1-free",
+    "sourceFile": "cocktail_3.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      7,
+      2,
+      19,
+      29
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 100
+    },
+    "liquidColor": "#13b8d2",
+    "pixelArt": {
+      "inside": "M10 10H22V14H23V20H21V23H13V22H10V20H9V14H10Z",
+      "top": 31,
+      "bottom": 72
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "deisui-20",
+    "name": "橡木波本威士忌",
+    "price": 1980,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-20.png",
+    "width": 220,
+    "height": 480,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_20.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      220,
+      480
     ]
   },
   {
     "id": "scarlet-shot",
-    "name": "绯红 shot",
+    "name": "红莓SHOT",
     "image": "/assets/bar/scarlet-shot.png",
     "price": 2040,
     "width": 110,
@@ -268,11 +2312,280 @@
       15,
       100,
       160
+    ],
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 30,
+      "sips": 1,
+      "strength": 400
+    },
+    "liquidColor": "#ce8d7f",
+    "orderable": true
+  },
+  {
+    "id": "deisui-21",
+    "name": "山谷白兰地",
+    "price": 2040,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-21.png",
+    "width": 190,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_21.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      590
+    ]
+  },
+  {
+    "id": "helm3t-blue-hawaiian",
+    "name": "蓝色夏威夷",
+    "image": "/assets/bar/helm3t-blue-hawaiian.png",
+    "price": 2080,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v2-free",
+    "sourceFile": "Blue Hawaiian​.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      7,
+      2,
+      18,
+      29
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 80
+    },
+    "liquidColor": "#25b9dc",
+    "pixelArt": {
+      "inside": "M11 10H20V17H18V23H13V22H11Z",
+      "top": 31,
+      "bottom": 72
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "moscow-mule",
+    "name": "莫斯科骡子",
+    "image": "/assets/bar/fflann-moscow-mule.png",
+    "price": 2100,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0008.png",
+    "displayScale": 0.7,
+    "contentBox": [
+      5,
+      8,
+      22,
+      22
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 100
+    },
+    "liquidColor": "#ceae75",
+    "pixelArt": {
+      "inside": "M10 15H21V18H9V16H10Z",
+      "top": 47,
+      "bottom": 56
+    },
+    "ice": false,
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "deisui-22",
+    "name": "蜂蜜威士忌",
+    "price": 2100,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-22.png",
+    "width": 190,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_22.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      590
+    ]
+  },
+  {
+    "id": "lemon-cocktail",
+    "name": "能量啤酒",
+    "image": "/assets/bar/lemon-cocktail.png",
+    "price": 2160,
+    "width": 520,
+    "height": 400,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_40.png",
+    "displayScale": 0.82,
+    "contentBox": [
+      0,
+      0,
+      520,
+      400
+    ],
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 200,
+      "sips": 4,
+      "strength": 80
+    },
+    "liquidColor": "#ffd46d"
+  },
+  {
+    "id": "deisui-23",
+    "name": "麦芽威士忌",
+    "price": 2160,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-23.png",
+    "width": 190,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_23.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      590
+    ]
+  },
+  {
+    "id": "helm3t-corpse-reviver",
+    "name": "还魂者",
+    "image": "/assets/bar/helm3t-corpse-reviver.png",
+    "price": 2200,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "helm3t-v2-free",
+    "sourceFile": "Corpse Reviver​.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      5,
+      2,
+      22,
+      29
+    ],
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 250,
+      "sips": 4,
+      "strength": 150
+    },
+    "liquidColor": "#dddac4",
+    "pixelArt": {
+      "inside": "M8 9H24V13H22V15H19V17H16V18H13V16H10V14H8Z",
+      "top": 28,
+      "bottom": 56
+    },
+    "menuGroup": {
+      "id": "cocktails",
+      "name": "鸡尾酒"
+    }
+  },
+  {
+    "id": "deisui-24",
+    "name": "清米烧酒",
+    "price": 2220,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-24.png",
+    "width": 190,
+    "height": 650,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_24.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      650
     ]
   },
   {
     "id": "lime-shot",
-    "name": "青柠 shot",
+    "name": "青柠SHOT",
     "image": "/assets/bar/lime-shot.png",
     "price": 2280,
     "width": 110,
@@ -286,11 +2599,308 @@
       15,
       100,
       160
+    ],
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 30,
+      "sips": 1,
+      "strength": 400
+    },
+    "liquidColor": "#b8d18e",
+    "orderable": true
+  },
+  {
+    "id": "deisui-25",
+    "name": "梅子利口酒",
+    "price": 2280,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-25.png",
+    "width": 190,
+    "height": 610,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_25.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      610
+    ]
+  },
+  {
+    "id": "deisui-26",
+    "name": "杜松干金酒",
+    "price": 2340,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-26.png",
+    "width": 190,
+    "height": 550,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_26.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      550
+    ]
+  },
+  {
+    "id": "white-rum",
+    "name": "甘蔗白朗姆",
+    "image": "/assets/bar/fflann-white-rum.png",
+    "price": 2400,
+    "width": 32,
+    "height": 48,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0001.png",
+    "displayScale": 1.25,
+    "contentBox": [
+      10,
+      3,
+      12,
+      43
+    ],
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "pixelArt": {
+      "inside": "M12 16H20V43H12Z",
+      "details": "M11 23H21V36H11Z",
+      "top": 34,
+      "bottom": 90
+    },
+    "ice": true,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    }
+  },
+  {
+    "id": "deisui-27",
+    "name": "黑麦伏特加",
+    "price": 2400,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-27.png",
+    "width": 190,
+    "height": 530,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_27.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      530
+    ]
+  },
+  {
+    "id": "meitei-32",
+    "name": "红柚伏特加",
+    "price": 2400,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d9e8e3",
+    "image": "/assets/bar/meitei-32.png",
+    "width": 210,
+    "height": 570,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_32.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      210,
+      570
+    ]
+  },
+  {
+    "id": "deisui-28",
+    "name": "樱桃伏特加",
+    "price": 2460,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-28.png",
+    "width": 190,
+    "height": 640,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_28.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      640
+    ]
+  },
+  {
+    "id": "wheat-vodka",
+    "name": "小麦伏特加",
+    "image": "/assets/bar/fflann-wheat-vodka.png",
+    "price": 2520,
+    "width": 32,
+    "height": 48,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0002.png",
+    "displayScale": 1.25,
+    "contentBox": [
+      10,
+      3,
+      12,
+      43
+    ],
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d9e8e3",
+    "pixelArt": {
+      "inside": "M12 16H20V43H12Z",
+      "details": "M11 23H21V36H11Z",
+      "top": 34,
+      "bottom": 90
+    },
+    "ice": true,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    }
+  },
+  {
+    "id": "deisui-29",
+    "name": "青梅烧酒",
+    "price": 2520,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-29.png",
+    "width": 190,
+    "height": 620,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_29.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      620
+    ]
+  },
+  {
+    "id": "deisui-30",
+    "name": "柑橘金酒",
+    "price": 2580,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-30.png",
+    "width": 190,
+    "height": 580,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_30.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      580
     ]
   },
   {
     "id": "azure-shot",
-    "name": "蔚蓝 shot",
+    "name": "蓝柑SHOT",
     "image": "/assets/bar/azure-shot.png",
     "price": 2640,
     "width": 110,
@@ -304,11 +2914,368 @@
       15,
       100,
       160
+    ],
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 30,
+      "sips": 1,
+      "strength": 400
+    },
+    "liquidColor": "#9ac8dc",
+    "orderable": true
+  },
+  {
+    "id": "deisui-31",
+    "name": "黑雾烧酒",
+    "price": 2640,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-31.png",
+    "width": 210,
+    "height": 530,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_31.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      210,
+      530
     ]
   },
   {
+    "id": "meitei-33",
+    "name": "翠叶金酒",
+    "price": 2640,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/meitei-33.png",
+    "width": 190,
+    "height": 570,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_33.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      570
+    ]
+  },
+  {
+    "id": "deisui-32",
+    "name": "草本金酒",
+    "price": 2700,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-32.png",
+    "width": 190,
+    "height": 600,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_32.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      600
+    ]
+  },
+  {
+    "id": "deisui-33",
+    "name": "金橡威士忌",
+    "price": 2760,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-33.png",
+    "width": 190,
+    "height": 560,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_33.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      560
+    ]
+  },
+  {
+    "id": "deisui-34",
+    "name": "纯米烧酒",
+    "price": 2820,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-34.png",
+    "width": 190,
+    "height": 590,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_34.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      590
+    ]
+  },
+  {
+    "id": "deisui-35",
+    "name": "蓝湾干金酒",
+    "price": 2880,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-35.png",
+    "width": 190,
+    "height": 640,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_35.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      640
+    ]
+  },
+  {
+    "id": "meitei-34",
+    "name": "烟熏威士忌",
+    "price": 2880,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/meitei-34.png",
+    "width": 190,
+    "height": 470,
+    "alpha": true,
+    "sourcePack": "meitei",
+    "sourceFile": "宅飲みスターターセット素材_酩酊版_34.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      470
+    ]
+  },
+  {
+    "id": "deisui-36",
+    "name": "樱花利口酒",
+    "price": 2940,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "image": "/assets/bar/deisui-36.png",
+    "width": 190,
+    "height": 640,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_36.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      640
+    ]
+  },
+  {
+    "id": "aged-whiskey",
+    "name": "陈年威士忌",
+    "image": "/assets/bar/fflann-aged-whiskey.png",
+    "price": 3000,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0006.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      6,
+      1,
+      20,
+      29
+    ],
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#d6a052",
+    "pixelArt": {
+      "inside": "M9 12H23V27H9Z",
+      "details": "M9 16H23V25H9Z",
+      "top": 38,
+      "bottom": 85
+    },
+    "ice": true,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    }
+  },
+  {
+    "id": "deisui-37",
+    "name": "薄荷金酒",
+    "price": 3000,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    },
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 160
+    },
+    "liquidColor": "#e4dac3",
+    "image": "/assets/bar/deisui-37.png",
+    "width": 190,
+    "height": 660,
+    "alpha": true,
+    "sourcePack": "deisui",
+    "sourceFile": "宅飲みスターターセット素材_泥酔版_37.png",
+    "displayScale": 1.4,
+    "contentBox": [
+      0,
+      0,
+      190,
+      660
+    ]
+  },
+  {
+    "id": "agave-tequila",
+    "name": "龙舌兰",
+    "image": "/assets/bar/fflann-agave-tequila.png",
+    "price": 3240,
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "sourcePack": "fflann-cocktail-bar-free",
+    "sourceFile": "0007.png",
+    "displayScale": 0.85,
+    "contentBox": [
+      6,
+      1,
+      20,
+      29
+    ],
+    "container": "bottle",
+    "pourable": true,
+    "serving": {
+      "volume": 500,
+      "sips": 5,
+      "strength": 152
+    },
+    "liquidColor": "#e4dac3",
+    "pixelArt": {
+      "inside": "M9 12H23V27H9Z",
+      "details": "M9 16H23V25H9Z",
+      "top": 38,
+      "bottom": 85
+    },
+    "ice": true,
+    "menuGroup": {
+      "id": "spirits",
+      "name": "瓶装酒"
+    }
+  },
+  {
     "id": "amethyst-shot",
-    "name": "紫晶 shot",
+    "name": "紫葡萄SHOT",
     "image": "/assets/bar/amethyst-shot.png",
     "price": 3360,
     "width": 110,
@@ -322,24 +3289,19 @@
       15,
       100,
       160
-    ]
-  },
-  {
-    "id": "mineral-water",
-    "name": "矿泉水",
-    "image": "/assets/bar/mineral-water.png",
-    "price": 0,
-    "width": 153,
-    "height": 451,
-    "alpha": true,
-    "sourcePack": "user-provided",
-    "sourceFile": "fbba7b77249c2968d9336b7975af39d9.png",
-    "displayScale": 1.1,
-    "contentBox": [
-      0,
-      0,
-      153,
-      451
-    ]
+    ],
+    "menuGroup": {
+      "id": "shots",
+      "name": "SHOT"
+    },
+    "container": "glass",
+    "pourable": false,
+    "serving": {
+      "volume": 30,
+      "sips": 1,
+      "strength": 400
+    },
+    "liquidColor": "#c5a4da",
+    "orderable": true
   }
 ]

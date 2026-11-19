@@ -1,5 +1,4 @@
 /* Daily auctions share the wallet; browsing activity stays local to avoid polling. */
-window.AVEDAdIdle=(last,now)=>!Number.isFinite(last)||last<=0||last>now||now-last>=30*60000;
 window.AVEDAds=function({api,esc,getUser,onBalance}){
  const money=n=>Number(n).toLocaleString()+' ¤',date=n=>new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(n));
  const make=(cls,title)=>{const d=document.createElement('dialog');d.className=cls;d.setAttribute('aria-label',title);document.body.append(d);return d;};
@@ -10,16 +9,13 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  document.querySelector('#game-panel-home .company-ranking-panel').after(entry);entry.querySelector('button').onclick=()=>openMarket();
  const shortcut=document.createElement('button');shortcut.type='button';shortcut.textContent='广告竞拍';shortcut.onclick=()=>openMarket();document.querySelector('#game-panel-home .casino-home-shortcuts').append(shortcut);
  const strips=['forum','casino'].map(slot=>{const el=document.createElement('aside');el.className='ad-text-strip';el.hidden=true;el.dataset.adSlot=slot;el.setAttribute('aria-label',slot==='forum'?'论坛广告':'游戏厅广告');if(slot==='casino')document.querySelector('#game-panel-home .welfare-dashboard').before(el);else (document.querySelector('#forum-list-subview [aria-label="帖子底部翻页"]')||document.getElementById('forum-threads-list-container')).after(el);return el;});
- let owner=null,state=null,tab='auction',slotId='popup',busy=false,image='',imageBusy=false,imageVersion=0,editId=null,request=null,protectionRequest=null,visitBusy=false,visitAgain=false,version=0,countTimer=null,expiryTimer=null,display=null,delta=0,localLast=0,storedAt=0,entryTimer=null,pendingPopup=null,lastAttempt=0,previewVersion=0;
+ let owner=null,state=null,tab='auction',slotId='popup',busy=false,image='',imageBusy=false,imageVersion=0,editId=null,request=null,protectionRequest=null,visitBusy=false,visitAgain=false,version=0,countTimer=null,expiryTimer=null,display=null,delta=0,entryTimer=null,pendingPopup=null,lastAttempt=0,previewVersion=0;
  const examples=[
-  {label:'文字示例',title:'欢迎来到万业携生员工内网！',body:'我能吞下玻璃而不伤身体\n滚滚长江东逝水\n衣带渐宽终不悔，为伊消得人憔悴。\n汉体书写信息标准基础相容档案下载使用界面简单志愿服务升级方案。',signature:'万业携生网络工程部'},
+  {label:'文字示例',title:'欢迎来到万业携生员工内网！',body:'滚滚长江东逝水\n我能吞下玻璃而不伤身体\n衣带渐宽终不悔，为伊消得人憔悴\n汉体书写信息技术标准相容档案下载使用界面简单支援服务升级资讯专业制作创意空间快速无线上网',signature:'万业携生网络工程部'},
   {label:'图文示例',title:'下班来坐一会儿',body:'忙完了就来 Sloper 坐坐。\n喝点东西，听首歌，碰见同事就聊两句。',signature:'Sloper',imageUrl:'/assets/ad-examples/sloper.webp'},
   {label:'图片示例',imageUrl:'/assets/ad-examples/company.webp'}
  ];
  const now=()=>Date.now()+delta;
- const activityKey=()=> 'aved-ad-activity:'+getUser()?.id;
- const readActivity=()=>{try{const n=Number(localStorage.getItem(activityKey()));return Number.isFinite(n)&&n<=Date.now()?n:0;}catch{return localLast;}};
- function touch(force=false){localLast=Date.now();if(force||localLast-storedAt>10000){storedAt=localLast;try{localStorage.setItem(activityKey(),String(localLast));}catch{}}}
  function art(item){return `<article class="ad-creative ${item.imageUrl||item.image?'ad-with-image':''}" data-type-ignore data-keep-original>${item.imageUrl||item.image?`<img src="${esc(item.imageUrl||item.image)}" alt="广告配图">`:''}${item.title?`<h3 class="ad-creative-title">${esc(item.title)}</h3>`:''}${item.body?`<p class="ad-copy">${esc(item.body)}</p>`:''}${item.signature?`<footer><span class="ad-signature">${esc(item.signature)}</span></footer>`:''}</article>`;}
  const stripExamples=new Map();
  function showStripExample(slot){
@@ -27,7 +23,7 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
   let example=stripExamples.get(slot);
   if(!example){example=document.createElement('aside');example.className='ad-text-strip ad-text-example';example.setAttribute('aria-label',slot==='forum'?'论坛广告示例':'游戏厅广告示例');target.before(example);stripExamples.set(slot,example);}
   example.hidden=false;
-  example.innerHTML='<small>广告示例</small>'+art({title:'欢迎来到万业携生员工内网！',body:'我能吞下玻璃而不伤身体\n滚滚长江东逝水',signature:'万业携生网络工程部'})+'<button type="button" data-ad-hide-example>收起示例</button>';
+  example.innerHTML='<small>广告示例</small>'+art({title:'欢迎来到万业携生员工内网！',body:'滚滚长江东逝水\n我能吞下玻璃而不伤身体',signature:'万业携生网络工程部'})+'<button type="button" data-ad-hide-example>收起示例</button>';
   example.querySelector('button').onclick=()=>{example.hidden=true;};
   marketDialog.close();if(slot==='forum')document.querySelector('[data-nav="forum"]').click();else document.querySelector('[data-nav="casino"]').click();
   requestAnimationFrame(()=>example.scrollIntoView({block:'center'}));
@@ -101,22 +97,22 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  marketDialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});
  marketDialog.addEventListener('close',()=>{clearCount();previewVersion++;imageVersion++;imageBusy=false;request=null;tryPopup();});
  marketDialog.querySelectorAll('[data-ad-tab]').forEach(b=>b.onclick=()=>{if(busy)return;tab=b.dataset.adTab;editId=null;image='';imageBusy=false;imageVersion++;request=null;render();});
- for(const el of [preview,popup]){el.onclick=()=>{el.close();touch(true);};el.addEventListener('cancel',()=>touch(true));}
+ for(const el of [preview,popup])el.onclick=()=>el.close();
  function paintStrips(){for(const el of strips){const item=display?.items.find(x=>x.slot===el.dataset.adSlot);el.hidden=!item||display.endsAt<=now()||display.protectionUntil>now();el.innerHTML=item?'<small>广告</small>'+art(item)+'<button type="button" data-ad-open>投放 ↗</button>':'';el.querySelector('button')?.addEventListener('click',()=>openMarket());}}
- function tryPopup(){if(!pendingPopup||!getUser()||document.hidden||document.querySelector('dialog[open]')||document.documentElement.dataset.entryState!=='ready')return;const item=pendingPopup;pendingPopup=null;if(!display||display.endsAt<=now()||display.protectionUntil>now())return;popup.innerHTML='<div class="ad-popup-label">广告 <span>点击任意处关闭</span></div>'+art(item);popup.showModal();}
+ function tryPopup(){if(!pendingPopup||!getUser()||document.hidden||document.getElementById('view-profile')?.classList.contains('hidden')||document.querySelector('dialog[open]')||document.documentElement.dataset.entryState!=='ready')return;const item=pendingPopup;pendingPopup=null;if(!display||display.endsAt<=now()||display.protectionUntil>now())return;popup.innerHTML='<div class="ad-popup-label">广告 <span>点击任意处关闭</span></div>'+art(item);popup.showModal();}
  async function visit(wantPopup){
   if(!getUser()||document.hidden)return;if(visitBusy){visitAgain ||= wantPopup;return;}visitBusy=true;lastAttempt=Date.now();const actor=getUser().id,v=version;
   try{const d=await api('/api/player/ads/visit',{method:'POST',body:{popup:wantPopup}});if(v!==version||getUser()?.id!==actor)return;display=d;delta=d.serverTime-Date.now();paintStrips();clearTimeout(expiryTimer);const expires=d.protectionUntil>now()?Math.min(d.endsAt,d.protectionUntil):d.endsAt;expiryTimer=setTimeout(()=>{for(const el of strips)el.hidden=true;popup.close();pendingPopup=null;display=null;void visit(false);},Math.max(1,expires-now()));
    if(d.popup){if(d.popup.imageUrl){const img=new Image();img.src=d.popup.imageUrl;try{await img.decode();}catch{}if(v!==version||getUser()?.id!==actor)return;}pendingPopup=d.popup;tryPopup();}
   }catch{/* Advertising never blocks navigation or login. */}finally{if(v===version){visitBusy=false;if(visitAgain){visitAgain=false;void visit(true);}}}
  }
- function activity(){if(!getUser()||document.hidden)return;const last=Math.max(localLast,readActivity()),idle=!!last&&window.AVEDAdIdle(last,Date.now());touch();if(idle||((!display||display.endsAt<=now())&&Date.now()-lastAttempt>30000)){void visit(idle);}tryPopup();}
+ function activity(){if(!getUser()||document.hidden)return;if((!display||display.endsAt<=now())&&Date.now()-lastAttempt>30000)void visit(false);tryPopup();}
  for(const name of ['pointerdown','keydown','scroll'])document.addEventListener(name,activity,{passive:true,capture:true});
- document.addEventListener('visibilitychange',()=>{if(document.hidden){if(getUser())touch(true);}else activity();});
- window.addEventListener('focus',()=>activity());window.addEventListener('pagehide',()=>{if(getUser())touch(true);});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)activity();});
  window.addEventListener('storage',e=>{if(e.key==='aved-ad-protection:'+getUser()?.id){popup.close();pendingPopup=null;for(const el of strips)el.hidden=true;void visit(false);}});
  document.addEventListener('close',tryPopup,true);
- function reset(){for(const example of stripExamples.values())example.hidden=true;version++;previewVersion++;owner=null;state=null;display=null;pendingPopup=null;busy=false;visitBusy=false;visitAgain=false;imageVersion++;imageBusy=false;image='';localLast=0;clearCount();clearTimeout(entryTimer);clearTimeout(expiryTimer);for(const d of [marketDialog,preview,popup])d.close();for(const el of strips)el.hidden=true;}
- function enter(){reset();owner=getUser()?.id;if(!owner)return;const want=window.AVEDAdIdle(readActivity(),Date.now());touch(true);entryTimer=setTimeout(()=>{void visit(want);},500);}
- return {enter,reset,open:openMarket};
+ function reset(){for(const example of stripExamples.values())example.hidden=true;version++;previewVersion++;owner=null;state=null;display=null;pendingPopup=null;busy=false;visitBusy=false;visitAgain=false;imageVersion++;imageBusy=false;image='';clearCount();clearTimeout(entryTimer);clearTimeout(expiryTimer);for(const d of [marketDialog,preview,popup])d.close();for(const el of strips)el.hidden=true;}
+ function arrival(){clearTimeout(entryTimer);entryTimer=setTimeout(()=>{if(!document.hidden&&!document.getElementById('view-profile')?.classList.contains('hidden'))void visit(true);},500);}
+ function enter({popup:want=false}={}){reset();owner=getUser()?.id;if(!owner)return;if(want)arrival();else void visit(false);}
+ return {enter,arrival,reset,open:openMarket};
 };

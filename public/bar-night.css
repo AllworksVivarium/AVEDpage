@@ -71,7 +71,7 @@
 .bar-night .bar-volume input{accent-color:#b88a78}
 .bar-night .bar-menu-grid{gap:0;background:#5c4548}
 .bar-room.bar-night .bar-menu-item{
- position:relative;background:linear-gradient(135deg,#2d2427,#241d23);padding:18px 5px 15px;gap:8px;
+ position:relative;background:linear-gradient(135deg,#2d2427,#241d23);padding:18px 3px 10px;gap:6px;
  border-right:1px solid #584448;border-bottom:1px solid #584448;
 }
 .bar-night .bar-menu-item::before{content:attr(data-menu-number);position:absolute;top:6px;left:7px;font:9px monospace;color:#92777b}
@@ -79,6 +79,11 @@
 .bar-night .bar-menu-item span{color:#ddcbb5}
 .bar-night .bar-menu-item small{color:#d9ae76;font-variant-numeric:tabular-nums}
 .bar-night .bar-menu-item[aria-pressed=true]{background:#443039;box-shadow:inset 0 0 0 1px #c49b76}
+.bar-room .bar-family-heading{display:flex;align-items:center;gap:14px;padding:12px 14px;border-top:1px solid #584448;border-bottom:1px solid #584448;background:#251c22}
+.bar-room .bar-family-heading[hidden]{display:none}
+.bar-family-heading button{font-size:11px;padding:5px 8px}.bar-family-heading strong{font-size:13px;font-weight:500;color:#ddcbb5}
+.bar-room .bar-menu-item .bar-family-count{position:absolute;top:6px;right:7px;font:9px var(--type-ui,sans-serif);color:#b99b86;white-space:nowrap}
+.bar-room .bar-menu-item[data-drink-group] small{font-size:10px;white-space:nowrap}
 .bar-night .bar-order-confirm{background:#35272e;border-color:#b78d72;box-shadow:0 -3px 10px #08050c44}
 .bar-night .bar-order-confirm .bar-buy{background:#c4a16f;color:#241b1d;border-color:#dfc397}
 

@@ -69,6 +69,7 @@ async function renderSpeechRecords(){
 }
 
 async function renderContentAdmin(section='announcements'){
+ if(section==='dossiers'&&window.AVEDAdminDossiers)return AVEDAdminDossiers.mount({panel:$('#panel'),api,userId:currentUser.id});
  const [news,files]=await Promise.all([section==='announcements'?api('/api/admin/announcements'):{items:[]},section==='dossiers'?api('/api/admin/dossiers'):{items:[]}]);
  const publicationInput=n=>new Date(AVEDTime.parse(n?.publishedAt||n?.createdAt||new Date().toISOString()).getTime()+8*3600000).toISOString().slice(0,19);
  const noticeFields=n=>`<label>标题<input name="title" required maxlength="150" value="${esc(n?.title||'')}"></label><label>正文<textarea name="body" required maxlength="5000" rows="5">${esc(n?.body||'')}</textarea></label><label>称呼（选填）<input name="recipient" maxlength="200" placeholder="例如：各部门、全体员工：" value="${esc(n?.recipient||'')}"></label><label>落款（选填）<input name="issuer" maxlength="80" placeholder="例如：万业携生行政部" value="${esc(n?.issuer||'')}"></label><label>发布时间（内网时间）<input name="publishedAt" type="datetime-local" step="1" required value="${publicationInput(n)}"></label><label><span><input name="pinned" type="checkbox" ${n?.pinned?'checked':''}>置顶</span></label><button class="small-action">${n?'保存修改':'发布公告'}</button>`;
@@ -146,6 +147,7 @@ async function renderTerminology(){
 }
 
 async function renderForumWorkshopAdmin(){
+ if(currentUser?.username!=='AVED'){showError('当前身份无权使用演绎编排。');return;}
  $('#panel').innerHTML='<div class="section-heading"><h3>论坛演绎</h3><p>角色代发 / 对话编排</p></div><div id="admin-forum-workshop"></div>';
  const target=$('#admin-forum-workshop'),mount=await AVEDLoadForumWorkshop();if(!target.isConnected)return;
  await mount({container:target,administrative:true,api:(path,options={})=>api(path,{...options,...(options.body?{body:JSON.stringify(options.body)}:{})})});

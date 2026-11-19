@@ -26,9 +26,10 @@ test('the public directory excludes company robots while retaining real personne
    INSERT INTO employees VALUES(1,'玩家','收容部','player_employee',1,'成员',0,0),(2,'企划职员','公司直属','planning_member',0,'监察员',1,1),(3,'公司机器人','','player_employee',0,'',1,0);
    INSERT INTO company_robots VALUES(3,'演绎代号');`);
   db.exec("ALTER TABLE employees ADD COLUMN containment_classification TEXT NOT NULL DEFAULT ''");
-  const publicNames=directoryEmployees(db).map(e=>e.displayName);assert.deepEqual(publicNames,['玩家','企划职员']);
+  db.exec("ALTER TABLE employees ADD COLUMN username TEXT DEFAULT '';INSERT INTO employees(id,username,display_name,department,identity_kind,enabled,is_npc,is_leadership) VALUES(4,'AVED','系统管理员','公司直属','planning_member',1,0,1),(5,'regular','系统管理员','科研部','player_employee',1,0,0)");
+  const publicNames=directoryEmployees(db).map(e=>e.displayName);assert.deepEqual(publicNames,['玩家','企划职员','系统管理员']);assert.ok(!directoryEmployees(db).some(e=>e.id===4));
   assert.equal(db.prepare('SELECT codename FROM company_robots WHERE employee_id=3').get().codename,'演绎代号','fictional forum identities remain available');
-  assert.equal(db.prepare('SELECT count(*) n FROM employees').get().n,3,'hiding does not delete accounts');
+  assert.equal(db.prepare('SELECT count(*) n FROM employees').get().n,5,'hiding does not delete accounts');
  }finally{db.close();}
 });
 

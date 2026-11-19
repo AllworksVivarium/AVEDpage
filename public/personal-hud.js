@@ -2,7 +2,7 @@
 window.AVEDPersonalUI=function({api,esc,byId,getUser,getProfile,getAchievements,getRecords=()=>null,welfare,onBalance,onDailyCheckin,showToast}){
  let cleanup=()=>{},version=0;const typedProgress=new Map();
  const money=n=>'¤ '+Number(n||0).toLocaleString(),games={scratch:'刮刮乐',slot:'异常回路',sky:'高空速降',derby:'异常竞速',cards:'牌桌'};
- const backgrounds=[['image','建筑背景',0],['sphere','信号球体',100000]],patterns=[['plain','无纹理',0],['halftone','波纹网点',20000],['fade','渐隐网点',20000],['grain','磨砂纸纹',20000],['ascii','符号瀑流',50000],['phase','相位点阵',50000]];
+ const backgrounds=[['image','建筑背景',0],['sphere','信号球体',100000]],patterns=[['plain','无纹理',0],['halftone','波纹网点',20000],['fade','渐隐网点',20000],['grain','磨砂纸纹',20000],['grid','制图网格',20000],['ascii','字符涌流',50000],['rain','符号瀑流',50000],['phase','相位点阵',50000]];
  const paths={fx:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z',sound:'M11 4 6 8H3v8h3l5 4Z M16 8l5 8 M21 8l-5 8',soundOn:'M11 4 6 8H3v8h3l5 4Z M15 8q5 4 0 8 M18 5q8 7 0 14',tools:'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M9 15v6',edit:'m15 4 5 5-11 11H4v-5Z M12 7l5 5',clock:'M12 6v6l4 2',check:'m5 12 4 4L19 6'};
  const icon=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">${n==='clock'?'<circle cx="12" cy="12" r="9"/>':''}<path d="${paths[n]}"/></svg>`;
  function render(){

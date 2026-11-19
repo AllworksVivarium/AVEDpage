@@ -1,0 +1,586 @@
+{
+  "downloadedOn": "2026-11-19",
+  "albums": [
+    {
+      "id": "tomality-sampler",
+      "title": "Free Game Music Sampler Vol. 1",
+      "artist": "Tomality",
+      "license": "Tomality Free Sampler License",
+      "licenseUrl": "https://tomality.itch.io/free-sampler-pack-1",
+      "sourceUrl": "https://tomality.itch.io/free-sampler-pack-1",
+      "tracks": [
+        {
+          "title": "Dance Party",
+          "file": "tomality-sampler/01.mp3",
+          "trackNumber": 1,
+          "durationSeconds": 76,
+          "byteSize": 3024000,
+          "sha256": "f942c3e0a5864a98fc7e34682aafb463f2076db177f656e19df10ffbf378909b",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/DANCE PARTY - ELECTRO DANCE PACK/Dance Party FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "f942c3e0a5864a98fc7e34682aafb463f2076db177f656e19df10ffbf378909b",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Rainy Day in Bed",
+          "file": "tomality-sampler/02.mp3",
+          "trackNumber": 2,
+          "durationSeconds": 80,
+          "byteSize": 3166080,
+          "sha256": "cf7470e48e86c25bbe951256492c838dd9472c4f4169ff6fb1d2080b41ae2fa9",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/RAINY DAY IN BED - INDIE SUNSETS PACK/Rainy Day in Bed FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "cf7470e48e86c25bbe951256492c838dd9472c4f4169ff6fb1d2080b41ae2fa9",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Story Writer",
+          "file": "tomality-sampler/03.mp3",
+          "trackNumber": 3,
+          "durationSeconds": 129,
+          "byteSize": 5120640,
+          "sha256": "c38c5706e043eaa82d1195a61f49deef61420762d1bef9f1ce3b91414b423759",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/STORY WRITER - FANTASY LEGENDS PACK/Story Writer FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "c38c5706e043eaa82d1195a61f49deef61420762d1bef9f1ce3b91414b423759",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Weird Things at Night",
+          "file": "tomality-sampler/04.mp3",
+          "trackNumber": 4,
+          "durationSeconds": 141,
+          "byteSize": 5640000,
+          "sha256": "d9d2c7907de84ee299b0117225ce8708f12fc1db53636e248381060556b43009",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/WEIRD THINGS AT NIGHT - ANALOG HORROR PACK/Weird Things at Night FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "d9d2c7907de84ee299b0117225ce8708f12fc1db53636e248381060556b43009",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Vacation Overtime",
+          "file": "tomality-sampler/05.mp3",
+          "trackNumber": 5,
+          "durationSeconds": 153,
+          "byteSize": 6098880,
+          "sha256": "0b11f0490debdd7eebb7051ef7bbacb9dad9e3a61d2b1dd0bd4bf2e0c135350e",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/VACATION OVERTIME - NEW AGE VAPORWAVE PACK/Vacation Overtime FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "0b11f0490debdd7eebb7051ef7bbacb9dad9e3a61d2b1dd0bd4bf2e0c135350e",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Polaris",
+          "file": "tomality-sampler/06.mp3",
+          "trackNumber": 6,
+          "durationSeconds": 82,
+          "byteSize": 3241920,
+          "sha256": "d8b63845fb16d2064ae17e9868537611e49fb8dafa077c0439eca505c12dfdb2",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/POLARIS - SCI-FI HORIZONS PACK/Polaris FULL TRACK.mp3",
+          "originalSha256": "d8b63845fb16d2064ae17e9868537611e49fb8dafa077c0439eca505c12dfdb2",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Space Cat Swing",
+          "file": "tomality-sampler/07.mp3",
+          "trackNumber": 7,
+          "durationSeconds": 123,
+          "byteSize": 4881600,
+          "sha256": "85cf795da88639ea335bd490072dace6ae362c7ab87fb2fc6a0d34127202d5cc",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPACE CAT SWING - ELECTRO SWING PACK/Space Cat Swing FULL TRACK LOOPABLE.mp3",
+          "originalSha256": "85cf795da88639ea335bd490072dace6ae362c7ab87fb2fc6a0d34127202d5cc",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Spinner",
+          "file": "tomality-sampler/08.mp3",
+          "trackNumber": 8,
+          "durationSeconds": 130,
+          "byteSize": 5195520,
+          "sha256": "b3315a7f9c9a4aa643270377124d0a923af9a9807441a0b86dc3ff03fe6f80b4",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPINNER - CYBERPUNK RUNNERS PACK/Spinner FULL TRACK.mp3",
+          "originalSha256": "b3315a7f9c9a4aa643270377124d0a923af9a9807441a0b86dc3ff03fe6f80b4",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Summer Festival Memories",
+          "file": "tomality-sampler/09.mp3",
+          "trackNumber": 9,
+          "durationSeconds": 281,
+          "byteSize": 11200320,
+          "sha256": "ba68134a4b8fec7eb8569f5015c2a84fdda0c3c76382efdbff591f5599296644",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories FULL TRACK.mp3",
+          "originalSha256": "ba68134a4b8fec7eb8569f5015c2a84fdda0c3c76382efdbff591f5599296644",
+          "conversion": "Original MP3, unchanged"
+        },
+        {
+          "title": "Military Honor",
+          "file": "tomality-sampler/10.mp3",
+          "trackNumber": 10,
+          "durationSeconds": 108,
+          "byteSize": 4313280,
+          "sha256": "55cbad45d1f6439306324921ea1782c8eb20dc00f714e82c7ebaa1d044546b52",
+          "originalFile": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/MILITARY HONOR - CINEMATIC FANTASIES PACK/Military Honor FULL TRACK.mp3",
+          "originalSha256": "55cbad45d1f6439306324921ea1782c8eb20dc00f714e82c7ebaa1d044546b52",
+          "conversion": "Original MP3, unchanged"
+        }
+      ]
+    },
+    {
+      "id": "analog-ambience",
+      "title": "Analog Ambience",
+      "artist": "Voltz Supreme",
+      "license": "Free use with artist credit",
+      "licenseUrl": "https://voltzsupreme.itch.io/analog-ambience",
+      "sourceUrl": "https://voltzsupreme.itch.io/analog-ambience",
+      "tracks": [
+        {
+          "title": "Long Highway",
+          "file": "analog-ambience/01.mp3",
+          "trackNumber": 1,
+          "durationSeconds": 299,
+          "byteSize": 5974859,
+          "sha256": "c412189036df9d8463c6466b42fdd45dd5fc928eb1854213543b5f7a37f369ed",
+          "originalFile": "originals/analog-original/01 - Long Highway.wav",
+          "originalSha256": "dce96bacbe78c5343555bda0ba5ec214db2da0e3a33918dedf150632c47ba695",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Fields of Your Mind",
+          "file": "analog-ambience/02.mp3",
+          "trackNumber": 2,
+          "durationSeconds": 302,
+          "byteSize": 6035470,
+          "sha256": "8b7d3b86ac79880b1c7a55533f0ef0b3100816b48e8eb285c80e4f4f40458f48",
+          "originalFile": "originals/analog-original/02 - Fields of Your Mind.wav",
+          "originalSha256": "7b73f50d1c5ca2370599ae141886883457ecdf6df52b83268b5ed370b324f2a9",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Trees",
+          "file": "analog-ambience/03.mp3",
+          "trackNumber": 3,
+          "durationSeconds": 384,
+          "byteSize": 7681170,
+          "sha256": "231a8fe01fff874711d2969016335328aefa799ea1e5d25fd1e7f29487a53ff5",
+          "originalFile": "originals/analog-original/03 - Trees.wav",
+          "originalSha256": "09b2b0e3bb7aa7ee21a60a7f8a70d544176e8d77deb97d6baf638b580229394b",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Trees Underwater",
+          "file": "analog-ambience/04.mp3",
+          "trackNumber": 4,
+          "durationSeconds": 336,
+          "byteSize": 6721443,
+          "sha256": "8de7f83677696f722213024fddd4705a5a546db6d9e2e0b0d0d80552f5444234",
+          "originalFile": "originals/analog-original/04 - Trees Underwater.wav",
+          "originalSha256": "22e866ad8d47b9cfe95c202d73afdd04a6de8537175e706bb68e13d5bbc749ca",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Black Energy",
+          "file": "analog-ambience/05.mp3",
+          "trackNumber": 5,
+          "durationSeconds": 72,
+          "byteSize": 1423806,
+          "sha256": "dfd029a0796d1a50dd5ce1a40fb469ccfb7ee2a56af2e33f5971e96b5af00bf0",
+          "originalFile": "originals/analog-original/05 - Black Energy.wav",
+          "originalSha256": "ac52db6fd3dcc3f5ba392b34be16907b02aa23187978a8d877837e50f0f9600d",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Night Drive",
+          "file": "analog-ambience/06.mp3",
+          "trackNumber": 6,
+          "durationSeconds": 320,
+          "byteSize": 6401176,
+          "sha256": "22e7655d9fdeed0f64a76a77f5c19d7eb3d9344f6c7352bc732515056544126e",
+          "originalFile": "originals/analog-original/06 - Night Drive.wav",
+          "originalSha256": "585fc19ab54fb7bc97134b935c417d49c51bbd2755eb6d94e009e4e57de39e84",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Low Fog",
+          "file": "analog-ambience/07.mp3",
+          "trackNumber": 7,
+          "durationSeconds": 249,
+          "byteSize": 4975932,
+          "sha256": "204a71a63db3cc168eac4a0675a12fcec0a4186ba6ef903993e7ead85a51121f",
+          "originalFile": "originals/analog-original/07 - Low Fog.wav",
+          "originalSha256": "633bd9f00a525d8106b27c260a9b48d3c8249f361dc57c2cea2e273f66d0adad",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Cool Breeze in the Sails",
+          "file": "analog-ambience/08.mp3",
+          "trackNumber": 8,
+          "durationSeconds": 112,
+          "byteSize": 2241451,
+          "sha256": "3689ee16827f7de92f70bfd0d61382a7ba381b82e104df22d2778fc938b0f1a1",
+          "originalFile": "originals/analog-original/08 - Cool Breeze in the Sails.wav",
+          "originalSha256": "286ef378f6780ed7f7d82789ac77039076e3b10b3910d0440ed5d15202eedbf9",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Head in a Fishtank",
+          "file": "analog-ambience/09.mp3",
+          "trackNumber": 9,
+          "durationSeconds": 173,
+          "byteSize": 3457183,
+          "sha256": "a3acc2249605f03b44ff04f80d9d2206ff50685954a80b6bcca662b8850c3e9d",
+          "originalFile": "originals/analog-original/09 - Head in a Fishtank.wav",
+          "originalSha256": "70f97d51f29718e51f6b7715222fb84aeef2f28479bd90cba7c08716e226d782",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Head in a Fishtank - Just Bubbles",
+          "file": "analog-ambience/10.mp3",
+          "trackNumber": 10,
+          "durationSeconds": 173,
+          "byteSize": 3457199,
+          "sha256": "9e8d266b07146fffead52a97662d0a9ac375a6f966d4ee9188f77444e6d8b49b",
+          "originalFile": "originals/analog-original/09 - Head in a Fishtank - Just Bubbles.wav",
+          "originalSha256": "a3823b82dc840363bb3f421d28b37c213d6d6ac84d0039ad654bee843ae26b21",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Cooling Reactor",
+          "file": "analog-ambience/11.mp3",
+          "trackNumber": 11,
+          "durationSeconds": 95,
+          "byteSize": 1897671,
+          "sha256": "c596fdefbbb42400755b17e34b201a66b6956030f6bff4c4f88fae696f9844a7",
+          "originalFile": "originals/analog-original/10 - Cooling Reactor.wav",
+          "originalSha256": "82b77ba36c99199795d0fe1a2cbc9a47df372899f52ba600d68b69b68d14480a",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Kitten in a Cave",
+          "file": "analog-ambience/12.mp3",
+          "trackNumber": 12,
+          "durationSeconds": 110,
+          "byteSize": 2195468,
+          "sha256": "58ce9c352adee75fa3d6ea7bf574980d4b830db0c710c4bc841bc86f00ba9e41",
+          "originalFile": "originals/analog-original/11 - Kitten in a Cave.wav",
+          "originalSha256": "08eee3458b26c37b45903d925f47e7a8d7de36ab4d1bc1b5c7a0778ff18c3f7d",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Sunset",
+          "file": "analog-ambience/13.mp3",
+          "trackNumber": 13,
+          "durationSeconds": 238,
+          "byteSize": 4749711,
+          "sha256": "091f6773a64b69182acc5e616959c707c95b3c4c482e1249f1cea9bd142154c8",
+          "originalFile": "originals/analog-original/12 - Sunset.wav",
+          "originalSha256": "e45a28ec18e0b9393e169227a20d7e8e9f60891b35660a39a8c772bf5b8515df",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Water Caves",
+          "file": "analog-ambience/14.mp3",
+          "trackNumber": 14,
+          "durationSeconds": 192,
+          "byteSize": 3841177,
+          "sha256": "aad4c7044182897618c59cf274d7c73876df57608700ee7953f5c73b2c39a505",
+          "originalFile": "originals/analog-original/13 - Water Caves.wav",
+          "originalSha256": "921ab2f8077ae350215daf4d16f226eaecc11bcfcabafb388e0319647f427436",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Waiting for Help",
+          "file": "analog-ambience/15.mp3",
+          "trackNumber": 15,
+          "durationSeconds": 200,
+          "byteSize": 4001574,
+          "sha256": "36498a2c0335e63e53075bf67df4ff2664cfb2dfeb170abec38405091883bf88",
+          "originalFile": "originals/analog-original/14 - Waiting for Help.wav",
+          "originalSha256": "33edea5613e2272bd2ece1b7f4616627f43a0bda2165c3dff75169400d3b332c",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Creepy",
+          "file": "analog-ambience/16.mp3",
+          "trackNumber": 16,
+          "durationSeconds": 58,
+          "byteSize": 1153172,
+          "sha256": "8c64311ce20823396a7d5023d518021c119f4477e551d56fe0b22dceef6242ff",
+          "originalFile": "originals/analog-2020/Voltz Supreme - Creepy.wav",
+          "originalSha256": "385cca553c4e17cff78cd034169aacc40cffd2b2b1fd534f9c16a23ad114a141",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Darkness",
+          "file": "analog-ambience/17.mp3",
+          "trackNumber": 17,
+          "durationSeconds": 192,
+          "byteSize": 3841174,
+          "sha256": "1c5a759136410be70b5f598c22035b9e72b38bb84f6829469777e112e866448a",
+          "originalFile": "originals/analog-2020/Voltz Supreme - Darkness.wav",
+          "originalSha256": "d075b764f82195d2c6c531aafb338f9e7ad1186e43c6eee77000e946328bd35a",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Dreamy Ending (Long)",
+          "file": "analog-ambience/18.mp3",
+          "trackNumber": 18,
+          "durationSeconds": 92,
+          "byteSize": 1825578,
+          "sha256": "1af2a19c2a76125c412b6a31b7c01c4bfe6464eb196fb9ffdf61352f75cf3a7b",
+          "originalFile": "originals/analog-2020/Voltz Supreme - Dreamy Ending (Long).wav",
+          "originalSha256": "3b243defffee82727f628a2a7821427f5c3e561850877c8c51110b8017c74a4a",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Dreamy Ending (Short)",
+          "file": "analog-ambience/19.mp3",
+          "trackNumber": 19,
+          "durationSeconds": 39,
+          "byteSize": 769187,
+          "sha256": "032c635b0e553a47a5a851d06ba31a4cf3d7a510674e93f9e47b202e423d6cc0",
+          "originalFile": "originals/analog-2020/Voltz Supreme - Dreamy Ending (Short).wav",
+          "originalSha256": "bd1f4985e9a3187499f2037a591892a49d1406a18d79c053e386d8403e47d89a",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Mind Float",
+          "file": "analog-ambience/20.mp3",
+          "trackNumber": 20,
+          "durationSeconds": 140,
+          "byteSize": 2785307,
+          "sha256": "4eb56dfadcd23f45755c566ea9933b22465aaac0848e7be6c5007927b26d2c27",
+          "originalFile": "originals/analog-2020/Voltz Supreme - Mind Float.wav",
+          "originalSha256": "5bb39b06d0c93465a0d2552687fc0bd6a826ff1d63e88550932fc53bb21054bc",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Cryo Drift",
+          "file": "analog-ambience/21.mp3",
+          "trackNumber": 21,
+          "durationSeconds": 320,
+          "byteSize": 6401176,
+          "sha256": "5b664bc54137299f14b567c18687fb201625ccac8dea68a2e663b5197118600e",
+          "originalFile": "originals/analog-2025/Voltz Supreme - Cryo Drift.wav",
+          "originalSha256": "b715afdec5310a3540abca39d8852923739aba9da1872ac2af21c5d933a300cc",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Lullabye",
+          "file": "analog-ambience/22.mp3",
+          "trackNumber": 22,
+          "durationSeconds": 96,
+          "byteSize": 1921174,
+          "sha256": "e67a8d9d50811ad6a2087832c60d8e7b5dd786040e55d1136708f3043fd56a1f",
+          "originalFile": "originals/analog-2025/Voltz Supreme - Lullabye.wav",
+          "originalSha256": "17345751191d593bdb18db0cb09b00b8a446d5199e0e300e42f4c13812d1b0ad",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "March of The Blips",
+          "file": "analog-ambience/23.mp3",
+          "trackNumber": 23,
+          "durationSeconds": 84,
+          "byteSize": 1670931,
+          "sha256": "93d5b0b175ae0469de0937af6d0c77a3a3838b08dfa26b624cd25fe746513a5c",
+          "originalFile": "originals/analog-2025/Voltz Supreme - March of The Blips.wav",
+          "originalSha256": "ab445158adfd1cc1166edd04e23d7f7cfcdd0562b59fda8127544e096a572859",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Simple Synth",
+          "file": "analog-ambience/24.mp3",
+          "trackNumber": 24,
+          "durationSeconds": 105,
+          "byteSize": 2096199,
+          "sha256": "eb653daf785d372ac0d4bedffcbc494df054077e19048ad68c8e801fa50e03e0",
+          "originalFile": "originals/analog-2025/Voltz Supreme - Simple Synth.wav",
+          "originalSha256": "19d60add227be1624918e6c4a9119916d453f51ad2bf477804b796e5751be1d2",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Through Clouds",
+          "file": "analog-ambience/25.mp3",
+          "trackNumber": 25,
+          "durationSeconds": 213,
+          "byteSize": 4260185,
+          "sha256": "5ffcbd7c4bd97bb7f006fcaf5f6165a56518b24c1fc6826d1d6435eb6afb81da",
+          "originalFile": "originals/analog-2025/Voltz Supreme - Through Clouds.wav",
+          "originalSha256": "555cb84c78a78ac128355f86ba00a1f7a9d7adc1692185ac6e7c119ae19b1072",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "TD3 WITH ME",
+          "file": "analog-ambience/26.mp3",
+          "trackNumber": 26,
+          "durationSeconds": 488,
+          "byteSize": 9761569,
+          "sha256": "ced93710622afe11ddeaebacb2566233304a2db9d5f9b25c94dfd699149e7414",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - TD3 WITH ME (Looped).wav",
+          "originalSha256": "b9713d2553cc981ba7d81037264eed7b095e7ce6413c932486da8a4cf53ae8bb",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "TD3 &B FR33",
+          "file": "analog-ambience/27.mp3",
+          "trackNumber": 27,
+          "durationSeconds": 498,
+          "byteSize": 9941814,
+          "sha256": "ce217362ef2f3bf11d451d2afc0e13d872427077cc3c904312c2b25403ad6f0b",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - TD3 &B FR33 (Looped).wav",
+          "originalSha256": "47323195844692ea3337c7e422cc5506dd5ecb99e7bc2a360a20b0b7233fb636",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "2B IS2 TD3",
+          "file": "analog-ambience/28.mp3",
+          "trackNumber": 28,
+          "durationSeconds": 155,
+          "byteSize": 3099299,
+          "sha256": "e67c762efc93ad1bfd5ee2f8ab25407df2861b109e8624010e052d8fab677012",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - 2B IS2 TD3 (Looped).wav",
+          "originalSha256": "5c0c1c5c839b404d9364c161ff2e1c34c6789f9c5f29bbf22371eadc0aeb933f",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "BARKING UP THE WRONG TD3",
+          "file": "analog-ambience/29.mp3",
+          "trackNumber": 29,
+          "durationSeconds": 411,
+          "byteSize": 8221403,
+          "sha256": "0381705113379dd19bbc3088bd60ae119790cfe8daf84cc9c8525979cb82c20c",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - BARKING UP THE WRONG TD3 (Looped).wav",
+          "originalSha256": "50be03b03fbbea20bfb09f731d72dda17c49583ea83e5e3a26994cb7f37cd6aa",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "LITTLE PHATTY DANCES ALONE",
+          "file": "analog-ambience/30.mp3",
+          "trackNumber": 30,
+          "durationSeconds": 423,
+          "byteSize": 8443968,
+          "sha256": "29cdee8b19441ac4bcd0b157a9a050cbfd7fa8cb1fbb34ab8a33bd14db37b3a8",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - LITTLE PHATTY DANCES ALONE (Looped).wav",
+          "originalSha256": "873ee645496809a713fe1afab9c9dca6a2bd622c96b70ea9c6c5e209861f57cc",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        },
+        {
+          "title": "Analog Random Ambience",
+          "file": "analog-ambience/31.mp3",
+          "trackNumber": 31,
+          "durationSeconds": 768,
+          "byteSize": 15361188,
+          "sha256": "3611dbdce5d0df7a30cf28e74ee0ae122fec7a9625b6de2473794cad3ae79f5c",
+          "originalFile": "originals/analog-2026/Voltz Supreme - Analog Ambience - Analog Random Ambience.wav",
+          "originalSha256": "32928102600e7ef9a2683c591a05cf3f829b2eafddf1aab03cb116ab1cda5672",
+          "conversion": "WAV to 160 kbps MP3; complete recording, no trimming"
+        }
+      ]
+    }
+  ],
+  "archiveOnlyLoops": [
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/DANCE PARTY - ELECTRO DANCE PACK/Dance Party LOOP 1.mp3",
+      "durationSeconds": 15.12
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/DANCE PARTY - ELECTRO DANCE PACK/Dance Party LOOP 2.mp3",
+      "durationSeconds": 15.12
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/DANCE PARTY - ELECTRO DANCE PACK/Dance Party LOOP 3.mp3",
+      "durationSeconds": 15.12
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/RAINY DAY IN BED - INDIE SUNSETS PACK/Rainy Day in Bed LOOP 1.mp3",
+      "durationSeconds": 39.576
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/RAINY DAY IN BED - INDIE SUNSETS PACK/Rainy Day in Bed LOOP 2.mp3",
+      "durationSeconds": 26.376
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPACE CAT SWING - ELECTRO SWING PACK/Space Cat Swing LOOP 1.mp3",
+      "durationSeconds": 16.272
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPACE CAT SWING - ELECTRO SWING PACK/Space Cat Swing LOOP 2.mp3",
+      "durationSeconds": 16.272
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPACE CAT SWING - ELECTRO SWING PACK/Space Cat Swing LOOP 3.mp3",
+      "durationSeconds": 32.544
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPACE CAT SWING - ELECTRO SWING PACK/Space Cat Swing LOOP 4.mp3",
+      "durationSeconds": 40.68
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPINNER - CYBERPUNK RUNNERS PACK/Spinner LOOP 1.mp3",
+      "durationSeconds": 16.944
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPINNER - CYBERPUNK RUNNERS PACK/Spinner LOOP 2.mp3",
+      "durationSeconds": 16.944
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPINNER - CYBERPUNK RUNNERS PACK/Spinner LOOP 3.mp3",
+      "durationSeconds": 33.888
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SPINNER - CYBERPUNK RUNNERS PACK/Spinner LOOP 4.mp3",
+      "durationSeconds": 22.584
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/STORY WRITER - FANTASY LEGENDS PACK/Story Writer LOOP 1.mp3",
+      "durationSeconds": 42.672
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/STORY WRITER - FANTASY LEGENDS PACK/Story Writer LOOP 2.mp3",
+      "durationSeconds": 42.672
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/STORY WRITER - FANTASY LEGENDS PACK/Story Writer LOOP 3.mp3",
+      "durationSeconds": 42.672
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 1.mp3",
+      "durationSeconds": 32.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 2.mp3",
+      "durationSeconds": 32.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 3.mp3",
+      "durationSeconds": 32.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 4.mp3",
+      "durationSeconds": 32.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 5.mp3",
+      "durationSeconds": 80.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/SUMMER FESTIVAL MEMORIES - ELECTRO HOUSE PACK/Summer Festival Memories LOOP 6.mp3",
+      "durationSeconds": 128.016
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/VACATION OVERTIME - NEW AGE VAPORWAVE PACK/Vacation Overtime LOOP 1.mp3",
+      "durationSeconds": 56.472
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/VACATION OVERTIME - NEW AGE VAPORWAVE PACK/Vacation Overtime LOOP 2.mp3",
+      "durationSeconds": 22.584
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/VACATION OVERTIME - NEW AGE VAPORWAVE PACK/Vacation Overtime LOOP 3.mp3",
+      "durationSeconds": 45.192
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/WEIRD THINGS AT NIGHT - ANALOG HORROR PACK/Weird Things at Night LOOP 1.mp3",
+      "durationSeconds": 48
+    },
+    {
+      "file": "originals/tomality/FREE SAMPLER PACK 1 [MP3]/WEIRD THINGS AT NIGHT - ANALOG HORROR PACK/Weird Things at Night LOOP 2.mp3",
+      "durationSeconds": 60
+    }
+  ]
+}

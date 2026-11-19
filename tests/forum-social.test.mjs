@@ -15,13 +15,14 @@ test('forum replies, private notifications, real avatars and authorized persona 
  t.after(async()=>{if(child.exitCode===null){const closed=new Promise(r=>child.once('exit',r));child.kill();await closed;}assert.ok(resolve(folder).startsWith(resolve(tmpdir())+sep));rmSync(folder,{recursive:true,force:true});});
  const base='http://127.0.0.1:'+port;let ready=false;
  for(let i=0;i<70;i++){if(child.exitCode!==null)break;try{ready=(await fetch(base+'/api/health')).ok;if(ready)break;}catch{}await new Promise(r=>setTimeout(r,100));}assert.ok(ready,errors);
- async function login(identifier,password,remember=false){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password,remember})});assert.equal(r.status,200);if(remember)assert.match(r.headers.get('set-cookie'),/Max-Age=2592000/);return r.headers.get('set-cookie').split(';')[0];}
+ async function login(identifier,password,remember=false){const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier,password,remember})});assert.equal(r.status,200);if(remember)assert.match(r.headers.get('set-cookie'),/Max-Age=604800/);return r.headers.get('set-cookie').split(';')[0];}
  const admin=await login('community-admin','community-review-123');
  const request=async(cookie,path,method='GET',body)=>{const r=await fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};};
  const a=(p,m,b)=>request(admin,p,m,b);
 
  const create=async(username,displayName,identityKind='player_employee')=>{const r=await a('/api/admin/employees','POST',{username,displayName,password:'employee123',identityKind,positionTitle:identityKind==='planning_member'?'叙事编辑':'成员',initialBalance:10000});assert.equal(r.status,201,JSON.stringify(r.data));return {id:r.data.id,cookie:await login(username,'employee123')};};
- const owner=await create('topic-owner','主题作者'),reader=await create('topic-reader','读者'),planner=await create('topic-planner','编排员','planning_member');
+ const owner=await create('topic-owner','主题作者'),reader=await create('topic-reader','读者'),planner=await create('AVED','系统管理员','planning_member');
+ const ordinaryPlanner=await create('topic-planner','AVED','planning_member'),lowercase=await create('aved','系统管理员');
  const as=(user,path,method='GET',body)=>request(user.cookie,path,method,body);
  const post=(user,thread,body,extra={})=>as(user,'/api/player/forum'+(thread?'/'+thread:''),'POST',{title:'测试主题',body,...extra});
  const img='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWN49+4dAAWYAst8ZjACAAAAAElFTkSuQmCC';
@@ -51,12 +52,24 @@ test('forum replies, private notifications, real avatars and authorized persona 
  assert.equal((await as(planner,'/api/admin/employees')).status,403);
  assert.equal((await as(planner,'/api/player/forum/personas','POST',{name:'主题作者'})).status,400);
  assert.equal((await as(planner,'/api/player/forum/personas','POST',{name:'任意角色'})).status,400,'players cannot create independent personas anymore');
+ for(const user of [owner,reader,ordinaryPlanner,lowercase,{cookie:admin}]){
+  assert.equal((await as(user,'/api/player/forum/personas')).data.canManage,false);
+  assert.equal((await as(user,'/api/player/forum/workshop')).status,403);
+  assert.equal((await as(user,'/api/player/forum/workshop','POST',{username:'AVED',lines:[]})).status,403);
+ }
+ assert.equal((await request('','/api/player/forum/workshop')).status,401);
+ assert.equal((await request('session=invalid','/api/player/forum/workshop','POST',{username:'AVED'})).status,401);
+ assert.equal((await as(planner,'/api/player/forum/workshop')).status,200);
  const setup=new DatabaseSync(join(folder,'wanyehui.db'));const legacyId=Number(setup.prepare('INSERT INTO forum_personas(name,created_by) VALUES(?,?)').run('演绎角色甲',planner.id).lastInsertRowid);setup.close();
  const robotA=(await a('/api/admin/company-robots','POST',{codename:'演绎角色甲',balance:12345})).data,robotB=(await a('/api/admin/company-robots','POST',{codename:'演绎角色乙',balance:-900})).data;
  const people=(await as(planner,'/api/player/forum/personas')).data.items,persona=people.find(p=>p.robotId===robotA.id),second=people.find(p=>p.robotId===robotB.id);
  assert.equal(persona.id,legacyId,'matching historical roles bind without changing their IDs');assert.equal(persona.balance,12345);assert.equal(second.balance,-900);
  assert.equal((await as(reader,'/api/player/forum/personas')).data.items.length,0);
  assert.equal((await post(reader,thread,'伪造角色',{personaId:persona.id})).status,403);
+ for(const user of [ordinaryPlanner,lowercase,{cookie:admin}]){
+  assert.equal((await post(user,thread,'不能代发',{personaId:persona.id,username:'AVED'})).status,403);
+  assert.equal((await post(user,null,'不能代发主题',{personaId:persona.id})).status,403);
+ }
  const before=(await as(owner,'/api/player/forum/notifications')).data;assert.equal(before.unread,0);
  const own=(await post(owner,thread,'自己的回复')).data.id;assert.equal((await as(owner,'/api/player/forum/notifications')).data.unread,0);
  const reply=(await post(reader,thread,'读者回复')).data.id;
@@ -101,22 +114,33 @@ test('forum replies, private notifications, real avatars and authorized persona 
  const published=await as(planner,'/api/player/forum/workshop','POST',script);assert.equal(published.status,201,JSON.stringify(published.data));assert.equal(published.data.replyIds.length,1);
  const repeated=await as(planner,'/api/player/forum/workshop','POST',script);assert.deepEqual(repeated.data,published.data);
  assert.equal((await as(reader,'/api/player/forum/workshop','POST',script)).status,403);
- detail=(await as(owner,'/api/player/forum/'+published.data.threadId)).data;assert.equal(detail.thread.anonymousName,'演绎角色甲');assert.equal(detail.items.length,1);assert.equal(detail.items[0].anonymousName,'演绎角色乙');assert.equal(detail.thread.balance,12345);
+ assert.equal((await request('','/api/player/forum/workshop','POST',script)).status,401);
+ const officialThread=(await post(planner,null,'系统通知',{anonymousName:'伪造名称',isForumAdmin:0})).data.id;
+ const officialView=(await as(reader,'/api/player/forum/'+officialThread)).data.thread;
+ assert.equal(officialView.anonymousName,'系统管理员');assert.equal(officialView.isForumAdmin,1);
+ assert.equal((await as(reader,'/api/player/forum')).data.items.find(t=>t.id===officialThread).isForumAdmin,1);
+ const officialReply=(await post(planner,officialThread,'系统回复',{identityMode:'real'})).data.id;
+ assert.equal((await as(reader,'/api/player/forum/'+officialThread)).data.items.find(r=>r.id===officialReply).isForumAdmin,1);
+ const impostor=(await post(lowercase,null,'同名普通玩家',{isForumAdmin:1})).data.id;
+ assert.equal((await as(reader,'/api/player/forum/'+impostor)).data.thread.isForumAdmin,0);
+ const directory=(await as(reader,'/api/player/directory')).data.items;
+ assert.ok(!directory.some(e=>e.id===planner.id));assert.ok(directory.some(e=>e.id===lowercase.id));
+ detail=(await as(owner,'/api/player/forum/'+published.data.threadId)).data;assert.equal(detail.thread.anonymousName,'演绎角色甲');assert.equal(detail.items.length,1);assert.equal(detail.items[0].anonymousName,'演绎角色乙');assert.equal(detail.thread.balance,12345);assert.equal(detail.thread.isForumAdmin,0);assert.equal(detail.items[0].isForumAdmin,0);
  const rejected=await as(planner,'/api/player/forum/workshop','POST',{...script,requestId:'forum-invalid-script-0001',lines:[script.lines[0],{personaId:9999,body:'非法角色'}]});assert.equal(rejected.status,400);
  const robotInfo=(await a('/api/admin/company-robots')).data.items.find(r=>r.id===robotA.id);
  assert.equal((await a('/api/admin/company-robots/'+robotA.id,'PUT',{codename:'演绎角色甲改名',balance:8888,revision:robotInfo.revision,expectedBalance:robotInfo.balance})).status,200);
  detail=(await as(owner,'/api/player/forum/'+published.data.threadId)).data;assert.equal(detail.thread.anonymousName,'演绎角色甲改名');assert.equal(detail.thread.balance,8888);
  const spoofed=(await post(planner,thread,'不能伪造机器人余额',{personaId:persona.id,balance:99999999,anonymousName:'伪造名称'})).data.id;
  const spoofView=(await as(owner,'/api/player/forum/'+thread)).data.items.find(r=>r.id===spoofed);assert.equal(spoofView.balance,8888);assert.equal(spoofView.anonymousName,'演绎角色甲改名');
- const audit=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('演绎角色甲'))).data.items;assert.ok(audit.some(r=>r.personaName==='演绎角色甲改名'&&r.employeeId===planner.id&&r.displayName==='编排员'));
+ const audit=(await a('/api/admin/speech-records?keyword='+encodeURIComponent('演绎角色甲'))).data.items;assert.ok(audit.some(r=>r.personaName==='演绎角色甲改名'&&r.employeeId===planner.id&&r.displayName==='系统管理员'));
  assert.equal((await a('/api/admin/forum')).data.items.find(t=>t.id===published.data.threadId).authorName,'演绎角色甲改名');
  const refresh=(await as(planner,'/api/player/forum/personas')).data.items.find(p=>p.id===persona.id);assert.equal(refresh.name,'演绎角色甲改名');assert.equal(refresh.balance,8888);
  const db=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});assert.equal(db.prepare('PRAGMA quick_check').get().quick_check,'ok');assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
  const rows=db.prepare("SELECT json_extract(details,'$.persona_id') AS persona FROM activity_logs WHERE target='forum_threads' AND json_extract(details,'$.id')=?").all(published.data.threadId);assert.equal(rows.length,1);assert.equal(rows[0].persona,persona.id);
- assert.equal(db.prepare("SELECT COUNT(*) AS n FROM forum_threads WHERE title='演绎对话测试'").get().n,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM employees').get().n,6);db.close();
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM forum_threads WHERE title='演绎对话测试'").get().n,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM employees').get().n,8);db.close();
  assert.equal((await a('/api/admin/employees/'+robotA.id,'DELETE')).status,200);
- detail=(await as(owner,'/api/player/forum/'+published.data.threadId)).data;assert.equal(detail.thread.anonymousName,'演绎角色甲改名');assert.equal(detail.thread.balance,null);
+ assert.equal((await as(owner,'/api/player/forum/'+published.data.threadId)).status,400,'deleting a robot also erases its impersonated posts');
  assert.ok(!(await as(planner,'/api/player/forum/personas')).data.items.some(p=>p.id===persona.id));
  assert.equal((await post(planner,thread,'已删除机器人不能继续用',{personaId:persona.id})).status,400);
- assert.equal((await a('/api/admin/employees/'+planner.id,'DELETE')).status,200);const retained=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});assert.equal(retained.prepare('SELECT created_by FROM forum_personas WHERE id=?').get(persona.id).created_by,null);assert.equal(retained.prepare('PRAGMA foreign_key_check').all().length,0);retained.close();
+ assert.equal((await a('/api/admin/employees/'+planner.id,'DELETE')).status,200);const retained=new DatabaseSync(join(folder,'wanyehui.db'),{readOnly:true});assert.equal(retained.prepare('SELECT COUNT(*) n FROM forum_personas WHERE id=?').get(persona.id).n,0);assert.equal(retained.prepare('PRAGMA foreign_key_check').all().length,0);retained.close();
 });

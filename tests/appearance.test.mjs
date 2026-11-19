@@ -44,7 +44,7 @@ function shopFixture(t,initialBalance=160000){
 test('background shop defaults are free; the sphere and three textures charge once and survive restart',async t=>{
  const {db,balanceFor,options,service,request,login}=shopFixture(t);
  assert.deepEqual(service.snapshot(1).backgrounds,{owned:['image'],prices:{image:0,sphere:100000}});
- assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:20000,fade:20000,grain:20000,ascii:50000,phase:50000}});
+ assert.deepEqual(service.snapshot(1).patterns,{owned:['plain'],prices:{plain:0,halftone:20000,fade:20000,grain:20000,ascii:50000,phase:50000,rain:50000,grid:20000}});
  await request({background:'image'});await request({pattern:'plain'});assert.equal(balanceFor(1),160000);
  const sphere=await request({background:'sphere',price:1,balance:900000});assert.equal(sphere.data.balance,60000);
  assert.ok(sphere.data.appearance.backgrounds.owned.includes('sphere'));
@@ -138,4 +138,22 @@ test('expanding the old texture constraint preserves existing ownership and ledg
  const before=db.prepare('SELECT * FROM employee_backgrounds').all();const updated=installAppearance(options);
  assert.deepEqual(db.prepare('SELECT * FROM employee_backgrounds').all(),before);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
  const response={};await updated.handle({method:'POST',body:{pattern:'ascii'}},response,new URL('http://localhost/api/player/appearance'));assert.equal(response.status,200);
+});
+
+test('new waterfall and drafting grid preserve existing purchases through the previous catalog migration',async t=>{
+ const {db,options,request,balanceFor}=shopFixture(t,300000);
+ await request({pattern:'ascii'});await request({pattern:'phase'});
+ const before=db.prepare('SELECT * FROM employee_backgrounds').all(),balance=balanceFor(1);
+ db.exec(`ALTER TABLE employee_backgrounds RENAME TO previous_backgrounds;
+ CREATE TABLE employee_backgrounds(employee_id INTEGER NOT NULL REFERENCES employees(id),kind TEXT NOT NULL,item TEXT NOT NULL,ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(employee_id,kind,item),CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain','ascii','phase'))));
+ INSERT INTO employee_backgrounds SELECT * FROM previous_backgrounds;DROP TABLE previous_backgrounds;`);
+ const updated=installAppearance(options);
+ assert.deepEqual(db.prepare('SELECT * FROM employee_backgrounds').all(),before);assert.equal(balanceFor(1),balance);
+ for(const pattern of ['rain','grid']){
+  const response={};await updated.handle({method:'POST',body:{pattern}},response,new URL('http://localhost/api/player/appearance'));assert.equal(response.status,200);
+ }
+ assert.equal(balanceFor(1),balance-70000);
+ for(const pattern of ['rain','grid'])await request({pattern});
+ assert.equal(balanceFor(1),balance-70000);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
+ assert.deepEqual(installAppearance(options).snapshot(1).patterns.owned,['plain','ascii','grid','phase','rain']);
 });

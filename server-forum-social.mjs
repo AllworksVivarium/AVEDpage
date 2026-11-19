@@ -85,8 +85,9 @@ export function installForumSocialSchema(db){
 
 // Anonymous authors never carry an avatar reference; personas never expose their operator's balance.
 export const forumPersonaNameSQL=id=>`(SELECT COALESCE((SELECT codename FROM company_robots WHERE employee_id=p.robot_employee_id),NULLIF(p.robot_name,''),p.name) FROM forum_personas p WHERE p.id=${id})`;
-export const forumNameSQL=a=>`CASE WHEN ${a}.persona_id IS NOT NULL THEN ${forumPersonaNameSQL(a+'.persona_id')} WHEN ${a}.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=${a}.employee_id) ELSE (SELECT anonymous_name FROM profiles WHERE employee_id=${a}.employee_id) END`;
-export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
+const forumAdminSQL=a=>`${a}.persona_id IS NULL AND EXISTS(SELECT 1 FROM employees WHERE id=${a}.employee_id AND username='AVED' COLLATE BINARY)`;
+export const forumNameSQL=a=>`CASE WHEN ${a}.persona_id IS NOT NULL THEN ${forumPersonaNameSQL(a+'.persona_id')} WHEN (${forumAdminSQL(a)}) OR ${a}.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=${a}.employee_id) ELSE (SELECT anonymous_name FROM profiles WHERE employee_id=${a}.employee_id) END`;
+export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,(${forumAdminSQL(a)}) AS isForumAdmin,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
  CASE WHEN ${a}.persona_id IS NULL THEN ${a}.employee_id ELSE (SELECT robot_employee_id FROM forum_personas WHERE id=${a}.persona_id) END AS presenceEmployeeId,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_url FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarData,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN ${a}.employee_id ELSE NULL END AS avatarId,CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_preset FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarPreset,
@@ -96,8 +97,8 @@ export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,pres
 
 export function installForumSocial(db){
  installForumSocialSchema(db);
- function allowed(id){return !!db.prepare("SELECT 1 FROM employees WHERE id=? AND enabled=1 AND (role='admin' OR identity_kind='planning_member')").get(id);}
- function requireWorkshop(id){if(!allowed(id)){const e=Error('此功能仅对企划组成员和管理员开放。');e.status=403;throw e;}}
+ function allowed(id){return !!db.prepare("SELECT 1 FROM employees WHERE id=? AND enabled=1 AND username='AVED' COLLATE BINARY").get(id);}
+ function requireWorkshop(id){if(!allowed(id)){const e=Error('当前身份无权使用演绎编排。');e.status=403;throw e;}}
  function persona(id,value){if(value==null||value==='')return null;requireWorkshop(id);if(!Number.isSafeInteger(value)||!db.prepare('SELECT p.id FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id WHERE p.id=?').get(value))throw Error('演绎机器人不存在，请刷新后重新选择。');return value;}
  function target(thread,value){if(value==null||value==='')return null;if(!Number.isSafeInteger(value)||!db.prepare("SELECT id FROM forum_replies WHERE id=? AND thread_id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(value,thread))throw Error('回复对象不存在或不在本帖中。');return value;}
  const visible=`FROM forum_notifications n JOIN forum_threads t ON t.id=n.thread_id JOIN forum_replies r ON r.id=n.reply_id

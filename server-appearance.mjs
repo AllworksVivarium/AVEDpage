@@ -1,6 +1,6 @@
 const palettes={oxblood:{name:'黑金绛红',price:0},mineral:{name:'矿物收藏',price:50000},darkroom:{name:'钴蓝静频',price:50000}};
 const backgrounds={image:{name:'建筑背景',price:0},sphere:{name:'信号球体',price:100000}};
-const patterns={plain:{name:'无纹理',price:0},halftone:{name:'波纹网点',price:20000},fade:{name:'渐隐网点',price:20000},grain:{name:'磨砂纸纹',price:20000},ascii:{name:'符号瀑流',price:50000},phase:{name:'相位点阵',price:50000}};
+const patterns={plain:{name:'无纹理',price:0},halftone:{name:'波纹网点',price:20000},fade:{name:'渐隐网点',price:20000},grain:{name:'磨砂纸纹',price:20000},ascii:{name:'字符涌流',price:50000},phase:{name:'相位点阵',price:50000},rain:{name:'符号瀑流',price:50000},grid:{name:'制图网格',price:20000}};
 
 const effects={contamination:{name:'污染模式',price:500000}};
 
@@ -15,9 +15,9 @@ export function installAppearance({db,send,readBody,requireEmployee,balanceFor,r
  kind TEXT NOT NULL CHECK(kind IN ('background','pattern')),item TEXT NOT NULL,
  ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(employee_id,kind,item),
- CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain','ascii','phase'))));`);
+ CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain','ascii','phase','rain','grid'))));`);
  // Expand the texture catalog while preserving purchases and ledger references.
- if(!db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='employee_backgrounds'").get().sql.includes("'ascii'")){
+ if(!db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='employee_backgrounds'").get().sql.includes("'rain'")){
   const extras=db.prepare("SELECT sql FROM sqlite_master WHERE tbl_name='employee_backgrounds' AND type IN ('index','trigger') AND sql IS NOT NULL").all();
   db.exec('BEGIN IMMEDIATE');
   try{
@@ -26,7 +26,7 @@ export function installAppearance({db,send,readBody,requireEmployee,balanceFor,r
     kind TEXT NOT NULL CHECK(kind IN ('background','pattern')),item TEXT NOT NULL,
     ledger_id INTEGER NOT NULL UNIQUE REFERENCES balance_ledger(id),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(employee_id,kind,item),
-    CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain','ascii','phase'))));
+    CHECK((kind='background' AND item='sphere') OR (kind='pattern' AND item IN ('halftone','fade','grain','ascii','phase','rain','grid'))));
     INSERT INTO employee_backgrounds_next SELECT * FROM employee_backgrounds;
     DROP TABLE employee_backgrounds;
     ALTER TABLE employee_backgrounds_next RENAME TO employee_backgrounds;`);

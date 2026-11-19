@@ -19,15 +19,17 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  toggle.onclick=()=>{visualsOff=!visualsOff;try{localStorage.setItem('aved_bar_drunk_visuals',visualsOff?'off':'on');}catch{}paintEffects({level:lastLevel});};
  function paintAction(){
   const data=getSnapshot(),drink=data?.myDrink,menu=data?.menu||[],item=menu.find(item=>item.id===drink?.drinkId);
-  const fixed=drink?.canPour===false,glass=data?.barPreferences?.glassId,available=drink?.drinkFrom==='glass'?drink.glassMl:drink?.bottleMl??drink?.remainingMl;action.querySelector('[data-serving-name]').textContent=item?.name||(glass?'空杯已经放好了':'我的这一杯');action.querySelector('[data-serving-remaining]').textContent=drink?`${drink.remainingMl??0} / ${drink.volumeMl??0} mL`:'还没有点酒';
+  const fixed=drink?.canPour===false,pouch=item?.container==='pouch',unit=pouch?'g':'mL',glass=data?.barPreferences?.glassId,available=drink?.drinkFrom==='glass'?drink.glassMl:drink?.bottleMl??drink?.remainingMl;action.querySelector('[data-serving-name]').textContent=item?.name||(glass?'空杯已经放好了':'我的这一杯');action.querySelector('[data-serving-remaining]').textContent=drink?`${drink.remainingMl??0} / ${drink.volumeMl??0} ${unit}`:'还没有点酒';
   action.querySelector('[data-serving-today]').textContent=`本日已饮用 ${data?.drinking?.totalMl||0} mL · ${drunkStatus(data?.drinking).levelLabel}`;
-  const sipDisabled=busy||!(available>0),sipLabel=busy?'稍等…':drink?.remainingMl===0?'已喝完':drink?.drinkFrom==='glass'&&available===0?'杯中已空':'喝一口';
+  const sipDisabled=busy||!(available>0),sipLabel=busy?'稍等…':drink?.remainingMl===0?(pouch?'已吃完':'已喝完'):drink?.drinkFrom==='glass'&&available===0?'杯中已空':pouch?'吃一口':'喝一口';
   action.querySelector('[data-pour-summary]').textContent=fixed?'使用原杯 · 所选杯具先留作备用':drink?'杯中 '+(drink.glassMl||0)+' mL · 原容器 '+(drink.bottleMl??drink.remainingMl)+' mL'+(drink.drinkFrom==='glass'?' · 正在用杯子喝':' · 直接饮用'):glass?'杯子可以先留着，想喝什么再点。':'空杯免费，也可以只坐一会儿。';
   const capacity=(data?.glassware||glassware).find(item=>item.id===glass)?.capacityMl||0;
+  action.querySelector('[data-pour-summary]').hidden=pouch;action.querySelector('[data-bar-pour]').hidden=pouch;action.querySelector('[data-bar-from-glass]').hidden=pouch;
   action.querySelector('[data-bar-pour]').disabled=busy||fixed||!glass||!(drink?.bottleMl>0)||!(capacity>(drink?.glassMl||0));
   action.querySelector('[data-bar-stow-glass]').disabled=busy||!glass||drink?.glassMl>0;action.querySelector('[data-bar-glassware]').disabled=busy;
-  for(const [source,selector] of [['glass','[data-bar-from-glass]'],['bottle','[data-bar-from-bottle]']]){const mode=action.querySelector(selector);mode.disabled=busy||!(source==='glass'?(fixed?drink?.remainingMl>0:glass&&(drink?.glassMl>0||drink?.bottleMl>0)):!fixed&&drink?.bottleMl>0);}
-  const direct=root.querySelector('[data-bar-drink-button]');direct.disabled=sipDisabled;direct.textContent=sipLabel;direct.title=drink?`${drink.remainingMl||0} / ${drink.volumeMl||0} mL`:'先点一杯酒';
+  for(const [source,selector] of [['glass','[data-bar-from-glass]'],['bottle','[data-bar-from-bottle]']]){const mode=action.querySelector(selector);mode.disabled=busy||!(source==='glass'?(fixed?drink?.remainingMl>0:glass&&(drink?.glassMl>0||drink?.bottleMl>0)):(pouch||!fixed)&&drink?.bottleMl>0);}
+  action.querySelector('[data-bar-from-bottle]').textContent=pouch?'吃一口':'直接喝';
+  const direct=root.querySelector('[data-bar-drink-button]');direct.disabled=sipDisabled;direct.textContent=sipLabel;direct.title=drink?`${drink.remainingMl||0} / ${drink.volumeMl||0} ${unit}`:'先点一杯酒';
  }
  function animateSips(items,{initial=false}={}){
   for(const item of items||[]){if(seenSips.has(item.id))continue;seenSips.add(item.id);if(initial)continue;if(item.employeeId===getSnapshot()?.selfId)window.AVEDBarSipSound?.();if(matchMedia('(prefers-reduced-motion: reduce)').matches||document.body.classList.contains('effects-off'))continue;const sprite=root.querySelector(`[data-glass-owner="${item.employeeId}"] [data-sip-motion]`)||root.querySelector(`[data-glass-owner="${item.employeeId}"] [data-drink-motion]`);if(sprite)sprite.animate([{transform:'translateY(0)'},{transform:'translateY(-22px)',offset:.25},{transform:'translateY(-22px)',offset:.78},{transform:'translateY(0)'}],{duration:1400,easing:'ease-in-out'});}
@@ -51,7 +53,7 @@ window.AVEDBarPlay=function({root,api,esc,getSnapshot,getIdentity,apply,onError}
  }
  async function drinkFrom(source){
   if(busy)return;const visit=generation,drink=getSnapshot()?.myDrink;if(!(drink?.remainingMl>0))return;
-  if(drink.canPour===false){if(source==='glass')await drinkOnce();return;}
+  if(drink.canPour===false){const item=getSnapshot()?.menu?.find(item=>item.id===drink.drinkId);if(source==='glass'||item?.container==='pouch')await drinkOnce();return;}
   if(source==='glass'&&!(drink.glassMl>0)){if(!await pourOnce())return;}
   if(visit!==generation)return;
   if(getSnapshot()?.myDrink?.id!==drink.id)return;

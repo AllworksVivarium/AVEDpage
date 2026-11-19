@@ -1,0 +1,7 @@
+Voltz Supreme - Analog Ambience
+Source and permission: https://voltzsupreme.itch.io/analog-ambience
+Retrieved: 2026-11-19
+
+The author permits commercial and non-commercial creative projects with artist credit. Required credit: Music by Voltz Supreme. An author reply on the page asks that the music not be edited.
+
+All four available archives have been retained: original tracks, Nov 2020, April 2025 and Jan 2026 updates. 31 WAV recordings were converted in full to 160 kbps MP3 for browser playback. No trimming, rearrangement, remixing or level processing was applied. Each original and prepared recording has a SHA-256 hash in docs/music/additional-free-albums.json.

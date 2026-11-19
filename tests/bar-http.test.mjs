@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import {createServer} from 'node:net';import {spawn} from 'node:child_process';import {randomBytes} from 'node:crypto';
 
-test('two authenticated bar clients receive real presence, purchases and chat over SSE',async t=>{
+test('two authenticated bar clients receive real presence, poured amounts, drinking progress and chat over SSE',async t=>{
  const folder=mkdtempSync(join(tmpdir(),'aved-bar-')),password=randomBytes(16).toString('hex'),controllers=[];
  const port=await new Promise(resolve=>{const socket=createServer();socket.listen(0,'127.0.0.1',()=>{const p=socket.address().port;socket.close(()=>resolve(p));});});
  const base='http://127.0.0.1:'+port,child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env:{...process.env,DATA_DIR:folder,PORT:String(port),HOST:'127.0.0.1',COOKIE_SECURE:'false',SESSION_SECRET:randomBytes(32).toString('hex'),BOOTSTRAP_ADMIN_USERNAME:'bar-test-admin',BOOTSTRAP_ADMIN_PASSWORD:password},stdio:['ignore','pipe','pipe']});
@@ -20,19 +20,28 @@ test('two authenticated bar clients receive real presence, purchases and chat ov
  const uploaded=await request(admin,'/api/admin/bar-music/upload',{title:'上传测试',fileName:'test.wav',data:wav.toString('base64')});assert.equal(uploaded.status,201);
  const playlist=(await request(first,'/api/player/bar')).data.music;assert.equal(playlist.tracks.length,2);assert.ok(playlist.tracks.some(track=>track.url==='/api/player/bar-music/files/'+uploaded.data.id));
  const file=await fetch(base+'/api/player/bar-music/files/'+uploaded.data.id,{headers:{cookie:first,range:'bytes=0-15'}});assert.equal(file.status,206);assert.equal((await file.arrayBuffer()).byteLength,16);
- const menu=(await request(first,'/api/player/bar')).data.menu;assert.equal(menu.length,19);assert.equal(menu.find(x=>x.id==='mineral-water').price,0);assert.ok(menu.every(x=>x.price===0||x.price>=300&&x.price<=3400));
+ const menu=(await request(first,'/api/player/bar')).data.menu;assert.equal(menu.length,107);assert.equal(menu.find(x=>x.id==='mineral-water').price,0);assert.equal(menu.find(x=>x.id==='energy-jelly').price,800);assert.equal(menu.filter(x=>x.container==='pouch').length,5);assert.ok(menu.every(x=>x.price===0||x.price>=300&&x.price<=3400));assert.deepEqual(menu.map(d=>d.price),menu.map(d=>d.price).sort((a,b)=>a-b));
  async function stream(cookie){const controller=new AbortController();controllers.push(controller);const response=await fetch(base+'/api/player/bar/events',{headers:{cookie},signal:controller.signal});assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/event-stream/);const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
   return {controller,async next(predicate){const timeout=setTimeout(()=>controller.abort(),4000);try{for(;;){let end;while((end=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,end);buffer=buffer.slice(end+2);const line=block.split('\n').find(x=>x.startsWith('data: '));if(line){const data=JSON.parse(line.slice(6));if(predicate(data))return data;}}const chunk=await reader.read();if(chunk.done)throw Error('SSE ended');buffer+=decoder.decode(chunk.value,{stream:true});}}finally{clearTimeout(timeout);}}};
  }
  const one=await stream(first);assert.equal((await one.next(x=>x.onlineCount===1)).onlineCount,1);
  const two=await stream(second);assert.equal((await one.next(x=>x.onlineCount===2)).onlineCount,2);
  const duplicate=await stream(first);assert.equal((await duplicate.next(x=>x.onlineCount===2)).onlineCount,2);
- const order=await request(second,'/api/player/bar/orders',{drinkId:menu[0].id,requestId:'http-bar-order-0001',price:0});assert.equal(order.status,200);assert.equal(order.data.balance,10000-menu[0].price);
- assert.ok((await one.next(x=>x.guests.some(y=>y.drink))).guests.some(x=>x.drink?.drinkId===menu[0].id));
+ const orderedDrink=menu.find(d=>d.id==='white-rum');const order=await request(second,'/api/player/bar/orders',{drinkId:orderedDrink.id,requestId:'http-bar-order-0001',price:0});assert.equal(order.status,200);assert.equal(order.data.balance,10000-orderedDrink.price);
+ assert.ok((await one.next(x=>x.guests.some(y=>y.drink))).guests.some(x=>x.drink?.drinkId===orderedDrink.id));
+ const orderId=order.data.myDrink.id,guestId=order.data.selfId;
+ assert.equal((await request(second,'/api/player/bar/preferences',{glassId:'highball'})).status,200);
+ const cupState=await one.next(x=>x.guests.some(g=>g.employeeId===guestId&&g.glassId==='highball'));assert.equal(cupState.guests.find(g=>g.employeeId===guestId).drink.bottleMl,500);
+ assert.equal((await request(second,'/api/player/bar/pour',{orderId,requestId:'sse-bar-pour-0001'})).status,200);
+ const poured=await one.next(x=>x.guests.some(g=>g.employeeId===guestId&&g.drink?.glassMl===500));assert.equal(poured.guests.find(g=>g.employeeId===guestId).drink.bottleMl,0);
+ for(let step=1;step<=5;step++){
+  const drank=await request(second,'/api/player/bar/sip',{orderId,requestId:'sse-bar-sip-000'+step});assert.equal(drank.status,200);assert.equal(drank.data.myDrink.remainingMl,500-step*100);
+  const seen=await one.next(x=>x.guests.some(g=>g.employeeId===guestId&&g.drink?.remainingMl===500-step*100));const guest=seen.guests.find(g=>g.employeeId===guestId);assert.equal(guest.drink.glassMl,500-step*100);assert.equal(guest.drink.bottleMl,0);assert.equal(guest.glassId,'highball');assert.equal(seen.myDrink,null);
+ }
  assert.equal((await request(second,'/api/player/bar/messages',{body:'另一位客人的真实消息'})).status,201);
  assert.ok((await one.next(x=>x.items.some(y=>y.body==='另一位客人的真实消息'))).items.some(x=>x.body==='另一位客人的真实消息'));
  assert.equal((await request(first,'/api/player/bar/messages',{body:'用实名发言',identityMode:'real',alias:'伪造名字'})).status,201);
  const realMessage=(await two.next(x=>x.items.some(y=>y.body==='用实名发言'))).items.find(x=>x.body==='用实名发言');assert.equal(realMessage.alias,'bar-one');assert.equal(realMessage.identityMode,'real');
  two.controller.abort();assert.equal((await one.next(x=>x.onlineCount===1)).onlineCount,1);
- assert.equal((await request(second,'/api/player/bar/orders',{drinkId:menu[0].id,requestId:'http-bar-order-0001'})).data.balance,order.data.balance);
+ assert.equal((await request(second,'/api/player/bar/orders',{drinkId:orderedDrink.id,requestId:'http-bar-order-0001'})).data.balance,order.data.balance);
 });

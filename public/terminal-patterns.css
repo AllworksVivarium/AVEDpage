@@ -42,3 +42,12 @@ body:not(.dark-mode) .terminal-ascii-field{opacity:.15}
 .terminal-ascii-field[data-pattern=phase]{opacity:.3}
 body:not(.dark-mode) .terminal-ascii-field[data-pattern=phase]{opacity:.23}
 @media print{.terminal-ascii-field{display:none!important}}
+/* Layered signals stay behind cards; glyphs and circuits carry the palette accent. */
+.terminal-ascii-field[data-pattern=ascii]{opacity:.32}
+.terminal-ascii-field[data-pattern=rain]{opacity:.46}
+.terminal-ascii-field[data-pattern=phase]{opacity:.5}
+.terminal-ascii-field[data-pattern=grid]{opacity:.56}
+body:not(.dark-mode) .terminal-ascii-field[data-pattern=ascii]{opacity:.21}
+body:not(.dark-mode) .terminal-ascii-field[data-pattern=rain]{opacity:.25}
+body:not(.dark-mode) .terminal-ascii-field[data-pattern=phase]{opacity:.27}
+body:not(.dark-mode) .terminal-ascii-field[data-pattern=grid]{opacity:.4}

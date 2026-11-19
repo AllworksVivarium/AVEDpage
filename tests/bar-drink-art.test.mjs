@@ -1,22 +1,35 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {fileURLToPath} from 'node:url';import sharp from 'sharp';
 import {barDrinks} from '../server-bar-catalog.mjs';
 import {servingRecipe} from '../server-bar-drinking.mjs';
+test('each selectable jelly package retains its own transparent sprite',async()=>{
+ const window={};vm.runInNewContext(readFileSync(new URL('../public/bar-drink-art.js',import.meta.url),'utf8'),{window});
+ const jellies=barDrinks.filter(d=>d.container==='pouch'),images=new Set();assert.equal(jellies.length,5);
+ for(const jelly of jellies){
+  const image=window.AVEDBarDrinkArt.imageFor(jelly,{id:1});images.add(image);
+  assert.equal(window.AVEDBarDrinkArt.imageFor(jelly,{id:29,remainingMl:60}),image);
+  const file=fileURLToPath(new URL('../public'+image,import.meta.url)),meta=await sharp(file).metadata(),stats=await sharp(file).stats();
+  assert.deepEqual([meta.width,meta.height,meta.hasAlpha],[128,204,true]);assert.equal(stats.channels[3].min,0);assert.ok(stats.channels[3].max>=250);
+ }
+ assert.equal(images.size,5);for(const jelly of jellies)assert.equal(window.AVEDBarDrinkArt.imageFor(jelly),jelly.image);
+ const water=barDrinks.find(d=>d.id==='mineral-water');assert.equal(window.AVEDBarDrinkArt.imageFor(water,{id:8}),water.image);
+});
 
-test('normal pours look nearly full while partial servings still drain to an empty glass',()=>{
+test('whole bottles fill straight glasses and leave headroom in beer mugs; partial drinks keep their level',()=>{
  const window={};vm.runInNewContext(readFileSync(new URL('../public/bar-drink-art.js',import.meta.url),'utf8'),{window});
  const m={width:80,height:80,fullWidth:80,fullHeight:80,x:0,y:0};
  const fill=(drink,glassId,volumeMl,glassMl)=>{
   const html=window.AVEDBarDrinkArt.render(drink,{id:1,volumeMl,remainingMl:glassMl,bottleMl:0,glassMl,drinkFrom:'glass'},m,String,1,drink.name,{glassId});
   return Number(html.match(/data-vessel="glass"[^>]*data-fill-ratio="([^"]+)"/)[1]);
  };
- for(const glass of ['highball','beer-mug'])for(const drink of barDrinks.filter(d=>d.orderable&&d.id!=='lemon-cocktail'&&!d.id.endsWith('-shot'))){
+ for(const glass of ['highball','beer-mug'])for(const drink of barDrinks.filter(d=>d.orderable&&d.pourable)){
   const volume=servingRecipe(drink.id).volume,full=fill(drink,glass,volume,volume);
-  assert.ok(full>=.9&&full<=.97,drink.id+' should leave a little headroom');
+  assert.equal(volume,500);assert.ok(Math.abs(full-(glass==='highball'?.96:.9))<1e-12,drink.id+' must match the selected cup artwork');
   assert.equal(fill(drink,glass,volume,volume/2),full/2,'drinking or pouring half a bottle must not reset to full');
   assert.equal(fill(drink,glass,volume,0),0);
  }
  const water=barDrinks.find(d=>d.id==='mineral-water');
- assert.ok(fill(water,'beer-mug',150,150)<.5,'unusually small servings should retain their smaller volume');
+ for(const volume of [30,150,200,500,900])for(const glass of ['highball','beer-mug']){const full=glass==='highball'?.96:.9;assert.equal(fill(water,glass,volume,volume),full);assert.equal(fill(water,glass,volume,volume/2),full/2);}
+ const palette=new Set();for(const drink of barDrinks.filter(d=>d.pourable)){assert.match(drink.liquidColor,/^#[a-f0-9]{6}$/i);palette.add(drink.liquidColor);const html=window.AVEDBarDrinkArt.render(drink,{id:1,volumeMl:500,remainingMl:500,bottleMl:0,glassMl:500,drinkFrom:'glass'},m,String,1,drink.name,{glassId:'highball'});assert.ok(html.includes('fill="'+drink.liquidColor+'"'),drink.id+' must render its configured liquid color');}assert.ok(palette.size<=9);
 });
 
 test('both pixel glasses have transparent centers; the beer mug handle has an open hole',async()=>{
@@ -61,4 +74,34 @@ test('spare glasses never take sipping or clinking away from fixed-cup drinks',(
   if(fixed)assert.ok(spareLeft>=m.width+10,'fixed-cup drinks and spare glasses must have a visible gap');
   else assert.ok(spareLeft>=m.width+6,'bottles and drinking glasses must also have a visible gap');
  }
+});
+
+test('all author sprites use native vessels; separate glasses match spirits and keep cocktail spare cups empty',async()=>{
+ const window={};vm.runInNewContext(readFileSync(new URL('../public/bar-drink-art.js',import.meta.url),'utf8'),{window});
+ const art=window.AVEDBarDrinkArt,drinks=barDrinks.filter(d=>d.pixelArt),m={width:50,height:70,fullWidth:50,fullHeight:70,x:0,y:0};assert.equal(drinks.length,14);
+ assert.equal(drinks.filter(d=>d.pourable).length,4);
+ for(const drink of drinks){
+  const file=fileURLToPath(new URL('../public'+drink.image,import.meta.url)),meta=await sharp(file).metadata();assert.deepEqual([meta.width,meta.height,meta.hasAlpha],[drink.width,drink.height,true]);
+  const recipe=servingRecipe(drink.id);assert.ok(recipe.strength>0);assert.equal(art.canPour(drink),drink.pourable);
+  const serving={id:101,volumeMl:recipe.volume,remainingMl:recipe.volume,bottleMl:recipe.volume,glassMl:0,drinkFrom:'bottle'};
+  const native=art.render(drink,serving,m,String,1,drink.name);assert.ok(native.includes(drink.image));assert.ok(native.includes('bar-drink-liquid'));assert.ok(native.includes('data-sip-motion'));
+  const empty=art.render(drink,{...serving,remainingMl:0,bottleMl:0},m,String,1,drink.name);assert.ok(empty.includes('clip-path:inset(100%'));
+  for(const glassId of ['highball','beer-mug']){
+   const html=art.render(drink,{...serving,bottleMl:drink.pourable?0:recipe.volume,glassMl:drink.pourable?recipe.volume:0,drinkFrom:drink.pourable?'glass':'bottle'},m,String,1,drink.name,{glassId});
+   assert.equal((html.match(/data-sip-motion/g)||[]).length,1);assert.equal((html.match(/data-drink-motion/g)||[]).length,1);
+   assert.equal(html.indexOf('data-sip-motion')<html.indexOf('bar-cup-position'),!drink.pourable);
+   const fill=Number(html.match(/data-vessel="glass"[^>]*data-fill-ratio="([^"]+)"/)[1]);
+   if(drink.pourable){assert.ok(fill>0);assert.ok(html.includes(drink.liquidColor));assert.ok(html.includes('bar-drink-ice'));}else assert.equal(fill,0);
+  }
+ }
+ const jelly=barDrinks.find(d=>d.id==='energy-jelly');assert.equal(art.canPour(jelly),false);
+ const html=art.render(jelly,{id:2,volumeMl:180,remainingMl:180,bottleMl:180,glassMl:0,drinkFrom:'bottle'},m,String,1,jelly.name,{glassId:'highball'});assert.ok(html.includes('data-vessel="glass"'));assert.match(html,/data-vessel="glass"[^>]*data-fill-ratio="0"/);
+});
+
+test('new paid variants inherit beer foam and highball ice without adding either to coffee',()=>{
+ const window={};vm.runInNewContext(readFileSync(new URL('../public/bar-drink-art.js',import.meta.url),'utf8'),{window});const m={width:40,height:80,fullWidth:40,fullHeight:80,x:0,y:0};
+ const html=(id,ml=350)=>{const d=barDrinks.find(d=>d.id===id);return window.AVEDBarDrinkArt.render(d,{id:1,volumeMl:500,remainingMl:ml,glassMl:ml,bottleMl:0,drinkFrom:'glass'},m,String,1,d.name,{glassId:'beer-mug'});};
+ assert.ok(html('meitei-25').includes('bar-drink-foam'));assert.ok(!html('meitei-25').includes('bar-drink-ice'));assert.ok(!html('meitei-25',0).includes('bar-drink-foam'));
+ assert.ok(html('meitei-02').includes('bar-drink-ice'));assert.ok(html('deisui-11').includes('bar-drink-ice'));
+ assert.ok(!html('meitei-28').includes('bar-drink-foam'));assert.ok(!html('meitei-28').includes('bar-drink-ice'));
 });

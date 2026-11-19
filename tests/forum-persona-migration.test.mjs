@@ -9,6 +9,7 @@ test('old NOT NULL persona owners migrate without losing posts, references, view
   db.exec(`PRAGMA foreign_keys=ON;
    CREATE TABLE employees(id INTEGER PRIMARY KEY,enabled INTEGER,role TEXT,identity_kind TEXT,display_name TEXT DEFAULT '',username TEXT UNIQUE,password_hash TEXT,department TEXT DEFAULT '',is_npc INTEGER DEFAULT 0);
    INSERT INTO employees(id,enabled,role,identity_kind) VALUES(1,1,'admin','planning_member'),(2,0,'employee','player_employee'),(3,1,'employee','planning_member'),(4,0,'employee','player_employee');
+   UPDATE employees SET username='AVED' WHERE id=1;
    CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT,avatar_url TEXT);INSERT INTO profiles VALUES(1,'管理员','');
    CREATE TABLE balance_ledger(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,delta INTEGER);INSERT INTO balance_ledger VALUES(1,999999),(2,4242),(4,777);
    CREATE TABLE forum_personas(id INTEGER PRIMARY KEY,name TEXT NOT NULL UNIQUE COLLATE NOCASE,created_by INTEGER NOT NULL REFERENCES employees(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -42,5 +43,6 @@ test('old NOT NULL persona owners migrate without losing posts, references, view
   db.exec('DELETE FROM employees WHERE id=2');assert.equal(read(11).anonymousName,'新名称');assert.equal(read(11).balance,null);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM forum_threads').get().n,2);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
   installForumSocial(db);assert.equal(db.prepare('SELECT COUNT(*) n FROM company_robots').get().n,3,'deleted robots are not resurrected');assert.equal(db.prepare('SELECT COUNT(*) n FROM forum_threads').get().n,2,'restart migration is idempotent');
+  db.exec('UPDATE employees SET enabled=0 WHERE id=1');assert.equal(social.allowed(1),false);assert.equal(social.list(1).canManage,false);assert.throws(()=>social.topics(1),e=>e.status===403);assert.throws(()=>social.publish(1,{}),e=>e.status===403);
  }finally{db.close();}
 });

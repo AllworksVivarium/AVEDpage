@@ -176,7 +176,14 @@ export function installCardTables({rankingIdentity=row=>row,db,send,readBody,req
   catch(e){console.error('Card table:',e.message);r.deadline=clock()+30000;}
  }},350);timer.unref();
  const cleanup=schedule(()=>{for(const r of rooms.values())if(!playing(r)&&clock()-r.updatedAt>86400000){rooms.delete(r.id);db.prepare('DELETE FROM card_table_rooms WHERE id=?').run(r.id);}},3600000);cleanup.unref();
- return {close(){input.clear();clearImmediate(broadcastTask);pendingBroadcasts.clear();cancel(timer);cancel(cleanup);reactions.close();for(const s of streams)s.res.end();},async handle(req,res,url){
+ return {forgetAccount(id,removedRooms=[]){
+  const removed=new Set(removedRooms);for(const r of rooms.values())if(r.host===id||r.seats.some(p=>p&&!p.bot&&p.id===id))removed.add(r.id);
+  input.forget(id);rankings.forgetAccount();
+  for(const [person,w] of watchers)if(person===id||removed.has(w.roomId))watchers.delete(person);
+  for(const s of streams)if(s.id===id){streams.delete(s);s.res.end();}
+  for(const roomId of removed){rooms.delete(roomId);pendingBroadcasts.delete(roomId);reactions.forget(roomId);}
+  for(const s of streams)write(s,selectedRoom(s.id),new Map());
+ },close(){input.clear();clearImmediate(broadcastTask);pendingBroadcasts.clear();cancel(timer);cancel(cleanup);reactions.close();for(const s of streams)s.res.end();},async handle(req,res,url){
   if(!url.pathname.startsWith('/api/player/card-table'))return false;
   const actor=requireEmployee(req,res);if(!actor)return true;
   if(url.pathname==='/api/player/card-table/rankings'&&req.method==='GET'){send(res,200,mapRankingIdentities(rankings.list(),rankingIdentity));return true;}

@@ -120,7 +120,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
  let broadcastTask=null;
  function queueBroadcast(){if(broadcastTask)return;broadcastTask=setImmediate(()=>{broadcastTask=null;try{broadcast();}catch(e){console.error('Shared flight:',e.message);}});broadcastTask.unref();}
  const timer=setInterval(()=>{try{if(streams.size||pending)broadcast();}catch(e){console.error('Shared flight:',e.message);}},1000);timer.unref();
- return {close(){input.clear();clearImmediate(broadcastTask);clearInterval(timer);clearTimeout(eventTimer);for(const s of streams)s.res.end();streams.clear();},async handle(req,res,url){if(!url.pathname.startsWith('/api/player/games/sky/'))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
+ return {forgetAccount(id){input.forget(id);payoutDetails.clear();for(const s of streams)if(s.id===id){streams.delete(s);s.res.end();}queueBroadcast();},close(){input.clear();clearImmediate(broadcastTask);clearInterval(timer);clearTimeout(eventTimer);for(const s of streams)s.res.end();streams.clear();},async handle(req,res,url){if(!url.pathname.startsWith('/api/player/games/sky/'))return false;const actor=requireEmployee(req,res);if(!actor)return true;try{
   const path=url.pathname;
   if(path.endsWith('/input-sync')&&req.method==='POST'){const data=await readBody(req);send(res,200,input.acknowledge(actor.id,Number(data.round),data.token));return true;}
   if(path.endsWith('/stream')&&req.method==='GET'){

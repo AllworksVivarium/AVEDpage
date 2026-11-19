@@ -3,6 +3,7 @@ export function installCardRankings(db,clock=()=>Date.now()){
  db.exec(`CREATE TABLE IF NOT EXISTS card_rank_wins(round_id TEXT NOT NULL,employee_id INTEGER NOT NULL,role TEXT NOT NULL,name TEXT NOT NULL,won_at INTEGER NOT NULL,PRIMARY KEY(round_id,employee_id));CREATE INDEX IF NOT EXISTS card_rank_time ON card_rank_wins(won_at,role,employee_id);`);
  let cached=null,expires=0;
  return {
+ forgetAccount(){cached=null;expires=0;},
  record(room){
   if(room.mode!=='online'||room.game?.phase!=='ended'||!room.money?.settlement)return;
   const people=room.seats.filter(p=>p&&!p.bot);

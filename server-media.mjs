@@ -19,7 +19,7 @@ export function mediaReference(kind,id,value,size) {
 export function installMedia({db,send,requireEmployee}) {
   db.exec('CREATE TABLE IF NOT EXISTS avatar_thumbnails(employee_id INTEGER NOT NULL,version TEXT NOT NULL,size INTEGER NOT NULL,image BLOB NOT NULL,PRIMARY KEY(employee_id,version,size))');
   const pending=new Map();
-  return {async handle(req,res,url) {
+  return {forgetAccount(){versions.clear();versionBytes=0;},async handle(req,res,url) {
     const match=url.pathname.match(/^\/api\/media\/(avatar|thread|reply|life)\/(\d+)$/);
     if(!match)return false;
     const employee=requireEmployee(req,res);if(!employee)return true;
@@ -41,7 +41,7 @@ export function installMedia({db,send,requireEmployee}) {
       const key=id+':'+version+':'+size;
       try{
         let bytes=db.prepare('SELECT image FROM avatar_thumbnails WHERE employee_id=? AND version=? AND size=?').get(id,version,size)?.image;
-        if(!bytes){if(!pending.has(key))pending.set(key,avatarBytes(row.value,size).then(image=>{db.prepare('DELETE FROM avatar_thumbnails WHERE employee_id=? AND version<>?').run(id,version);db.prepare('INSERT OR REPLACE INTO avatar_thumbnails VALUES(?,?,?,?)').run(id,version,size,image);return image;}).finally(()=>pending.delete(key)));bytes=await pending.get(key);}
+        if(!bytes){if(!pending.has(key))pending.set(key,avatarBytes(row.value,size).then(image=>{if(db.prepare('SELECT avatar_url FROM profiles WHERE employee_id=?').get(id)?.avatar_url!==row.value)return image;db.prepare('DELETE FROM avatar_thumbnails WHERE employee_id=? AND version<>?').run(id,version);db.prepare('INSERT OR REPLACE INTO avatar_thumbnails VALUES(?,?,?,?)').run(id,version,size,image);return image;}).finally(()=>pending.delete(key)));bytes=await pending.get(key);}
         res.writeHead(200,{...headers,'Content-Length':bytes.length});res.end(req.method==='HEAD'?undefined:bytes);
       }catch{send(res,422,{error:'头像暂时无法生成缩略图。'});}return true;
     }

@@ -222,7 +222,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
   marketService.onQuote(()=>{captureStockAssets();processProtectedStockLots();});
   const forum=installForumList(db);
   const replies=installForumReplies(db);
-  return {log,initializeStockLots:stockLots.migrate,captureStockAssets,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
+  return {forgetAccount(id){forumPresence.forget(id);for(const [room,clients] of chatStreams){for(const response of clients)if(response.avedEmployeeId===id){clients.delete(response);response.end();}emitChat(room);}},log,initializeStockLots:stockLots.migrate,captureStockAssets,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
     const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;

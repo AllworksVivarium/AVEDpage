@@ -46,7 +46,7 @@ export function installContainmentDossiers(db){
 }
 
 export function listDossiers(db,{admin=false}={}){
- return db.prepare(`SELECT d.id,d.code,d.title,d.department,d.status,d.summary,d.classification,d.procedures,d.sections_json,
+ return db.prepare(`SELECT d.id,d.code,d.title,d.department,d.status,d.summary,d.abstract,d.classification,d.procedures,d.sections_json,
   length(d.image_data)>0 AS hasImage,d.employee_id AS employeeId,e.identity_kind AS identityKind
   FROM dossiers d LEFT JOIN employees e ON e.id=d.employee_id ORDER BY d.id ${admin?'DESC':'ASC'}`).all();
 }

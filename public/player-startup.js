@@ -8,6 +8,8 @@
  function gamePath(game){return Object.hasOwn(gamePaths,game)?gamePaths[game]:null;}
  function resolveRoute(hash,allowed){
   const value=String(hash||'').replace(/^#\/?/,'');
+  const dossier=value.match(/^containment\/(\d+)(?:\?page=(\d+))?$/);
+  if(allowed.includes('containment')&&dossier)return {page:'containment',game:null,dossierId:Number(dossier[1]),dossierPage:Math.max(0,Math.min(999,Number(dossier[2]||1)-1)),hash:'#/'+value};
   if(allowed.includes('casino')&&(value==='casino'||value.startsWith('casino/'))){
    const child=value.slice(7),game=Object.keys(gamePaths).find(key=>gamePaths[key]==='#/casino/'+child)||'home';
    return {page:'casino',game,hash:gamePath(game)};

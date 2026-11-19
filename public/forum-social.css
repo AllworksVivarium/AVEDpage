@@ -173,3 +173,25 @@
 }
 
 @layer aved-personal{body.theme-inner #inner-app-view #view-forum .forum-browse-actions label{display:flex;align-items:center;gap:4px;white-space:nowrap}body.theme-inner #inner-app-view #view-forum .forum-search button{flex:none}body.theme-inner #inner-app-view #view-forum .forum-browse-tools button{height:32px;min-height:32px!important;padding:4px 8px!important}@media(max-width:400px){body.theme-inner #inner-app-view #view-forum .forum-browse-tools{gap:5px}body.theme-inner #inner-app-view #view-forum .forum-browse-actions{gap:5px}body.theme-inner #inner-app-view #view-forum .forum-browse-actions select{width:78px;max-width:78px}}}
+
+/* Authenticated system identity: a stable seal, distinct from containment glitches. */
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-author[data-forum-admin] b.forum-admin-badge{
+  --forum-system-red:#5e0205;--forum-system-ink:#5e0205;
+  position:relative;display:inline-block;isolation:isolate;overflow:hidden;white-space:nowrap;
+  padding:2px 7px;border:1px solid color-mix(in srgb,var(--forum-system-ink) 65%,transparent)!important;
+  border-inline-width:2px!important;background:color-mix(in srgb,var(--forum-system-red) 9%,var(--inner-card-bg));
+  color:var(--forum-system-ink)!important;line-height:1.5!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--forum-system-ink) 10%,transparent),0 0 8px #5e02051a;
+ }
+ body.theme-inner.dark-mode #inner-app-view #view-forum .forum-author[data-forum-admin] b.forum-admin-badge{--forum-system-ink:#dc8288}
+ body.theme-inner #inner-app-view #view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,color-mix(in srgb,var(--forum-system-ink) 20%,transparent) 50%,transparent 65%);
+  transform:translateX(-130%);animation:forum-system-seal 6s ease-in-out infinite;
+ }
+ @keyframes forum-system-seal{0%,65%{transform:translateX(-130%)}90%,100%{transform:translateX(130%)}}
+ body.effects-off #view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after,
+ html[data-effects=off] #view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after{animation:none!important;display:none!important}
+ @media(prefers-reduced-motion:reduce){#view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after{animation:none!important;display:none!important}}
+}

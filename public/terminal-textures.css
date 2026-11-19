@@ -28,3 +28,14 @@ body.theme-inner[data-terminal-pattern=fade] .terminal-content-pane::before{mask
 #view-profile.personal-hud .hud-pattern-phase::after{background:linear-gradient(180deg,color-mix(in srgb,var(--inner-text-main) 35%,transparent),var(--inner-crimson) 48%,var(--inner-text-main) 65%);background-size:100% 240%;animation:profile-phase-scan 12s linear infinite}
 body.effects-off #view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-phase)::after{animation:none}
 @media(prefers-reduced-motion:reduce){#view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-phase)::after{animation:none}}
+/* Eight collection tiles in four pairs. Preview colours use the current palette. */
+#view-profile.personal-hud .hud-pattern-ascii::after{background:linear-gradient(135deg,var(--inner-crimson),var(--inner-text-main) 48%,var(--inner-crimson) 75%,var(--inner-text-muted));animation:profile-flow-preview 16s ease-in-out infinite alternate}
+#view-profile.personal-hud .hud-pattern-rain::after{background:linear-gradient(var(--inner-text-main),var(--inner-crimson));mask:url('/assets/profile-symbol-rain.svg') repeat 0 0/80px 90px;opacity:1;animation:profile-rain-preview 6s linear infinite}
+#view-profile.personal-hud .hud-pattern-grid::after{background:linear-gradient(var(--inner-text-main) 1px,transparent 1px),linear-gradient(90deg,var(--inner-text-main) 1px,transparent 1px);background-size:10px 10px;mask:none;opacity:.3}
+#view-profile.personal-hud .hud-pattern-grid::before{content:'';position:absolute;inset:6px 18px;border:1px solid var(--inner-crimson);transform:rotate(45deg)}
+#view-profile.personal-hud .hud-pattern-phase::after{mask:none;background:repeating-radial-gradient(ellipse at 35% 65%,transparent 0 5px,var(--inner-crimson) 6px,transparent 7px 13px),radial-gradient(circle,var(--inner-text-main) 1px,transparent 1.6px);background-size:100% 100%,5px 5px;opacity:.8;animation:profile-phase-glow 4s ease-in-out infinite alternate}
+@keyframes profile-flow-preview{from{mask-position:-14px 8px}to{mask-position:8px -14px}}
+@keyframes profile-rain-preview{from{mask-position:0 -90px}to{mask-position:0 0}}
+@keyframes profile-phase-glow{from{filter:brightness(.65)}to{filter:brightness(1.4)}}
+body.effects-off #view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-rain,.hud-pattern-phase)::after{animation:none}
+@media(prefers-reduced-motion:reduce){#view-profile.personal-hud :is(.hud-pattern-ascii,.hud-pattern-rain,.hud-pattern-phase)::after{animation:none}}

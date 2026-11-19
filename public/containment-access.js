@@ -68,8 +68,9 @@
   else if(banner?.querySelector('.containment-fracture'))banner.textContent='当前用户';
  }
  function reset(){active=false;identified=false;doc.body.classList.remove('containment-access');const pane=overlay();if(pane){delete pane.dataset.containment;pane.removeAttribute('data-rewriting');}const title=doc.getElementById('signal-status-title');if(title){title.classList.remove('containment-fracture');title.textContent='员工身份核验中';delete title.dataset.contaminationExempt;delete title.dataset.typeIgnore;}sync(null);}
- async function identify(user){
+ async function identify(user,{animate=true}={}){
   if(!isContainment(user)||identified)return;
+  if(!animate){identified=true;sync(user);return;}
   identified=true;active=true;const pane=overlay(),title=doc.getElementById('signal-status-title');
   if(!pane||!title)return;
   pane.dataset.containment='true';pane.classList.remove('hidden');pane.classList.add('flex');pane.setAttribute('aria-busy','true');

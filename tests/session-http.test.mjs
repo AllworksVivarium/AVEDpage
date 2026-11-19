@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createServer} from 'node:net';
+import {spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
+import {DatabaseSync} from 'node:sqlite';
+
+test('HTTP sessions restore identity, renew only on activity, preserve remembered deadline and reject expired credentials',async t=>{
+ const directory=mkdtempSync(join(tmpdir(),'aved-session-http-')),password=randomBytes(16).toString('hex');
+ const port=await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});}),base='http://127.0.0.1:'+port;
+ const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('../',import.meta.url),env:{...process.env,NODE_ENV:'test',DATA_DIR:directory,HOST:'127.0.0.1',PORT:String(port),COOKIE_SECURE:'false',SESSION_SECRET:randomBytes(32).toString('hex'),BOOTSTRAP_ADMIN_USERNAME:'session-admin',BOOTSTRAP_ADMIN_PASSWORD:password},stdio:['ignore','ignore','pipe']});let errors='';child.stderr.on('data',d=>errors+=d);
+ t.after(async()=>{if(child.exitCode===null){const done=new Promise(r=>child.once('exit',r));child.kill();await done;}rmSync(directory,{recursive:true,force:true});});
+ let ready=false;for(let i=0;i<120;i++){try{if((await fetch(base+'/api/health')).ok){ready=true;break;}}catch{}if(child.exitCode!==null)break;await new Promise(r=>setTimeout(r,100));}assert.ok(ready,errors);
+ const request=async(cookie,path,method='GET')=>{const res=await fetch(base+path,{method,headers:{cookie,origin:base}});return {status:res.status,cookie:res.headers.get('set-cookie'),data:await res.json()};};
+ const login=async remember=>{const r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier:'session-admin',password,remember})});assert.equal(r.status,200);return r.headers.get('set-cookie');};
+ assert.equal((await request('','/api/session')).status,401);
+ let cookie=await login(false);assert.match(cookie,/Max-Age=18000/);cookie=cookie.split(';')[0];
+ const first=await request(cookie,'/api/session');assert.equal(first.data.remembered,false);assert.ok(first.data.employeeId);
+ for(const path of ['/api/me','/api/player/state?bootstrap=1','/api/session'])assert.equal((await request(cookie,path)).status,200);
+ assert.equal((await request(cookie,'/api/session')).data.expiresAt,first.data.expiresAt);
+ const renewed=await request(cookie,'/api/session/activity','POST');assert.equal(renewed.status,200);assert.match(renewed.cookie,/Max-Age=18000/);assert.ok(renewed.data.expiresAt>first.data.expiresAt);
+ cookie=(await login(true));assert.match(cookie,/Max-Age=604800/);cookie=cookie.split(';')[0];
+ const remembered=(await request(cookie,'/api/session')).data;
+ assert.equal(remembered.remembered,true);
+ const retained=await request(cookie,'/api/session/activity','POST');assert.equal(retained.data.expiresAt,remembered.expiresAt);assert.equal(retained.cookie,null);
+ const db=new DatabaseSync(join(directory,'wanyehui.db'));db.prepare('UPDATE sessions SET expires_at=?').run(Date.now()-1);db.close();
+ for(const [path,method] of [['/api/session','GET'],['/api/me','GET'],['/api/session/activity','POST']])assert.equal((await request(cookie,path,method)).status,401);
+});

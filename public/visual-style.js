@@ -34,7 +34,7 @@ window.AVEDVisualStyle=function({byId}){
  document.body.classList.add('signal-preview','red-topbar','crt-unified');document.body.classList.remove('paper-texture');
  try{localStorage.setItem('aved_visual_style_v1','signal');localStorage.removeItem('aved_paper_texture_v1');localStorage.setItem('aved_header_layout_v1','red');}catch{}
  try{localStorage.removeItem('aved_presentation_v1');}catch{}
- function applyPattern(value){const selected=['halftone','fade','grain','ascii','phase','plain'].includes(value)&&(!entitlements||value==='plain'||entitlements.patterns?.owned.includes(value))?value:'plain';document.body.dataset.terminalPattern=selected;try{localStorage.setItem('aved_terminal_pattern_v2',selected);}catch{}}
+ function applyPattern(value){const selected=['halftone','fade','grain','ascii','phase','rain','grid','plain'].includes(value)&&(!entitlements||value==='plain'||entitlements.patterns?.owned.includes(value))?value:'plain';document.body.dataset.terminalPattern=selected;try{localStorage.setItem('aved_terminal_pattern_v2',selected);}catch{}}
  let savedPattern='plain';try{savedPattern=localStorage.getItem('aved_terminal_pattern_v2')||'plain';}catch{}
  applyPattern(savedPattern);
  window.AVEDAppearance={palettes,setPalette:applyPalette,setPattern:applyPattern,get entitlements(){return entitlements;},setEntitlements(value){entitlements=value||{owned:['oxblood'],prices:{oxblood:0,mineral:50000,darkroom:50000}};window.AVEDContamination?.setEntitled(entitlements.effects?.owned.includes('contamination')===true);applyPattern(document.body.dataset.terminalPattern);window.AVEDGateway?.setEntitlements(entitlements);applyPalette(document.documentElement.dataset.palettePreview);}};

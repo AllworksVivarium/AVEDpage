@@ -34,11 +34,11 @@ test('admin edits structured dossiers and six dimensions; players only read them
  assert.equal((await a(attrPath,'PUT',{values:[0,20,40,60,80,101]})).status,400);assert.deepEqual((await a(attrPath)).data.values,[0,20,40,60,80,100]);
  assert.equal((await a('/api/admin/employees/'+person.data.id,'PUT',{displayName:'录入测试员',attributes:[100,80,60,40,20,0]})).status,200);
  assert.deepEqual((await p('/api/player/directory')).data.items.find(x=>x.id===person.data.id).attributes,[100,80,60,40,20,0]);
- const document={code:'TEST-MODULES',title:'模块档案',department:'收容部',status:'观察中',summary:'原始正文\n\n第二段',classification:'SAFE',procedures:'措施正文',sections:[{type:'note',title:'更新',author:'古登野',date:'20xx',body:'补充正文\n第二行'},{type:'story',body:'无署名故事'},{type:'note',body:''}]};
+ const document={code:'TEST-MODULES',title:'模块档案',department:'收容部',status:'观察中',abstract:'卡片短摘要',summary:'原始正文\n\n第二段',classification:'SAFE',procedures:'措施正文',sections:[{type:'note',title:'更新',author:'古登野',date:'20xx',body:'补充正文\n第二行'},{type:'story',body:'无署名故事'},{type:'note',body:''}]};
  const created=await a('/api/admin/dossiers','POST',document);assert.equal(created.status,201);const id=created.data.id,path='/api/admin/dossiers/'+id;
  let row=(await p('/api/dossiers')).data.items.find(x=>x.id===id);assert.equal(row.classification,'SAFE');assert.equal(row.sections.length,2);assert.equal(row.sections[0].date,'20xx');assert.ok(!('image_data' in row));
  assert.equal((await a(path,'PUT',{code:document.code,title:document.title,department:document.department,status:document.status,summary:'修改正文'})).status,200);
- row=(await a('/api/admin/dossiers')).data.items.find(x=>x.id===id);assert.equal(row.procedures,'措施正文');assert.equal(row.sections.length,2,'unrelated edits preserve optional modules');
+ row=(await a('/api/admin/dossiers')).data.items.find(x=>x.id===id);assert.equal(row.procedures,'措施正文');assert.equal(row.abstract,'卡片短摘要');assert.equal(row.sections.length,2,'unrelated edits preserve optional modules');
  assert.equal((await p(path,'PUT',document)).status,403);assert.equal((await a(path,'PUT',{...document,classification:'INVALID'})).status,400);
  assert.equal((await a(path,'PUT',{...document,classification:'',procedures:'',sections:[]})).status,200);
  await stop();await start();admin=await login('archive-admin');player=await login('archive-player');row=(await p('/api/dossiers')).data.items.find(x=>x.id===id);assert.equal(row.classification,'');assert.equal(row.procedures,'');assert.deepEqual(row.sections,[]);assert.deepEqual((await p('/api/profile')).data.profile.attributes,[100,80,60,40,20,0]);
