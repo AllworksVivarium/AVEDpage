@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded maintenance for the 30-day AVED event; never compact the ledger."""
+"""One rolling daily snapshot and one snapshot refreshed every five days."""
 import argparse
 from contextlib import closing
 import datetime as dt
@@ -10,15 +10,17 @@ import sqlite3
 import tempfile
 
 
-def verified_backup(database, directory, day):
+def verified_backup(database, directory, day, prefix="daily"):
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    destination = directory / ("daily-" + day + ".sqlite")
-    fd, temporary = tempfile.mkstemp(prefix=".daily-", suffix=".tmp", dir=directory)
+    destination = directory / (prefix + "-" + day + ".sqlite")
+    fd, temporary = tempfile.mkstemp(prefix="." + prefix + "-", suffix=".tmp", dir=directory)
     os.close(fd)
     try:
         with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True, timeout=10)) as source:
             with closing(sqlite3.connect(temporary)) as target:
                 source.backup(target, pages=128, sleep=0.05)
+                # Standalone snapshots need no WAL/SHM companion files.
+                target.execute("PRAGMA journal_mode=DELETE")
                 if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                     raise RuntimeError("Backup integrity check failed")
         os.chmod(temporary, 0o600)
@@ -70,12 +72,17 @@ def run(database, directory, now=None):
     now = now or dt.datetime.now(dt.timezone.utc)
     day = now.astimezone(dt.timezone(dt.timedelta(hours=8))).date().isoformat()
     backup = verified_backup(database, directory, day)
+    five_day_backups = sorted(p for p in directory.glob("five-day-????-??-??.sqlite") if p.is_file())
+    five_day = five_day_backups[-1] if five_day_backups else None
+    if five_day is None or (dt.date.fromisoformat(day) - dt.date.fromisoformat(five_day.stem[len("five-day-"):])).days >= 5:
+        five_day = verified_backup(backup, directory, day, prefix="five-day")
+    # Remove old snapshots only after both replacement snapshots are available.
+    for prefix, retained in (("daily", backup), ("five-day", five_day)):
+        for old in directory.glob(prefix + "-????-??-??.sqlite"):
+            if old.is_file() and old != retained:
+                old.unlink()
     removed = clean(database, int(now.timestamp() * 1000))
-    # Prune only this job's verified, date-named snapshots, after successful cleanup.
-    backups = sorted(p for p in directory.glob("daily-????-??-??.sqlite") if p.is_file())
-    for old in backups[:-2]:
-        old.unlink()
-    return {"backup": str(backup), "retainedBackups": min(2, len(backups)), "removed": removed}
+    return {"backup": str(backup), "fiveDayBackup": str(five_day), "retainedBackups": 2, "removed": removed}
 
 
 if __name__ == "__main__":

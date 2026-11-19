@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("maintenance", Path(__file__).resolve().parents[1] / "deploy/daily-maintenance.py")
 maintenance = importlib.util.module_from_spec(spec)
@@ -12,6 +13,33 @@ spec.loader.exec_module(maintenance)
 
 
 class MaintenanceTest(unittest.TestCase):
+    def test_daily_updates_but_five_day_snapshot_stays_until_day_five(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / 'event.sqlite'
+            backups = Path(temporary) / 'backups'
+            with closing(sqlite3.connect(database)) as db:
+                db.execute('PRAGMA journal_mode=WAL')
+                db.execute('CREATE TABLE balance_ledger(delta INTEGER)')
+                db.commit()
+                start = dt.datetime(2026, 11, 8, tzinfo=dt.timezone.utc)
+                def amount(path):
+                    with closing(sqlite3.connect(Path(path).as_uri() + '?mode=ro&immutable=1', uri=True)) as snapshot:
+                        return snapshot.execute('SELECT SUM(delta) FROM balance_ledger').fetchone()[0]
+                with patch.object(maintenance, 'clean', return_value={}):
+                    for offset in range(6):
+                        db.execute('INSERT INTO balance_ledger VALUES(1)')
+                        db.commit()
+                        result = maintenance.run(database, backups, start + dt.timedelta(days=offset))
+                        self.assertEqual(amount(result['backup']), offset + 1)
+                        self.assertEqual(amount(result['fiveDayBackup']), 1 if offset < 5 else 6)
+                        self.assertEqual(len(list(backups.iterdir())), 2)
+                    db.execute('INSERT INTO balance_ledger VALUES(1)')
+                    db.commit()
+                    result = maintenance.run(database, backups, start + dt.timedelta(days=5))
+                    self.assertEqual(amount(result['backup']), 7)
+                    self.assertEqual(amount(result['fiveDayBackup']), 6)
+                    self.assertEqual(len(list(backups.iterdir())), 2)
+
     def test_account_moderation_only_records_changes(self):
         with closing(sqlite3.connect(':memory:')) as db:
             db.execute('CREATE TABLE employees(id INTEGER PRIMARY KEY,username TEXT,enabled INTEGER)')

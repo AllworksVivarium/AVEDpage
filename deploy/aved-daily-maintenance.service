@@ -1,5 +1,5 @@
 [Unit]
-Description=AVED daily two-copy backup and empty game cleanup
+Description=AVED daily and five-day snapshots and empty game cleanup
 After=docker.service
 
 [Service]
