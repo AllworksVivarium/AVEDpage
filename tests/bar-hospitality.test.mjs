@@ -60,3 +60,9 @@ test('negative reset is an atomic, auditable company-fund expense; positive rese
  f.setBalance(3,-50);f.db.exec("CREATE TRIGGER fail_fund BEFORE INSERT ON company_fund BEGIN SELECT RAISE(ABORT,'fund fixture'); END");assert.throws(()=>reset(3),/fund fixture/);assert.equal(f.balanceFor(3),-50);
  assert.equal(f.db.prepare('PRAGMA quick_check').get().quick_check,'ok');assert.equal(f.db.prepare('PRAGMA foreign_key_check').all().length,0);
 });
+
+
+test('empty glass identifiers cannot become gift invitations or debit either guest',t=>{
+ const f=setup(t);for(const id of ['highball','beer-mug','rocks','cups'])assert.throws(()=>f.service.invite(actor(1),{recipientId:2,drinkId:id,requestId}),/有效饮品/);
+ assert.equal(f.balanceFor(1),10000);assert.equal(f.balanceFor(2),10000);assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_gifts').get().n,0);assert.equal(f.db.prepare('SELECT COUNT(*) n FROM bar_orders').get().n,0);
+});

@@ -64,3 +64,15 @@ test('empty and filled cups place the visible SVG base on the same tabletop as t
   assert.ok(Math.abs(bottom+height*2/viewHeight)<1e-9,'transparent SVG rows must sit below the anchor');
  }
 });
+
+
+test('other guests render one visible vessel while the owner keeps bottle and glass separate',()=>{
+ const art=fixture(),drink=barDrinks.find(d=>d.id==='familiar-small-A'),pouch=barDrinks.find(d=>d.container==='pouch');
+ const poured={...serving,bottleMl:20,glassMl:100,drinkFrom:'glass'};
+ const owner=art.render(drink,poured,metrics,String,1,'自己',{glassId:'highball'});
+ const guest=art.render(drink,poured,metrics,String,2,'客人',{glassId:'highball',compact:true});
+ assert.match(owner,/bar-source-container/);assert.doesNotMatch(guest,/bar-source-container/);assert.match(guest,/bar-cup-position/);assert.match(guest,/left:0px/);
+ const bottle=art.render(drink,serving,metrics,String,2,'客人',{glassId:'highball',compact:true});assert.doesNotMatch(bottle,/bar-cup-position/);assert.match(bottle,/data-vessel="bottle"/);
+ const soft=art.render(pouch,serving,metrics,String,2,'软饮',{glassId:'highball',compact:true});assert.match(soft,/data-clink-sound="muted"/);assert.doesNotMatch(soft,/bar-cup-position/);
+ const empty=art.render(null,null,metrics,String,2,'空杯',{glassId:'highball',compact:true});assert.match(empty,/bar-cup-position/);
+});

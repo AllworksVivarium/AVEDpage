@@ -34,3 +34,14 @@ test('fizz and highball variants each share one server-owned price',()=>{
 });
 
 test('every orderable serving finishes in at most five sips',()=>{for(const drink of barDrinks.filter(d=>d.orderable)){const recipe=servingRecipe(drink.id);assert.ok(recipe.sips>=1&&recipe.sips<=5,drink.id);}});
+
+
+test('gift menu exposes drinks without the personal cup picker and refuses cup navigation',()=>{
+ const source=readFileSync(new URL('../public/bar-ui.js',import.meta.url),'utf8'),code=source.slice(source.indexOf(' function renderMenu(){'),source.indexOf(' function paintPayment(){'));
+ for(const giftTarget of [null,{employeeId:2}]){
+  const nodes=new Map(),get=key=>{if(!nodes.has(key))nodes.set(key,{});return nodes.get(key);};
+  const ctx={window,drinks:barDrinks,activeGroup:null,giftTarget,familyBar:{hidden:false,querySelector:()=>({})},$:get,snapshot:{},esc:String,money:n=>String(n),selection:null,pendingOrder:null,menu:{scrollTop:0}};vm.createContext(ctx);vm.runInContext(code+';renderMenu();',ctx);
+  const html=get('[data-bar-menu-grid]').innerHTML;assert.equal(html.includes('data-drink-group="cups"'),!giftTarget);assert.match(html,/data-drink="mineral-water"/);
+  if(giftTarget){vm.runInContext("showGroup('cups')",ctx);assert.equal(ctx.activeGroup,null);assert.equal(get('[data-bar-cups-menu]').hidden,true);}
+ }
+});

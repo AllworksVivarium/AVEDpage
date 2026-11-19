@@ -41,3 +41,12 @@
 @media(prefers-reduced-motion:reduce){.bar-song-notice.is-scrolling .bar-song-ticker{animation:none}.bar-header .bar-brand .bar-song-notice{overflow-x:auto;scrollbar-width:none}}
 .effects-off .bar-song-notice.is-scrolling .bar-song-ticker{animation:none}.effects-off .bar-header .bar-brand .bar-song-notice{overflow-x:auto;scrollbar-width:none}
 .bar-album-tracks .bar-track-row.is-previewing>button{background:#171217;border-color:#96715c}.bar-album-tracks .bar-track-row.is-previewing .bar-track-number{color:var(--bar-gold)}
+
+/* Keep the song ticker inside a shrinkable grid/flex column. */
+.bar-room{min-width:0;grid-template-columns:minmax(0,1fr)}
+.bar-room .bar-header{min-width:0;max-width:100%;box-sizing:border-box}
+.bar-header .bar-brand{flex:1 1 0%;width:0;min-width:0;overflow:hidden}
+.bar-header .bar-brand .bar-song-notice{max-width:100%;contain:inline-size}
+.bar-header>.bar-exit,.bar-header>.bar-online,.bar-header>.bar-jukebox-entry,.bar-header>[data-bar-music]{flex-shrink:0}
+@media(prefers-reduced-motion:reduce){.bar-header .bar-brand .bar-song-notice{overflow:hidden;text-overflow:ellipsis}.bar-song-notice .bar-song-ticker{max-width:100%;overflow:hidden;text-overflow:ellipsis;transform:none}}
+.effects-off .bar-header .bar-brand .bar-song-notice{overflow:hidden;text-overflow:ellipsis}.effects-off .bar-song-notice .bar-song-ticker{max-width:100%;overflow:hidden;text-overflow:ellipsis;transform:none}
