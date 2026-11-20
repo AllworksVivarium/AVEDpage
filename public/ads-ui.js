@@ -53,12 +53,39 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
    content.innerHTML='<div class="ad-history">'+(state.mine.map(x=>`<article><header><b>${esc(state.slots.find(s=>s.id===x.slot)?.name||'广告位')}</b><span>${x.day===state.tomorrow?'明天':AVEDTime.relative(x.day)}</span></header><div class="ad-history-state"><strong>${money(x.amount)}</strong><small>${labels[x.status]}</small></div>${art(x)}${x.removedReason?`<p>${esc(x.removedReason)}</p>`:''}${x.status==='leading'&&x.day===state.tomorrow?`<button type="button" data-ad-edit="${x.id}">修改广告</button>`:''}</article>`).join('')||'<p class="ad-empty">还没有竞拍记录。</p>')+'</div>';
    content.querySelectorAll('[data-ad-edit]').forEach(b=>b.onclick=()=>loadEdit(Number(b.dataset.adEdit)));
   }else{
-   content.innerHTML=`<section class="ad-protection"><small>QUIET TERMINAL</small><h3>广告保护</h3><p>屏蔽全站弹窗与文字广告。续费累加时长。</p><strong>${state.protectionUntil>now()?'有效至 '+date(state.protectionUntil):'尚未开启'}</strong><div class="ad-plan-grid">${state.plans.map(p=>`<button type="button" data-ad-plan="${p.days}"><b>${p.days} 天</b><span>${money(p.price)}</span></button>`).join('')}</div><form class="ad-protect-confirm" hidden><p></p><button type="submit">确认购买</button><button type="button" data-ad-cancel-plan>取消</button></form></section>`;
-   const form=content.querySelector('form');let chosen=null;
-   content.querySelectorAll('[data-ad-plan]').forEach(b=>b.onclick=()=>{if(busy)return;chosen=state.plans.find(p=>p.days===Number(b.dataset.adPlan));protectionRequest=null;form.hidden=false;form.querySelector('p').textContent=(state.protectionUntil>now()?'续费':'购买')+' '+chosen.days+' 天 '+money(chosen.price);});
-   form.querySelector('[data-ad-cancel-plan]').onclick=()=>{if(!busy)form.hidden=true;};
-   form.onsubmit=async e=>{e.preventDefault();if(!chosen||busy)return;protectionRequest??=crypto.randomUUID();await mutate('/api/player/ads/protection',{days:chosen.days,confirmed:true,requestId:protectionRequest},'POST',()=>{popup.close();pendingPopup=null;for(const el of strips)el.hidden=true;try{localStorage.setItem('aved-ad-protection:'+owner,String(Date.now()));}catch{}void visit(false);});};
+   renderProtection();
   }
+ }
+ function refreshDelivery(){
+  version++;visitBusy=false;visitAgain=false;display=null;pendingPopup=null;popup.close();clearTimeout(expiryTimer);
+  for(const el of strips)el.hidden=true;
+  try{localStorage.setItem('aved-ad-protection:'+owner,String(Date.now()));}catch{}
+  void visit(false);
+ }
+ function renderProtection(){
+  const active=state.protectionUntil>now(),labels={pending:'待生效',active:'使用中',expired:'已到期',refunded:'已退款'};
+  content.innerHTML=`<section class="ad-protection"><small>QUIET TERMINAL</small><h3>广告保护</h3><p>屏蔽全站弹窗与文字广告。续费累加时长。</p><strong>${active?'有效至 '+date(state.protectionUntil):'尚未开启'}</strong><div class="ad-protection-actions">${active?`<label class="ad-display-choice"><input type="checkbox" data-ad-show-ads ${state.showAds?'checked':''}><span>显示广告</span></label>`:''}<button type="button" class="community-button" data-ad-today>查看今日广告</button></div>${active?'<p class="ad-short-note">手动显示广告时，购买期限照常计算。</p>':''}<div class="ad-plan-grid">${state.plans.map(p=>`<button type="button" data-ad-plan="${p.days}"><b>${p.days} 天</b><span>${money(p.price)}</span></button>`).join('')}</div><form class="ad-protect-confirm" hidden><p></p><button type="submit">确认购买</button><button type="button" data-ad-cancel-plan>取消</button></form><section class="ad-protection-orders" aria-label="广告保护订单"><h4>我的订单</h4><p class="ad-short-note">待生效订单可退实付金额的 50%。</p>${(state.protectionOrders||[]).map(order=>`<article><header><b>${order.days} 天广告保护</b><span>${labels[order.status]||''}</span></header><p>实付 ${money(order.paidAmount)}</p><p class="ad-order-period">${date(order.startsAt)} 至 ${date(order.untilAt)}</p>${order.status==='refunded'?`<p>已退回 ${money(order.refundAmount)}</p>`:order.canRefund?`<div class="ad-protection-actions"><span>可退 ${money(order.refundAmount)}</span><button type="button" class="community-button" data-ad-refund="${esc(order.id)}">申请退款</button></div><form class="ad-refund-confirm" hidden><p>取消这份订单，退回 ${money(order.refundAmount)}。</p><div class="ad-protection-actions"><button type="submit" class="community-button">确认退款</button><button type="button" class="community-button" data-ad-refund-cancel>取消</button></div></form>`:''}</article>`).join('')||'<p class="ad-empty">暂无订单。</p>'}</section></section>`;
+  const form=content.querySelector('.ad-protect-confirm');let chosen=null;
+  content.querySelectorAll('[data-ad-plan]').forEach(b=>b.onclick=()=>{if(busy)return;chosen=state.plans.find(p=>p.days===Number(b.dataset.adPlan));protectionRequest=null;form.hidden=false;form.querySelector('p').textContent=(state.protectionUntil>now()?'续费':'购买')+' '+chosen.days+' 天 '+money(chosen.price);});
+  form.querySelector('[data-ad-cancel-plan]').onclick=()=>{if(!busy)form.hidden=true;};
+  form.onsubmit=async e=>{e.preventDefault();if(!chosen||busy)return;protectionRequest??=crypto.randomUUID();await mutate('/api/player/ads/protection',{days:chosen.days,confirmed:true,requestId:protectionRequest},'POST',refreshDelivery);};
+  content.querySelector('[data-ad-show-ads]')?.addEventListener('change',async e=>{const selected=e.target.checked;await mutate('/api/player/ads/protection/display',{showAds:selected},'PUT',refreshDelivery);if(e.target.isConnected)e.target.checked=!!state.showAds;});
+  content.querySelector('[data-ad-today]').onclick=viewToday;
+  content.querySelectorAll('[data-ad-refund]').forEach(button=>{
+   const order=state.protectionOrders.find(x=>x.id===button.dataset.adRefund),confirm=button.closest('article').querySelector('.ad-refund-confirm');
+   button.onclick=()=>{if(busy)return;button.hidden=true;confirm.hidden=false;};
+   confirm.querySelector('[data-ad-refund-cancel]').onclick=()=>{if(busy)return;confirm.hidden=true;button.hidden=false;};
+   confirm.onsubmit=async e=>{e.preventDefault();if(busy)return;await mutate('/api/player/ads/protection/refund',{purchaseId:order.id,confirmed:true},'POST',data=>{refreshDelivery();return '已退回 '+money(data.refundAmount)+'。';});};
+  });
+ }
+ async function viewToday(){
+  if(busy)return;const actor=owner,token=++previewVersion;busy=true;locks(true);status.textContent='读取广告…';
+  try{
+   const data=await api('/api/player/ads/current');if(owner!==actor||getUser()?.id!==actor||token!==previewVersion||!marketDialog.open)return;
+   pendingPopup=null;
+   preview.innerHTML='<div class="ad-popup-label">今日广告<span>点击任意处关闭</span></div><div class="ad-today-collection">'+(data.items.map(item=>'<section><h4>'+esc(state.slots.find(s=>s.id===item.slot)?.name||'广告')+'</h4>'+art(item)+'</section>').join('')||'<p class="ad-empty">今天暂无投放广告。</p>')+'</div>';
+   preview.showModal();status.textContent='';
+  }catch(e){if(owner===actor)status.textContent=e.message;}finally{if(owner===actor){busy=false;locks(false);}}
  }
  function values(){const form=content.querySelector('.ad-editor');return {title:form.elements.title.value,body:form.elements.body.value,signature:form.elements.signature.value,image};}
  function feedback(message){const el=content.querySelector('.ad-editor-feedback');if(el)el.textContent=message;else status.textContent=message;}
@@ -85,7 +112,7 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  function locks(value){marketDialog.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=value);}
  async function mutate(path,body,method,done){
   if(busy)return;busy=true;locks(true);const actor=owner;feedback('');status.textContent='提交中…';
-  try{const d=await api(path,{method,body});if(owner!==actor||getUser()?.id!==actor)return;state=d;delta=d.serverTime-Date.now();onBalance(d.balance);done?.();if(marketDialog.open){render();status.textContent=method==='PUT'?'广告已保存。':'操作成功。';}}
+  try{const d=await api(path,{method,body});if(owner!==actor||getUser()?.id!==actor)return;state=d;delta=d.serverTime-Date.now();onBalance(d.balance);const message=done?.(d);if(marketDialog.open){render();status.textContent=typeof message==='string'?message:method==='PUT'&&path.includes('/bids/')?'广告已保存。':'操作成功。';}}
   catch(e){if(owner===actor){status.textContent=e.message;feedback(e.message);}}
   finally{if(owner===actor){busy=false;locks(false);}}
  }
@@ -98,8 +125,9 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  marketDialog.addEventListener('close',()=>{clearCount();previewVersion++;imageVersion++;imageBusy=false;request=null;tryPopup();});
  marketDialog.querySelectorAll('[data-ad-tab]').forEach(b=>b.onclick=()=>{if(busy)return;tab=b.dataset.adTab;editId=null;image='';imageBusy=false;imageVersion++;request=null;render();});
  for(const el of [preview,popup])el.onclick=()=>el.close();
- function paintStrips(){for(const el of strips){const item=display?.items.find(x=>x.slot===el.dataset.adSlot);el.hidden=!item||display.endsAt<=now()||display.protectionUntil>now();el.innerHTML=item?'<small>广告</small>'+art(item)+'<button type="button" data-ad-open>投放 ↗</button>':'';el.querySelector('button')?.addEventListener('click',()=>openMarket());}}
- function tryPopup(){if(!pendingPopup||!getUser()||document.hidden||document.getElementById('view-profile')?.classList.contains('hidden')||document.querySelector('dialog[open]')||document.documentElement.dataset.entryState!=='ready')return;const item=pendingPopup;pendingPopup=null;if(!display||display.endsAt<=now()||display.protectionUntil>now())return;popup.innerHTML='<div class="ad-popup-label">广告 <span>点击任意处关闭</span></div>'+art(item);popup.showModal();}
+ function protectedNow(){return display?.protectionUntil>now()&&!display?.showAds;}
+ function paintStrips(){for(const el of strips){const item=display?.items.find(x=>x.slot===el.dataset.adSlot);el.hidden=!item||display.endsAt<=now()||protectedNow();el.innerHTML=item?'<small>广告</small>'+art(item)+'<button type="button" data-ad-open>投放 ↗</button>':'';el.querySelector('button')?.addEventListener('click',()=>openMarket());}}
+ function tryPopup(){if(!pendingPopup||!getUser()||document.hidden||document.getElementById('view-profile')?.classList.contains('hidden')||document.querySelector('dialog[open]')||document.documentElement.dataset.entryState!=='ready')return;const item=pendingPopup;pendingPopup=null;if(!display||display.endsAt<=now()||protectedNow())return;popup.innerHTML='<div class="ad-popup-label">广告 <span>点击任意处关闭</span></div>'+art(item);popup.showModal();}
  async function visit(wantPopup){
   if(!getUser()||document.hidden)return;if(visitBusy){visitAgain ||= wantPopup;return;}visitBusy=true;lastAttempt=Date.now();const actor=getUser().id,v=version;
   try{const d=await api('/api/player/ads/visit',{method:'POST',body:{popup:wantPopup}});if(v!==version||getUser()?.id!==actor)return;display=d;delta=d.serverTime-Date.now();paintStrips();clearTimeout(expiryTimer);const expires=d.protectionUntil>now()?Math.min(d.endsAt,d.protectionUntil):d.endsAt;expiryTimer=setTimeout(()=>{for(const el of strips)el.hidden=true;popup.close();pendingPopup=null;display=null;void visit(false);},Math.max(1,expires-now()));
@@ -109,7 +137,7 @@ window.AVEDAds=function({api,esc,getUser,onBalance}){
  function activity(){if(!getUser()||document.hidden)return;if((!display||display.endsAt<=now())&&Date.now()-lastAttempt>30000)void visit(false);tryPopup();}
  for(const name of ['pointerdown','keydown','scroll'])document.addEventListener(name,activity,{passive:true,capture:true});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)activity();});
- window.addEventListener('storage',e=>{if(e.key==='aved-ad-protection:'+getUser()?.id){popup.close();pendingPopup=null;for(const el of strips)el.hidden=true;void visit(false);}});
+ window.addEventListener('storage',e=>{if(e.key==='aved-ad-protection:'+getUser()?.id){version++;visitBusy=false;visitAgain=false;display=null;popup.close();pendingPopup=null;for(const el of strips)el.hidden=true;void visit(false);if(marketDialog.open&&!busy)void refreshMarket().catch(error=>status.textContent=error.message);}});
  document.addEventListener('close',tryPopup,true);
  function reset(){for(const example of stripExamples.values())example.hidden=true;version++;previewVersion++;owner=null;state=null;display=null;pendingPopup=null;busy=false;visitBusy=false;visitAgain=false;imageVersion++;imageBusy=false;image='';clearCount();clearTimeout(entryTimer);clearTimeout(expiryTimer);for(const d of [marketDialog,preview,popup])d.close();for(const el of strips)el.hidden=true;}
  function arrival(){clearTimeout(entryTimer);entryTimer=setTimeout(()=>{if(!document.hidden&&!document.getElementById('view-profile')?.classList.contains('hidden'))void visit(true);},500);}

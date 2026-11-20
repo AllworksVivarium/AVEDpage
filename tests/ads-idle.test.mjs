@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 function harness(){
- const elements=[],listeners=new Map(),timers=new Map(),calls=[];let timerId=0,atHome=true,protectedUntil=0,available=true;
+ const elements=[],listeners=new Map(),timers=new Map(),calls=[];let timerId=0,atHome=true,protectedUntil=0,available=true,showAds=false;
  class Element{
   constructor(){this.dataset={};this.open=false;this.children=new Map();this.events=new Map();this.classList={contains:()=>!atHome};}
   setAttribute(){} append(){} after(){} before(){}
@@ -20,8 +20,8 @@ function harness(){
   addEventListener:(type,fn)=>{if(!listeners.has(type))listeners.set(type,[]);listeners.get(type).push(fn);}};
  const window={addEventListener(){}};
  vm.runInNewContext(readFileSync(new URL('../public/ads-ui.js',import.meta.url),'utf8'),{window,document,Intl,Date,Image:class{},setTimeout:(fn,ms)=>{const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id),clearInterval(){}});
- const ads=window.AVEDAds({esc:String,getUser:()=>({id:1}),onBalance(){},api:async(path,options)=>{calls.push(options.body.popup);return {serverTime:Date.now(),endsAt:Date.now()+86400000,protectionUntil:protectedUntil,items:[],popup:options.body.popup&&available?{body:'测试广告'}:null};}});
- return {ads,calls,document,elements,get popup(){return elements.find(e=>e.className==='ad-popup-dialog');},set home(v){atHome=v;},set protected(v){protectedUntil=v?Date.now()+86400000:0;},set available(v){available=v;},fire:type=>{for(const fn of listeners.get(type)||[])fn({});},flush:async()=>{for(const [id,t] of [...timers])if(t.ms===500){timers.delete(id);t.fn();}await new Promise(setImmediate);}};
+ const ads=window.AVEDAds({esc:String,getUser:()=>({id:1}),onBalance(){},api:async(path,options)=>{calls.push(options.body.popup);return {serverTime:Date.now(),endsAt:Date.now()+86400000,protectionUntil:protectedUntil,showAds,items:[],popup:options.body.popup&&available?{body:'测试广告'}:null};}});
+ return {ads,calls,document,elements,get popup(){return elements.find(e=>e.className==='ad-popup-dialog');},set home(v){atHome=v;},set protected(v){protectedUntil=v?Date.now()+86400000:0;},set showAds(v){showAds=v;},set available(v){available=v;},fire:type=>{for(const fn of listeners.get(type)||[])fn({});},flush:async()=>{for(const [id,t] of [...timers])if(t.ms===500){timers.delete(id);t.fn();}await new Promise(setImmediate);}};
 }
 test('ordinary entry and frequent interaction never request a popup; explicit long-return arrival shows one on the homepage',async()=>{
  const h=harness();h.ads.enter({popup:false});await h.flush();assert.deepEqual(h.calls,[false]);
@@ -34,4 +34,10 @@ test('arrival ads wait for homepage and respect protection, missing creatives an
   const h=harness();if(mode==='other-page')h.home=false;if(mode==='hidden')h.document.hidden=true;if(mode==='protected')h.protected=true;if(mode==='no-creative')h.available=false;
   h.ads.enter({popup:true});await h.flush();assert.equal(h.popup.open,false,mode);
  }
+});
+
+test('paid protection honours a manual show-ads preference without requesting extra arrival popups',async()=>{
+ const h=harness();h.protected=true;h.showAds=true;h.ads.enter({popup:false});await h.flush();assert.equal(h.popup.open,false);
+ h.ads.arrival();await h.flush();assert.equal(h.popup.open,true);h.popup.onclick();
+ for(let i=0;i<10;i++)h.fire('pointerdown');await h.flush();assert.equal(h.popup.open,false);assert.deepEqual(h.calls,[false,true]);
 });

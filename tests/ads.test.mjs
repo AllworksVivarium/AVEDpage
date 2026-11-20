@@ -119,3 +119,72 @@ test('04:00 advertising day handles year boundaries without changing protection 
  assert.equal(adDay(Date.parse('2027-01-01T03:59:59.999+08:00')),'2026-12-31');
  assert.equal(adDay(Date.parse('2027-01-01T04:00:00+08:00')),'2027-01-01');
 });
+
+test('paid protection can show ads or manually read current creatives without changing money, time or popup cooldown',async t=>{
+ const f=fixture(t),s=f.service;
+ await s.bid(1,offer(f));await s.bid(1,offer(f,{slot:'forum',amount:50000,requestId:'forum-manual-read-0001'}));await s.bid(1,offer(f,{slot:'casino',amount:50000,requestId:'casino-manual-read-0001'}));
+ f.advance(120000);const paid=s.protect(2,{days:3,confirmed:true,requestId:'manual-protection-0001'}),balance=f.balanceFor(2);
+ assert.equal(s.visit(2,true).popup,null);
+ const manual=s.current(2);assert.equal(manual.items.length,3);assert.ok(manual.items.every(item=>!('note' in item)));
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM ad_popup_visits WHERE employee_id=2').get().n,0);
+ const shown=s.setDisplay(2,{showAds:true});assert.equal(shown.showAds,true);assert.equal(shown.protectionUntil,paid.protectionUntil);assert.equal(f.balanceFor(2),balance);
+ assert.ok(s.visit(2,true).popup);assert.equal(s.visit(2,true).popup,null);assert.equal(s.visit(2,false).items.length,2);
+ assert.equal(f.restart().market(2).showAds,true);assert.equal(s.market(1).showAds,false);
+ s.setDisplay(2,{showAds:false});assert.equal(s.visit(2,true).popup,null);assert.equal(s.visit(2,false).items.length,0);
+ assert.equal(s.current(2).items.length,3);assert.equal(f.balanceFor(2),balance);assert.equal(s.market(2).protectionUntil,paid.protectionUntil);
+ assert.throws(()=>s.setDisplay(2,{showAds:'true'}),/状态/);
+});
+
+test('refunding a queued middle order returns half its paid price once and closes the gap between later renewals',t=>{
+ const f=fixture(t),s=f.service,DAY=86400000;
+ const buy=(days,requestId)=>s.protect(2,{days,requestId,confirmed:true});
+ const active=buy(1,'queue-active-order-01'),middle=buy(3,'queue-middle-order-01'),last=buy(7,'queue-final-order-001');
+ assert.deepEqual(last.protectionOrders.map(x=>x.status),['active','pending','pending']);
+ const balance=f.balanceFor(2),data={purchaseId:'queue-middle-order-01',confirmed:true,refundAmount:99999999};
+ const result=s.refund(2,data);assert.equal(result.refundAmount,25000);assert.equal(f.balanceFor(2),balance+25000);assert.equal(result.protectionUntil,last.protectionUntil-3*DAY);
+ const shifted=result.protectionOrders.find(x=>x.id==='queue-final-order-001');assert.equal(shifted.startsAt,active.protectionUntil);assert.equal(shifted.untilAt,active.protectionUntil+7*DAY);
+ assert.equal(result.protectionOrders.find(x=>x.id===data.purchaseId).status,'refunded');
+ const retry=f.restart().refund(2,data);assert.equal(retry.replayed,true);assert.equal(f.balanceFor(2),balance+25000);
+ buy(3,'queue-middle-order-01');assert.equal(s.market(2).protectionUntil,result.protectionUntil);assert.equal(f.balanceFor(2),balance+25000);
+ s.refund(2,{purchaseId:'queue-final-order-001',confirmed:true});assert.equal(s.market(2).protectionUntil,active.protectionUntil);assert.equal(f.balanceFor(2),balance+75000);
+ assert.equal(f.db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE reason LIKE '广告保护退款%' AND employee_id=2").get().n,2);
+ assert.equal(middle.protectionUntil,active.protectionUntil+3*DAY);
+});
+
+test('refund eligibility is account-scoped and ends exactly when the paid order starts, even while ads are shown',t=>{
+ const f=fixture(t),s=f.service;
+ s.protect(2,{days:1,confirmed:true,requestId:'boundary-active-0001'});s.protect(2,{days:3,confirmed:true,requestId:'boundary-queued-0001'});
+ const balance=f.balanceFor(2),data={purchaseId:'boundary-queued-0001',confirmed:true};
+ assert.throws(()=>s.refund(1,data),/未找到/);assert.throws(()=>s.refund(2,{...data,confirmed:false}),/确认/);
+ assert.throws(()=>s.refund(2,{purchaseId:'boundary-active-0001',confirmed:true}),/已生效/);
+ f.advance(86400000-1);assert.equal(s.market(2).protectionOrders.find(x=>x.id===data.purchaseId).canRefund,true);
+ f.advance(1);s.setDisplay(2,{showAds:true});assert.equal(s.market(2).protectionOrders.find(x=>x.id===data.purchaseId).canRefund,false);
+ assert.throws(()=>s.refund(2,data),/已生效/);assert.equal(f.balanceFor(2),balance);
+});
+
+test('a failed refund ledger write rolls back the balance, receipt and complete renewal schedule',t=>{
+ const f=fixture(t),s=f.service;
+ for(const [days,requestId] of [[1,'rollback-active-0001'],[3,'rollback-refund-0001'],[7,'rollback-future-0001']])s.protect(2,{days,requestId,confirmed:true});
+ const snapshot=()=>({receipts:f.db.prepare('SELECT * FROM ad_protection_receipts').all(),balance:f.balanceFor(2),until:s.market(2).protectionUntil});const before=snapshot();
+ f.db.exec("CREATE TRIGGER reject_refund BEFORE INSERT ON balance_ledger WHEN NEW.reason LIKE '广告保护退款%' BEGIN SELECT RAISE(ABORT,'refund rollback');END;");
+ assert.throws(()=>s.refund(2,{purchaseId:'rollback-refund-0001',confirmed:true}),/rollback/);assert.deepEqual(snapshot(),before);
+ f.db.exec('DROP TRIGGER reject_refund');assert.equal(s.refund(2,{purchaseId:'rollback-refund-0001',confirmed:true}).refundAmount,25000);
+});
+
+test('legacy protection purchases retain their real fixed price, original start, renewal order and retry behavior after migration',t=>{
+ const f=fixture(t),s=f.service;
+ s.protect(2,{days:1,confirmed:true,requestId:'legacy-active-00001'});const old=s.protect(2,{days:7,confirmed:true,requestId:'legacy-queued-00001'}),balance=f.balanceFor(2);
+ for(const name of ['starts_at','paid_amount','refunded_at','refunded_amount'])f.db.exec('ALTER TABLE ad_protection_receipts DROP COLUMN '+name);
+ const upgraded=f.restart(),orders=upgraded.market(2).protectionOrders;
+ assert.deepEqual(orders.map(x=>[x.days,x.paidAmount,x.status]),[[1,20000,'active'],[7,100000,'pending']]);assert.equal(orders[1].startsAt,old.protectionUntil-7*86400000);
+ const result=upgraded.refund(2,{purchaseId:'legacy-queued-00001',confirmed:true});assert.equal(result.refundAmount,50000);assert.equal(f.balanceFor(2),balance+50000);
+ assert.equal(f.restart().market(2).protectionOrders.find(x=>x.id==='legacy-queued-00001').status,'refunded');
+});
+
+test('refund amount uses the saved purchase price and rounds down to whole coins',t=>{
+ const f=fixture(t),s=f.service;s.protect(2,{days:1,confirmed:true,requestId:'saved-price-active-01'});s.protect(2,{days:3,confirmed:true,requestId:'saved-price-queued-01'});
+ // A historical discounted purchase, with the corresponding wallet adjustment.
+ f.db.prepare('UPDATE ad_protection_receipts SET paid_amount=12345 WHERE request_key=?').run('saved-price-queued-01');
+ f.db.prepare("INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(2,37655,'historical price fixture')").run();
+ const before=f.balanceFor(2),result=s.refund(2,{purchaseId:'saved-price-queued-01',confirmed:true,paidAmount:999999});assert.equal(result.refundAmount,6172);assert.equal(f.balanceFor(2),before+6172);
+});

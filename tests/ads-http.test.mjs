@@ -23,5 +23,17 @@ test('advertising HTTP routes authenticate, protect private creatives and enforc
  const db=new DatabaseSync(join(directory,'wanyehui.db'));db.prepare("UPDATE ad_bids SET day=?,status='won' WHERE id=?").run(adDay(Date.now()),id);db.close();
  const delivered=await request(two,'/api/player/ads/visit',{popup:true});assert.equal(delivered.data.popup.signature,'独立署名');assert.equal((await request(two,'/api/player/ads/visit',{popup:true})).data.popup,null);
  const paid=await request(two,'/api/player/ads/protection',{days:3,confirmed:true,requestId:'protection-http-0001'});assert.equal(paid.data.balance,1950000);assert.equal((await request(two,'/api/player/ads/visit',{popup:true})).data.popup,null);
+ assert.equal((await request('','/api/player/ads/current')).status,401);
+ assert.equal((await request('','/api/player/ads/protection/display',{showAds:true},'PUT')).status,401);
+ const current=await request(two,'/api/player/ads/current');assert.equal(current.data.items[0].id,id);assert.equal('note' in current.data.items[0],false);
+ const display=await request(two,'/api/player/ads/protection/display',{showAds:true},'PUT');assert.equal(display.data.showAds,true);assert.equal(display.data.balance,1950000);assert.equal(display.data.protectionUntil,paid.data.protectionUntil);
+ assert.equal((await request(two,'/api/player/ads/protection/display',{showAds:1},'PUT')).status,400);
+ await request(two,'/api/player/ads/protection/display',{showAds:false},'PUT');assert.equal((await request(two,'/api/player/ads/visit',{popup:true})).data.popup,null);
+ const purchaseId='protection-http-queued-001',renewed=await request(two,'/api/player/ads/protection',{days:1,confirmed:true,requestId:purchaseId});
+ assert.equal(renewed.data.protectionOrders.find(x=>x.id===purchaseId).canRefund,true);
+ assert.equal((await request(one,'/api/player/ads/protection/refund',{purchaseId,confirmed:true})).status,400);
+ const refunded=await Promise.all([request(two,'/api/player/ads/protection/refund',{purchaseId,confirmed:true}),request(two,'/api/player/ads/protection/refund',{purchaseId,confirmed:true})]);
+ for(const r of refunded){assert.equal(r.status,200);assert.equal(r.data.balance,1940000);assert.equal(r.data.protectionUntil,paid.data.protectionUntil);assert.equal(r.data.refundAmount,10000);}
+ assert.equal(refunded.filter(r=>r.data.replayed).length,1);
  const manage=await request(admin,'/api/admin/ads');assert.ok(manage.data.items.some(x=>x.id===id));assert.equal((await request(admin,'/api/admin/ads/'+id+'/remove',{reason:'测试撤下'})).status,200);assert.equal((await request(one,'/api/player/ads/market')).data.balance,2000000);assert.equal((await request(admin,'/api/admin/ads/'+id+'/remove',{reason:'重试'})).status,200);assert.equal((await request(one,'/api/player/ads/market')).data.balance,2000000);
 });

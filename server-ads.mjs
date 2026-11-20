@@ -37,17 +37,30 @@ export function installAds({db,balanceFor,recordLedger,clock=Date.now,send,readB
  CREATE INDEX IF NOT EXISTS ad_bid_delivery ON ad_bids(day,status,slot);
  CREATE TABLE IF NOT EXISTS ad_protection(employee_id INTEGER PRIMARY KEY REFERENCES employees(id),until_at INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS ad_protection_receipts(employee_id INTEGER NOT NULL REFERENCES employees(id),request_key TEXT NOT NULL,days INTEGER NOT NULL,until_at INTEGER NOT NULL,PRIMARY KEY(employee_id,request_key));
+ CREATE TABLE IF NOT EXISTS ad_preferences(employee_id INTEGER PRIMARY KEY REFERENCES employees(id),show_ads INTEGER NOT NULL DEFAULT 0 CHECK(show_ads IN (0,1)));
  CREATE TABLE IF NOT EXISTS ad_popup_visits(employee_id INTEGER PRIMARY KEY REFERENCES employees(id),shown_at INTEGER NOT NULL);`);
  if(!db.prepare('PRAGMA table_info(ad_bids)').all().some(column=>column.name==='title'))db.exec("ALTER TABLE ad_bids ADD COLUMN title TEXT NOT NULL DEFAULT ''");
  const tx=fn=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
+ const receiptColumns=new Set(db.prepare('PRAGMA table_info(ad_protection_receipts)').all().map(c=>c.name));
+ // Legacy plans had the same fixed prices and durations as the current catalogue.
+ tx(()=>{
+ for(const name of ['starts_at','paid_amount','refunded_at','refunded_amount'])if(!receiptColumns.has(name))db.exec('ALTER TABLE ad_protection_receipts ADD COLUMN '+name+' INTEGER NOT NULL DEFAULT 0');
+ if(!receiptColumns.has('starts_at'))db.exec('UPDATE ad_protection_receipts SET starts_at=until_at-days*86400000');
+ if(!receiptColumns.has('paid_amount'))for(const plan of adProtectionPlans)db.prepare('UPDATE ad_protection_receipts SET paid_amount=? WHERE days=?').run(plan.price,plan.days);
+ });
  const settle=()=>db.prepare("UPDATE ad_bids SET status='won' WHERE status='leading' AND day<=?").run(adDay(clock()));
  const until=id=>db.prepare('SELECT until_at n FROM ad_protection WHERE employee_id=?').get(id)?.n||0;
+ const showsAds=id=>!!db.prepare('SELECT show_ads FROM ad_preferences WHERE employee_id=?').get(id)?.show_ads;
+ function protection(id,now=clock()){
+  const orders=db.prepare('SELECT * FROM ad_protection_receipts WHERE employee_id=? ORDER BY CASE WHEN refunded_at>0 OR until_at<=? THEN 2 WHEN starts_at>? THEN 1 ELSE 0 END,CASE WHEN refunded_at=0 AND until_at>? THEN starts_at END,until_at DESC,request_key LIMIT 100').all(id,now,now,now).map(r=>({id:r.request_key,days:r.days,paidAmount:r.paid_amount,startsAt:r.starts_at,untilAt:r.until_at,status:r.refunded_at?'refunded':r.starts_at>now?'pending':r.until_at>now?'active':'expired',canRefund:!r.refunded_at&&r.starts_at>now&&r.paid_amount>0,refundAmount:r.refunded_at?r.refunded_amount:r.starts_at>now?Math.floor(r.paid_amount/2):0}));
+  return {protectionUntil:until(id),showAds:showsAds(id),protectionOrders:orders};
+ }
  const key=value=>{if(typeof value!=='string'||! /^[A-Za-z0-9_-]{16,100}$/.test(value))throw Error('请重新提交操作。');return value;};
  const fields="id,employee_id,day,slot,amount,title,body,signature,note,status,created_at,removed_reason,(image_data<>'') AS has_image";
  const view=row=>({id:row.id,day:row.day,slot:row.slot,amount:row.amount,title:row.title||'',body:row.body,signature:row.signature,note:row.note,imageUrl:row.image_data||row.has_image?'/api/player/ads/images/'+row.id:'',status:row.status,createdAt:row.created_at,removedReason:row.removed_reason});
  const fingerprint=data=>{const parts=[data.day,data.slot,data.amount,data.body??'',data.signature??'',data.note??'',data.image??''];if(data.title!==undefined)parts.push(data.title);return createHash('sha256').update(JSON.stringify(parts)).digest('hex');};
  const matching=(id,k,f)=>{const prior=db.prepare('SELECT * FROM ad_bids WHERE employee_id=? AND request_key=?').get(id,k);if(prior&&prior.fingerprint!==f)throw Error('出价凭据已使用，请重新提交。');return prior;};
- function market(id){settle();const now=clock(),tomorrow=adDay(now+DAY);return {serverTime:now,tomorrow,endsAt:boundary(tomorrow),balance:balanceFor(id),protectionUntil:until(id),plans:adProtectionPlans,slots:adSlots.map(s=>{const bid=db.prepare("SELECT id,amount,employee_id FROM ad_bids WHERE day=? AND slot=? AND status='leading'").get(tomorrow,s.id);return {...s,amount:bid?.amount||0,mine:bid?.employee_id===Number(id),bidId:bid?.employee_id===Number(id)?bid.id:null,...bidBounds(s,bid)};}),mine:db.prepare('SELECT '+fields+' FROM ad_bids WHERE employee_id=? ORDER BY id DESC LIMIT 20').all(id).map(view)};}
+ function market(id){settle();const now=clock(),tomorrow=adDay(now+DAY);return {serverTime:now,tomorrow,endsAt:boundary(tomorrow),balance:balanceFor(id),...protection(id,now),plans:adProtectionPlans,slots:adSlots.map(s=>{const bid=db.prepare("SELECT id,amount,employee_id FROM ad_bids WHERE day=? AND slot=? AND status='leading'").get(tomorrow,s.id);return {...s,amount:bid?.amount||0,mine:bid?.employee_id===Number(id),bidId:bid?.employee_id===Number(id)?bid.id:null,...bidBounds(s,bid)};}),mine:db.prepare('SELECT '+fields+' FROM ad_bids WHERE employee_id=? ORDER BY id DESC LIMIT 20').all(id).map(view)};}
  async function bid(id,data){
   const request=key(data.requestId),f=fingerprint(data),slot=adSlots.find(s=>s.id===data.slot);
   if(!slot)throw Error('请选择广告位。');
@@ -77,18 +90,37 @@ export function installAds({db,balanceFor,recordLedger,clock=Date.now,send,readB
  function protect(id,data){
   const request=key(data.requestId),plan=adProtectionPlans.find(p=>p.days===data.days);if(!plan)throw Error('请选择保护时长。');if(data.confirmed!==true)throw Error('请确认广告保护费用。');
   return tx(()=>{const prior=db.prepare('SELECT * FROM ad_protection_receipts WHERE employee_id=? AND request_key=?').get(id,request);if(prior){if(prior.days!==plan.days)throw Error('购买凭据已使用。');return market(id);}
-   if(balanceFor(id)<plan.price)throw Error('可用余额不足。');const end=Math.max(clock(),until(id))+plan.days*DAY;
-   recordLedger(id,-plan.price,'广告保护：'+plan.days+' 天');db.prepare('INSERT INTO ad_protection VALUES(?,?) ON CONFLICT(employee_id) DO UPDATE SET until_at=excluded.until_at').run(id,end);db.prepare('INSERT INTO ad_protection_receipts VALUES(?,?,?,?)').run(id,request,plan.days,end);return market(id);
+   if(balanceFor(id)<plan.price)throw Error('可用余额不足。');const start=Math.max(clock(),until(id)),end=start+plan.days*DAY;
+   recordLedger(id,-plan.price,'广告保护：'+plan.days+' 天');db.prepare('INSERT INTO ad_protection VALUES(?,?) ON CONFLICT(employee_id) DO UPDATE SET until_at=excluded.until_at').run(id,end);db.prepare('INSERT INTO ad_protection_receipts(employee_id,request_key,days,until_at,starts_at,paid_amount) VALUES(?,?,?,?,?,?)').run(id,request,plan.days,end,start,plan.price);return market(id);
   });
  }
- function visit(id,requestPopup){return tx(()=>{settle();const now=clock(),protectedUntil=until(id);if(protectedUntil>now)return {serverTime:now,day:adDay(now),endsAt:boundary(adDay(now+DAY)),protectionUntil:protectedUntil,items:[],popup:null};
+ function setDisplay(id,data){if(typeof data.showAds!=='boolean')throw Error('请选择广告显示状态。');return tx(()=>{db.prepare('INSERT INTO ad_preferences(employee_id,show_ads) VALUES(?,?) ON CONFLICT(employee_id) DO UPDATE SET show_ads=excluded.show_ads').run(id,data.showAds?1:0);return market(id);});}
+ function refund(id,data){
+  const purchase=key(data.purchaseId);if(data.confirmed!==true)throw Error('请确认退款金额。');
+  return tx(()=>{
+   const row=db.prepare('SELECT * FROM ad_protection_receipts WHERE employee_id=? AND request_key=?').get(id,purchase);
+   if(!row)throw Error('未找到这份广告保护订单。');
+   if(row.refunded_at)return {...market(id),refundAmount:row.refunded_amount,replayed:true};
+   const now=clock();if(row.starts_at<=now)throw Error('这份订单已生效，仅待生效订单可申请退款。');
+   const amount=Math.floor(row.paid_amount/2);if(amount<=0||until(id)<row.until_at)throw Error('订单金额或期限异常，请联系管理员。');
+   if(!Number.isSafeInteger(balanceFor(id)+amount))throw Error('账户余额超出范围。');
+   const duration=row.days*DAY;
+   db.prepare('UPDATE ad_protection_receipts SET refunded_at=?,refunded_amount=? WHERE employee_id=? AND request_key=?').run(now,amount,id,purchase);
+   db.prepare('UPDATE ad_protection_receipts SET starts_at=starts_at-?,until_at=until_at-? WHERE employee_id=? AND refunded_at=0 AND starts_at>=?').run(duration,duration,id,row.until_at);
+   db.prepare('UPDATE ad_protection SET until_at=until_at-? WHERE employee_id=?').run(duration,id);
+   recordLedger(id,amount,'广告保护退款：'+row.days+' 天（实付金额的50%）');
+   return {...market(id),refundAmount:amount,replayed:false};
+  });
+ }
+ function current(id){settle();const now=clock();return {serverTime:now,items:db.prepare("SELECT "+fields+" FROM ad_bids WHERE day=? AND status='won' ORDER BY id").all(adDay(now)).map(row=>{const item=view(row);delete item.note;return item;})};}
+ function visit(id,requestPopup){return tx(()=>{settle();const now=clock(),protectedUntil=until(id),showAds=showsAds(id);if(protectedUntil>now&&!showAds)return {serverTime:now,day:adDay(now),endsAt:boundary(adDay(now+DAY)),protectionUntil:protectedUntil,showAds,items:[],popup:null};
   const items=db.prepare("SELECT "+fields+" FROM ad_bids WHERE day=? AND status='won' ORDER BY id").all(adDay(now)).map(row=>{const item=view(row);delete item.note;return item;}),popup=items.find(x=>x.slot==='popup'),last=db.prepare('SELECT shown_at FROM ad_popup_visits WHERE employee_id=?').get(id)?.shown_at;
   const show=!!requestPopup&&popup&&(last===undefined||now-last>=IDLE);
   if(show)db.prepare('INSERT INTO ad_popup_visits VALUES(?,?) ON CONFLICT(employee_id) DO UPDATE SET shown_at=excluded.shown_at').run(id,now);
-  return {serverTime:now,day:adDay(now),endsAt:boundary(adDay(now+DAY)),protectionUntil:protectedUntil,items:items.filter(x=>x.slot!=='popup'),popup:show?popup:null};
+  return {serverTime:now,day:adDay(now),endsAt:boundary(adDay(now+DAY)),protectionUntil:protectedUntil,showAds,items:items.filter(x=>x.slot!=='popup'),popup:show?popup:null};
  });}
  function remove(bidId,reason){return tx(()=>{settle();const row=db.prepare('SELECT * FROM ad_bids WHERE id=?').get(bidId);if(!row)throw Error('未找到广告。');if(['leading','won'].includes(row.status)){recordLedger(row.employee_id,row.amount,'广告撤下退回');db.prepare("UPDATE ad_bids SET status='removed',removed_reason=? WHERE id=?").run(text(reason||'管理员撤下',120),bidId);}return {ok:true};});}
- return {market,bid,edit,protect,visit,remove,async handle(req,res,url){
+ return {market,bid,edit,protect,setDisplay,refund,current,visit,remove,async handle(req,res,url){
   const path=url.pathname,admin=path.startsWith('/api/admin/ads');if(!admin&&!path.startsWith('/api/player/ads'))return false;
   const actor=(admin?requireAdmin:requireEmployee)(req,res);if(!actor)return true;
   try{
@@ -99,6 +131,9 @@ export function installAds({db,balanceFor,recordLedger,clock=Date.now,send,readB
    else if(path==='/api/player/ads/market'&&req.method==='GET'){send(res,200,market(actor.id));return true;}
    else if(path==='/api/player/ads/bids'&&req.method==='POST'){send(res,200,await bid(actor.id,data));return true;}
    else if(path==='/api/player/ads/protection'&&req.method==='POST'){send(res,200,protect(actor.id,data));return true;}
+   else if(path==='/api/player/ads/protection/display'&&req.method==='PUT'){send(res,200,setDisplay(actor.id,data));return true;}
+   else if(path==='/api/player/ads/protection/refund'&&req.method==='POST'){send(res,200,refund(actor.id,data));return true;}
+   else if(path==='/api/player/ads/current'&&req.method==='GET'){send(res,200,current(actor.id));return true;}
    else if(path==='/api/player/ads/visit'&&req.method==='POST'){send(res,200,visit(actor.id,data.popup===true));return true;}
    else {const target=path.match(/^\/api\/player\/ads\/bids\/(\d+)$/);if(target&&req.method==='PUT'){send(res,200,await edit(actor.id,Number(target[1]),data));return true;}}
    send(res,404,{error:'广告接口不存在。'});return true;

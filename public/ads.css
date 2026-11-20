@@ -53,3 +53,20 @@
 /* Chinese leads the ad exchange entry; English is a secondary caption. */
 .ad-exchange-entry>div:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:5px;flex:none}
 @layer aved-typography{#inner-app-view #view-casino .ad-exchange-entry h3{font-family:var(--type-heading)!important;font-size:22px!important;font-weight:600!important;line-height:1.35!important;letter-spacing:.03em!important;margin:0!important;white-space:nowrap}#inner-app-view #view-casino .ad-exchange-entry small[lang=en]{font-family:var(--type-code,monospace)!important;font-size:9px!important;font-weight:400!important;line-height:1.5!important;letter-spacing:.12em!important;color:var(--inner-text-muted)!important;opacity:.7}#inner-app-view #view-casino .ad-exchange-entry>p{font-size:12px!important;line-height:1.7!important}}
+
+.ad-protection-actions{display:flex;align-items:center;justify-content:flex-start;gap:8px 14px;flex-wrap:wrap;margin:14px 0}
+.ad-display-choice{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--type-ui)}
+.ad-display-choice input[type=checkbox]{appearance:auto;width:16px;height:16px;padding:0;margin:0;accent-color:var(--inner-accent)}
+.ad-protection-orders{border-top:1px solid var(--inner-border-soft);margin-top:22px;padding-top:16px}
+.ad-protection-orders>h4{font:600 14px/1.5 var(--type-ui);margin:0 0 8px}
+.ad-protection-orders>article{border:1px solid var(--inner-border-soft);padding:14px;margin-top:12px;background:var(--inner-card-bg)}
+.ad-protection-orders article>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;padding:0 0 8px;background:none}
+.ad-protection-orders article>p{margin:6px 0;font-size:12px}
+.ad-refund-confirm{margin-top:10px;padding-top:10px;border-top:1px solid var(--inner-border-soft)}
+.ad-today-collection>section+section{border-top:1px solid var(--inner-border-soft);margin-top:18px;padding-top:16px}
+.ad-today-collection h4{font:600 11px/1.5 var(--type-ui);margin:0 0 12px}
+@layer aved-typography{
+ body.theme-inner .ad-market-dialog .ad-protection .community-button{box-sizing:border-box;min-height:32px!important;padding:6px 10px!important;border:1px solid var(--inner-border)!important;border-radius:0!important;font:600 12px/18px var(--type-ui)!important;box-shadow:var(--system-key-shadow)!important}
+ body.theme-inner .ad-market-dialog .ad-short-note{font:italic 11px/1.6 var(--type-ui)!important}
+ body.theme-inner .ad-market-dialog .ad-order-period{font:400 11px/1.6 var(--type-ui)!important;color:var(--inner-text-muted)}
+}
