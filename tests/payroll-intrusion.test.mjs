@@ -26,11 +26,39 @@ test('payroll excludes containment, NPC, disabled and robots; batches are atomic
  assert.equal((await request('/api/admin/payroll','POST',{...body,expectedCount:3},1)).status,400);assert.equal(balanceFor(1),0);
  assert.equal((await request('/api/admin/payroll','POST',body,1)).data.count,2);
  assert.equal((await request('/api/admin/payroll','POST',body,1)).data.replayed,true);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM payroll_notices').get().n,2);
  assert.equal(balanceFor(1),200000);assert.equal(balanceFor(2),200000);
  for(const id of [3,4,5,6,7])assert.equal(balanceFor(id),0);
  assert.equal((await request('/api/admin/payroll','POST',{...body,requestId:'salary-test-0002'},1)).status,200);assert.equal(balanceFor(2),400000);
  db.exec("CREATE TRIGGER fail_salary BEFORE INSERT ON balance_ledger WHEN NEW.employee_id=2 BEGIN SELECT RAISE(ABORT,'injected failure');END;");
  assert.equal((await request('/api/admin/payroll','POST',{...body,requestId:'salary-test-0003'},1)).status,400);assert.equal(balanceFor(1),400000);assert.equal(db.prepare('SELECT COUNT(*) n FROM payroll_batches').get().n,2);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM payroll_notices').get().n,4);
+});
+
+test('salary receipts are account-scoped, claimed once across devices and expire at the business-day boundary',async t=>{
+ const {request,advance,deps}=fixture(t);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,null)).status,401);
+ assert.deepEqual((await request('/api/player/payroll-notices','GET',undefined,1)).data.items,[]);
+ await request('/api/admin/payroll','POST',{requestId:'salary-notice-001',expectedCount:2},1);
+ const [first]=(await request('/api/player/payroll-notices','GET',undefined,1)).data.items;
+ assert.equal(first.amount,200000);
+ assert.equal((await request('/api/player/payroll-notices/read','POST',{id:first.id},2)).data.claimed,false);
+ assert.equal((await request('/api/player/payroll-notices/read','POST',{id:first.id},1)).data.claimed,true);
+ assert.equal((await request('/api/player/payroll-notices/read','POST',{id:first.id},1)).data.claimed,false);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,1)).data.items.length,0);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,2)).data.items.length,1);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,3)).data.items.length,0);
+ installPayrollIntrusion(deps);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,1)).data.items.length,0);
+ const [other]=(await request('/api/player/payroll-notices','GET',undefined,2)).data.items;
+ advance(60000);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,2)).data.items.length,0);
+ assert.equal((await request('/api/player/payroll-notices/read','POST',{id:other.id},2)).data.claimed,false);
+ await request('/api/admin/payroll','POST',{requestId:'salary-notice-002',expectedCount:2},1);
+ assert.equal((await request('/api/player/payroll-notices','GET',undefined,1)).data.items.length,1);
+ assert.equal((await request('/api/player/payroll-notices/read','POST',{id:'invalid'},1)).status,400);
+ assert.equal((await request('/api/player/payroll-notices','POST',{},1)).status,405);
+ assert.equal((await request('/api/player/payroll-notices/read','GET',undefined,1)).status,405);
 });
 test('intrusion shares manual and automatic daily quota, conserves funds and resets at Beijing 04:00',async t=>{
  const {request,balanceFor,service,advance,db,deps}=fixture(t);

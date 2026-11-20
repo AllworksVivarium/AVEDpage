@@ -1229,17 +1229,17 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         },
         {
           type: 'step_climb',
-          sub: '五站巡签',
+          sub: '十二站巡签',
           title: '步步添彩',
-          tagline: '五站升降，按终点层数领取津贴',
+          tagline: '十二站升降，按终点层数领取津贴',
           icon: '⚡',
-          cellsCount: 5,
+          cellsCount: 12,
           baseTopPrize: 325000,
           bgBand: 'bg-[#4a1612] text-white',
           cardBg: 'bg-[#ebe4d8]',
           accentColor: 'text-[#9e1b1b]',
           rules: [
-            '一、从 0 层出发，刮开五站的升降步数',
+            '一、从 0 层出发，刮开十二站的升降步数',
             '二、上升加层、回落减层，停留不变',
             '三、按最终到达的层数领取对应津贴'
           ]
@@ -1346,13 +1346,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       const scratchFeedback=AVEDScratchFeedback({playSfx,isActive:()=>!byId('view-casino').classList.contains('hidden')&&!byId('scratch-play-table-view').classList.contains('hidden')});
       let lastScratchRules='';
       function scratchCellMarkup(c,tk){
-        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)return AVEDScratchClimb.cell(c,tk);
+        if(AVEDScratchClimb.supports(tk))return AVEDScratchClimb.cell(c,tk);
         const seal=tk.gameType.type==='lucky_num'&&c.idx===3;
         if(!c.revealed)return `<button type="button" data-scratch-cell="${c.idx}" class="scratch-cell-foil sp-cell sp-covered ${seal?'sp-seal':''} h-20 flex flex-col items-center justify-center p-2 text-center"><span class="sp-coat">${AVEDPixelIcons.render('eye')}<b>${seal?'核准倍率':'刮开好运'}</b></span></button>`;
         return `<div data-revealed-cell="${c.idx}" class="scratch-revealed-cell sp-cell ${seal?'sp-seal':''} ${c.isBomb?'is-bomb':''} h-20 border-2 ${c.isWinPart?'is-winning border-[#9e1b1b] bg-[#fff5f5]':'border-black/35 bg-white'} text-[#141413] flex flex-col items-center justify-center p-2 text-center"><div class="text-sm font-bold ${c.isWinPart?'text-[#9e1b1b]':''}">${AVEDScratchSymbols.render(c.role==='LUCKY'?c.label.replace('领赏号 ',''):c.label)}</div><div class="text-[11px] font-mono-tech mt-0.5 opacity-80">${c.isBomb?AVEDGameResults.bombName(tk)+'！':c.role==='LUCKY'?'领赏号':c.sub}</div></div>`;
       }
       const scratchBoard=AVEDScratchBoard({host:document.getElementById('active-ticket-board-container'),cell:scratchCellMarkup,frame(tk,cells){
-        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)return AVEDScratchTicketArt.board(tk,AVEDScratchClimb.frame(cells));
+        if(AVEDScratchClimb.supports(tk))return AVEDScratchTicketArt.board(tk,AVEDScratchClimb.frame(cells));
         const kind=tk.gameType.type,cols=kind==='step_climb'?'scratch-step-grid sp-step-grid':kind==='lucky_num'?'scratch-reference-grid sp-refs':'scratch-match-grid sp-stamps';
         return AVEDScratchTicketArt.board(tk,`<div class="grid ${cols} gap-3">${cells.map((html,i)=>(kind==='lucky_num'&&i===4?'</div><div class="grid scratch-prize-grid sp-nums">':'')+html).join('')}</div>`);
       }});
@@ -1361,7 +1361,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         const rules=scratchRulesMarkup(scratchGameTypes.find(g=>g.type===tk.gameType.type)||tk.gameType,tk.cost??tk.tier.cost);
         if(rules!==lastScratchRules){byId('scratch-play-rules-body').innerHTML=rules;lastScratchRules=rules;}
         const board=byId('active-ticket-board-container');scratchBoard.render(tk);
-        if(tk.gameType.type==='step_climb'&&tk.cells.length===5)AVEDScratchClimb.update(board,tk);
+        if(AVEDScratchClimb.supports(tk))AVEDScratchClimb.update(board,tk);
         scratchFeedback.reveal(board,revealedIndices,feedbackOptions);
         if(tk.penalty>0&&!tk.bombFeedbackPlayed&&revealedIndices.some(index=>tk.cells[index]?.isBomb)){
           tk.bombFeedbackPlayed=true;byId('active-ticket-result-banner').innerHTML=(tk.demo?'试刮 ':'')+AVEDGameResults.html(tk);
@@ -1418,6 +1418,8 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
       const byId=id=>document.getElementById(id);
       achievementAlerts=AVEDAchievementAlerts.create({getUser:()=>currentUser,api,onAward:()=>{profileFreshAt=0;}});
+      const payrollNotices=AVEDPayrollNotices.create({getUser:()=>currentUser,api,onReceipt:()=>{profileFreshAt=0;refreshBalance().catch(()=>{});}});
+      setInterval(()=>payrollNotices.ensure(),1000);
       window.AVEDPersonalRecord=AVEDPersonalRecords.create({getUser:()=>currentUser,enabled:()=>!!currentUser&&!byId('view-casino').classList.contains('hidden'),playSfx,onRecord:()=>{profileFreshAt=0;}});
       const slotEffects=AVEDSlotEffects({panel:byId('game-panel-slots'),grid:byId('slot5x3-grid'),playSfx});
       function renderStocks() {
@@ -1567,6 +1569,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
       function syncUserHeaderUI() {
         achievementAlerts?.ensure();
+        payrollNotices.ensure();
         if(!currentUser)return;
         welfareUI?.syncBalance();
         byId('welcome-employee-banner').textContent='当前用户：'+currentUser.name;

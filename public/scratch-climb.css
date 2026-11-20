@@ -1,17 +1,37 @@
 @layer aved-restored-art {
- #game-panel-scratch .scratch-print .sp-climb-route{padding:8px!important;margin-bottom:9px!important;border:1px solid #b8b59d!important;background:#e4e8da!important;color:#294c63!important}
+ #game-panel-scratch .scratch-print .sp-climb-route{padding:10px!important;margin-bottom:12px!important;border:1px solid #b9ac8b!important;background:#f3e8cc!important;color:#294c63!important;box-shadow:inset 0 0 0 3px #e4d9bc!important}
  #game-panel-scratch .scratch-print .sp-climb-route-heading{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:6px!important;margin-bottom:6px!important;font-size:10px!important}
  #game-panel-scratch .scratch-print .sp-climb-route-heading strong{font-size:12px!important}
- #game-panel-scratch .scratch-print [data-climb-levels]{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-flow:column!important;grid-template-rows:repeat(6,auto)!important;gap:3px!important}
- #game-panel-scratch .scratch-print .sp-climb-level{display:grid!important;grid-template-columns:30px 1fr auto!important;align-items:center!important;gap:5px!important;padding:4px 5px!important;border:1px solid #b7beab!important;background:#f0eedb!important;font-size:10px!important;color:#586552!important}
+ #game-panel-scratch .scratch-print [data-climb-levels]{display:grid!important;position:relative!important;grid-template-columns:minmax(0,1fr)!important;gap:3px!important;padding:5px 0 0!important;background:repeating-linear-gradient(0deg,transparent 0 26px,#b9ac8b22 26px 27px)!important}
+ #game-panel-scratch .scratch-print .sp-climb-level{display:grid!important;grid-template-columns:32px 1fr auto!important;align-items:baseline!important;gap:6px!important;margin-left:var(--stair-indent)!important;min-height:24px!important;padding:3px 7px 3px 22px!important;border:1px solid #b9ac8b!important;border-bottom:2px solid #b9ac8b!important;background:#f7eedb!important;font-size:10px!important;line-height:16px!important;color:#817258!important;position:relative!important;box-shadow:1px 2px 0 #d2c3a0!important}
  #game-panel-scratch .scratch-print .sp-climb-level small{font-size:9px!important;opacity:.8!important}
- #game-panel-scratch .scratch-print .sp-climb-level b{font-size:11px!important;font-weight:normal!important}
- #game-panel-scratch .scratch-print .sp-climb-level.is-current{border-color:#294c63!important;background:#d6e0d3!important;color:#294c63!important}
- #game-panel-scratch .scratch-print .sp-climb-level.is-final{border-color:#b18d47!important;background:#ead8a7!important;color:#70552d!important}
+ #game-panel-scratch .scratch-print .sp-climb-level b{font:600 11px/16px var(--type-code,monospace)!important;white-space:nowrap!important}
+ #game-panel-scratch .scratch-print .sp-climb-level.is-current{border-color:#294c63!important;background:#dce3d7!important;color:#294c63!important;box-shadow:inset 0 0 0 1px #294c6355,1px 2px 0 #c4cdbb!important}
+ #game-panel-scratch .scratch-print .sp-climb-level.is-final{border-color:#9a7437!important;background:#ecd39b!important;color:#614721!important;box-shadow:inset 0 0 0 1px #fff1bf,1px 3px 0 #b99a64!important}
  #game-panel-scratch .scratch-print .sp-climb-destination{display:flex!important;justify-content:space-between!important;align-items:center!important;min-height:32px!important;margin-top:6px!important;padding:6px 9px!important;border-style:dashed!important;background:#e9dfc3!important}
  .scratch-climb-prizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-top:12px}
  .scratch-climb-prizes>span{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:5px 7px;border:1px solid currentColor;font-size:10px}
  .scratch-climb-prizes small{opacity:.7;font-size:9px}
  .scratch-climb-prizes b{font-weight:normal;white-space:nowrap}
  @media(max-width:480px){.scratch-climb-prizes{grid-template-columns:minmax(0,1fr)}}
+}
+
+@layer aved-restored-art {
+ #game-panel-scratch .scratch-print .sp-climb-route-heading{padding-bottom:8px!important;margin-bottom:5px!important;border-bottom:1px dashed #baac8a!important;align-items:baseline!important}
+ #game-panel-scratch .scratch-print .sp-climb-level.is-visited:not(.is-current){border-left-color:#71846c!important;background:#ebe9d5!important}
+ #game-panel-scratch .scratch-print .sp-climb-level::after{content:"";position:absolute;left:8px;top:8px;width:5px;height:5px;border:1px solid #a69b7f;background:#f3e8cc}
+ #game-panel-scratch .scratch-print .sp-climb-level.is-visited::after{background:#71846c;border-color:#71846c}
+ #game-panel-scratch .scratch-print .sp-climb-level.is-final::after{background:#9a7437;border-color:#9a7437}
+ #game-panel-scratch .scratch-print .sp-climb-origin{height:24px;padding:4px 8px 0 23px;border-top:1px dashed #baac8a;font-size:9px;line-height:16px;color:#817258}
+ #game-panel-scratch .scratch-print .sp-climb-token{position:absolute;display:grid;place-items:center;width:16px;height:16px;margin-top:-8px;z-index:2;pointer-events:none}
+ #game-panel-scratch .scratch-print .sp-climb-token i{display:block;width:9px;height:9px;background:#294c63;border:1px solid #f7eedb;outline:1px solid #294c63;transform:rotate(45deg);box-shadow:2px 2px 0 #294c6322}
+ #game-panel-scratch .scratch-print .sp-climb-token.is-landed i{background:#9a7437;outline-color:#9a7437;box-shadow:0 0 0 3px #d7b86e55}
+ #game-panel-scratch .scratch-print .sp-climb-grid .scratch-revealed-cell>div:first-child{font:600 14px/1.35 var(--type-code,monospace)!important}
+ #game-panel-scratch .scratch-print .sp-climb-grid .scratch-revealed-cell>div:last-child{font-size:9px!important;line-height:1.5!important}
+ #game-panel-scratch .scratch-print .sp-climb-grid .is-rise:not(.is-bomb){color:#346b52!important;border-bottom:3px solid #6d9277!important}
+ #game-panel-scratch .scratch-print .sp-climb-grid .is-fall:not(.is-bomb){color:#8b5142!important;border-bottom:3px solid #b08067!important}
+ #game-panel-scratch .scratch-print .sp-climb-grid .is-pause:not(.is-bomb){color:#84714f!important;border-bottom:3px solid #b8aa85!important}
+ #game-panel-scratch .scratch-print .sp-climb-destination{flex-direction:row!important;height:auto!important;gap:12px!important;padding:9px 10px!important;border:1px dashed #a48c59!important;font:600 13px/1.5 var(--type-code,monospace)!important}
+ #game-panel-scratch .scratch-print .sp-climb-destination.is-winning{background:#ecd39b!important;border-style:solid!important}
+ @media(max-width:400px){#game-panel-scratch .scratch-print .sp-climb-level{padding-right:4px!important;gap:3px!important;grid-template-columns:28px 1fr auto!important}#game-panel-scratch .scratch-print .sp-climb-level b{font-size:10px!important}}
 }

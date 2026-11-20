@@ -3,6 +3,8 @@ window.AVEDScratchClimb=(()=>{
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=n=>'¤ '+Number(n).toLocaleString('en-US');
  const normal=[0,.2,.5,.8,1,1.2,2,3,5,10,20,50,100];
+ const visits=new WeakMap();
+ const supports=ticket=>ticket.gameType?.type==='step_climb';
  function state(ticket){
   const cells=ticket.cells||[];let known=0,floor=0;
   for(const cell of cells){if(!cell.revealed||!Number.isInteger(cell.stepDelta))break;floor+=cell.stepDelta;known++;}
@@ -14,7 +16,8 @@ window.AVEDScratchClimb=(()=>{
   const current=state(ticket),known=c.idx<current.known;
   const mark=c.isBomb?window.AVEDPixelIcons.render('bomb','scratch-printed-mark'):esc(c.label);
   const status=c.isBomb?'追加 '+money(ticket.penalty):station+' '+(known?'第'+c.stepFloor+'层':'待连通');
-  return '<div data-revealed-cell="'+c.idx+'" class="scratch-revealed-cell sp-cell'+(c.isWinPart?' is-winning':'')+(c.isBomb?' is-bomb':'')+'"><div>'+mark+'</div><div>'+esc(status)+'</div></div>';
+  const movement=known?(c.stepDelta>0?' is-rise':c.stepDelta<0?' is-fall':' is-pause'):'';
+  return '<div data-revealed-cell="'+c.idx+'" class="scratch-revealed-cell sp-cell'+movement+(c.isWinPart?' is-winning':'')+(c.isBomb?' is-bomb':'')+'"><div>'+mark+'</div><div>'+esc(status)+'</div></div>';
  }
  function frame(cells){
   return '<section class="sp-climb-route" aria-label="层级津贴"><div class="sp-climb-route-heading"><span>0层出发</span><strong data-climb-position>待刮开</strong></div><div data-climb-levels></div></section><div class="sp-stamps sp-climb-grid">'+cells.join('')+'</div><div class="sp-cell sp-climb-destination" data-climb-end><div>终点</div><div>?</div></div>';
@@ -23,12 +26,28 @@ window.AVEDScratchClimb=(()=>{
   const cost=ticket.cost||ticket.tier.cost;
   const defaults=ticket.climb?.topFloor===5?[0,.5,1.2,5,20,100]:normal;
   const levels=current.done&&ticket.climb?.levels?ticket.climb.levels:defaults.map(x=>Math.floor(cost*x+1e-7));
-  return Array.from({length:ticket.climb?.topFloor??normal.length-1},(_,index)=>(ticket.climb?.topFloor??normal.length-1)-index).map(floor=>'<div class="sp-climb-level'+(current.known&&current.floor===floor?' is-current':'')+(current.done&&current.floor===floor?' is-final':'')+'" data-climb-level="'+floor+'"><span>'+floor+'层</span><small>×'+Number((levels[floor]/cost).toFixed(3))+'</small><b>'+money(levels[floor])+'</b></div>').join('');
+  const top=ticket.climb?.topFloor??normal.length-1,seen=new Set((ticket.cells||[]).slice(0,current.known).map(c=>c.stepFloor));
+  return Array.from({length:top},(_,index)=>top-index).map(floor=>'<div class="sp-climb-level'+(seen.has(floor)?' is-visited':'')+(current.known&&current.floor===floor?' is-current':'')+(current.done&&current.floor===floor?' is-final':'')+'" data-climb-level="'+floor+'" style="--stair-indent:'+Number((floor*1.6).toFixed(1))+'%"><span>'+floor+'层</span><small>×'+Number((levels[floor]/cost).toFixed(3))+'</small><b>'+money(levels[floor])+'</b></div>').join('')+'<div class="sp-climb-origin'+(current.known&&current.floor===0?' is-current':'')+'"><span>0层出发</span></div><span class="sp-climb-token'+(current.done&&current.floor>0?' is-landed':'')+'" data-climb-token aria-hidden="true"><i></i></span>';
+ }
+ function point(floor,top){return {top:((top-floor+.5)/(top+1)*100)+'%',left:'calc('+Number((floor*1.6).toFixed(1))+'% + 7px)'};}
+ function motion(host,levels,ticket,current){
+  const previous=visits.get(host),same=previous?.ticket===ticket;
+  previous?.animation?.cancel();previous?.pulse?.cancel();
+  const next={ticket,known:current.known};visits.set(host,next);
+  const token=levels?.querySelector?.('[data-climb-token]'),top=ticket.climb?.topFloor??normal.length-1;
+  if(!token)return;Object.assign(token.style,point(current.floor,top));
+  if(typeof document==='undefined'||document.hidden||document.body.classList.contains('effects-off')||window.AVEDEffectsEnabled?.()===false||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const from=same?previous.known:0;if(current.known<=from)return;
+  const floors=[from?ticket.cells[from-1].stepFloor:0,...ticket.cells.slice(from,current.known).map(c=>c.stepFloor)];
+  const duration=Math.min(1200,Math.max(300,(floors.length-1)*100));
+  next.animation=token.animate(floors.map((floor,i)=>({...point(floor,top),offset:i/(floors.length-1)})),{duration,easing:'ease-in-out'});
+  const core=token.firstElementChild;if(core)next.pulse=core.animate([{transform:'scale(.75) rotate(45deg)'},{transform:'scale(1.35) rotate(45deg)',offset:.55},{transform:'scale(1) rotate(45deg)'}],{delay:duration-120,duration:current.done?460:240,easing:'ease-out'});
  }
  function update(host,ticket){
   const current=state(ticket),position=host.querySelector('[data-climb-position]'),levels=host.querySelector('[data-climb-levels]'),end=host.querySelector('[data-climb-end]');
   if(position)position.textContent=current.done?(current.floor===(ticket.climb?.topFloor??normal.length-1)?'登顶 ':'终点 ')+'第'+current.floor+'层':current.known?'第'+current.floor+'层 '+current.revealed+'/'+ticket.cells.length:'已刮 '+current.revealed+'/'+ticket.cells.length;
   if(levels)levels.innerHTML=ladder(ticket,current);
+  motion(host,levels,ticket,current);
   if(end){end.innerHTML=current.done?'<div>第'+current.floor+'层</div><div>'+money(ticket.totalPayout??ticket.prize??0)+'</div>':'<div>终点</div><div>?</div>';end.classList.toggle('is-winning',current.done&&current.floor>0);}
  }
  function prizeTable(multipliers,cost){
@@ -39,5 +58,5 @@ window.AVEDScratchClimb=(()=>{
   const foil='<span class="sp-coat">'+window.AVEDPixelIcons.render('eye','pixel-icon')+'<b>刮开好运</b></span>';
   return '<div class="sp-stamps">'+Array.from({length:12},()=>'<span class="sp-cell sp-covered">'+foil+'</span>').join('')+'</div>';
  }
- return {cell,frame,update,ladder,state,prizeTable,mini};
+ return {supports,cell,frame,update,ladder,state,prizeTable,mini};
 })();

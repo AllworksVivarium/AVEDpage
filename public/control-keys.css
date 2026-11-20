@@ -1,0 +1,80 @@
+/* Ordinary actions share the forum inbox key. Illustrated game controls, tabs,
+   artwork links, close icons and notification rows retain their own geometry. */
+body.theme-inner{
+ --action-face:var(--inner-card-bg);--action-ink:var(--inner-text-main);
+ --action-line:var(--inner-border);--action-shadow:var(--system-key-shadow);
+}
+@layer aved-typography{
+ body.theme-inner :is(#inner-app-view,.life-compose-dialog,.life-reader-dialog,.payroll-notice-dialog) .community-button,
+ body.theme-inner #inner-app-view :is(.notice-button,#back-to-news-list-btn,#news-detail-comment-form>button,#directory-back,.division-breadcrumb button,.division-roster-link,.dossier-reader-tools button,.dossier-reader-tools a,.dossier-reader-pagination button,.ad-exchange-entry button,#scratch-back-lobby-btn,#scp-search-clear-x,.scp-filter-btn,#scp-comment-submit),
+ body.theme-inner :is(.ad-auction-meta,.ad-editor-actions,.hud-dialog-actions) button{
+  box-sizing:border-box!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:32px!important;height:auto!important;padding:6px 10px!important;
+  border:1px solid var(--action-line)!important;border-radius:0!important;
+  background:var(--action-face);color:var(--action-ink);
+  font-family:var(--type-ui)!important;font-size:12px!important;font-weight:600!important;line-height:18px!important;
+  letter-spacing:0!important;white-space:nowrap;vertical-align:middle;text-decoration:none;
+  box-shadow:var(--action-shadow)!important;cursor:pointer;
+  transition:background-color .12s,border-color .12s,box-shadow .12s;
+ }
+ body.theme-inner :is(#inner-app-view,.life-compose-dialog,.life-reader-dialog,.payroll-notice-dialog) .community-button:not(:disabled):is(:hover,:focus-visible){background:var(--inner-card-alt);border-color:var(--inner-text-main)!important}
+ body.theme-inner :is(#inner-app-view,.life-compose-dialog,.life-reader-dialog,.payroll-notice-dialog) .community-button:focus-visible{outline:2px solid var(--inner-text-main);outline-offset:3px}
+ body.theme-inner :is(#inner-app-view,.life-compose-dialog,.life-reader-dialog,.payroll-notice-dialog) .community-button:disabled{cursor:default}
+
+ /* Paper actions use the same construction in the work's own ink and stock. */
+ body.theme-inner :is(.life-paper,.life-reader-paper){
+  --action-face:transparent;--action-ink:var(--life-ink);--action-line:var(--life-rule);
+  --action-shadow:inset 1px 1px #fff5,inset -1px -1px #0002,0 1px #0002;
+ }
+ body.theme-inner #inner-app-view #view-life .life-paper footer button,
+ body.theme-inner .life-reader-dialog :is(.life-reader-feedback,.life-image-controls) button{
+  display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-height:28px!important;padding:5px 8px!important;height:auto!important;
+  border:1px solid var(--action-line,var(--life-rule))!important;border-radius:0!important;
+  color:var(--life-ink);background:transparent;font:600 11px/16px var(--type-ui)!important;
+  box-shadow:inset 1px 1px #fff5,inset -1px -1px #0002,0 1px #0002!important;
+ }
+ body.theme-inner #inner-app-view #view-life .life-paper footer button:not(:disabled):is(:hover,:focus-visible),
+ body.theme-inner .life-reader-dialog :is(.life-reader-feedback,.life-image-controls) button:not(:disabled):is(:hover,:focus-visible){background:color-mix(in srgb,var(--life-ink) 8%,transparent)!important;outline-color:var(--life-ink)}
+
+ /* Form tools sit on the same baseline as their action keys. */
+ body.theme-inner #inner-app-view #view-life #life-filters :is(input,select){box-sizing:border-box;height:32px!important;min-height:32px!important;padding:4px 8px!important;font:400 12px/18px var(--type-ui)!important}
+ body.theme-inner #inner-app-view #view-life #life-filters .life-search-row{align-items:center}
+ body.theme-inner #inner-app-view #view-life #life-filters button[type=submit]{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important}
+ body.theme-inner #inner-app-view #view-containment #scp-search-input{box-sizing:border-box;height:32px!important;min-height:32px!important;padding:4px 8px!important;font:400 12px/18px var(--type-ui)!important}
+ body.theme-inner #inner-app-view #view-life .life-paper h3 button{white-space:normal!important;overflow-wrap:anywhere}
+
+ /* Shared reading direction for page-level actions, at every viewport width. */
+ body.theme-inner #inner-app-view .player-section-tools,
+ body.theme-inner #inner-app-view .player-section-tools>div,
+ body.theme-inner #inner-app-view :is(.notice-detail-toolbar,.forum-action-toolbar,.division-roster-tools,.dossier-reader-tools,.dossier-reader-pagination,.life-board-tools,.life-load-actions){justify-content:flex-start!important;gap:8px!important}
+ body.theme-inner #inner-app-view .player-section-tools .life-publish-actions{margin-left:0!important;justify-content:flex-start!important}
+ body.theme-inner #inner-app-view .player-section-tools{margin:16px 0!important;padding:0!important;border:0!important}
+ body.theme-inner #inner-app-view #forum-refresh-skeleton-btn{margin-left:0!important}
+ body.theme-inner #inner-app-view #view-life .life-board-tools{gap:16px!important}
+ body.theme-inner #inner-app-view #view-life .life-paper footer,
+ body.theme-inner #inner-app-view #view-life .life-paper footer>div,
+ body.theme-inner .life-reader-dialog :is(.life-reader-feedback,.life-image-controls){justify-content:flex-start!important;flex-wrap:wrap;gap:8px}
+ body.theme-inner #inner-app-view #view-life .life-paper footer>span:empty{display:none}
+ body.theme-inner .ad-auction-meta button{margin-left:0!important}
+ body.theme-inner #inner-app-view .ad-exchange-entry{flex-wrap:wrap}
+ body.theme-inner #inner-app-view .ad-exchange-entry button{margin-left:0!important}
+
+ /* Compact admin actions keep the admin palette, with the same key frame. */
+ html[data-admin-theme] .dashboard.admin-mode .small-action{
+  box-sizing:border-box;min-height:28px!important;padding:5px 8px!important;border:1px solid var(--admin-line)!important;border-radius:0!important;
+  font:600 11px/16px var(--type-ui)!important;box-shadow:inset 1px 1px #fff3,inset -1px -1px #0004,0 2px #0003!important;
+ }
+ html[data-admin-theme] .dashboard.admin-mode :is(.section-heading,.admin-form)>.small-action{min-height:32px!important;padding:6px 10px!important;font-size:12px!important;line-height:18px!important}
+ html[data-admin-theme] .dossier-admin-pages{justify-content:flex-start!important}
+}
+.payroll-notice-dialog{font-family:var(--type-ui);color:var(--inner-text-main);background:var(--inner-card-bg);border:1px solid var(--inner-border);border-top:4px solid var(--inner-accent);box-shadow:5px 5px #0006;width:min(400px,calc(100vw - 32px));padding:28px;box-sizing:border-box}
+.payroll-notice-dialog::backdrop{background:#0009}
+.payroll-notice-dialog h2{font:700 25px/1.5 var(--type-heading);margin:0}
+.payroll-notice-dialog .payroll-notice-amount{font:600 22px/1.6 var(--type-ui);font-variant-numeric:tabular-nums;margin:18px 0 26px}
+@layer aved-popup-density{
+ body dialog#payroll-notice{--popup-size:400px;padding:24px!important;border-top:4px solid var(--inner-accent)!important}
+ body dialog.payroll-notice-dialog .payroll-notice-amount{padding:0!important;margin:18px 0 24px!important;font:600 22px/1.6 var(--type-ui)!important}
+ body dialog.payroll-notice-dialog>.community-button{min-height:32px!important;padding:6px 10px!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important;border:1px solid var(--inner-border)!important;box-shadow:var(--system-key-shadow)!important}
+}
+@media(prefers-reduced-motion:reduce){body.theme-inner .community-button{transition:none!important}}

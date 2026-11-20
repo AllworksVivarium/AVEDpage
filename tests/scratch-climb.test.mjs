@@ -99,3 +99,29 @@ test('all twelve prize floors have distinct increasing awards and nonzero defaul
  const legacy={cost:1000,cells:Array.from({length:5},(_,idx)=>({stepDelta:idx===0?1:0,revealed:true})),climb:{topFloor:5,levels:[0,500,1200,5000,20000,100000]}};
  assert.equal(ui.state(legacy).done,true);assert.equal((ui.ladder(legacy,ui.state(legacy)).match(/data-climb-level=/g)||[]).length,5);
 });
+
+
+test('client ticket description and draft shape match twelve-station server rules',()=>{
+ const source=readFileSync(new URL('../public/player.js',import.meta.url),'utf8');
+ const start=source.indexOf('const scratchGameTypes = [')+'const scratchGameTypes = '.length,end=source.indexOf('      ];',start)+7;
+ const types=vm.runInNewContext(source.slice(start,end));const actual=types.find(x=>x.type==='step_climb');
+ assert.equal(actual.cellsCount,game.cellsCount);assert.equal(actual.sub,game.sub);assert.equal(actual.tagline,game.tagline);assert.deepEqual(Array.from(actual.rules),game.rules);
+});
+
+
+test('marker follows only connected reveals, preserves pauses, caps reveal-all motion and obeys effects settings',()=>{
+ const animations=[];let effects=true,reduced=false;
+ const animate=(frames,options)=>{animations.push({frames,options});return {cancel(){}};};
+ const token={style:{},animate,firstElementChild:{animate}},position={},levels={querySelector:()=>token},end={classList:{toggle(){}}};
+ const host={querySelector:s=>s==='[data-climb-position]'?position:s==='[data-climb-end]'?end:levels};
+ const context={window:{AVEDEffectsEnabled:()=>effects},document:{hidden:false,body:{classList:{contains:()=>false}}},matchMedia:()=>({matches:reduced})};
+ vm.runInNewContext(readFileSync(new URL('../public/scratch-climb.js',import.meta.url),'utf8'),context);
+ const ui=context.window.AVEDScratchClimb;let floor=0;
+ const t={cost:1000,climb:{topFloor:12},cells:[2,0,-1,1,2,-1,0,2,-2,1,-2,-2].map((stepDelta,idx)=>({idx,stepDelta,stepFloor:floor+=stepDelta,revealed:false}))};
+ t.cells[4].revealed=true;ui.update(host,t);assert.equal(animations.length,0);
+ t.cells[0].revealed=true;ui.update(host,t);assert.equal(animations.length,2);assert.notEqual(animations[0].frames[0].top,animations[0].frames[1].top);
+ t.cells[1].revealed=true;ui.update(host,t);assert.equal(animations.at(-2).frames[0].top,animations.at(-2).frames[1].top);
+ t.cells.forEach(c=>c.revealed=true);ui.update(host,t);assert.ok(animations.at(-2).options.duration<=1200);assert.equal(position.textContent,'终点 第0层');
+ const count=animations.length;effects=false;t.cells.forEach(c=>c.revealed=false);ui.update(host,t);t.cells[0].revealed=true;ui.update(host,t);assert.equal(animations.length,count);
+ effects=true;reduced=true;t.cells[1].revealed=true;ui.update(host,t);assert.equal(animations.length,count);
+});

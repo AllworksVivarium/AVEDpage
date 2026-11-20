@@ -33,3 +33,18 @@ test('next ticket remains a free local draft and never makes a speculative purch
  await vm.runInNewContext('(async()=>{'+source.slice(start,end)+'}})()',context);
  assert.equal(purchases,0);assert.equal(renders,1);assert.equal(context.activeIssuedTicket.draft,true);assert.equal(context.activeIssuedTicket.cells.length,13);assert.equal(context.activeIssuedTicket.prize,undefined);
 });
+
+
+test('live board routes twelve-cell and legacy climb tickets through the staircase renderer',()=>{
+ const source=fs.readFileSync(new URL('../public/player.js',import.meta.url),'utf8');
+ const start=source.indexOf("      let lastScratchRules='';"),end=source.indexOf("      document.getElementById('scratch-reveal-all-cells-btn')",start);
+ let settings;const host={addEventListener(){}};
+ const window={AVEDPixelIcons:{render:()=>'<svg></svg>'}},context={window,document:{getElementById:()=>host},AVEDScratchBoard(config){settings=config;return {};},AVEDScratchTicketArt:{board:(ticket,body)=>body}};
+ vm.runInNewContext(fs.readFileSync(new URL('../public/scratch-climb.js',import.meta.url),'utf8'),context);context.AVEDScratchClimb=window.AVEDScratchClimb;
+ vm.runInNewContext(source.slice(start,end),context);
+ for(const count of [12,5]){
+  const t={draft:true,gameType:{type:'step_climb'},cost:1000,cells:Array.from({length:count},(_,idx)=>({idx,revealed:false}))};
+  assert.match(settings.frame(t,t.cells.map(c=>settings.cell(c,t))),/data-climb-levels/);
+  assert.match(settings.cell(t.cells[0],t),/第1站/);
+ }
+});
