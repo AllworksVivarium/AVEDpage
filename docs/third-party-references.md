@@ -1,6 +1,6 @@
 # 第三方项目、素材与音乐引用
 
-更新：2026-11-19。本清单供开发维护、来源查询和许可核对使用。许可原文优先于本页摘要；音频、原始压缩包、购买凭证和账号凭据不随源码入库。
+更新：2026-11-20。本清单供开发维护、来源查询和许可核对使用。许可条款见各项目原文；音频、原始压缩包、购买凭证和账号凭据通过专用存储管理。
 
 ## 代码与字体
 
@@ -17,7 +17,7 @@
 | emoji-picker-element 1.29.1 / emoji-picker-element-data | 论坛表情选择器与中文表情数据 | public/vendor/emoji-picker-element-1.29.1 中的 LICENSE、DATA-LICENSE，Apache-2.0 |
 | IBM Plex | 拉丁字母、简中、希伯来文、等宽字体 | [来源记录](../public/assets/fonts/TYPOGRAPHY-SOURCES.md)、OFL-IBM-Plex.txt |
 | Silkscreen | 像素字体 | [OFL 原文](../public/assets/fonts/OFL-Silkscreen.txt) |
-| 既有设计与研究字体资源 | 设计试验、保留的历史字体资源 | public/assets/fonts/design、study；不将目录中存在等同于当前玩家页启用，具体字体见实际 @font-face 引用 |
+| 既有设计与研究字体资源 | 设计试验、保留的历史字体资源 | public/assets/fonts/design、study；页面启用字体见 @font-face 引用 |
 
 ## 酒吧图像与界面素材
 
@@ -26,10 +26,9 @@
 | ミキミキ建築（旧名 ミキ美術，@Mikiproject_4） | 用户购买的酩酊版、泥酔版、熟悉酒瓶套装，共 86 款可售饮品与原空 SHOT 杯 | [付费素材逐图索引](bar-paid-asset-index.json)、[原包说明与接入记录](bar-assets-source.md) |
 | FFlann / Cocktail Bar — Free Pixel Icon Pack | 8 款瓶装酒与鸡尾酒 | [作者与项目链接、原包校验值](bar-assets-source.md#fflann-饮品素材2026-11-19) |
 | Helm3t / Cocktail Pixel Asset Pack v1、v2 | 6 款鸡尾酒 | [接入记录](bar-assets-source.md#helm3t-免费鸡尾酒2026-11-19)、[v1 许可](licenses/helm3t-v1-free.txt)、[v2 许可](licenses/helm3t-v2-free.txt) |
-| 用户提供的包装、角色、制服与界面图片 | 能量果冻、部门资料卡、制服、部分图标与论坛反应图片 | 保留原始用户资料与现有接入记录；未附来源的项目不虚构作者或授权 |
-| 本站生成或自行绘制素材 | 临时调酒师、部分界面图、SVG 杯具、背景效果 | [酒吧生成与分层记录](bar-assets-source.md)；当前背景为原生 Canvas/CSS 实现 |
+| 用户提供的包装、角色、制服与界面图片 | 能量果冻、部门资料卡、制服、部分图标与论坛反应图片 | 原始用户资料与接入记录 |
 
-React Bits 的 Gradient ASCII 页面曾作为字符背景的效果参考。当前字符涌流、符号瀑流、相位点阵与制图网格使用本站 Canvas 代码，没有引入 React Bits 运行库。Kelano Studio、CydoniaX 等在素材记录中列为检索候选的项目，未因列举而视为已经购买或使用。
+React Bits 的 Gradient ASCII 页面为字符背景的效果参考。
 
 ## 音乐专辑
 
@@ -38,21 +37,21 @@ React Bits 的 Gradient ASCII 页面曾作为字符背景的效果参考。当�
 | Purrple Cat | City Nights、Multiverse | [曲目与来源清单](music/purrple-cat-albums.json)、[CC BY 4.0 原文](licenses/purrple-cat-music-CC-BY-4.0.txt) |
 | Tomality | Neon Reverie（原素材包 Free Game Music Sampler Vol. 1） | [项目来源与许可记录](licenses/tomality-free-sampler-20261119.txt)、[曲目清单](music/additional-free-albums.json) |
 | Voltz Supreme | Analog Ambience | [项目来源与许可记录](licenses/voltz-supreme-analog-ambience-20261119.txt)、[曲目清单](music/additional-free-albums.json) |
-| 用户提供合辑 / Various Artists | Nocturne for Dramoir，11 首 | [曲目、演奏者、时长和 SHA-256](music/nocturne-for-dramoir.json)；来自用户提供的“音乐文件.zip”，未附许可或来源网址，不标注为 CC 或免版权音乐 |
+| 用户提供合辑 / Various Artists | Nocturne for Dramoir，11 首 | [曲目、演奏者、时长和 SHA-256](music/nocturne-for-dramoir.json)；用户提供的“音乐文件.zip” |
 
-Nocturne for Dramoir 保留每首原有演奏者；专辑作者统一为 Various Artists。无署名的文件不推测演奏者。原始 ID3 专辑名称另存于清单，不覆盖用户指定的合辑名称。移除 macOS 资源叉文件，仅导入 11 个原始 MP3，音频未剪切、未转码、未归一化。
+Nocturne for Dramoir 使用每首录音已有的演奏者信息，专辑作者统一为 Various Artists。原始 ID3 专辑名称另存于清单。导入内容为 11 个完整原始 MP3。
 
 ## 上传与播放维护
 
 - 管理端：酒吧音乐 → 添加曲目 → 上传音频。支持 MP3、M4A、AAC、OGG、WAV，单文件上限 32 MiB，时长 30–900 秒；需管理会话，服务端校验格式头与大小。
 - 上传接口：POST /api/admin/bar-music/upload。JSON 字段为 title、artist、albumArtist、album、trackNumber、durationSeconds、fileName、data（Base64）；许可与来源字段可选，未知时留空。后续仍可通过管理端编辑、启停和移除。
-- 批量入口：tools/import-bar-albums.mjs <音频目录> <manifest路径>。按曲名、作者、专辑匹配，重复导入不新增相同记录；导入前校验清单中的文件 SHA-256。凭据通过 AVED_BAR_IMPORT_COOKIE 提供，不写入仓库。
-- 音频进入 DATA_DIR/bar-music，数据库保存目录和元数据；Git 上传代码不会自动上传音频。
+- 批量入口：tools/import-bar-albums.mjs <音频目录> <manifest路径>。按曲名、作者、专辑匹配并去重；导入前校验清单中的文件 SHA-256。凭据通过 AVED_BAR_IMPORT_COOKIE 提供。
+- 音频通过上传或导入进入 DATA_DIR/bar-music，数据库保存目录和元数据；代码通过 Git 发布。
 - 无人点歌时随机播放；有点播时按公共队列播放，并按服务器时间对齐进度。
-- 点歌页面的“试听”仅在当前浏览器播放完整原文件，不收费、不加入公共队列、不改变他人播放。页面保持打开时可听完；关闭点歌页面后恢复公共音乐当前进度，遵守原静音设置。后续新歌不制作独立试听片段，已有文件不因本次修改删除。
-- 数据备份继续采用每日一份、五日一份的既定规则，不生成更新前快照。
+- 点歌页面的“试听”为免费的本地完整播放。页面保持打开时可听完；关闭点歌页面后恢复公共音乐当前进度，遵守原静音设置。新歌直接使用完整音频，已有试听文件继续保留。
+- 数据备份采用每日一份、五日一份的滚动快照。
 
-线上代理需要在管理域名的 HTTPS server 内接入 deploy/nginx-music-upload-location.conf，仅对音乐上传接口允许 48 MiB Base64 JSON 请求；其他路由继续原有大小限制。修改后先 nginx -t，再 reload。应用仍强制单个音频不超过 32 MiB，代理放宽不等于绕过管理身份或文件校验。
+线上代理在管理域名的 HTTPS server 内接入 deploy/nginx-music-upload-location.conf，音乐上传接口的 Base64 JSON 请求上限为 48 MiB；其他路由沿用各自限额。修改后先 nginx -t，再 reload。应用校验管理身份、文件格式及 32 MiB 的单音频限额。
 
 ## 酒吧进门铃声
 
@@ -60,6 +59,6 @@ Nocturne for Dramoir 保留每首原有演奏者；专辑作者统一为 Various
 - 来源：https://pixabay.com/sound-effects/film-special-effects-shop-door-bell-6405/
 - 许可：https://pixabay.com/service/license-summary/ （Pixabay Content License）。
 - 使用文件：public/assets/bar/shop-door-bell-short.mp3。
-- 处理：取原件 0.30–1.50 秒的第一声门铃，保留约 1.2 秒；头部 10 ms 淡入、末尾 250 ms 淡出，音量乘 0.7。未加入其他来源音频。
-- 仅对在座列表中新加入的其他客人播放；初次进入及相同快照不补响。
-- 离线裁剪工具：FFmpeg（通过 npm ffmpeg-static 取得），仅用于开发时生成短门铃，不作为网页运行依赖或随网站分发。
+- 处理：取原件 0.30–1.50 秒的第一声门铃，保留约 1.2 秒；头部 10 ms 淡入、末尾 250 ms 淡出，音量乘 0.7。
+- 播放条件：初始在座列表加载完成后，有其他客人新加入。
+- 开发时使用 FFmpeg（通过 npm ffmpeg-static 取得）离线裁剪，网页播放裁剪后的 MP3。

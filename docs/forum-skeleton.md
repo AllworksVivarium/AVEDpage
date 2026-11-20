@@ -1,6 +1,6 @@
 # 论坛加载占位
 
-复用现有原生 JavaScript 控制器、`aved-personal` 样式层及 `--inner-card-bg`、`--inner-text-main`、`--inner-border-soft` 主题变量，无新增依赖。
+复用现有原生 JavaScript 控制器、`aved-personal` 样式层及 `--inner-card-bg`、`--inner-text-main`、`--inner-border-soft` 主题变量。
 
 - 首次进入论坛、搜索/排序/翻页、打开主题与回复分页接入同一个骨架屏组件。
 - 180ms 后才显示占位，不人为延长请求；已有内容的普通刷新保留原内容。键盘焦点处于内容中，或在延迟显示前移入内容时，不隐藏被聚焦的内容。
@@ -10,6 +10,6 @@
 
 参考：<https://atlas.gongfpp.icu/patterns/skeleton-loading?mode=default&requirements=dark%2CreducedMotion%2CnoDeps%2CrunChecks#playground>。已在浏览器中对照加载态的结构与轻微微光效果。
 
-本地验收：1024px 桌面、390×844 手机、长中文标题与连续英文链接、键盘可见焦点、加载完成、失败、重试和导航取消。200% 使用隔离预览中的 CSS zoom:2 检查布局；减少动态效果通过同一媒体规则的等效静态样式检查，未修改操作系统设置。模拟慢网只在隔离代理中增加响应延迟，正式代码没有固定等待。
+本地验收：1024px 桌面、390×844 手机、长中文标题与连续英文链接、键盘可见焦点、加载完成、失败、重试和导航取消。200% 使用隔离预览中的 CSS zoom:2 检查布局；减少动态效果通过同一媒体规则的等效静态样式检查。模拟慢网通过隔离代理增加响应延迟。
 
 测试：`node --test tests/forum-skeleton.test.mjs tests/forum-pagination-ui.test.mjs tests/forum-notification-ui.test.mjs tests/forum-reactions-ui.test.mjs tests/player-startup.test.mjs tests/performance-safety.test.mjs`。

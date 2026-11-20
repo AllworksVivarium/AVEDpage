@@ -14,7 +14,7 @@
 
 开仓需同时付得起保证金及手续费。`stock_trades.fee` 记录本次费用；`realized_pnl_change` 为本次毛实现盈亏减本次费用（开仓即为负费用）；汇总历史盈亏对其求和。`net_pnl` 用于平仓净盈亏和胜率：毛平仓盈亏减本次平仓费，再减逐笔按数量分摊的开仓费。成就按此净盈亏判定。
 
-旧的持仓与成交记录保持原值，新增费用默认零，net_pnl 空值回退旧口径，不追溯扣费。`stock_margin_topups` 仅记新增转账的幂等键，不虚构历史操作。
+旧的持仓与成交记录保持原值，新增费用默认零，net_pnl 空值回退旧口径，不追溯扣费。`stock_margin_topups` 记录新增转账的幂等键。
 
 现实参照：股票 / 指数 CFD 形式，游戏采用逐笔独立保证金和自定 20% 线。参考 https://www.fca.org.uk/news/press-releases/fca-confirms-permanent-restrictions-sale-cfds-and-cfd-options-retail-consumers 。
 

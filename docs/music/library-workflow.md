@@ -2,20 +2,20 @@
 
 玩家端点歌台与管理端“酒吧音乐”读取同一个 bar_music 目录。管理端按专辑/作者筛选、搜索、试听、手动添加、编辑、启停及移除；玩家端只显示启用的曲目，提供单曲/整张专辑点播和队列播放。目录变更通过既有酒吧 SSE 刷新同步。
 
-2026-11-19 本地目录有四张专辑：City Nights 11 首、Multiverse 10 首、Free Game Music Sampler Vol. 1 10 首、Analog Ambience 31 首，共 62 首。新增两套原始包和浏览器用音频在工作区 outputs/bar-music-20261119/additional 中，不写入 Git 或 public。
+2026-11-19 本地目录有四张专辑：City Nights 11 首、Multiverse 10 首、Free Game Music Sampler Vol. 1 10 首、Analog Ambience 31 首，共 62 首。新增两套原始包和浏览器用音频在工作区 outputs/bar-music-20261119/additional 中，通过独立音频存储管理。
 
 ## 音频与署名
 
 - Purrple Cat: CC BY 4.0；曲目和专辑顺序见 purrple-cat-albums.json。
 - Tomality: 原始 MP3 保持字节一致，10 首完整录音进入目录；附带 27 个循环版本保留在原始资料中。
-- Voltz Supreme: 四个原始 WAV 包保留；31 首完整录音转成 160 kbps MP3，不剪切、不混音、不调音量。
+- Voltz Supreme: 四个原始 WAV 包保留；31 首完整录音完整转成 160 kbps MP3。
 - 新增目录、时长、原始/网页文件 SHA-256 见 additional-free-albums.json。作者和许可来源保留在每条曲目中。
 
 ## 后续发布
 
 1. 本次新增音乐和管理界面仅完成本地接入；后续按授权的正式发布流程发布音乐相关代码；仅保留每日和每五日备份，不创建更新前备份。
-2. 音频保存在服务 DATA_DIR/bar-music。代码发布本身不会传输这些音乐文件。
-3. 在应用主机上使用 tools/import-bar-albums.mjs 导入音频目录和相应 manifest。AVED_BAR_IMPORT_URL 使用该主机的 loopback 地址，AVED_BAR_IMPORT_COOKIE 使用有效管理会话；不要把 cookie、密钥、数据库或音频包写入 Git。
+2. 音频保存在服务 DATA_DIR/bar-music。音乐文件通过独立上传或导入流程传输。
+3. 在应用主机上使用 tools/import-bar-albums.mjs 导入音频目录和相应 manifest。AVED_BAR_IMPORT_URL 使用该主机的 loopback 地址，AVED_BAR_IMPORT_COOKIE 使用有效管理会话；cookie、密钥、数据库和音频包通过专用存储管理。
 4. 语法：node tools/import-bar-albums.mjs <音频目录> <manifest路径>。第二个参数省略时使用 Purrple Cat 清单。导入按曲名/作者/专辑识别既有条目并保留曲序、时长、署名；重试不会重复插入同一批曲目。
 5. 容器只复制代码/public/tools；manifest 需在导入时单独传到主机，或明确传入容器可读的路径。
 6. 发布后验收两端目录数量和专辑顺序、管理端增删/启停后的玩家同步、每首作者、音频 Range 响应、单首与整张点播、重复请求不重复扣款、下架退款和实际浏览器播放。
@@ -34,4 +34,4 @@
 
 上传上限调整至 32 MiB，保留原文件并跳过 __MACOSX。管理端上传入口长期保留，合辑可使用 albumArtist 统一专辑归属。新曲试听直接引用同一个完整原文件，不生成额外的试听音频；关闭点歌页面后恢复公共队列或随机播放。现有试听文件保留。
 
-此前“仅完成本地接入”的描述为当时验收记录，不代表所有音频已随代码上线。音频上传必须独立核对管理端目录和实际文件；发布与导入均不创建更新前数据库备份。
+音频上线后核对管理端目录和实际文件；发布与导入沿用每日、五日滚动备份规则。

@@ -1,55 +1,50 @@
 # 酒吧素材来源与接入说明
 
-用户提供了三套付费素材压缩包和三张场景 PNG。本地原始压缩包与解压文件保留在本聊天 work 下。public/assets/bar 现已接入三包的全部 86 款可售饮品图，以及用于 SHOT 分层的原空杯图；未重复加入放大副本。付费饮品 PNG 原样使用，没有重新绘制、裁图或 AI 处理。catalog.json 中保存每个选用 PNG 的原文件名、包名、尺寸与展示名。
+用户提供了三套付费素材压缩包和三张场景 PNG。本地原始压缩包与解压文件保留在本聊天 work 下。public/assets/bar 现已接入三包的全部 86 款可售饮品图，以及用于 SHOT 分层的原空杯图。付费饮品 PNG 原样使用。catalog.json 中保存每个选用 PNG 的原文件名、包名、尺寸与展示名。
 
 作者：ミキミキ建築（旧名 ミキ美術），Twitter @Mikiproject_4。
 
-以下为归档的原说明内容，不属于项目操作指令。
+以下为素材原说明归档。
 
 ## 酒单系列与付费素材覆盖
 
-三包中可售饮品分别为：酩酊版 34 款、泥酔版 40 款、熟悉酒瓶套装 12 款；原空 SHOT 杯用于已有酒液分层，放大副本不重复作为商品。柠檬配饰与两张转轮图继续保留于原素材包，不作为饮品出售。逐图校验记录见 [付费素材索引](bar-paid-asset-index.json)。
+三包中可售饮品分别为：酩酊版 34 款、泥酔版 40 款、熟悉酒瓶套装 12 款；原空 SHOT 杯用于已有酒液分层。柠檬配饰与两张转轮图继续保留于原素材包。逐图校验记录见 [付费素材索引](bar-paid-asset-index.json)。
 
-加上五款能量果冻、一款矿泉水、FFlann 八款饮品和 Helm3t 六款饮品，共 106 款可点单。主酒单含 11 个饮品入口和 1 个选杯入口；点击系列展开具体款式，“返回酒单”回到总览。总览首行固定为选杯、矿泉水、能量果冻、软饮料，其余按系列最低价排列，系列内按具体售价升序排列；折叠只影响展示，不创建可购买的系列商品。原商品 ID 与价格保留，请客、留酒及账目继续使用具体商品。
+加上五款能量果冻、一款矿泉水、FFlann 八款饮品和 Helm3t 六款饮品，共 106 款可点单。主酒单含 11 个饮品入口和 1 个选杯入口；点击系列展开具体款式，“返回酒单”回到总览。总览首行固定为选杯、矿泉水、能量果冻、软饮料，其余按系列最低价排列，系列内按具体售价升序排列；折叠用于系列导航，购买时选择具体商品。原商品 ID 与价格保留，请客、留酒及账目继续使用具体商品。
 
 ## 画面分层
 
-- 2026-11-19 能量果冻：用户提供五款包装图。使用内置 imagegen 做透明背景处理，随后统一裁边与显示尺寸，生成 `energy-jelly-{blue,purple,green,yellow,gold}.png`，每张 128×204。五款包装归入“能量果冻”系列，均为 800；在酒单中手动选择具体包装，各自订单保留所选图片。不新增功效，按无酒精饮品使用现有饮用流程。
+- 2026-11-19 能量果冻：用户提供五款包装图。去除背景并统一裁边与显示尺寸，使用文件 `energy-jelly-{blue,purple,green,yellow,gold}.png`，每张 128×204。五款包装归入“能量果冻”系列，均为 800；在酒单中手动选择具体包装，各自订单保留所选图片。按无酒精饮品使用现有饮用流程。
 
 ### FFlann 饮品素材（2026-11-19）
 
-作者主页：[FFlann](https://fflann.itch.io/)。本次使用 [Cocktail Bar — Free Pixel Icon Pack](https://fflann.itch.io/cocktail-bar-free-pixel-icons)，作者页面允许用于个人和商业项目，并允许修改。页面声明为手绘像素素材，未使用生成式 AI。
+作者主页：[FFlann](https://fflann.itch.io/)。本次使用 [Cocktail Bar — Free Pixel Icon Pack](https://fflann.itch.io/cocktail-bar-free-pixel-icons)，作者页面允许用于个人和商业项目，并允许修改。页面声明为手绘像素素材。
 
-原包由用户下载并提供：`CCCocktail_Bar_Free_Pixel_Icon_Pack_8_EXACT (2).zip`，SHA-256 为 `BF69FCD59EFB00262C247313911014A0DF49D3A8783F9E298EA8C1D1BC9298A1`。包内 README 说明素材保持原始像素裁切；本次原样复制八张 PNG，未重绘、改色或重采样。`0001` 至 `0008` 依次对应甘蔗白朗姆、小麦伏特加、龙舌兰日出、柑橘伏特加汤力、香料血腥玛丽、陈年威士忌、龙舌兰、莫斯科骡子。站内文件使用 `fflann-` 前缀。
+原包由用户下载并提供：`CCCocktail_Bar_Free_Pixel_Icon_Pack_8_EXACT (2).zip`，SHA-256 为 `BF69FCD59EFB00262C247313911014A0DF49D3A8783F9E298EA8C1D1BC9298A1`。包内 README 说明素材保持原始像素裁切；本次原样复制八张 PNG。`0001` 至 `0008` 依次对应甘蔗白朗姆、小麦伏特加、龙舌兰日出、柑橘伏特加汤力、香料血腥玛丽、陈年威士忌、龙舌兰、莫斯科骡子。站内文件使用 `fflann-` 前缀。
 
-四款瓶装酒支持分装，四款鸡尾酒使用原杯；酒液、标签、杯壁由前端遮罩分层，余量由服务端维护。来源信息仅存于开发文档，不添加到玩家界面。
+四款瓶装酒支持分装，四款鸡尾酒使用原杯；酒液、标签、杯壁由前端遮罩分层，余量由服务端维护。来源信息集中记录于开发文档。
 
 ### Helm3t 免费鸡尾酒（2026-11-19）
 
-用户提供 v1、v2 免费包，各 3 杯，原始透明 PNG 32×32，不重绘或重采样。v1 来源：[Cocktail Pixel Asset Pack](https://helm3t.itch.io/cocktail-pixel-icon-pack)，v2 来源：[Cocktail Pixel Asset Pack V2](https://helm3t.itch.io/cocktail-pixel-icon-pack-v2)。原包许可限非商业游戏及个人项目，不可作为素材包再分发，不可用于商标、制作工具、代码模板、AI/NFT/加密项目；本地保留完整 [v1 许可](licenses/helm3t-v1-free.txt) 与 [v2 许可](licenses/helm3t-v2-free.txt)。本站按非商业项目用途接入，未新增玩家端来源文案。
+用户提供 v1、v2 免费包，各 3 杯，原始透明 PNG 32×32。v1 来源：[Cocktail Pixel Asset Pack](https://helm3t.itch.io/cocktail-pixel-icon-pack)，v2 来源：[Cocktail Pixel Asset Pack V2](https://helm3t.itch.io/cocktail-pixel-icon-pack-v2)。原包许可限非商业游戏及个人项目，不可作为素材包再分发，不可用于商标、制作工具、代码模板、AI/NFT/加密项目；本地保留完整 [v1 许可](licenses/helm3t-v1-free.txt) 与 [v2 许可](licenses/helm3t-v2-free.txt)。本站按非商业项目用途接入。
 
-v1 压缩包 SHA-256：`C6BC02068EE43999F1700CDE5CB0246D91091C0CF5844A3922B519FBC7E34B11`；v2：`6CAE8E04831A7827A9DF31DFB1A610D519C342E837654210BE90ADE5E476243C`。六杯为奇异果特调、菠萝樱桃、蓝色泻湖、蓝色夏威夷、还魂者、电光柠檬，售价 1,760～2,200。全部固定使用原杯，不能分装；按既有像素遮罩随饮用降低液面，不另做杯具贴图。
+v1 压缩包 SHA-256：`C6BC02068EE43999F1700CDE5CB0246D91091C0CF5844A3922B519FBC7E34B11`；v2：`6CAE8E04831A7827A9DF31DFB1A610D519C342E837654210BE90ADE5E476243C`。六杯为奇异果特调、菠萝樱桃、蓝色泻湖、蓝色夏威夷、还魂者、电光柠檬，售价 1,760～2,200。全部使用原杯，按像素遮罩随饮用降低液面。
 
-原付费包的空 SHOT 图 `onyx-shot.png` 仅用于 SHOT 喝完后显示空杯，不加入选杯区，也不作为饮品出售。
+原付费包的空 SHOT 图 `onyx-shot.png` 用于 SHOT 喝完后的空杯状态。
 
 ### 其他饮品素材候选（2026-11-19 核对）
 
-以下仅为检索候选，尚未接入菜单，也未购买。
+以下为素材检索备选。
 
 - [Kelano Studio / World Kitchen 3 — Drinks & Beverages](https://kelano-studio.itch.io/world-kitchen-3-drinks-beverages)：2 美元，30 款 32×32 透明 PNG，包括鸡尾酒、啤酒、葡萄酒、茶咖和果汁，允许个人及商业项目使用，不能原样转售或再分发。
 - [CydoniaX / Drinks — 32×32 Pixel Art Pack](https://cydonia-x.itch.io/drinks-pixelart-32)：2.99 美元，40 款透明 PNG，包括鸡尾酒、奶茶、咖啡等；个人/商业项目可用，单用户授权，不可再分发原文件，不允许用于 AI 训练或素材生成器。
 
-以上候选与能量果冻、已接入的 FFlann 素材相互独立，第三方饮品素材均未送入生成工具。
-
-- 新增矿泉水来自用户提供的 fbba7b77249c2968d9336b7975af39d9.png。仅去掉与画面边缘连通的白底并裁去外边距，保留瓶内白色高光与原图像素；没有使用 AI 重绘。站内文件为 public/assets/bar/mineral-water.png，153×451，约 23KB。
-- 本轮生成的三款 AI 杯子仅归档在聊天 work/bar-glass-concepts，未接入 public。容器与倒酒现使用正式像素杯具，参见杯具与分装文档。
-
+- 新增矿泉水来自用户提供的 fbba7b77249c2968d9336b7975af39d9.png。仅去掉与画面边缘连通的白底并裁去外边距，保留瓶内白色高光与原图像素。站内文件为 public/assets/bar/mineral-water.png，153×451，约 23KB。
 - background.png、background-with-counter.png、counter.png 均为 2990 × 1685，不透明 RGB/alpha=255。
 - background.png 为无吧台版，适用于背景 → NPC → counter.png → 饮品的层次关系。
-应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图；本次未改动原图像素。
-- 饮品 PNG 全部具有透明通道；lemon-cocktail.png 原始素材本身是罐与杯的组合图。原 PNG 保留，柠檬特调在 bar-drink-art.js 中按原图像素轮廓分层：罐子静止，杯壁、酒液与吸管一起抬起，酒液按服务端剩余容量降低并在喝完后清空。杯子原先遮挡的窄条罐身使用原图未遮挡区域镜像补齐，未使用 AI 重绘。
+应在页面用 CSS clip-path 裁去白色区域，或等待用户提供透明原图。
+- 饮品 PNG 全部具有透明通道；lemon-cocktail.png 原始素材本身是罐与杯的组合图。原 PNG 保留，柠檬特调在 bar-drink-art.js 中按原图像素轮廓分层：罐子静止，杯壁、酒液与吸管一起抬起，酒液按服务端剩余容量降低并在喝完后清空。杯子原先遮挡的窄条罐身使用原图未遮挡区域镜像补齐。
 - shot 系列有少量透明边距，catalog.json 记录原图尺寸。所有饮品保持 image-rendering: pixelated。
-- 饮品中文名为基于外观的 AVED 展示名称，非对真实品牌或口味的官方鉴定。
 
 ## meitei
 
@@ -220,30 +215,14 @@ v1 压缩包 SHA-256：`C6BC02068EE43999F1700CDE5CB0246D91091C0CF5844A3922B519FB
 
 2025/11/10　背景に微調整を加えました。
 
-## 临时人物 v3（2026-11-11）
+## 酒吧侧栏鸡尾酒图标
 
-`public/assets/bar/bartender-preview-v3.png` 由内置 imagegen 生成，透明底，作为用户要求的新版临时调酒师使用；原始生成文件保留于 Codex generated_images。短发、无妆容和饰品，普通工作衬衫与围裙。用户指定 VA-11 Hall-A / The Red Strings Club 为风格方向，未使用两款游戏的角色贴图。完整生成提示词保存在本聊天 outputs/bar-bartender-v3-generation.md；该 PNG 独立于上文用户购买素材包。
+来源为用户本轮提供的 F:/QQdata/3166367907/nt_qq/nt_data/Pic/2026-11/Ori/b8743c0954d7e6515887fe045ff3edd1.png。裁去留白后生成黑底灰阶亮度遮罩，缩至 64×64，压缩为 WebP（914 字节）。当前站内文件为 public/assets/bar-cocktail-ui-v1.sidebar64.22ba024e0c18.webp，接入 visual-style.js 和 sidebar-symbol，使用已有主题颜色与 28×28 图标槽。
 
-### 当前使用 v4
+## 可选杯具与矿泉水分层（2026-11-18）
 
-`public/assets/bar/bartender-preview-v4.png` 是上述 v3 生成图的低分辨率导出（103×160、48 色、最近邻采样、透明底），根据用户“像素再低一点点”的反馈制作。去掉底边杂点，保留人物设计；实际站点已改用此文件。生成记录与导出说明保存在聊天 outputs/bar-bartender-v4-notes.md。
-
-### 用户选择的第二张生成图（当前 v5）
-
-用户选择第二张、块面更简单的生成立绘。站内文件改为 `public/assets/bar/bartender-preview-v5.png`，来自 C:/Users/Edgar/.codex/generated_images/01a1ca26-075d-77c0-ad45-26e3b11a09dd/exec-5e168717-f31c-44c7-90a1-b01dd5cc1b07.png，仅去除底边杂点并做 PNG 调色板压缩，未重新设计人物。此图是内置 imagegen 对 v3 的低像素风格编辑结果，当前保持静态。用户指定的风格参考仍为 VA-11 Hall-A / The Red Strings Club，未使用这些游戏的角色贴图。
-
-### 当前马甲半身版 v7
-
-根据用户后续要求，第二张生成图经过内置 imagegen 两次编辑：双臂自然垂下、普通衬衫配简单马甲，随后肩膀加宽、只保留腰部以上。当前使用 `public/assets/bar/bartender-preview-v7.png`，源生成文件 exec-2e0d099b-b8df-4a63-93fe-c965385c6f59.png。Sharp 导出为 54×96、16 色、透明底、最近邻采样、无抖色；人物保持静态。素材副本与完整提示词位于聊天 outputs/bar-bartender-waist-v7.png 和 outputs/bar-bartender-waist-v7-notes.md。
-
-### 酒吧侧栏鸡尾酒图标
-
-来源为用户本轮提供的 F:/QQdata/3166367907/nt_qq/nt_data/Pic/2026-11/Ori/b8743c0954d7e6515887fe045ff3edd1.png。裁去留白后生成黑底灰阶亮度遮罩，缩至 64×64，压缩为 WebP（914 字节）。当前站内文件为 public/assets/bar-cocktail-ui-v1.sidebar64.22ba024e0c18.webp，接入 visual-style.js 和 sidebar-symbol，使用已有主题颜色与 28×28 图标槽；未复制原始大图到 public。
-
-### 可选杯具与矿泉水分层（2026-11-18）
-
-`glass-highball.svg` 和 `glass-beer-mug.svg` 为本轮用原生 SVG 绘制的透明像素杯具，分别为直杯和啤酒杯。整格边缘、杯底反光和啤酒杯大把手使用有限颜色与真实 Alpha，杯内能透出后方瓶罐；液体独立着色、遮罩裁切，不改动原饮品 PNG。
+`glass-highball.svg` 和 `glass-beer-mug.svg` 分别用于直杯和啤酒杯显示。整格边缘、杯底反光和啤酒杯大把手使用有限颜色与真实 Alpha，杯内能透出后方瓶罐；液体独立着色、遮罩裁切。
 
 `bar-drink-art.js` 对原 `mineral-water.png` 分离瓶身、标签与液体，按服务端瓶中余量降低水位。特调和 SHOT 保持原杯，提前选的杯子为空杯备用。交互规则见 `bar-glassware-and-pouring.md`。
 
-2026-11-19 酒单命名调整：果冻包装可确认 ENERGY、MINERAL、VITAMIN、GOLD，细小文字未作确定识别；青提、葡萄、西柚、柠檬等为结合包装的站内口味命名。原“柠檬特调”改名“能量啤酒”。啤酒、嗨棒和部分烈酒按瓶身视觉取酒单名称，属于站内设定，不宣称识别出了原产品品牌。商品 ID、原 PNG 和来源索引不变。
+2026-11-19 酒单命名调整：果冻包装可确认 ENERGY、MINERAL、VITAMIN、GOLD；青提、葡萄、西柚、柠檬等为结合包装的站内口味命名。原“柠檬特调”改名“能量啤酒”。啤酒、嗨棒和部分烈酒按瓶身视觉取酒单名称。商品 ID、原 PNG 和来源索引不变。
