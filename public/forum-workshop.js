@@ -1,10 +1,10 @@
 (function(){
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- window.AVEDForumWorkshop=async function({container,api,onPublished=()=>{},onChange=()=>{},threadId=null,threadTitle='',administrative=false}){
+ window.AVEDForumWorkshop=async function({container,api,onPublished=()=>{},onChange=()=>{},threadId=null,threadTitle=''}){
   const [people,topics]=await Promise.all([api('/api/player/forum/personas'),api('/api/player/forum/workshop')]);
   if(threadId&&!topics.items.some(t=>t.id===Number(threadId)))topics.items.unshift({id:Number(threadId),title:threadTitle||'当前主题 #'+threadId});
-  if(!people.canManage)throw Error(administrative?'当前身份无权使用演绎编排。':'当前身份无权使用通讯编排。');
-  const copy=administrative?{intro:'演绎身份使用管理端的公司机器人，名字与余额同步该账号。',refresh:'刷新机器人名单',select:'选择机器人',empty:'暂无公司机器人，请先在管理端添加。'}:{intro:'使用公司通讯账号代发，署名与余额取自该账号。',refresh:'刷新通讯账号',select:'选择通讯账号',empty:'暂无通讯账号，请先在管理端添加。'};
+  if(!people.canManage)throw Error('当前身份无权使用通讯编排。');
+  const copy={intro:'使用公司通讯账号代发，署名与余额取自该账号。',refresh:'刷新通讯账号',select:'选择通讯账号',empty:'暂无通讯账号，请先在管理端添加。'};
   let personas=people.items,requestId=crypto.randomUUID();
   container.innerHTML=`<div class="forum-workshop"><div class="forum-workshop-identity"><p>${copy.intro}</p><button type="button" data-persona-refresh class="community-button small-action">${copy.refresh}</button></div><form data-script-form class="community-form"><label>发布到<select name="thread"><option value="">新建主题</option>${topics.items.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join('')}</select></label><label data-script-title>主题标题<input name="title" maxlength="120" required></label><div data-script-lines></div><div class="forum-workshop-actions"><button type="button" data-add-line class="community-button small-action">＋ 一条发言</button><button type="button" data-preview class="community-button small-action">预览</button><button type="submit" class="community-button small-action">发布编排</button></div><div data-script-preview hidden></div></form><p data-workshop-status role="status"></p></div>`;
   const form=container.querySelector('[data-script-form]'),lines=container.querySelector('[data-script-lines]'),status=container.querySelector('[data-workshop-status]'),preview=container.querySelector('[data-script-preview]');

@@ -30,7 +30,7 @@ test('legacy positions migrate without changing credentials or admin permissions
 
 test('only planning members have custom titles and can become department ministers',()=>{
  assert.equal(personnelAssignment({identityKind:'player_employee',positionTitle:'自定义玩家身份'}).positionTitle,'成员');
- assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false,containmentClassification:''});
+ assert.deepEqual(personnelAssignment({identityKind:'player_containment',positionTitle:'自定义收容身份',department:'医疗部'}),{identityKind:'player_containment',department:'公司直属',positionTitle:'收容物',isNpc:false,isLeadership:false,containmentClassification:'',teamName:''});
  for(const identityKind of ['player_containment','company_containment'])for(const containmentClassification of ['SAFE','EUCLID','KETER'])assert.equal(personnelAssignment({identityKind,containmentClassification}).containmentClassification,containmentClassification);
  assert.throws(()=>personnelAssignment({identityKind:'player_containment',containmentClassification:'invalid'}),/有效的收容物分类/);
  assert.equal(personnelAssignment({identityKind:'player_employee',containmentClassification:'KETER'}).containmentClassification,'');
@@ -71,6 +71,13 @@ test('persistent identities, editable player containment, and lazy categorized a
  const leaderId=await create('planning_member','director',{positionTitle:'人工智能'});
  const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介',containmentClassification:'KETER'});
  assert.equal((await a('/api/admin/employees','POST',{identityKind:'player_employee',username:'fake-leader',password,displayName:'普通玩家',positionTitle:'部长'})).status,400);
+ const teamId=await create('planning_member','logistics-team',{department:'后勤部',teamName:'安保部'});
+ const overflow=[150,95,100,200,0,60];assert.equal((await a('/api/admin/employees/'+playerId+'/attributes','PUT',{values:overflow})).status,200);
+ assert.deepEqual((await a('/api/admin/employees/'+playerId+'/attributes')).data.values,overflow);
+ assert.equal((await a('/api/admin/employees/'+employeeId+'/attributes','PUT',{values:overflow})).status,400);
+ assert.equal((await a('/api/admin/employees/'+employeeId+'/attributes','PUT',{values:[95,90,50,50,50,50]})).status,200);
+ assert.equal((await a('/api/admin/employees/'+companyId,'PUT',{displayName:'company-object',attributes:overflow})).status,200);
+ const team=(await a('/api/admin/employees')).data.items.find(x=>x.id===teamId);assert.equal(team.teamName,'安保组');assert.equal(team.positionTitle,'安保组长');assert.equal(team.department,'后勤部');
  const items=(await a('/api/admin/employees')).data.items;
  assert.equal(items.find(x=>x.id===ministerId).department,'医疗部');
  assert.equal(items.find(x=>x.id===leaderId).department,'公司直属');
@@ -158,4 +165,15 @@ test('persistent identities, editable player containment, and lazy categorized a
  const crashed=await player('/api/player/games/sky/jump','POST',{round:flight.round});assert.equal(crashed.status,200);assert.equal(crashed.data.self.status,'crashed');assert.equal(crashed.data.self.prize,0);assert.equal(crashed.data.lossFraction,1);
  assert.equal(db.prepare('SELECT SUM(delta) AS n FROM balance_ledger WHERE employee_id=?').get(playerId).n,23);
 
+});
+
+
+test('logistics planning members manage predefined and custom teams while remaining in the parent department',()=>{
+ for(const [input,expected] of [['安保部','安保组'],['财务组','财务组'],['人事','人事组'],['设备维护','设备维护组']]){
+  const value=personnelAssignment({identityKind:'planning_member',department:'后勤部',teamName:input});assert.equal(value.department,'后勤部');assert.equal(value.teamName,expected);assert.equal(value.positionTitle,expected+'长');assert.equal(value.isLeadership,true);
+ }
+ assert.equal(personnelAssignment({identityKind:'player_employee',department:'后勤部',teamName:'安保组'}).teamName,'');
+ assert.equal(personnelAssignment({identityKind:'planning_member',department:'医疗部',teamName:'财务组',positionTitle:'部长'}).teamName,'');
+ const previous=personnelAssignment({identityKind:'planning_member',department:'后勤部',teamName:'安保组'});assert.equal(personnelAssignment({},previous).teamName,'安保组');
+ assert.equal(personnelAssignment({department:'科研部',positionTitle:'部长'},previous).teamName,'');assert.throws(()=>personnelAssignment({identityKind:'planning_member',department:'后勤部',teamName:'长'.repeat(31)}),/30/);
 });

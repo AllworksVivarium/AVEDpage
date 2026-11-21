@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="zh-CN" data-time-display="absolute" data-admin-theme="black">
 <head>
-  <link rel="stylesheet" href="/admin-ui.css?v=admin-refinement-20261122">
+  <link rel="stylesheet" href="/admin-ui.css?v=admin-green-loading-20261122d">
+  <link rel="stylesheet" href="/progress.css?v=steady-progress-20261122">
+  <script src="/progress.js?v=steady-progress-20261122" defer></script>
   <link rel="stylesheet" href="/typography.css?v=integrated-ui-20261109">
   <script src="/popup-ui.js?v=window-system-2" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
@@ -22,21 +24,24 @@
 <link rel="stylesheet" href="/admin-dossier-images.css?v=hedged-dossiers-20261110">
 <link rel="stylesheet" href="/archive-content.css?v=archive-effects-20261111">
 <link rel="stylesheet" href="/dossier-workspace.css?v=interaction-polish-20261120">
-<script src="/image-upload.js?v=avatar-large-pixels-20261114" defer></script>
+<script src="/image-upload.js?v=avatar-square-20261122" defer></script>
 <link rel="stylesheet" href="/control-keys.css?v=unified-payroll-20261120">
 </head>
 <body>
   <main id="app" class="shell">
-    <section class="welcome" id="welcome">
-      <div class="welcome-top"><span class="signal"><i></i> INTERNAL NETWORK</span></div>
-      <div class="hero"><div class="rule"></div><div class="mark" aria-label="公司标志"><span></span><b>W</b></div><div class="rule"></div></div>
-      <p class="eyebrow">万业携生收容公司 Allworks Vivarium Engineering Derec</p><h1>管理终端</h1>
-
-      <button class="primary enter" id="enter">进入管理通道 <span>→</span></button>
-      <div class="welcome-foot"><span>ACCESS REQUIRES AUTHORIZATION</span></div>
+    <section class="welcome admin-entry-screen" id="welcome">
+      <div class="welcome-top"><span class="signal"><i></i> INTERNAL NETWORK</span><span lang="he" dir="rtl">רשת פנימית</span></div>
+      <div class="admin-entry-register" aria-hidden="true"><span>A.V.E.D. / DIRECTORATE</span><span>PERSONNEL AUTHORIZATION</span></div>
+      <div class="admin-entry-main">
+        <div class="hero"><div class="rule"></div><img class="admin-entry-logo" src="/assets/company-emblem-plain.svg?v=plain-1" alt="万业携生公司标志" width="788" height="686" fetchpriority="high"><div class="rule"></div></div>
+        <div class="admin-entry-company"><span>萬業攜生收容公司</span><p lang="en">ALLWORKS VIVARIUM<br>ENGINEERING DIRECTORATE</p></div>
+        <div class="admin-entry-title"><h1>管理终端</h1><p lang="en">ADMINISTRATION TERMINAL</p><span lang="he" dir="rtl">ממשק ניהול</span></div>
+        <button class="primary enter" id="enter">进入管理通道 <span aria-hidden="true">→</span></button>
+      </div>
+      <div class="welcome-foot"><span>AVED / ADMINISTRATIVE NETWORK</span><span lang="en">PERSONNEL &amp; RECORDS</span></div>
     </section>
     <section class="login-card hidden" id="loginCard">
-      <div class="login-top"><button class="back" id="back">← 返回入口</button><span class="signal checking"><i></i> INTERNAL NETWORK</span></div><div class="mini-mark">W</div>
+      <div class="login-top"><button class="back" id="back">← 返回入口</button><span class="signal checking"><i></i> INTERNAL NETWORK</span></div><div class="mini-mark"><img src="/assets/company-emblem-plain.svg?v=plain-1" alt="万业携生公司标志" width="788" height="686"></div>
       <p class="eyebrow">ADMINISTRATOR LOGIN</p><h2>管理员登录</h2>
       <form id="loginForm" method="post" action="/api/login" autocomplete="on"><label>用户名 / 员工姓名<input name="loginIdentifier" autocomplete="username" required placeholder="请输入用户名或员工姓名"></label>
         <label>登录密码<input name="password" type="password" autocomplete="current-password" required placeholder="请输入密码"></label>
@@ -56,7 +61,6 @@
             <button class="tab" data-tab="forumAdmin">论坛管理</button>
             <button class="tab" data-tab="lifeAdmin">生活记录</button>
             <button class="tab" data-tab="barMusic">酒吧音乐</button><button class="tab" data-tab="ads">广告事务</button>
-            <button class="tab hidden" data-tab="forumWorkshop">论坛演绎</button>
             <button class="tab" data-tab="moderation">图文审核</button>
             <button class="tab" data-tab="activity">活动记录</button><button class="tab" data-tab="speech">通讯追溯</button><button class="tab" data-tab="terminology">用语规范</button>
           </nav>
@@ -73,8 +77,7 @@
   <script src="/admin-time.js?v=admin-only-1" defer></script>
   <script src="/admin-terminology.js?v=admin-only-1" defer></script>
   <script src="/interaction-motion.js?v=motion-1" defer></script>
-  <script src="/admin-company-robots.js?v=interaction-polish-20261120" defer></script>
-  <script src="/forum-social.js?v=interaction-polish-20261120" defer></script>
+  <script src="/admin-company-robots.js?v=admin-usability-20261122b" defer></script>
   <link rel="stylesheet" href="/forum-social.css?v=tax-achievements-20261111">
   <script src="/dossier-content.js?v=paper-reader-20261119" defer></script>
   <script src="/admin-dossier-content.js?v=interaction-polish-20261120" defer></script>
@@ -82,12 +85,12 @@
 <link rel="stylesheet" href="/admin-bar-music.css?v=album-library-20261119">
 <script src="/admin-bar-music.js?v=admin-refinement-20261122" defer></script>
 <script src="/admin-ads.js?v=interaction-polish-20261120" defer></script>
-<script src="/employee-import.js?v=personnel-import-20261122" defer></script>
-<script src="/admin-employee-import.js?v=personnel-import-20261122" defer></script>
-<script src="/app.js?v=admin-refinement-20261122" defer></script>
-  <script src="/admin-extra.js?v=window-system-2" defer></script>
+<script src="/employee-import.js?v=admin-usability-20261122b" defer></script>
+<script src="/admin-employee-import.js?v=sealdice-export-20261122c" defer></script>
+<script src="/app.js?v=admin-usability-20261122b" defer></script>
+  <script src="/admin-extra.js?v=admin-usability-20261122b" defer></script>
 <script src="/admin-forum.js?v=interaction-polish-20261120" defer></script>
-<script src="/admin-community.js?v=admin-refinement-20261122" defer></script>
+<script src="/admin-community.js?v=admin-green-loading-20261122d" defer></script>
 <link rel="stylesheet" href="/currency-symbol.css?v=currency-pig-salute-20261118">
 <script src="/currency-symbol.js?v=currency-pig-salute-20261118" defer></script>
 

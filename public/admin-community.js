@@ -1,7 +1,8 @@
 const sourceLabels={thread:'论坛主题',reply:'论坛回复',comment:'通告留言',dossier:'卷宗评议',chat:'无线电通讯',life:'生活记录'};
-const adminConnecting=document.createElement('section');adminConnecting.className='admin-loading';adminConnecting.hidden=true;adminConnecting.innerHTML='<div><p class="eyebrow">INTERNAL CARRIER</p><h2>欢迎回到公司</h2><p>正在接通管理终端</p><progress aria-label="接通进度"></progress></div>';document.body.append(adminConnecting);
-function showAdminConnecting(){adminConnecting.hidden=false;adminConnecting.classList.add('admin-connecting-active');}
-function hideAdminConnecting(){adminConnecting.hidden=true;adminConnecting.classList.remove('admin-connecting-active');}
+const adminConnecting=document.createElement('section');adminConnecting.className='admin-loading';adminConnecting.hidden=true;adminConnecting.setAttribute('role','status');adminConnecting.setAttribute('aria-label','正在接通管理终端');adminConnecting.setAttribute('aria-live','polite');adminConnecting.innerHTML='<article class="admin-loading-card"><header lang="en"><span>A.V.E.D. / ADMIN</span><span>INTERNAL CARRIER</span></header><div><h2>欢迎回到公司</h2><p class="admin-loading-note" lang="en">CONNECTING TO ADMINISTRATION</p><div class="aved-progress" data-state="loading" data-mode="indeterminate"><div class="aved-progress-track" role="progressbar" aria-label="CONNECTING" aria-busy="true" aria-valuemin="0" aria-valuemax="100"><span class="aved-progress-fill" data-progress-fill></span></div><span class="aved-progress-output" data-progress-output aria-hidden="true" lang="en">CONNECTING</span><span class="aved-progress-status" role="status" aria-live="polite" lang="en">CONNECTING</span></div></div><footer lang="en"><span>PERSONNEL AUTHORIZATION</span></footer></article>';document.body.append(adminConnecting);
+const adminConnectingProgress=window.AVEDProgress.mount(adminConnecting.querySelector('.aved-progress'));
+function showAdminConnecting(){adminConnectingProgress.update({label:'CONNECTING'});adminConnecting.setAttribute('aria-busy','true');adminConnecting.hidden=false;adminConnecting.classList.add('admin-connecting-active');}
+function hideAdminConnecting(){adminConnecting.setAttribute('aria-busy','false');adminConnecting.hidden=true;adminConnecting.classList.remove('admin-connecting-active');}
 document.querySelector('#sidebar').prepend(document.querySelector('#sidebarToggle'));
 function auditDateField(name,label,end){
  const options=(max,selected)=>Array.from({length:max},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}" ${i+1===selected?'selected':''}>${i+1}</option>`).join('');
@@ -69,7 +70,7 @@ async function renderModeration(){
 
 async function renderActivity(){
  const categories={speech:'发言记录',image:'图片记录'};
- $('#panel').innerHTML='<h3>活动记录</h3><p>选择记录分类后加载，每次最多 50 条。</p><div class="community-filters" id="audit-categories">'+Object.entries(categories).map(([key,label])=>`<button type="button" class="small-action" data-audit-category="${key}" aria-pressed="false">${label}</button>`).join('')+'</div>'+filterMarkup('activity-filters')+'<div id="activity-list"><p>请选择要调阅的记录分类。</p></div><button id="activityMore" class="small-action" hidden>调阅更早记录</button>';
+ $('#panel').innerHTML='<h3>活动记录</h3><p>按发布时间保存文本、图片快照；账号、修改历史和删除操作在通讯追溯中查看。</p><div class="community-filters" id="audit-categories">'+Object.entries(categories).map(([key,label])=>`<button type="button" class="small-action" data-audit-category="${key}" aria-pressed="false">${label}</button>`).join('')+'</div>'+filterMarkup('activity-filters')+'<div id="activity-list"><p>请选择要调阅的记录分类。</p></div><button id="activityMore" class="small-action" hidden>调阅更早记录</button>';
  const panel=$('#panel'),form=$('#activity-filters');bindAuditDates(form);const status=document.createElement('select');status.name='status';status.setAttribute('aria-label','图片审核状态');status.hidden=true;status.innerHTML='<option value="">全部审核状态</option><option value="pending">待审核</option><option value="approved">已批准</option><option value="rejected">已拒绝</option>';form.querySelector('button').before(status);let category='',next=null,serial=0,applied=null;
  async function search(more=false){
   if(!category){$('#activity-list').innerHTML='<p>请先选择记录分类。</p>';return;}
@@ -89,7 +90,7 @@ async function renderActivity(){
 }
 
 async function renderSpeechRecords(){
- $('#panel').innerHTML='<h3>通讯追溯</h3>'+filterMarkup('speech-filters')+'<div id="speech-results"><p>请选择检索范围。</p></div><button id="speech-more" class="small-action" hidden>调阅更多通讯</button>';
+ $('#panel').innerHTML='<h3>通讯追溯</h3><p>按账号检索当前内容、曾用代号、修订历史和删除状态。</p>'+filterMarkup('speech-filters')+'<div id="speech-results"><p>请选择检索范围。</p></div><button id="speech-more" class="small-action" hidden>调阅更多通讯</button>';
  bindAuditDates($('#speech-filters'));
  $('#speech-filters').querySelector('button').insertAdjacentHTML('beforebegin','<select name="sourceType" aria-label="通讯来源"><option value="">全部来源</option>'+Object.entries(sourceLabels).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')+'</select>');let serial=0,offset=0;
  async function search(more=false){const current=++serial,q=new URLSearchParams(new FormData($('#speech-filters')));if(!more)offset=0;q.set('offset',offset);const {items}=await api('/api/admin/speech-records?'+q);if(current!==serial)return;
@@ -175,11 +176,4 @@ async function renderTerminology(){
  $('#panel').innerHTML='<h3>公司用语规范</h3><p>直接填写要替换的原词和替换后的文字。</p><details class="admin-section" open><summary>登记词条</summary><form class="community-form terminology-form">'+fields()+'</form></details>'+items.map(x=>`<details class="admin-post" data-keep-original><summary>${esc(x.pattern)} → ${esc(x.replacement)} ${x.enabled?'启用':'停用'}</summary><form class="community-form terminology-form" data-id="${x.id}" data-legacy-regex="${x.isRegex?'true':'false'}">${fields(x)}</form><button class="small-action danger" data-rule-remove="${x.id}">移除词条</button></details>`).join('');
  document.querySelectorAll('.terminology-form').forEach(form=>form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),b=form.querySelector('button');b.disabled=true;try{await api('/api/admin/terminology'+(form.dataset.id?'/'+form.dataset.id:''),{method:form.dataset.id?'PUT':'POST',body:JSON.stringify({pattern:f.get('pattern'),replacement:f.get('replacement'),isRegex:form.dataset.legacyRegex==='true',enabled:f.has('enabled')})});window.AVEDTerminology?.refreshRules();await renderTerminology();}catch(e){window.AVEDFeedback.alert(e.message);b.disabled=false;}});
  document.querySelectorAll('[data-rule-remove]').forEach(b=>b.onclick=async()=>{if(!await window.AVEDFeedback.confirm('确认移除这条用语规范？'))return;await api('/api/admin/terminology/'+b.dataset.ruleRemove,{method:'DELETE'});window.AVEDTerminology?.refreshRules();await renderTerminology();});
-}
-
-async function renderForumWorkshopAdmin(){
- if(currentUser?.username!=='AVED'){showError('当前身份无权使用演绎编排。');return;}
- $('#panel').innerHTML='<div class="section-heading"><h3>论坛演绎</h3><p>角色代发 / 对话编排</p></div><div id="admin-forum-workshop"></div>';
- const target=$('#admin-forum-workshop'),mount=await AVEDLoadForumWorkshop();if(!target.isConnected)return;
- await mount({container:target,administrative:true,api:(path,options={})=>api(path,{...options,...(options.body?{body:JSON.stringify(options.body)}:{})})});
 }

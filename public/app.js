@@ -107,7 +107,7 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads"].includes(tab.dataset.tab)||(tab.dataset.tab==='forumWorkshop'&&currentUser.username!=='AVED'),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumAdmin","lifeAdmin","barMusic","ads"].includes(tab.dataset.tab),
         ),
       );
     show(dashboard);
@@ -125,27 +125,34 @@ function personnelAttributeValues(v){const values=Array.from({length:6},(_,i)=>S
 function enhancePersonnelForms(employees){
  document.querySelectorAll('#employeeCreate,.employee-edit-form').forEach(form=>{
   const current=employees.find(x=>String(x.id)===form.dataset.employeeId),fields=document.createElement('fieldset');fields.className='personnel-position-fields';
-  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label data-position-mode>职务类型<select name="positionMode"><option value="member">成员</option><option value="minister">部长（可多人担任）</option><option value="custom">自定义职务</option></select></label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>个人简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
+  fields.innerHTML='<legend>档案身份与职务</legend><label>档案身份<select name="identityKind">'+Object.entries(personnelIdentityNames).map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+'</select></label><label data-position-mode>职务类型<select name="positionMode"><option value="member">成员</option><option value="minister">部长（可多人担任）</option><option value="team">后勤部下属组负责人</option><option value="custom">自定义职务</option></select></label><label>职务名称<input name="positionTitle" maxlength="80" placeholder="填写实际显示文本"></label><label data-archive-only><input name="isNpc" type="checkbox">仅展示档案，不开通登录账号</label><label data-archive-bio>个人简介<textarea name="archiveBio" maxlength="500" rows="4"></textarea></label><p class="personnel-kind-note"></p>';
   const classification=document.createElement('div');classification.dataset.containmentClassification='';classification.innerHTML=window.AVEDAdminDossierContent.classification({classification:current?.containmentClassification||''});fields.querySelector('[data-archive-bio]').before(classification);
   const department=form.querySelector('[name=department]'),departmentLabel=document.createElement('label');departmentLabel.textContent='所属部门';department.before(fields);fields.querySelector('[data-position-mode]').before(departmentLabel);departmentLabel.append(department);
   const attributes=document.createElement('fieldset');attributes.className='employee-attributes-fields';attributes.innerHTML='<legend>六维属性</legend><p>从顶部顺时针排列；每项 0–100，全部留空表示未录入。</p><div class="employee-attribute-grid">'+['力量','意志','洞察','敏捷','智力','体质'].map((label,i)=>'<label>'+label+'<input name="attribute'+i+'" type="number" min="0" max="100" step="1" aria-label="六维 '+label+'" value="'+(current?.attributes?.[i]??'')+'"></label>').join('')+'</div>';fields.after(attributes);
   const kind=fields.querySelector('[name=identityKind]'),position=fields.querySelector('[name=positionTitle]'),npc=fields.querySelector('[name=isNpc]'),note=fields.querySelector('p');
   kind.value=current?.identityKind||'player_employee';position.value=current?.positionTitle||'';npc.checked=!!current?.isNpc;fields.querySelector('[name=archiveBio]').value=current?.archiveBio||'';
-  const mode=fields.querySelector('[name=positionMode]');mode.value=current?.positionTitle==='部长'?'minister':current?.identityKind==='planning_member'&&current.positionTitle!=='成员'?'custom':'member';let customTitle=mode.value==='custom'?position.value:'',lastMode=mode.value;
+  const teamLabel=document.createElement('label'),teamId='personnel-team-'+(current?.id||'new');teamLabel.dataset.personnelTeam='';teamLabel.innerHTML='后勤部下属组<input name="teamName" maxlength="30" list="'+teamId+'" placeholder="选择或输入组名"><datalist id="'+teamId+'"><option value="安保组"><option value="财务组"><option value="人事组"></datalist>';fields.querySelector('[data-position-mode]').after(teamLabel);const team=teamLabel.querySelector('input');team.value=current?.teamName||'';
+  const mode=fields.querySelector('[name=positionMode]');mode.value=current?.teamName?'team':current?.positionTitle==='部长' ?'minister':current?.identityKind==='planning_member'&&current.positionTitle!=='成员'?'custom':'member';let customTitle=mode.value==='custom'?position.value:'',lastMode=mode.value;
   function sync(){
    const leader=kind.value==='planning_member',containment=kind.value.endsWith('_containment'),company=kind.value==='company_containment';
+   const teamAllowed=leader&&department.value==='后勤部';mode.querySelector('[value=team]').hidden=!teamAllowed;if(!teamAllowed&&mode.value==='team')mode.value='member';
+   const teamActive=teamAllowed&&mode.value==='team';teamLabel.hidden=!teamActive;team.disabled=!teamActive;team.required=teamActive;
+   for(const input of attributes.querySelectorAll('input')){if(containment)input.removeAttribute('max');else input.max='100';input.placeholder=containment?'0 及以上':'0–90';}
+   attributes.querySelector('p').textContent=containment?'从顶部顺时针排列；以 100 为雷达基准，单项可以超过 100。全部留空表示未录入。':'从顶部顺时针排列；常规上限 90，91–100 会提示并按填写数值保存。全部留空表示未录入。';
    classification.hidden=!containment;classification.querySelector('select').disabled=!containment;
    fields.querySelector('[data-archive-only]').hidden=!leader;fields.querySelector('[data-archive-bio]').hidden=!containment;fields.querySelector('[name=archiveBio]').disabled=!containment;
    if(!leader)npc.checked=company;
    if(containment)department.value='公司直属';department.disabled=containment;departmentLabel.hidden=containment;
    if(lastMode==='custom')customTitle=position.value;
-   if(!leader){position.value=containment?'收容物':'成员';}else{position.value=mode.value==='custom'?customTitle:mode.value==='minister'?'部长':'成员';}
+   if(!leader){position.value=containment?'收容物':'成员';}else{position.value=mode.value==='team'?team.value.trim().replace(/部$/,'组').replace(/组?$/,'组')+'长':mode.value==='custom'?customTitle:mode.value==='minister'?'部长':'成员';}
    lastMode=leader?mode.value:'';mode.closest('label').hidden=!leader;mode.disabled=!leader;
    position.closest('label').hidden=!leader||mode.value!=='custom';position.disabled=!leader;position.readOnly=mode.value!=='custom';position.required=leader;position.placeholder='例如：档案管理员、人工智能、公司顾问';
    const noLogin=company||(leader&&npc.checked);
    for(const name of ['username','password','initialBalance']){const input=form.querySelector('[name='+name+']');if(!input)continue;input.hidden=noLogin;input.disabled=noLogin;if(name!=='initialBalance')input.required=!noLogin&&form.id==='employeeCreate';}
    note.textContent=company?'系统收容物由管理员维护，仅展示档案。':kind.value==='player_containment'?'玩家收容物的卷宗在「收容卷宗」中编辑。个人简介与头像由玩家自行维护。':leader?'部门与职务独立设置，部长可有多位。选择部门时显示部门与职务；无部门归属时只显示职务。':'玩家为部门成员。';
   }
+  let lastWarning='';form.confirmAttributeException=async()=>{if(kind.value.endsWith('_containment'))return;const high=[...attributes.querySelectorAll('input')].map((x,i)=>[i,Number(x.value)]).filter(([,v])=>v>90&&v<=100),signature=JSON.stringify(high);if(!high.length){lastWarning='';return;}if(signature===lastWarning)return;lastWarning=signature;await window.AVEDFeedback.alert('常规属性上限为 90。当前填写了超过 90 的数值，将按填写值保存。');};
+  attributes.addEventListener('change',()=>form.confirmAttributeException());
   fields.addEventListener('change',sync);department.addEventListener('change',sync);sync();
  });
 }
@@ -207,7 +214,7 @@ async function renderAdmin() {
     password: v.get("password"),
     displayName: v.get("displayName"),
     qqNumber: v.get("qqNumber"),
-    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),containmentClassification:v.get("classification")||"",isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
+    department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),containmentClassification:v.get("classification")||"",teamName:v.get("teamName")||"",isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
     initialBalance: Number(v.get("initialBalance") || 0),
   }));
 
@@ -226,10 +233,11 @@ async function renderAdmin() {
       const payload = {
         displayName: v.get("displayName"),
         qqNumber: v.get("qqNumber"),
-        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),containmentClassification:v.get("classification")||"",isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
+        department: v.get("department")||"",positionTitle:v.get("positionTitle")||"",identityKind:v.get("identityKind"),containmentClassification:v.get("classification")||"",teamName:v.get("teamName")||"",isNpc:v.has("isNpc"),attributes:personnelAttributeValues(v),...(v.has("archiveBio")?{archiveBio:v.get("archiveBio")}: {}),
       };
       if (v.get("password")) payload.password = v.get("password");
       try {
+        await form.confirmAttributeException?.();
         await api("/api/admin/employees/" + form.dataset.employeeId, {
           method: "PUT",
           body: JSON.stringify(payload),
@@ -272,6 +280,7 @@ function bindAdminForm(selector, path, map, custom) {
     const button = form.querySelector("button");
     button.disabled = true;
     try {
+      await form.confirmAttributeException?.();
       const values = new FormData(form);
       if (custom) await custom(map(values), form);
       else
@@ -316,7 +325,7 @@ async function deleteEmployee(id, displayName, username) {
 
 // ===== Tab 路由分发 =====
 async function renderTab(tab) {
-  if(tab==='achievements')tab='admin';
+  if(['achievements','forumWorkshop'].includes(tab))tab='admin';
   window.AVEDStopAdminMusicPreview?.();
   setActive(tab);
   try {
@@ -324,7 +333,6 @@ async function renderTab(tab) {
     else if(tab === 'lifeAdmin')await renderLifeAdmin();
     else if(tab === 'barMusic')await renderBarMusicAdmin();
     else if(tab === 'ads')await renderAdsAdmin();
-    else if(tab === 'forumWorkshop')await renderForumWorkshopAdmin();
     else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();

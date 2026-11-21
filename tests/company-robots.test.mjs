@@ -17,5 +17,13 @@ test('admin-managed robots persist, rank with employees and accept conserved ide
  assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:'机器人-青龙',balance:30000,revision:1,expectedBalance:-4300})).status,200);
  robots=installCompanyRobots(deps);const item=(await call(robots,'/api/admin/company-robots')).data.items[0];assert.equal(item.codename,'机器人-青龙');assert.equal(item.balance,30000);assert.equal(item.revision,2);
  overview=(await call(welfare,'/api/player/welfare')).data;assert.equal(overview.highest[0].name,'机器人-青龙');
+ const sharp=(await import('sharp')).default,source='data:image/png;base64,'+(await sharp({create:{width:400,height:100,channels:3,background:'#b52f4b'}}).png().toBuffer()).toString('base64');
+ assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:item.codename,balance:item.balance,revision:item.revision,expectedBalance:item.balance,avatarData:source})).status,200);
+ let portrait=robots.list().find(x=>x.id===id);assert.equal(portrait.hasCustomAvatar,true);assert.match(portrait.avatarUrl,/api\/media\/avatar/);
+ const stored=db.prepare('SELECT avatar_url FROM profiles WHERE employee_id=?').get(id).avatar_url,meta=await sharp(Buffer.from(stored.split(',')[1],'base64')).metadata();assert.equal(meta.width,256);assert.equal(meta.height,256);
+ assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:portrait.codename,balance:portrait.balance,revision:portrait.revision,expectedBalance:portrait.balance})).status,200);assert.equal(robots.list().find(x=>x.id===id).hasCustomAvatar,true);
+ portrait=robots.list().find(x=>x.id===id);assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:portrait.codename,balance:portrait.balance,revision:portrait.revision,expectedBalance:portrait.balance,avatarPreset:'wine'})).status,200);assert.equal(robots.list().find(x=>x.id===id).hasCustomAvatar,false);assert.match(robots.list().find(x=>x.id===id).avatarUrl,/wine/);
+ assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'坏图片',balance:0,avatarData:'data:image/png;base64,bm90YW5pbWFnZQ=='})).status,400);
+
  for(const balance of [1.5,NaN,1e12])assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'无效',balance})).status,400);
 });

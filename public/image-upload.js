@@ -20,9 +20,9 @@ window.AVEDImageUpload=(()=>{
    // A resized bitmap does not change the original file: avatars must always be encoded.
    const targetBytes=kind==='life'?1400000:maxBytes;
    if(kind!=='avatar'&&(kind==='life'?width<=1600&&height<=24000:Math.max(width,height)<=edge)&&file.size<=targetBytes)return file;
-   canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');if(!ctx)throw Error('当前浏览器无法处理图片。');let scale=kind==='life'?Math.min(1,1600/width,24000/height):Math.min(1,edge/Math.max(width,height));
+   canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');if(!ctx)throw Error('当前浏览器无法处理图片。');let scale=kind==='life'?Math.min(1,1600/width,24000/height):Math.min(1,edge/(kind==='avatar'?Math.min(width,height):Math.max(width,height)));
    for(let attempt=0;attempt<7;attempt++){
-    canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(image,0,0,canvas.width,canvas.height);
+    canvas.width=Math.max(1,Math.round((kind==='avatar'?Math.min(width,height):width)*scale));canvas.height=kind==='avatar'?canvas.width:Math.max(1,Math.round(height*scale));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(kind==='avatar'){const side=Math.min(width,height);ctx.drawImage(image,(width-side)/2,(height-side)/2,side,side,0,0,canvas.width,canvas.height);}else ctx.drawImage(image,0,0,canvas.width,canvas.height);
     const quality=Math.max(.62,.88-attempt*.05),blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
     if(!blob)throw Error('图片压缩失败，请换一张图片。');if(blob.size<=targetBytes&&types.includes(blob.type))return blob;scale*=.8;
    }

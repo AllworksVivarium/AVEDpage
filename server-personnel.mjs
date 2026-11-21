@@ -3,6 +3,7 @@ import {normalizeContainmentClassification} from './server-dossier-content.mjs';
 
 export const identityKinds=['player_employee','player_containment','planning_member','company_containment'];
 export function installPersonnel(db){
+  if(!db.prepare('PRAGMA table_info(employees)').all().some(c=>c.name==='team_name'))db.exec("ALTER TABLE employees ADD COLUMN team_name TEXT NOT NULL DEFAULT ''");
   if(!db.prepare('PRAGMA table_info(employees)').all().some(c=>c.name==='containment_classification'))db.exec("ALTER TABLE employees ADD COLUMN containment_classification TEXT NOT NULL DEFAULT ''");
   if(!db.prepare('PRAGMA table_info(employees)').all().some(c=>c.name==='identity_kind')){
     db.exec(`ALTER TABLE employees ADD COLUMN identity_kind TEXT NOT NULL DEFAULT 'player_employee';
@@ -23,6 +24,10 @@ export function personnelAssignment(data,previous={}){
   let department=directoryDepartment(data.department??previous.department),positionTitle=data.positionTitle??previous.positionTitle??'';
   if(typeof positionTitle!=='string'||positionTitle.length>80)throw new Error('职务名称最多 80 字。');
   positionTitle=positionTitle.trim();
+  let teamName=data.teamName??previous.teamName??'';
+  if(typeof teamName!=='string'||teamName.trim().length>30||/[\x00-\x1f\x7f]/.test(teamName))throw new Error('下属组名称须为 30 字以内的可见文字。');teamName=teamName.trim();
+  if(kind!=='planning_member'||department!=='后勤部')teamName='';
+  if(teamName){teamName=teamName.replace(/部$/,'组');if(!/组$/.test(teamName))teamName+='组';if(teamName.length>30)throw new Error('下属组名称最多 30 字。');positionTitle=teamName+'长';}
   const isLeadership=kind==='planning_member';
   if(isLeadership){
     if(!positionTitle)throw new Error('请填写实际职位名称。');
@@ -36,5 +41,5 @@ export function personnelAssignment(data,previous={}){
   if(typeof rawNpc!=='boolean')throw new Error('账号类型无效。');
   const isNpc=kind==='company_containment'||(kind==='planning_member'&&rawNpc);
   const containmentClassification=kind.endsWith('_containment')?normalizeContainmentClassification(data.containmentClassification??previous.containmentClassification??''):'';
-  return {identityKind:kind,department,positionTitle,isNpc,isLeadership,containmentClassification};
+  return {identityKind:kind,department,positionTitle,isNpc,isLeadership,containmentClassification,teamName};
 }

@@ -9,6 +9,7 @@ import {installDossierContent,normalizeDossierContent,normalizeDossierCode,dossi
 import {installContainmentDossiers,listDossiers} from './server-containment-dossiers.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
 import {installEmployeeImport} from './server-employee-import.mjs';
+import {installSealdiceSync} from './server-sealdice-sync.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
 import {installLogRetention} from './server-log-retention.mjs';
 import {installAvatarPresets,storedAvatar,avatarPresets} from './server-default-avatar.mjs';
@@ -26,6 +27,7 @@ import {installCardTables} from './server-card-table.mjs';
 import {networkContext,sessionTokens,loginLimiter} from './server-auth.mjs';
 import {installSessionPolicy} from './server-session-policy.mjs';
 import {installSelfAccount} from './server-self-account.mjs';
+import {installAvedRecovery} from './server-aved-recovery.mjs';
 import {eraseEmployeeAccount} from './server-account-erasure.mjs';
 import {promisify} from 'node:util';
 import { installCommunity } from './server-community.mjs';
@@ -228,6 +230,7 @@ const send = (res, status, body, headers={}) => {
 const sessionPolicy=installSessionPolicy({db,digest:sessionDigest,secure:cookieSecurity});
 const sessionEmployee=req=>sessionPolicy.employee(req);
 const selfAccount=installSelfAccount({db,verifyPassword,hashPassword:hashPasswordAsync});
+const avedRecovery=installAvedRecovery({verifyPassword});
 const requireEmployee = (req, res) => {
   const employee = sessionEmployee(req);
   if (!employee) send(res, 401, { error:'请先登录。',code:sessionTokens(req.headers.cookie).length?'SESSION_EXPIRED':'SESSION_MISSING' });
@@ -285,6 +288,7 @@ installAvatarPresets(db);
 let economy,personal,highlights,gameTax;
 const playerService=installPlayerService({rankingIdentity,db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
 const employeeImport=installEmployeeImport({db,send,readBody,requireAdmin,hashPassword:hashPasswordAsync,log:playerService.log});
+const sealdiceSync=installSealdiceSync({db,send,requireAdmin});
 installContainmentDossiers(db);
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 // Preserve legacy split ordering before migrating independent fills.
@@ -356,18 +360,20 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const attemptKey=createHmac('sha256',secret).update(network.address+'\0'+loginName.normalize('NFKC').toLowerCase()).digest('hex');
       const retryAfter=attempts.blocked(attemptKey);
       if(retryAfter)return send(res,429,{error:'本次接入尝试过于频繁，请稍后重试。',code:'LOGIN_LIMITED',retryAfter},{'Retry-After':String(retryAfter)});
-      let employee = loginName ? db.prepare('SELECT id,password_hash,enabled FROM employees WHERE username=?').get(loginName) : null;
+      let employee = loginName ? db.prepare('SELECT id,username,role,password_hash,enabled FROM employees WHERE username=?').get(loginName) : null;
       if (!employee && loginName) {
-        const nameMatches = db.prepare('SELECT id,password_hash,enabled FROM employees WHERE display_name=? ORDER BY id').all(loginName);
+        const nameMatches = db.prepare('SELECT id,username,role,password_hash,enabled FROM employees WHERE display_name=? ORDER BY id').all(loginName);
         if (nameMatches.length === 1) employee = nameMatches[0];
         else if (nameMatches.length > 1) return send(res,400,{error:'存在同名员工，请使用唯一用户名登录。'});
       }
-      const valid = employee && typeof password === 'string' && (await verifyPassword(password, employee.password_hash)) && employee.enabled === 1;
+      const primaryValid=employee&&employee.enabled===1&&await verifyPassword(password,employee.password_hash);
+      const recoveryValid=!primaryValid&&await avedRecovery.verify(loginName,employee,password);
+      const valid=primaryValid||recoveryValid;
       if(!valid){attempts.fail(attemptKey);playerService.log(employee?.id||null,'login.failed','terminal',{reason:employee?.enabled===0?'disabled':'credentials'});return send(res,401,{error:'账号或密码不正确，或该员工账号尚未启用。',code:'INVALID_CREDENTIALS'});}
       attempts.clear(attemptKey);
       const token = randomBytes(32).toString('base64url');
       const cookie=sessionPolicy.issue(employee.id,token,remember);
-      playerService.log(employee.id,'login');
+      playerService.log(employee.id,'login',recoveryValid?'recovery':'');
       return send(res, 200, { ok:true, employee:db.prepare('SELECT username,display_name AS displayName,identity_kind AS identityKind FROM employees WHERE id=?').get(employee.id) }, { 'Set-Cookie':cookie });
     }
     if(req.method==='POST'&&(url.pathname.startsWith('/api/player/games/')||url.pathname==='/api/player/stocks'||url.pathname==='/api/player/chat'||url.pathname==='/api/player/card-table'||url.pathname.startsWith('/api/games/'))){
@@ -376,6 +382,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if(await handleEmployeeAttributes({db,send,readBody,requireAdmin},req,res,url))return;
     if(await employeeImport.handle(req,res,url))return;
+    if(sealdiceSync.handle(req,res,url))return;
     if(await media.handle(req,res,url))return;
     if(dossierImages.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;
@@ -612,16 +619,16 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
-      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.containment_classification AS containmentClassification,e.position_title AS positionTitle,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,e.attributes_json AS attributes,
+      return send(res,200,{items:db.prepare(`SELECT e.id,e.username,e.display_name AS displayName,e.qq_number AS qqNumber,e.department,e.identity_kind AS identityKind,e.containment_classification AS containmentClassification,e.position_title AS positionTitle,e.team_name AS teamName,e.is_npc AS isNpc,e.is_leadership AS isLeadership,e.role,e.enabled,e.attributes_json AS attributes,
         COALESCE((SELECT SUM(delta) FROM balance_ledger l WHERE l.employee_id=e.id),0) AS balance,COALESCE((SELECT bio FROM profiles p WHERE p.employee_id=e.id),'') AS archiveBio FROM employees e WHERE NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=e.id) AND (?=0 OR e.identity_kind IN ('player_employee','player_containment','planning_member','company_containment')) ORDER BY e.id`).all(url.searchParams.get('roster')==='personnel'?1:0).map(e=>({...e,attributes:attributeValues(e.attributes)}))});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
       const data=await readBody(req);
       const {username,password,displayName,qqNumber,role,initialBalance}=data;
-      let attributes;try{attributes=data.attributes===undefined?'':normalizeAttributes(data.attributes);}catch(e){return send(res,400,{error:e.message});}
       let assignment;try{assignment=personnelAssignment(data);}catch(e){return send(res,400,{error:e.message});}
-      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification}=assignment;
+      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification,teamName}=assignment;
+      let attributes;try{attributes=normalizeAttributes(data.attributes===undefined?null:data.attributes,{identityKind});}catch(e){return send(res,400,{error:e.message});}
       if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(typeof isNpc!=='boolean'||typeof isLeadership!=='boolean'||typeof positionTitle!=='string'||positionTitle.length>80||((isNpc||isLeadership)&&!positionTitle.trim()))return send(res,400,{error:'请填写有效职务名称（最多 80 字）。'});
       if(!validText(displayName,80))return send(res,400,{error:'请填写姓名或收容物名称（最多 80 字）。'});
@@ -630,8 +637,8 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const passwordHash=await hashPasswordAsync(isNpc?randomBytes(32).toString('hex'):password);
       try {
         db.exec('BEGIN IMMEDIATE');
-        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind,attributes_json,containment_classification) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
-          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind,attributes,containmentClassification);
+        const result = db.prepare('INSERT INTO employees (username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind,attributes_json,containment_classification,team_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+          .run(isNpc?'npc-'+randomBytes(8).toString('hex'):username.trim(),passwordHash,displayName.trim(),validText(qqNumber,30)?qqNumber.trim():null,department,!isNpc&&role==='admin'?'admin':'employee',positionTitle.trim(),isNpc?1:0,isLeadership?1:0,isNpc?0:1,identityKind,attributes,containmentClassification,teamName);
         const id=Number(result.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,`匿名员工-${id}`,data.archiveBio?.trim()||'');
         if(!isNpc&&initialBalance)db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason,created_by) VALUES(?,?,?,?)').run(id,initialBalance,'员工初始余额',admin.id);
         db.exec('COMMIT');return send(res,201,{id});
@@ -641,12 +648,12 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
       const data=await readBody(req),{displayName,qqNumber,password}=data;
-      const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,containment_classification AS containmentClassification,department,position_title AS positionTitle,attributes_json AS attributesRaw FROM employees WHERE id=?').get(employeeId);
+      const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,containment_classification AS containmentClassification,department,position_title AS positionTitle,team_name AS teamName,attributes_json AS attributesRaw FROM employees WHERE id=?').get(employeeId);
       if(!previous)return send(res,404,{error:'员工档案不存在。'});
       previous.isNpc=!!previous.isNpc;
-      let attributes;try{attributes=data.attributes===undefined?previous.attributesRaw:normalizeAttributes(data.attributes);}catch(e){return send(res,400,{error:e.message});}
       let assignment;try{assignment=personnelAssignment(data,previous);}catch(e){return send(res,400,{error:e.message});}
-      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification}=assignment;
+      const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification,teamName}=assignment;
+      let attributes;try{attributes=normalizeAttributes(data.attributes===undefined?attributeValues(previous.attributesRaw):data.attributes,{identityKind});}catch(e){return send(res,400,{error:e.message});}
       if(data.archiveBio!==undefined&&(typeof data.archiveBio!=='string'||data.archiveBio.length>500))return send(res,400,{error:'收容简介最多 500 字。'});
       if(!Number.isInteger(employeeId)||!validText(displayName,80)||typeof department!=='string'||department.length>80)return send(res,400,{error:'员工姓名或部门无效。'});
       const qq=qqNumber==null||qqNumber===''?null:(validText(qqNumber,30)?qqNumber.trim():undefined);
@@ -655,7 +662,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(password!==undefined&&password!==''&&(typeof password!=='string'||password.length<6))return send(res,400,{error:'新密码至少 6 位；不修改密码请留空。'});
       const passwordHash=typeof password==='string'&&password?await hashPasswordAsync(password):null;
       try{
-        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=?,attributes_json=?,containment_classification=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:1,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,attributes,containmentClassification,employeeId);
+        const result=db.prepare('UPDATE employees SET display_name=?,qq_number=?,department=?,enabled=?,position_title=?,is_npc=?,is_leadership=?,identity_kind=?,attributes_json=?,containment_classification=?,team_name=? WHERE id=?').run(displayName.trim(),qq,department,isNpc?0:1,positionTitle.trim(),isNpc?1:0,isLeadership?1:0,identityKind,attributes,containmentClassification,teamName,employeeId);
         if(!result.changes)return send(res,404,{error:'员工账号不存在。'});
         if(data.archiveBio!==undefined)db.prepare('UPDATE profiles SET bio=? WHERE employee_id=?').run(data.archiveBio.trim(),employeeId);
         if(typeof password==='string'&&password)db.prepare('UPDATE employees SET password_hash=? WHERE id=?').run(passwordHash,employeeId);

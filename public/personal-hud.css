@@ -459,3 +459,13 @@
 
 /* Align the compact terminal readout with its header baseline. */
 @container(max-width:499px){#view-profile.personal-hud .hud-top-terminal .hud-terminal-lines{transform:translateY(2px)}}
+
+@layer aved-personal {
+ #view-profile.personal-hud .hud-instruments:has(.hud-radar-overflow) section {height:auto!important;min-height:145px}
+ #view-profile.personal-hud .hud-instruments:has(.hud-radar-overflow) .hud-signal {position:relative;padding-bottom:24px}
+ #view-profile.personal-hud .hud-instruments:has(.hud-radar-overflow) #hud-particles {position:absolute;inset:28px 0 24px;height:calc(100% - 52px)!important;width:100%;flex:none}
+ #view-profile.personal-hud .hud-instruments:has(.hud-radar-overflow) .hud-signal-footer {position:absolute;bottom:0;left:0;right:0}
+ #view-profile.personal-hud .hud-radar-overflow {display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;padding:4px 8px 8px;font-size:11px;font-variant-numeric:tabular-nums}
+ #view-profile.personal-hud .hud-radar-overflow span {white-space:nowrap}
+ #view-profile.personal-hud .hud-radar-over-limit {color:var(--inner-accent,currentColor)}
+}

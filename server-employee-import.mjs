@@ -19,10 +19,12 @@ export function installEmployeeImport({db,send,readBody,requireAdmin,hashPasswor
     if(matches.length!==1){errors.push({line:row.line,message:matches.length?'姓名对应多个账号，请填写准确用户名。':'未找到员工：'+row.name});continue;}
     const employee=matches[0];if(employee.isNpc||!['player_employee','player_containment','planning_member'].includes(employee.identityKind)){errors.push({line:row.line,message:'此档案不属于玩家账号。'});continue;}
     if(targets.has(employee.id)){errors.push({line:row.line,message:'同一账号在本批次出现多次。'});continue;}targets.add(employee.id);
-    rows.push({...row,id:employee.id,displayName:employee.displayName,previousAttributes:employee.attributes,action:'更新六维'});
+    try{normalizeAttributes(row.attributes,{identityKind:employee.identityKind});}catch(error){errors.push({line:row.line,message:error.message});continue;}
+    rows.push({...row,identityKind:employee.identityKind,id:employee.id,displayName:employee.displayName,previousAttributes:employee.attributes,action:'更新六维'});
    }
   }
-  return {rows,errors,fingerprint:hash({mode:data.mode,rows}),count:rows.length};
+  const warnings=rows.filter(r=>!['player_containment','company_containment'].includes(r.identityKind)&&r.attributes?.some(v=>v>90)).map(r=>({line:r.line,message:r.name+' 的属性超过常规上限 90，将按填写数值保存。'}));
+  return {rows,errors,warnings,fingerprint:hash({mode:data.mode,rows}),count:rows.length};
  }
  return {plan,async handle(req,res,url){
   if(!['/api/admin/employees/import','/api/admin/employees/import/preview'].includes(url.pathname))return false;
@@ -48,7 +50,7 @@ export function installEmployeeImport({db,send,readBody,requireAdmin,hashPasswor
    const fresh=plan(data);if(fresh.errors.length||fresh.fingerprint!==data.fingerprint){db.exec('ROLLBACK');send(res,409,{error:'员工资料已变化，请重新识别。'});return true;}
    const ids=[];
    for(let i=0;i<fresh.rows.length;i++){
-    const row=fresh.rows[i],attributes=normalizeAttributes(row.attributes);
+    const row=fresh.rows[i],attributes=normalizeAttributes(row.attributes,{identityKind:row.identityKind});
     if(data.mode==='create'){
      const insert=db.prepare("INSERT INTO employees(username,password_hash,display_name,qq_number,department,role,position_title,is_npc,is_leadership,enabled,identity_kind,attributes_json,containment_classification) VALUES(?,?,?,?,?,'employee','成员',0,0,1,'player_employee',?,'')").run(row.name,hashes[i],row.name,row.qqNumber||null,row.department,attributes);
      const id=Number(insert.lastInsertRowid);db.prepare('INSERT INTO profiles(employee_id,anonymous_name,bio) VALUES(?,?,?)').run(id,'匿名员工-'+id,'');ids.push(id);

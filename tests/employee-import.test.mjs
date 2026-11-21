@@ -82,3 +82,12 @@ test('downloaded CSV templates share parser headers and accept Excel BOM and bla
  }
  assert.deepEqual(parser.parse(parser.templateFile('create')+'空白员工,医疗部,,,,,,,\r\n').rows[0].attributes,null);
 });
+
+
+test('imports warn above 90 without blocking and apply containment bounds to the matched account',async t=>{
+ const {db,preview,commit}=fixture(t);let plan=await preview('提醒员工 95 90 80 70 60 50');assert.equal(plan.errors.length,0);assert.equal(plan.warnings.length,1);
+ assert.equal((await commit('提醒员工 95 90 80 70 60 50')).status,200);
+ plan=await preview('admin 150 50 40 30 20 10','attributes');assert.ok(plan.errors.length);
+ db.exec("UPDATE employees SET identity_kind='player_containment' WHERE id=1");plan=await preview('admin 150 50 40 30 20 10','attributes');assert.equal(plan.errors.length,0);assert.equal(plan.warnings.length,0);
+ assert.equal((await commit('admin 150 50 40 30 20 10','attributes')).status,200);assert.equal(db.prepare('SELECT attributes_json FROM employees WHERE id=1').get().attributes_json,'[150,50,40,30,20,10]');
+});

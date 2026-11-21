@@ -55,7 +55,7 @@
    const qqNumber=String(values.qqNumber||'').trim();if(qqNumber.length>30)throw Error('QQ 号最多 30 字。');
    const raw=labels.map((_,i)=>String(values['a'+i]??'').normalize('NFKC').trim());
    const attributes=raw.every(x=>x==='')?null:raw.map(x=>/^\d+$/.test(x)?Number(x):NaN);
-   if(attributes&&attributes.some(x=>!Number.isInteger(x)||x<0||x>100))throw Error('六维需填满六个 0～100 的整数。');
+   if(attributes&&attributes.some(x=>!Number.isSafeInteger(x)||x<0||(mode==='create'&&x>100)))throw Error(mode==='create'?'六维需填满六个 0～100 的整数。':'六维需填满六个非负安全整数。');
    if(mode==='attributes'&&!attributes)throw Error('更新六维时，六项数值均须填写。');
    rows.push({line:source.line,name,department:dept,qqNumber,attributes});
   }catch(error){errors.push({line:source.line,message:error.message});}}
