@@ -74,7 +74,7 @@ test('uniform roster cards use profile messages safely even without a character 
 
 test('personnel opens directly without redundant headings and department filters toggle back to all',()=>{
  const source=readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8');
- const host={innerHTML:'',addEventListener(type,fn){this[type]=fn;}};
+ const host={innerHTML:'',querySelectorAll:()=>[],addEventListener(type,fn){this[type]=fn;}};
  const root={dataset:{}},grid={parentElement:{before(){},hidden:false}};
  const nodes={'view-departments':root,'departments-grid':grid};
  const context={window:{avedDepartmentFilter:'医疗部'},document:{getElementById:id=>nodes[id],createElement:()=>host}};
@@ -100,7 +100,7 @@ test('personnel opens directly without redundant headings and department filters
 });
 
 test('default prioritizes only direct employees; manual name ordering includes everyone and respects department filters',()=>{
- const host={innerHTML:'',addEventListener(type,fn){this[type]=fn;}},root={dataset:{}},grid={parentElement:{before(){},hidden:false}};
+ const host={innerHTML:'',querySelectorAll:()=>[],addEventListener(type,fn){this[type]=fn;}},root={dataset:{}},grid={parentElement:{before(){},hidden:false}};
  const nodes={'view-departments':root,'departments-grid':grid};
  const context={window:{},document:{getElementById:id=>nodes[id],createElement:()=>host}};
  vm.runInNewContext(readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8'),context);
@@ -149,4 +149,23 @@ test('switching uniform plates preserves the surrounding dossier and focused thu
  for(const index of [1,-1,NaN,2])click({divisionUniform:String(index)});
  assert.equal(replacements,initialReplacements);assert.equal(number.textContent,'02');
  archive.render({onChange:render});assert.equal(replacements,initialReplacements,'an unrelated refresh must keep the selected plate');
+});
+
+
+test('department image status follows pending, failed and cached loads without changing asset URLs',()=>{
+ let status,created=0;
+ const box={dataset:{},classList:{add(){}},setAttribute(key,value){this[key]=value;},querySelector:()=>status,append(node){status=node;}};
+ const img={src:'/assets/department-cards/card-armed.png',parentElement:box,complete:false,naturalWidth:0};
+ const host={innerHTML:'',addEventListener(){},querySelectorAll:()=>[img]};
+ const root={dataset:{}},grid={parentElement:{before(){}}};
+ const document={getElementById:id=>({'view-departments':root,'departments-grid':grid}[id]),createElement:tag=>tag==='div'?host:(created++,{setAttribute(key,value){this[key]=value;}})};
+ const context={window:{},document};vm.runInNewContext(readFileSync(new URL('../public/department-archive.js',import.meta.url),'utf8'),context);
+ const archive=context.window.AVEDDepartmentArchive,render=()=>archive.render({onChange:render});render();
+ assert.equal(box.dataset.mediaState,'loading');assert.equal(box['aria-busy'],'true');
+ assert.equal(status.role,'status');assert.equal(status['aria-label'],'加载中');assert.equal(status.hidden,false);
+ img.onload();assert.equal(status.hidden,false,'an incomplete image keeps its status');
+ img.complete=true;img.onerror();assert.equal(box.dataset.mediaState,'error');assert.equal(status.hidden,true);assert.equal(box['aria-busy'],'false');
+ img.naturalWidth=1280;archive.reset();render();
+ assert.equal(box.dataset.mediaState,'ready');assert.equal(status.hidden,true,'a cached completed image skips visible loading');
+ assert.equal(created,1);assert.equal(img.src,'/assets/department-cards/card-armed.png');
 });

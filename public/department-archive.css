@@ -167,3 +167,20 @@
 #department-archive .division-uniform-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:320px;aspect-ratio:3/4;border:1px solid var(--division-line);color:var(--inner-text-muted);background:var(--division-paper)}
 #department-archive .division-uniform-placeholder>span{font:28px var(--type-code,monospace);letter-spacing:.16em;opacity:.45}
 #department-archive .division-uniform-placeholder>small{margin:0;opacity:.45}
+
+/* Media frames retain their geometry while native image loading reuses HTTP cache. */
+:is(#department-archive,.division-image-dialog) .division-media{position:relative}
+:is(#department-archive,.division-image-dialog) .division-media[data-media-state=loading]>img{opacity:0}
+:is(#department-archive,.division-image-dialog) .division-media-loader{
+ position:absolute;left:calc(50% - 10px);top:calc(50% - 10px);z-index:2;display:block;
+ box-sizing:border-box;width:20px;height:20px;border:2px solid var(--division-line,#8a817066);
+ border-top-color:var(--inner-crimson,#a53131);border-radius:50%;pointer-events:none;
+ animation:division-media-spin .8s linear infinite;
+}
+:is(#department-archive,.division-image-dialog) .division-media-loader[hidden]{display:none!important}
+.division-image-dialog>div.division-media{min-height:min(240px,50dvh)}
+@keyframes division-media-spin{to{transform:rotate(360deg)}}
+@keyframes division-media-breathe{0%,100%{opacity:.35}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ :is(#department-archive,.division-image-dialog) .division-media-loader{animation:division-media-breathe 1.6s ease-in-out infinite}
+}
