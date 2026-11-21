@@ -313,10 +313,9 @@
  #landing-view #cover-logo-slot .company-emblem {opacity:1!important;filter:brightness(1.04)!important;mix-blend-mode:normal;transform:none}
  #landing-view #open-login-btn::after {content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 1px 3px);opacity:.4}
  body:not(.effects-off) #landing-view #open-login-btn .login-trigger-copy {animation:gatewaySignalSlip 11s steps(1,end) infinite}
- #signal-Connecting-overlay {background-color:rgba(7,9,8,.84)!important}
- #signal-Connecting-overlay .signal-mesh {background-color:rgba(18,21,20,.8)!important;color:#bcc3bf!important;border-color:#a6b0a980!important;box-shadow:0 0 22px #c0c8c00b!important}
- #signal-Connecting-overlay #signal-status-title {color:#c4ccc7!important}
- #signal-Connecting-overlay #signal-progress-bar {background:#aab5ae!important}
+ #signal-Connecting-overlay {background-color:rgba(0,0,0,.9)!important}
+ #signal-Connecting-overlay .signal-mesh {background-color:#111!important;color:#ccc!important;border-color:#ffffff66!important;box-shadow:0 0 22px #ffffff08!important}
+ #signal-Connecting-overlay #signal-status-title {color:#f5f5f5!important}
  #signal-Connecting-overlay #signal-log-lines {height:auto!important;min-height:78px;overflow:visible!important;line-height:1.7!important}
  #left-sidebar .palette-swatches,#left-sidebar .palette-swatches * {transform:none!important;scale:1!important;animation:none!important;transition:none!important;min-width:0}
  #left-sidebar .palette-swatches>span {grid-template-rows:17px 12px;min-height:33px}
@@ -335,10 +334,9 @@
 
 /* Gateway exceptions belong beside the type system, above legacy overrides. */
 @layer aved-type-system {
- #signal-Connecting-overlay {background:rgba(7,9,8,.84)!important}
- #signal-Connecting-overlay>.signal-mesh {background:rgba(18,21,20,.8)!important;color:#bcc3bf!important;border-color:#a6b0a980!important}
- #signal-Connecting-overlay #signal-status-title {color:#c4ccc7!important}
- #signal-Connecting-overlay #signal-progress-bar {background:#aab5ae!important}
+ #signal-Connecting-overlay {background:rgba(0,0,0,.9)!important}
+ #signal-Connecting-overlay>.signal-mesh {background:#111!important;color:#ccc!important;border-color:#ffffff66!important}
+ #signal-Connecting-overlay #signal-status-title {color:#f5f5f5!important}
  @media(max-width:767px) {
   #landing-view #open-login-btn {padding:8px 10px!important}
   #landing-view #open-login-btn .login-trigger-content {gap:8px!important}

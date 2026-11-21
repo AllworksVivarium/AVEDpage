@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <style>@layer aved-pollution;</style>
   <link rel="preload" as="image" href="/assets/entrance-clean.1cb8cb71ca1d.webp" fetchpriority="high">
+  <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/IBMPlexSans-Regular.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/IBMPlexMono-Regular.woff2" crossorigin>
   <script>
   // Independent of the application bundle: the gateway stays visible if a dependency fails.
   (function(){
@@ -13,13 +15,21 @@
       const overlay=byId('signal-Connecting-overlay');if(!overlay)return;
       overlay.classList.remove('hidden');overlay.classList.add('flex');
       overlay.setAttribute('aria-busy',String(!failed));
+      overlay.onkeydown=event=>{if(event.key==='Tab'){event.preventDefault();(byId('session-restore-retry')||overlay).focus();}};
+      const progress=byId('signal-progress');
+      if(progress){
+        const state=failed?'error':'loading',label=failed?'CONNECTION FAILED':'CONNECTING';
+        if(window.AVEDProgress)window.AVEDProgress.mount(progress).update({state,label});
+        else {progress.dataset.state=state;const track=progress.querySelector('[role="progressbar"]');track.setAttribute('aria-busy',String(!failed));track.setAttribute('aria-label',label);progress.querySelector('[data-progress-output]').textContent=(failed?'× ':'')+label;progress.querySelector('[role="status"]').textContent=label;}
+      }
       if(!failed)return;
       byId('signal-status-title').textContent='连接暂未完成';
       const message=document.createElement('div'),retry=document.createElement('button');
-      message.textContent='加载未完成，请重试连接。';
-      retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
+      message.textContent='LOADING INCOMPLETE. PLEASE RETRY THE CONNECTION.';
+      retry.id='session-restore-retry';retry.type='button';retry.textContent='RETRY CONNECTION';
       retry.addEventListener('click',()=>location.reload());
       byId('signal-log-lines').replaceChildren(message,retry);
+      retry.focus();
     }
     const timer=setTimeout(()=>{if(!ready){failed=true;if(requested)show();}},25000);
     document.addEventListener('click',event=>{
@@ -38,11 +48,13 @@
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=stable-wordmark-20261121">
-  <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
+  <link rel="stylesheet" href="/login-loading-layout.css?v=steady-progress-20261122">
+  <link rel="stylesheet" href="/progress.css?v=steady-progress-20261122">
+  <script src="/progress.js?v=steady-progress-20261122" defer></script>
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
   <link rel="stylesheet" href="/interface-contamination.css?v=pollution-independent-20261116">
   <link rel="stylesheet" href="/personal-hud.css?v=pattern-detail-20261119">
-  <link rel="stylesheet" href="/containment-access.css?v=ranking-identity-correction-20261117">
+  <link rel="stylesheet" href="/containment-access.css?v=measured-progress-20261122">
   <script src="terminal-preferences.js?v=entry-preferences-20261121"></script>
   <script src="/gateway-preferences.js?v=background-shop-20261112"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=currency-pig-salute-20261118">
@@ -53,9 +65,9 @@
   <link rel="stylesheet" href="/archive-room-restoration.css?v=intrusion-sequence-20261117">
   <link rel="stylesheet" href="/notice-document.css?v=notice-restore-20261120">
   <link rel="stylesheet" href="/section-mastheads.css?v=tax-achievements-20261111">
-  <link rel="stylesheet" href="/player-fonts.css?v=static-fonts-1">
+  <link rel="stylesheet" href="/player-fonts.css?v=measured-progress-20261122">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
-  <link rel="stylesheet" href="/site-refinements.css?v=white-logo-first-paint-20261118">
+  <link rel="stylesheet" href="/site-refinements.css?v=measured-progress-20261122">
   <link rel="stylesheet" href="/palette-preview.css?v=personnel-name-sort-20261118">
   <link rel="stylesheet" href="/market-chart-fixes.css?v=indicators-3">
   <link rel="stylesheet" href="/sidebar-art.css?v=planet-align-2">
@@ -391,7 +403,7 @@
     }
   </style>
   <link rel="stylesheet" href="/player-layout.css?v=containment-discussion-left-20261118">
-  <link rel="stylesheet" href="/community.css?v=sfx-only-1">
+  <link rel="stylesheet" href="/community.css?v=measured-progress-20261122">
   <link rel="stylesheet" href="/vendor/quill-2.0.3/quill.snow.css">
   <link rel="stylesheet" href="/vendor/pattern.css-1.0.0/pattern.min.css">
   <link rel="stylesheet" href="/life-archive.css?v=center-preview-20261120">
@@ -422,7 +434,7 @@
   <link rel="stylesheet" href="/ui-help-notes.css?v=editorial-type-20261120">
   <link rel="stylesheet" href="/sound-settings.css?v=web-sound-20261116">
   <link rel="stylesheet" href="/department-archive.css?v=media-loading-20261121">
-  <script src="/department-archive.js?v=media-loading-20261121" defer></script>
+  <script src="/department-archive.js?v=containment-card-20261122" defer></script>
   <link rel="stylesheet" href="/gateway-effects.css?v=stable-wordmark-20261121">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
@@ -434,7 +446,7 @@
   <!-- ==========================================================================
        模块 0：老式机器柔和信号“登录中”过渡层
        ========================================================================== -->
-  <div id="signal-Connecting-overlay" data-type-ignore role="dialog" aria-label="公司终端连接" aria-busy="true" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
+  <div id="signal-Connecting-overlay" data-type-ignore role="dialog" aria-modal="true" aria-label="公司终端连接" aria-busy="true" tabindex="-1" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 select-none">
     <div class="signal-mesh w-full max-w-md border border-white/40 bg-[#0c0c0c] p-6 text-neutral-100 font-mono-tech relative shadow-[0_0_40px_rgba(255,255,255,0.08)]">
       <div class="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/15 pb-2 mb-4">
         <span>\\A.V.E.D.\INTRANET\NODE_09</span>
@@ -445,11 +457,15 @@
         <div id="signal-status-title" class="text-base sm:text-lg font-bold tracking-widest text-white">
           员工身份核验中
         </div>
-        <div class="signal-progress-track w-full h-1.5 bg-neutral-900 border border-white/25 overflow-hidden p-0.5">
-          <div id="signal-progress-bar" class="h-full bg-white transition-all duration-300" style="width: 20%"></div>
+        <div id="signal-progress" class="aved-progress" data-state="loading" data-mode="indeterminate">
+          <div class="aved-progress-track" role="progressbar" aria-label="CONNECTING" aria-busy="true" aria-valuemin="0" aria-valuemax="100">
+            <span class="aved-progress-fill" data-progress-fill></span>
+          </div>
+          <span class="aved-progress-output" data-progress-output aria-hidden="true" lang="en">CONNECTING</span>
+          <span class="aved-progress-status" role="status" aria-live="polite" lang="en">CONNECTING</span>
         </div>
-        <div aria-live="polite" id="signal-log-lines" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
-          <div>&gt; 正在检索在册人员档案，等待识别回执……</div>
+        <div aria-live="polite" id="signal-log-lines" lang="en" class="text-[11px] text-left text-neutral-400 space-y-1 pt-2 h-14 overflow-hidden">
+          <div>&gt; LOOKING UP PERSONNEL RECORD...</div>
         </div>
       </div>
       <div class="border-t border-white/15 pt-2 mt-2 flex justify-between text-[10px] text-neutral-500">
@@ -1496,11 +1512,11 @@
   <link rel="stylesheet" href="/begging-ui.css?v=reward-details-20261119">
   <script src="/begging-ui.js?v=reward-details-20261119" defer></script>
   <script src="/welfare-ui.js?v=begging-once-amount-20261119" defer></script>
-  <script src="/visual-style.js?v=pattern-detail-20261119" defer></script>
+  <script src="/visual-style.js?v=steady-progress-20261122" defer></script>
   <script src="/interface-contamination.js?v=repeat-exit-confirm-20261118" defer></script>
   <script src="/contamination-haunt.js?v=beer-foam-pour-20261118" defer></script>
   <script src="/contamination-presence.js?v=away-frequency-20261117" defer></script>
-  <script src="/containment-access.js?v=session-return-20261119" defer></script>
+  <script src="/containment-access.js?v=steady-progress-20261122" defer></script>
   <script src="/personal-hud.js?v=interaction-polish-20261120" defer></script>
 <script src="/rewards-ui.js?v=reward-toasts-no-stamp-20261118" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
@@ -1512,7 +1528,7 @@
 <link rel="stylesheet" href="/casino-switcher.css?v=menu-original-names-20261113">
 <link rel="stylesheet" href="/retro-window-chrome.css?v=integrated-ui-20261109">
 <script src="/casino-switcher.js?v=menu-original-names-20261113" defer></script>
-<script src="/player-startup.js?v=paper-reader-20261119" defer></script>
+<script src="/player-startup.js?v=steady-progress-20261122" defer></script>
 <link rel="stylesheet" href="/ddz-pixel.css?v=table-no-logo-20261111">
 <link rel="stylesheet" href="/card-reactions.css?v=emoji-only-4">
   <link rel="stylesheet" href="/card-room-lobby.css?v=arcade-ranks-left-20261114">
@@ -1551,7 +1567,7 @@
 <script src="/ads-ui.js?v=protection-controls-20261121" defer></script>
 <link rel="stylesheet" href="/control-keys.css?v=unified-payroll-20261120">
 <script src="/payroll-notices.js?v=unified-payroll-20261120" defer></script>
-<script src="/player.js?v=unified-payroll-20261120" defer></script>
+<script src="/player.js?v=steady-progress-20261122" defer></script>
   <script src="/page-headings.js?v=notice-restore-20261120" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>

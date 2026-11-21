@@ -11,6 +11,7 @@ export function installLifeSocial({db,send,readBody,clock=Date.now,random=random
     CREATE INDEX IF NOT EXISTS life_support_due ON life_engagement(next_support_at);
     CREATE TABLE IF NOT EXISTS life_social_migrations(name TEXT PRIMARY KEY);`);
   const hasDepartments=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='company_departments'").get();
+  if(!db.prepare('PRAGMA table_info(life_tags)').all().some(c=>c.name==='deleted_at'))db.exec("ALTER TABLE life_tags ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''");
   const departments=hasDepartments?db.prepare('SELECT code,name FROM company_departments').all():departmentsData;
   for(const d of departments)db.prepare('INSERT OR IGNORE INTO life_tags(name,department_code) VALUES(?,?)').run(d.name,d.code);
   if(!db.prepare("SELECT 1 FROM life_social_migrations WHERE name='default-tags'").get()){
@@ -31,7 +32,7 @@ export function installLifeSocial({db,send,readBody,clock=Date.now,random=random
   for(const r of db.prepare('SELECT id FROM life_records WHERE id NOT IN(SELECT life_id FROM life_engagement)').all())ensure(r.id);
   // Spread overdue jobs after restarts instead of replaying missed events in a burst.
   for(const r of db.prepare('SELECT life_id FROM life_engagement WHERE next_support_at<=?').all(clock()))db.prepare('UPDATE life_engagement SET next_support_at=? WHERE life_id=?').run(clock()+delay(),r.life_id);
-  const catalog=(all=false)=>db.prepare('SELECT id,name,enabled,department_code AS departmentCode FROM life_tags'+(all?'':' WHERE enabled=1')+' ORDER BY department_code IS NULL,id').all();
+  const catalog=(all=false)=>db.prepare("SELECT id,name,enabled,department_code AS departmentCode"+(all?",(SELECT COUNT(*) FROM life_records l WHERE l.deleted_at='' AND EXISTS(SELECT 1 FROM json_each(l.tags) WHERE value=life_tags.name)) AS usageCount":"")+" FROM life_tags WHERE deleted_at=''"+(all?'':' AND enabled=1')+' ORDER BY department_code IS NULL,id').all();
   function validateTags(tags,previous=[]){
     const allowed=new Set(catalog().map(t=>t.name));
     if(tags.some(t=>!allowed.has(t)&&!previous.includes(t)))throw Error('请选择已登记的标签。');
@@ -68,14 +69,24 @@ export function installLifeSocial({db,send,readBody,clock=Date.now,random=random
       send(res,200,{likedToday:true,likeDay:today});return true;
     }
     if(tag&&method==='GET'&&!tag[1]){send(res,200,{items:catalog(true)});return true;}
+    if(tag&&method==='DELETE'&&tag[1]){
+      const old=db.prepare("SELECT * FROM life_tags WHERE id=? AND deleted_at=''").get(Number(tag[1]));
+      if(!old){send(res,404,{error:'标签不存在。'});return true;}
+      transaction(()=>{
+        for(const row of db.prepare('SELECT id,tags FROM life_records WHERE EXISTS(SELECT 1 FROM json_each(tags) WHERE value=?)').all(old.name))db.prepare('UPDATE life_records SET tags=?,revision=revision+1 WHERE id=?').run(JSON.stringify(JSON.parse(row.tags).filter(t=>t!==old.name)),row.id);
+        db.prepare('UPDATE life_tags SET deleted_at=?,enabled=0 WHERE id=?').run(new Date(clock()).toISOString(),old.id);
+      });send(res,200,{items:catalog(true)});return true;
+    }
     if(tag&&(method==='POST'&&!tag[1]||method==='PUT'&&tag[1])){
       const d=await readBody(req,2000),name=typeof d.name==='string'?d.name.trim():'';if(!name||name.length>40||/[\r\n,，]/.test(name)||d.enabled!==undefined&&typeof d.enabled!=='boolean')throw Error('标签须为 1～40 字，不能包含逗号或换行。');
-      const id=Number(tag[1])||0,old=id?db.prepare('SELECT * FROM life_tags WHERE id=?').get(id):null;if(id&&!old){send(res,404,{error:'标签不存在。'});return true;}
-      if(db.prepare('SELECT 1 FROM life_tags WHERE name=? AND id<>?').get(name,id))throw Error('标签名称已存在。');
+      const id=Number(tag[1])||0,old=id?db.prepare("SELECT * FROM life_tags WHERE id=? AND deleted_at=''").get(id):null;if(id&&!old){send(res,404,{error:'标签不存在。'});return true;}
+      const conflict=db.prepare('SELECT * FROM life_tags WHERE name=? AND id<>?').get(name,id);
+      if(conflict&&(!conflict.deleted_at||id))throw Error(conflict.deleted_at?'该名称曾被删除，可通过新建标签恢复。':'标签名称已存在。');
       transaction(()=>{
         if(old){db.prepare('UPDATE life_tags SET name=?,enabled=? WHERE id=?').run(name,d.enabled===false?0:1,id);
           if(old.name!==name)for(const row of db.prepare('SELECT id,tags FROM life_records WHERE EXISTS(SELECT 1 FROM json_each(tags) WHERE value=?)').all(old.name))db.prepare('UPDATE life_records SET tags=?,revision=revision+1 WHERE id=?').run(JSON.stringify(JSON.parse(row.tags).map(t=>t===old.name?name:t)),row.id);
-        }else db.prepare('INSERT INTO life_tags(name,enabled) VALUES(?,?)').run(name,d.enabled===false?0:1);
+        }else if(conflict)db.prepare("UPDATE life_tags SET deleted_at='',enabled=? WHERE id=?").run(d.enabled===false?0:1,conflict.id);
+        else db.prepare('INSERT INTO life_tags(name,enabled) VALUES(?,?)').run(name,d.enabled===false?0:1);
       });send(res,200,{items:catalog(true)});return true;
     }
     if(adminSettings&&method==='GET'){send(res,200,settings());return true;}

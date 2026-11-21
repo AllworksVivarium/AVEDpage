@@ -44,6 +44,30 @@ test('failed art and blocked storage never prevent entry or create a false cache
  const ok=context.AVEDStartup.assetCache({urls:['/assets/a.webp'],storage,load:async()=>true,coldMinMs:0});assert.equal((await ok.prepare()).complete,true);assert.equal(ok.cached,true);
 });
 
+test('asset progress counts settled checks and never advances from a timer or a cache marker',async()=>{
+ const events=[],finish=[],storage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
+ const cache=context.AVEDStartup.assetCache({urls:['/assets/a.webp','/assets/b.webp','/assets/a.webp','/api/me'],storage,coldMinMs:0,onProgress:event=>events.push({...event}),load:()=>new Promise(resolve=>finish.push(resolve))});
+ const pending=cache.prepare();
+ assert.deepEqual(events,[{completed:0,total:2}]);await new Promise(r=>setTimeout(r,10));
+ assert.equal(events.length,1,'elapsed time is not progress');
+ finish[1](true);await new Promise(r=>setTimeout(r,0));assert.deepEqual(events.at(-1),{completed:1,total:2});
+ finish[0](false);assert.equal((await pending).complete,false);assert.deepEqual(events.at(-1),{completed:2,total:2});
+ assert.equal(cache.cached,false,'completed checks do not imply all files loaded successfully');
+ const stalledEvents=[],stalled=context.AVEDStartup.assetCache({urls:['/assets/stalled.webp','/assets/skipped.webp'],storage,coldMinMs:0,deadlineMs:5,clock:(()=>{let n=0;return()=>n++?100:0;})(),load:()=>assert.fail('deadline already expired'),onProgress:e=>stalledEvents.push({...e})});
+ await stalled.prepare();assert.deepEqual(stalledEvents,[{completed:0,total:2}],'files skipped at the deadline are not counted as checked');
+});
+
+test('core fonts share measured progress and the same bounded queue with cached images',async()=>{
+ const events=[],seen=[],storage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
+ const cache=context.AVEDStartup.assetCache({urls:['/assets/icon.webp'],fonts:['400 14px "AVED UI Latin"','400 14px "AVED Plex Mono"'],storage,coldMinMs:0,
+  load:async url=>{seen.push(url);return true;},loadFont:async spec=>{seen.push(spec);return true;},onProgress:e=>events.push({...e})});
+ assert.equal((await cache.prepare()).complete,true);assert.equal(seen.length,3);
+ assert.deepEqual(events.map(e=>e.completed),[0,1,2,3]);assert.ok(events.every(e=>e.total===3));
+ events.length=0;await cache.prepare();assert.deepEqual(events,[{completed:3,total:3}]);assert.equal(seen.length,3);
+ const offline=context.AVEDStartup.assetCache({urls:[],fonts:['400 14px "AVED UI Latin"'],storage,coldMinMs:0,deadlineMs:5,loadFont:()=>new Promise(()=>{})});
+ assert.equal((await offline.prepare()).complete,false,'a stalled optional font has a bounded wait');
+});
+
 test('refresh restores only after the server session and page initialization succeed',async()=>{
  let resolveSession;const session=new Promise(resolve=>{resolveSession=resolve;}),seen=[];
  const pending=context.AVEDStartup.restoreSession({load:()=>session,enter:async employee=>{seen.push(employee.id);},signedOut:()=>assert.fail('a valid session must not show the gateway'),unavailable:()=>assert.fail('a valid session must restore')});

@@ -23,6 +23,7 @@ export function installLife({db,send,readBody,log,clock,random}){
   for(const [name,type] of Object.entries({paper_tone:"TEXT NOT NULL DEFAULT 'ivory'",presentation:"TEXT NOT NULL DEFAULT ''"}))if(!columns.has(name))db.exec(`ALTER TABLE life_records ADD COLUMN ${name} ${type}`);
   for(const [name,type] of Object.entries({content_json:"TEXT NOT NULL DEFAULT ''",template:"TEXT NOT NULL DEFAULT 'plain'",excerpt:"TEXT NOT NULL DEFAULT ''",thumbnail_data:"TEXT NOT NULL DEFAULT ''",image_width:'INTEGER NOT NULL DEFAULT 0',image_height:'INTEGER NOT NULL DEFAULT 0',preview_position:'INTEGER NOT NULL DEFAULT 0',edited_at:"TEXT NOT NULL DEFAULT ''",revision:'INTEGER NOT NULL DEFAULT 1'}))if(!columns.has(name))db.exec(`ALTER TABLE life_records ADD COLUMN ${name} ${type}`);
   if(!columns.has('preview_position_set')){db.exec('ALTER TABLE life_records ADD COLUMN preview_position_set INTEGER NOT NULL DEFAULT 0');db.exec('UPDATE life_records SET preview_position_set=1 WHERE preview_position<>0');}
+  db.exec("UPDATE life_records SET moderation='approved' WHERE moderation='pending' AND deleted_at=''");
   db.function('life_rank',{deterministic:true},(id,seed)=>createHash('sha256').update(String(seed)+':'+id).digest().readUInt32BE(0));
   const social=installLifeSocial({db,send,readBody,clock,random});
   function view(r,user,detail=false){
@@ -74,7 +75,7 @@ export function installLife({db,send,readBody,log,clock,random}){
       if(d.kind==='art'&&!image.image)throw Error('图片作品需要上传图片。');
       if(presentation==='image'&&!image.image)throw Error('请上传作品图片。');
       if(presentation==='text'&&!body.trim())throw Error('请填写正文，或选择文字长图后上传图片。');
-      const values=[d.title.trim(),body,d.kind,JSON.stringify(tags),JSON.stringify(delta),d.template||'plain',d.excerpt||'',Math.min(100,Math.max(0,Math.round(Number(d.previewPosition??(previous?.preview_position_set?previous.preview_position:50))||0))),image.image?'pending':'approved'];
+      const values=[d.title.trim(),body,d.kind,JSON.stringify(tags),JSON.stringify(delta),d.template||'plain',d.excerpt||'',Math.min(100,Math.max(0,Math.round(Number(d.previewPosition??(previous?.preview_position_set?previous.preview_position:50))||0))), 'approved'];
       db.exec('BEGIN IMMEDIATE');
       try{
         let rid=id;
@@ -87,7 +88,7 @@ export function installLife({db,send,readBody,log,clock,random}){
         }else{rid=Number(db.prepare('INSERT INTO life_records(title,body,kind,tags,content_json,template,excerpt,preview_position,moderation,employee_id,image_data,thumbnail_data,image_width,image_height) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(...values,user.id,image.image,image.thumbnail,image.width,image.height).lastInsertRowid);}
         db.prepare('UPDATE life_records SET paper_tone=?,presentation=?,preview_position_set=1 WHERE id=?').run(paperTone,presentation,rid);
         social.ensure(rid);
-        log(user.id,previous?'life.edit':'life.submit',String(rid),{kind:d.kind,pending:!!image.image});db.exec('COMMIT');send(res,previous?200:201,{id:rid,pending:!!image.image});
+        log(user.id,previous?'life.edit':'life.submit',String(rid),{kind:d.kind,pending:false});db.exec('COMMIT');send(res,previous?200:201,{id:rid,pending:false});
       }catch(error){db.exec('ROLLBACK');throw error;}return true;
     }
     send(res,405,{error:'指令无效。'});return true;

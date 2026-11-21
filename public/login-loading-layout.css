@@ -1,25 +1,29 @@
 /* Both connecting and welcome phases use this same, stable frame. */
 @layer aved-personal {
- #signal-Connecting-overlay{font-size:14px!important;line-height:21px!important}
- #signal-Connecting-overlay,#signal-Connecting-overlay *{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif!important;font-synthesis:none!important;letter-spacing:0!important}
- #signal-Connecting-overlay>.signal-mesh{box-sizing:border-box!important;display:grid!important;grid-template-rows:34px minmax(0,1fr) 28px!important;gap:12px!important;width:min(448px,calc(100vw - 32px))!important;max-width:448px!important;height:350px!important;min-height:0!important;max-height:calc(100dvh - 32px)!important;padding:20px!important;overflow:auto!important}
+ #signal-Connecting-overlay{font-size:14px!important;line-height:21px!important;overflow:auto!important;align-items:safe center!important;color-scheme:dark!important}
+ #signal-Connecting-overlay,#signal-Connecting-overlay *{font-family:var(--type-entry,Arial,sans-serif)!important;font-synthesis:none!important;letter-spacing:0!important}
+ /* Keep the progress screen steady while the gateway changes to the intranet. */
+ html:has(#signal-Connecting-overlay.flex){overflow:hidden!important}
+ body:has(#signal-Connecting-overlay.flex)::after{display:none!important;animation:none!important}
+ #signal-Connecting-overlay #signal-log-lines>div{animation:none!important}
+ #signal-Connecting-overlay>.signal-mesh{box-sizing:border-box!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:12px!important;width:min(448px,calc(100vw - 32px))!important;max-width:448px!important;height:auto!important;min-height:min(350px,calc(100dvh - 32px))!important;max-height:calc(100dvh - 32px)!important;padding:20px!important;overflow:auto!important}
  #signal-Connecting-overlay .signal-mesh>div:first-child{min-width:0!important;margin:0!important;padding:0 0 8px!important;gap:8px!important;flex-wrap:nowrap!important;font-size:10px!important;line-height:16px!important}
  #signal-Connecting-overlay .signal-mesh>div:first-child span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- #signal-Connecting-overlay .signal-mesh>div:nth-child(2){display:grid!important;grid-template-rows:18px 56px 6px 78px!important;align-content:center!important;gap:12px!important;padding:0!important;min-width:0!important}
+ #signal-Connecting-overlay .signal-mesh>div:nth-child(2){display:grid!important;grid-template-rows:auto auto auto auto!important;align-content:center!important;gap:12px!important;padding:0!important;min-width:0!important}
  #signal-Connecting-overlay .signal-mesh>div:nth-child(2)>*{margin:0!important;min-width:0!important}
- #signal-Connecting-overlay #signal-status-title{display:flex!important;align-items:center!important;justify-content:center!important;height:56px!important;min-height:56px!important;max-height:56px!important;font-size:20px!important;line-height:28px!important;overflow:hidden!important;overflow-wrap:anywhere!important}
+ #signal-Connecting-overlay #signal-status-title{display:flex!important;align-items:center!important;justify-content:center!important;height:auto!important;min-height:56px!important;font-size:20px!important;line-height:28px!important;overflow-wrap:anywhere!important}
  #signal-Connecting-overlay #signal-log-lines{box-sizing:border-box!important;display:grid!important;grid-template-rows:repeat(3,22px)!important;align-content:start!important;gap:2px!important;height:78px!important;min-height:78px!important;max-height:78px!important;padding:4px 0!important;overflow:hidden!important;font-size:12px!important;line-height:22px!important}
  #signal-Connecting-overlay #signal-log-lines>div{margin:0!important;height:22px!important;font-size:12px!important;line-height:22px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  #signal-Connecting-overlay .signal-mesh>div:last-child{min-width:0!important;align-items:center!important;margin:0!important;gap:8px!important;padding-top:8px!important;font-size:9px!important;line-height:16px!important}
  #signal-Connecting-overlay .signal-mesh>div:last-child span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #signal-Connecting-overlay .signal-mesh>div:last-child span:last-child{flex-shrink:0;white-space:nowrap}
  @media(max-width:360px){#signal-Connecting-overlay>.signal-mesh{padding:16px!important}#signal-Connecting-overlay #signal-status-title{font-size:18px!important}}
- #signal-Connecting-overlay .signal-progress-track{box-sizing:border-box!important;height:8px!important;min-height:8px!important;padding:1px!important;border:1px solid #ffffff55!important;background:#101010!important}
- #signal-Connecting-overlay #signal-progress-bar{display:block!important;height:100%!important;min-height:4px!important;background:#eee!important}
- #signal-Connecting-overlay[data-asset-loading] #signal-progress-bar{transition:width .18s linear!important}
- #signal-Connecting-overlay[data-asset-loading=cold] #signal-progress-bar{animation:terminalArtFill 1.6s cubic-bezier(.16,.75,.25,1) both!important}
- #signal-Connecting-overlay[data-asset-loading=warm] #signal-progress-bar{animation:terminalArtFill .7s ease-out both!important}
- #signal-Connecting-overlay[data-asset-loading=complete] #signal-progress-bar{animation:none!important;width:100%!important}
- @keyframes terminalArtFill{from{width:2%}to{width:91%}}
- @media(prefers-reduced-motion:reduce){#signal-Connecting-overlay[data-asset-loading] #signal-progress-bar{animation:none!important;transition:none!important;width:75%!important}#signal-Connecting-overlay[data-asset-loading=complete] #signal-progress-bar{width:100%!important}}
+ #signal-Connecting-overlay .aved-progress{--progress-accent:#c64b4f;--progress-track:#ffffff24;--progress-success:#f5f5f5;--progress-error:#dd686b;min-height:24px}
+ #signal-Connecting-overlay .aved-progress-output{font-family:var(--type-code,monospace)!important;font-variant-numeric:tabular-nums!important}
+ #signal-Connecting-overlay .aved-progress[data-state=success]{--progress-accent:var(--progress-success)}
+ #signal-Connecting-overlay .aved-progress[data-state=error]{--progress-accent:var(--progress-error)}
+ #signal-Connecting-overlay #session-restore-retry{justify-self:start;min-height:32px;padding:4px 12px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer}
+ #signal-Connecting-overlay #session-restore-retry:focus-visible{outline:2px solid #c64b4f;outline-offset:3px}
+ #signal-Connecting-overlay:has(#session-restore-retry) #signal-log-lines{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:10px!important;height:auto!important;max-height:none!important;overflow:visible!important}
+ #signal-Connecting-overlay:has(#session-restore-retry) #signal-log-lines>div{height:auto!important;white-space:normal!important;overflow-wrap:anywhere!important}
 }

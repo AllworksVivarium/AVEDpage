@@ -32,18 +32,25 @@
   const timer=setTimeout(()=>finish(false),timeoutMs);
   image.decoding='async';image.onload=()=>Promise.resolve(image.decode?.()).then(()=>finish(true),()=>finish(image.naturalWidth>0));image.onerror=()=>finish(false);image.src=url;
  });}
- function assetCache({urls,storage,load=imageAsset,clock=()=>Date.now(),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms)),deadlineMs=4500,coldMinMs=1600}={}){
+ async function fontAsset(spec,timeoutMs){
+  if(!root.document?.fonts?.load)return false;
+  try{return await within(root.document.fonts.load(spec,'AVED 0123456789'),timeoutMs,()=>[]).then(faces=>faces.length>0);}catch{return false;}
+ }
+ function assetCache({urls,fonts=[],storage,load=imageAsset,loadFont=fontAsset,clock=()=>Date.now(),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms)),deadlineMs=4500,coldMinMs=1600,onProgress=()=>{}}={}){
   if(storage===undefined)try{storage=root.localStorage;}catch{storage=null;}
   const assets=[...new Set(urls||[])].filter(url=>typeof url==='string'&&url.startsWith('/assets/'));
-  const key='aved_ui_art_ready_v1',version=assets.join('|');let pending=null,ready=false;
-  function cached(){if(ready)return true;try{return !!assets.length&&storage?.getItem(key)===version;}catch{return false;}}
+  const fontSpecs=[...new Set(fonts)].filter(spec=>typeof spec==='string'&&spec.length<120);
+  const tasks=[...assets.map(url=>ms=>load(url,ms)),...fontSpecs.map(spec=>ms=>loadFont(spec,ms))];
+  const key='aved_ui_art_ready_v1',version=[...assets,...fontSpecs].join('|');let pending=null,ready=false;
+  function cached(){if(ready)return true;try{return !!tasks.length&&storage?.getItem(key)===version;}catch{return false;}}
   function prepare(){
-   if(pending)return pending;if(ready)return Promise.resolve({cached:true,complete:true});
+   if(pending)return pending;if(ready){onProgress({completed:tasks.length,total:tasks.length});return Promise.resolve({cached:true,complete:true});}
    const warm=cached();
    pending=(async()=>{
-    const end=clock()+deadlineMs;let cursor=0,complete=assets.length>0;
-    async function worker(){while(cursor<assets.length){const url=assets[cursor++],remaining=end-clock();if(remaining<=0){complete=false;continue;}try{if(!await within(load(url,Math.min(1800,remaining)),remaining,()=>false))complete=false;}catch{complete=false;}}}
-    await Promise.all([Promise.all(Array.from({length:Math.min(3,assets.length)},worker)),warm?Promise.resolve():delay(coldMinMs)]);
+    const end=clock()+deadlineMs;let cursor=0,completed=0,complete=tasks.length>0;
+    onProgress({completed,total:tasks.length});
+    async function worker(){while(cursor<tasks.length){const task=tasks[cursor++],remaining=end-clock();if(remaining<=0){complete=false;continue;}try{if(!await within(task(Math.min(1800,remaining)),remaining,()=>false))complete=false;}catch{complete=false;}finally{onProgress({completed:++completed,total:tasks.length});}}}
+    await Promise.all([Promise.all(Array.from({length:Math.min(3,tasks.length)},worker)),warm?Promise.resolve():delay(coldMinMs)]);
     if(complete){ready=true;try{storage?.setItem(key,version);}catch{}}
     else {try{storage?.removeItem(key);}catch{}}
     return {cached:warm,complete};

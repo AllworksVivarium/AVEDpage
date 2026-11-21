@@ -79,7 +79,7 @@
   pane.dataset.rewriting='erase';title.replaceChildren();
   const erased=doc.createElement('span');erased.className='containment-erased';erased.textContent='员工身份核验中';title.append(erased);
   const logs=doc.getElementById('signal-log-lines');logs.replaceChildren();
-  for(const text of ['[身份记录不一致：收容物]','[收到未知来源的授权回执]','[员工访问映射正在重建]']){const line=doc.createElement('div');line.textContent='> '+text;logs.append(line);}
+  for(const text of ['[IDENTITY MISMATCH: CONTAINMENT ENTITY]','[AUTHORIZATION RECEIVED FROM UNKNOWN SOURCE]','[REBUILDING PERSONNEL ACCESS MAPPING]']){const line=doc.createElement('div');line.textContent='> '+text;logs.append(line);}
   await wait(620);
   pane.dataset.rewriting='connected';fracture(title,'连接中');
   doc.getElementById('signal-noise-code').textContent='IDENTITY // REWRITTEN';
@@ -87,7 +87,7 @@
  }
  function phase(title,progress,line){
   if(!active)return {title,line};
-  return {title:progress===100?'接入完成':'连接中',line:progress===100?'[员工访问映射生效；原始收容记录保留]':progress<40?'[正在恢复员工访问映射]':progress<80?'[收容物身份已识别；接入链路保持开放]':'[授权回执已覆盖，正在挂接员工终端]'};
+  return {title:progress===100?'接入完成':'连接中',line:progress===100?'[ACCESS MAPPED; ORIGINAL RECORD RETAINED]':progress<40?'[RESTORING PERSONNEL ACCESS MAPPING]':progress<80?'[ENTITY IDENTIFIED; CONNECTION OPEN]':'[AUTHORIZATION OVERRIDDEN; CONNECTING WORKSTATION]'};
  }
  function decorate(panel,user){
   if(!isContainment(user))return;

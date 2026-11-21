@@ -4,8 +4,9 @@ export function groupMusicAlbums(tracks){
  const groups=new Map();
  for(const track of tracks){
   if(!track.album)continue;
-  const id=createHash('sha256').update(JSON.stringify([track.albumArtist||track.artist||'',track.album])).digest('hex').slice(0,24);
-  if(!groups.has(id))groups.set(id,{id,title:track.album,artist:track.albumArtist||track.artist||'',tracks:[]});
+  const artist=track.albumId?track.albumArtist||'':track.albumArtist||track.artist||'';
+  const id=createHash('sha256').update(JSON.stringify([artist,track.album])).digest('hex').slice(0,24);
+  if(!groups.has(id))groups.set(id,{id,title:track.album,artist,tracks:[]});
   groups.get(id).tracks.push(track);
  }
  return [...groups.values()].map(album=>({...album,tracks:album.tracks.sort((a,b)=>(a.trackNumber||9999)-(b.trackNumber||9999)||a.id-b.id)}));

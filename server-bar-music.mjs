@@ -20,11 +20,15 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
  if(!db.prepare('PRAGMA table_info(bar_music)').all().some(c=>c.name==='duration_seconds'))db.exec('ALTER TABLE bar_music ADD COLUMN duration_seconds INTEGER NOT NULL DEFAULT 180');
  const existing=new Set(db.prepare('PRAGMA table_info(bar_music)').all().map(c=>c.name));
  for(const [column,type] of Object.entries({artist:"TEXT NOT NULL DEFAULT ''",album_artist:"TEXT NOT NULL DEFAULT ''",album:"TEXT NOT NULL DEFAULT ''",track_number:'INTEGER NOT NULL DEFAULT 0',license:"TEXT NOT NULL DEFAULT ''",license_url:"TEXT NOT NULL DEFAULT ''",source_url:"TEXT NOT NULL DEFAULT ''"}))if(!existing.has(column))db.exec(`ALTER TABLE bar_music ADD COLUMN ${column} ${type}`);
- const saveMetadata=(id,data,previous)=>{const m=musicMetadata(data,previous);db.prepare('UPDATE bar_music SET artist=?,album_artist=?,album=?,track_number=?,license=?,license_url=?,source_url=? WHERE id=?').run(m.artist,m.albumArtist,m.album,m.trackNumber,m.license,m.licenseUrl,m.sourceUrl,id);};
+ db.exec("CREATE TABLE IF NOT EXISTS bar_music_albums(id INTEGER PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE(title,artist))");
+ if(!existing.has('album_id'))db.exec('ALTER TABLE bar_music ADD COLUMN album_id INTEGER REFERENCES bar_music_albums(id)');
+ const albumCatalog=()=>{db.exec("INSERT OR IGNORE INTO bar_music_albums(title,artist) SELECT DISTINCT album,COALESCE(NULLIF(album_artist,''),artist) FROM bar_music WHERE album<>'' AND deleted_at='' AND album_id IS NULL; UPDATE bar_music SET album_id=(SELECT id FROM bar_music_albums a WHERE a.title=bar_music.album AND a.artist=COALESCE(NULLIF(bar_music.album_artist,''),bar_music.artist)) WHERE album<>'' AND album_id IS NULL");return db.prepare('SELECT id,title,artist FROM bar_music_albums ORDER BY title,artist,id').all();};
+ albumCatalog();
+ const saveMetadata=(id,data,previous)=>{const m=musicMetadata(data,previous);let albumId=null;if(m.album){let album=db.prepare('SELECT id,artist FROM bar_music_albums WHERE title=? AND artist=?').get(m.album,m.albumArtist);if(!album){const artist=m.albumArtist||m.artist;db.prepare('INSERT OR IGNORE INTO bar_music_albums(title,artist) VALUES(?,?)').run(m.album,artist);album=db.prepare('SELECT id,artist FROM bar_music_albums WHERE title=? AND artist=?').get(m.album,artist);}albumId=album.id;m.albumArtist=album.artist;}db.prepare('UPDATE bar_music SET artist=?,album_artist=?,album=?,album_id=?,track_number=?,license=?,license_url=?,source_url=? WHERE id=?').run(m.artist,m.albumArtist,m.album,albumId,m.trackNumber,m.license,m.licenseUrl,m.sourceUrl,id);};
  const duration=value=>{if(value===undefined)return 180;if(!Number.isSafeInteger(value)||value<30||value>900)throw Error('曲目时长须为 30–900 秒的整数。');return value;};
  const directory=resolve(dataDir,'bar-music');
  const settings=()=>{const row=db.prepare('SELECT enabled FROM bar_music_settings WHERE id=1').get();return {enabled:!!row.enabled,previewFallback:false};};
- const tracks=(admin=false)=>db.prepare(`SELECT id,title,url,file_name AS fileName,mime,byte_size AS byteSize,enabled,duration_seconds AS durationSeconds,created_at AS createdAt,artist,album_artist AS albumArtist,album,track_number AS trackNumber,license,license_url AS licenseUrl,source_url AS sourceUrl FROM bar_music WHERE deleted_at='' ${admin?'':'AND enabled=1'} ORDER BY id`).all().map(({fileName,...row})=>({...row,enabled:!!row.enabled,source:fileName?'upload':'url',url:fileName?'/api/player/bar-music/files/'+row.id:row.url}));
+ const tracks=(admin=false)=>db.prepare(`SELECT id,title,url,file_name AS fileName,mime,byte_size AS byteSize,enabled,duration_seconds AS durationSeconds,created_at AS createdAt,artist,COALESCE((SELECT artist FROM bar_music_albums a WHERE a.id=bar_music.album_id),album_artist) AS albumArtist,album_id AS albumId,album,track_number AS trackNumber,license,license_url AS licenseUrl,source_url AS sourceUrl FROM bar_music WHERE deleted_at='' ${admin?'':'AND enabled=1'} ORDER BY id`).all().map(({fileName,...row})=>({...row,enabled:!!row.enabled,source:fileName?'upload':'url',url:fileName?'/api/player/bar-music/files/'+row.id:row.url}));
  const playlist=()=>{const items=tracks();return {...settings(),tracks:items,albums:groupMusicAlbums(items).map(({tracks,...album})=>({...album,trackIds:tracks.map(t=>t.id),durationSeconds:tracks.reduce((sum,t)=>sum+t.durationSeconds,0)}))};};
  return {playlist,async handle(req,res,url){
   const file=url.pathname.match(/^\/api\/player\/bar-music\/files\/(\d+)$/),admin=url.pathname.startsWith('/api/admin/bar-music');if(!file&&!admin)return false;
@@ -47,7 +51,12 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
     if(req.method==='HEAD')res.end();else{const stream=createReadStream(path,{start,end});stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());stream.pipe(res);}return true;
    }
    const path=url.pathname,method=req.method;
-   if(path==='/api/admin/bar-music'&&method==='GET'){send(res,200,{settings:settings(),items:tracks(true)});return true;}
+   if(path==='/api/admin/bar-music'&&method==='GET'){const albums=albumCatalog();send(res,200,{settings:settings(),items:tracks(true),albums});return true;}
+   if(path==='/api/admin/bar-music/albums'&&method==='POST'){
+    const data=await readBody(req),m=musicMetadata({album:data.title,albumArtist:data.artist??''});if(!m.album)throw Error('请填写专辑名称，最多 100 字。');
+    const result=db.prepare('INSERT OR IGNORE INTO bar_music_albums(title,artist) VALUES(?,?)').run(m.album,m.albumArtist),album=db.prepare('SELECT id,title,artist FROM bar_music_albums WHERE title=? AND artist=?').get(m.album,m.albumArtist);
+    send(res,result.changes?201:200,{ok:true,created:!!result.changes,album});return true;
+   }
    if(path==='/api/admin/bar-music/settings'&&method==='PUT'){
     const data=await readBody(req);if(typeof data.enabled!=='boolean')throw Error('音乐开关设置无效。');db.prepare('UPDATE bar_music_settings SET enabled=?,preview_fallback=0 WHERE id=1').run(data.enabled?1:0);onChange();send(res,200,{ok:true});return true;
    }
@@ -67,7 +76,7 @@ export function installBarMusic({db,send,readBody,requireEmployee,requireAdmin,d
    if(record&&method==='PUT'){
     const row=db.prepare("SELECT * FROM bar_music WHERE id=? AND deleted_at=''").get(record[1]);if(!row){send(res,404,{error:'曲目不存在。'});return true;}
     const data=await readBody(req);if(data.enabled!==undefined&&typeof data.enabled!=='boolean')throw Error('播放开关无效。');
-    const metadata=musicMetadata(data,{...row,albumArtist:row.album_artist,trackNumber:row.track_number,licenseUrl:row.license_url,sourceUrl:row.source_url});
+    const metadata=musicMetadata(data,{...row,albumArtist:row.album_id?db.prepare('SELECT artist FROM bar_music_albums WHERE id=?').get(row.album_id)?.artist??row.album_artist:row.album_artist,trackNumber:row.track_number,licenseUrl:row.license_url,sourceUrl:row.source_url});
     db.prepare('UPDATE bar_music SET title=?,url=?,enabled=?,duration_seconds=? WHERE id=?').run(data.title===undefined?row.title:title(data.title),data.url===undefined||row.file_name?row.url:audioUrl(data.url),data.enabled===undefined?row.enabled:data.enabled?1:0,data.durationSeconds===undefined?row.duration_seconds:duration(data.durationSeconds),row.id);saveMetadata(row.id,metadata);onChange();send(res,200,{ok:true});return true;
    }
    if(record&&method==='DELETE'){db.prepare("UPDATE bar_music SET deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'),enabled=0 WHERE id=? AND deleted_at=''").run(record[1]);onChange();send(res,200,{ok:true});return true;}

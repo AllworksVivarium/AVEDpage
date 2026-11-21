@@ -5,8 +5,7 @@
  #signal-Connecting-overlay[data-containment=true] .signal-mesh>div{border-color:#7b252b!important}
  #signal-Connecting-overlay[data-containment=true] .signal-mesh span,#signal-Connecting-overlay[data-containment=true] #signal-log-lines{color:#bdb298!important}
  #signal-Connecting-overlay[data-containment=true] #signal-status-title{color:#e01828!important;text-shadow:2px 0 #8b101a,-2px 0 #e2d5bf44}
- #signal-Connecting-overlay[data-containment=true] #signal-progress-bar{background:#ac1827!important;box-shadow:0 0 12px #b71025}
- #signal-Connecting-overlay[data-containment=true] .signal-progress-track{background:#15080b!important;border-color:#76202a!important}
+ #signal-Connecting-overlay[data-containment=true] .aved-progress[data-state=loading]{--progress-accent:#e03b47}
  #signal-Connecting-overlay[data-rewriting=erase]>.signal-mesh{animation:containment-frame-tear .62s steps(1,end) both!important}
  #signal-Connecting-overlay .containment-erased{position:relative;animation:containment-erase .62s steps(1,end) both!important}
  #signal-Connecting-overlay .containment-erased::after{content:'';position:absolute;inset:38% -8px 30%;background:#b61628;box-shadow:0 -5px #080607,0 5px #080607}

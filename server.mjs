@@ -8,6 +8,7 @@ import {installGameTax} from './server-game-tax.mjs';
 import {installDossierContent,normalizeDossierContent,normalizeDossierCode,dossierView} from './server-dossier-content.mjs';
 import {installContainmentDossiers,listDossiers} from './server-containment-dossiers.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
+import {installEmployeeImport} from './server-employee-import.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
 import {installLogRetention} from './server-log-retention.mjs';
 import {installAvatarPresets,storedAvatar,avatarPresets} from './server-default-avatar.mjs';
@@ -283,6 +284,7 @@ const adminMutation = (req, res) => {
 installAvatarPresets(db);
 let economy,personal,highlights,gameTax;
 const playerService=installPlayerService({rankingIdentity,db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,sessionEmployee,getEconomy:()=>economy,getPersonal:()=>personal,getHighlights:()=>highlights,getGameTax:()=>gameTax});
+const employeeImport=installEmployeeImport({db,send,readBody,requireAdmin,hashPassword:hashPasswordAsync,log:playerService.log});
 installContainmentDossiers(db);
 economy=installEconomy({db,send,readBody,requireAdmin,requireEmployee,balanceFor,recordLedger,log:playerService.log});
 // Preserve legacy split ordering before migrating independent fills.
@@ -373,6 +375,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       if(retry)return send(res,429,{error:'操作过于频繁，请稍后重试。',code:'ACTION_LIMITED'},{'Retry-After':String(retry)});
     }
     if(await handleEmployeeAttributes({db,send,readBody,requireAdmin},req,res,url))return;
+    if(await employeeImport.handle(req,res,url))return;
     if(await media.handle(req,res,url))return;
     if(dossierImages.handle(req,res,url))return;
     if(await cardTables.handle(req,res,url))return;

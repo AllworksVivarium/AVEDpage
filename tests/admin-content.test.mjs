@@ -77,15 +77,17 @@ test('content edits reach players, removals survive restart, and balance rejects
  const thread=(await p('/api/player/forum','POST',{title:'论坛图文',body:'论坛正文',imageData})).data.id;
  const life=(await p('/api/player/life','POST',{title:'生活画作',body:'生活正文',kind:'art',imageData:validDossierImage,tags:[]})).data.id;
  const queue=(await a('/api/admin/moderation')).data.items;
- for(const [kind,id,board] of [['thread',thread,'匿名聊天论坛'],['life',life,'生活记录']]){const item=queue.find(x=>x.kind===kind&&x.id===id);assert.equal(item.sourceBoard,board);assert.equal(item.username,'content-player');assert.equal(item.displayName,'投稿玩家');assert.equal(item.employeeId,emp.data.id);}
+ for(const [kind,id,board] of [['thread',thread,'匿名聊天论坛']]){const item=queue.find(x=>x.kind===kind&&x.id===id);assert.equal(item.sourceBoard,board);assert.equal(item.username,'content-player');assert.equal(item.displayName,'投稿玩家');assert.equal(item.employeeId,emp.data.id);}
+ assert.ok(!queue.some(x=>x.kind==='life'&&x.id===life));
  assert.equal((await a('/api/admin/moderation/thread/'+thread,'POST',{action:'approve'})).status,200);
- assert.equal((await a('/api/admin/moderation/life/'+life,'POST',{action:'reject'})).status,200);
+ assert.ok((await p('/api/player/life')).data.items.some(x=>x.id===life));
+ assert.equal((await a('/api/admin/speech/life_records/'+life,'DELETE')).status,200);
  assert.ok((await p('/api/player/forum')).data.items.some(x=>x.id===thread));assert.ok(!(await p('/api/player/life')).data.items.some(x=>x.id===life));
  const archived=(await a('/api/admin/activity?category=image')).data.items;
  assert.equal(archived.length,2);
  assert.equal(archived.find(x=>x.source_type==='thread').moderation,'approved');
- assert.equal(archived.find(x=>x.source_type==='life').moderation,'rejected');
- assert.ok(archived.every(x=>x.reviewer_name&&x.reviewed_at));
+ assert.equal(archived.find(x=>x.source_type==='life').moderation,'approved');
+ assert.ok(archived.filter(x=>x.source_type==='thread').every(x=>x.reviewer_name&&x.reviewed_at));
  assert.equal((await p(archived[0].imageUrl)).status,403);
  const originalBytes=Buffer.from(imageData.split(',')[1],'base64');
  const secondBytes=Buffer.concat([originalBytes,Buffer.from([1])]),secondImage='data:image/png;base64,'+secondBytes.toString('base64');
@@ -98,8 +100,8 @@ test('content edits reach players, removals survive restart, and balance rejects
  assert.equal((await a('/api/admin/forum/threads/'+thread,'DELETE')).status,200);
  const versions=(await a('/api/admin/activity?category=image')).data.items;
  assert.equal(versions.length,3);assert.equal(versions.find(x=>x.id===oldArchiveId).moderation,'approved');
- assert.equal((await a('/api/admin/activity?category=image&status=rejected')).data.items.length,2);
- assert.equal((await a('/api/admin/activity?category=image&status=approved')).data.items.length,1);
+ assert.equal((await a('/api/admin/activity?category=image&status=rejected')).data.items.length,1);
+ assert.equal((await a('/api/admin/activity?category=image&status=approved')).data.items.length,2);
  assert.equal((await a('/api/admin/activity?category=image&status=invalid')).status,400);
  const fetchArchive=async id=>{const response=await fetch(base+'/api/admin/image-archive/'+id,{headers:{cookie:admin}});assert.equal(response.status,200);return Buffer.from(await response.arrayBuffer());};
  assert.deepEqual(await fetchArchive(oldArchiveId),originalBytes);

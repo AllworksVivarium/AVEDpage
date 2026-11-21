@@ -91,3 +91,25 @@ test('a compilation stays one album while each recording retains its own perform
  const result=await call('/api/admin/bar-music',{title:'One',url:'https://example.com/one.mp3',...tracks[0]});assert.equal(result.status,201);
  await call('/api/admin/bar-music/'+result.data.id,{enabled:false},'PUT');await call('/api/admin/bar-music/'+result.data.id,{enabled:true},'PUT');assert.equal(service.playlist().tracks[0].albumArtist,'Various Artists');
 });
+
+test('administrators can create durable empty albums and attach different performers without splitting an unnamed compilation',async t=>{
+ const db=new DatabaseSync(':memory:');t.after(()=>db.close());let body,authorized=true;
+ const options={db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async()=>body,requireEmployee:()=>true,requireAdmin:(req,res)=>{if(authorized)return true;Object.assign(res,{status:403});return false;},dataDir:'.'};
+ let service=installBarMusic(options);
+ const call=async(path,data,method='POST')=>{body=data;const res={};await service.handle({method},res,new URL(path,'http://localhost'));return res;};
+ authorized=false;assert.equal((await call('/api/admin/bar-music/albums',{title:'Album'})).status,403);authorized=true;
+ assert.equal((await call('/api/admin/bar-music/albums',{title:''})).status,400);
+ assert.equal((await call('/api/admin/bar-music/albums',{title:'Bad\nTitle'})).status,400);
+ const album=(await call('/api/admin/bar-music/albums',{title:'Empty Album',artist:''}));assert.equal(album.status,201);
+ assert.equal((await call('/api/admin/bar-music/albums',{title:'Empty Album',artist:''})).status,200);
+ assert.equal((await call('/api/admin/bar-music',undefined,'GET')).data.albums.length,1);
+ assert.equal(service.playlist().albums.length,0);
+ const first=await call('/api/admin/bar-music',{title:'Track A',artist:'Artist A',album:'Empty Album',albumArtist:'',url:'https://example.com/a.mp3'});
+ const second=await call('/api/admin/bar-music',{title:'Track B',artist:'Artist B',album:'Empty Album',albumArtist:'',url:'https://example.com/b.mp3'});
+ assert.equal(first.status,201);assert.equal(second.status,201);assert.equal(service.playlist().albums.length,1);assert.equal(service.playlist().albums[0].trackIds.length,2);
+ assert.ok(service.playlist().tracks.every(x=>x.albumId===album.data.album.id&&x.albumArtist===''));
+ const previous=service.playlist().albums[0].id;service=installBarMusic(options);assert.equal(service.playlist().albums[0].id,previous);
+ await call('/api/admin/bar-music/'+first.data.id,{enabled:false},'PUT');await call('/api/admin/bar-music/'+first.data.id,{enabled:true},'PUT');assert.equal(service.playlist().albums.length,1);
+ await call('/api/admin/bar-music/'+first.data.id,undefined,'DELETE');await call('/api/admin/bar-music/'+second.data.id,undefined,'DELETE');
+ assert.equal(service.playlist().tracks.length,0);assert.equal((await call('/api/admin/bar-music',undefined,'GET')).data.albums.length,1);
+});

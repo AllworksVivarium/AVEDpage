@@ -107,11 +107,11 @@ async function loadPortal({verified=null,interactive=false}={}) {
       .forEach((tab) =>
         tab.classList.toggle(
           "hidden",
-          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads","achievements"].includes(tab.dataset.tab)||(tab.dataset.tab==='forumWorkshop'&&currentUser.username!=='AVED'),
+          !["admin","content","dossiers","moderation","activity","speech","terminology","robots","forumWorkshop","forumAdmin","lifeAdmin","barMusic","ads"].includes(tab.dataset.tab)||(tab.dataset.tab==='forumWorkshop'&&currentUser.username!=='AVED'),
         ),
       );
     show(dashboard);
-    await renderTab(['dossiers','robots','achievements','barMusic','ads'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
+    await renderTab(['dossiers','robots','barMusic','ads'].includes(location.hash.slice(1))?location.hash.slice(1):'admin');
   } catch(error) {
     if(generation!==portalGeneration)return;
     if(interactive)throw error;
@@ -151,9 +151,8 @@ function enhancePersonnelForms(employees){
 }
 function rosterDepartment(value){const text=String(value||'');return /收容/.test(text)?'收容部':/武器|武装|武裝|作战/.test(text)?'武装部':/研究|科研/.test(text)?'科研部':/后勤|後勤/.test(text)?'后勤部':/医疗|醫療|医療/.test(text)?'医疗部':'公司直属';}
 function employeeBalanceControl(employee){
- const value='¤ '+Number(employee.balance).toLocaleString();
- if(employee.isNpc)return value;
- return value+'<details class="employee-balance-control"><summary>设置余额</summary><form class="employee-balance-form" data-employee-id="'+employee.id+'" data-expected-balance="'+employee.balance+'"><label>目标余额（可为负数）<input name="balance" type="number" min="-100000000" max="100000000" step="1" value="'+employee.balance+'" required></label><label>调整原因<input name="reason" maxlength="200" placeholder="填写本次调整原因" required></label><button type="submit" class="small-action">保存余额</button><span role="status"></span></form></details>';
+ if(employee.isNpc)return '';
+ return '<section class="employee-balance-editor"><h4>余额调整</h4><form class="employee-balance-form" data-employee-id="'+employee.id+'" data-expected-balance="'+employee.balance+'"><label>目标余额（可为负数）<input name="balance" type="number" min="-100000000" max="100000000" step="1" value="'+employee.balance+'" required></label><label>调整原因<input name="reason" maxlength="200" placeholder="填写本次调整原因" required></label><button type="submit" class="small-action">保存余额</button><span role="status"></span></form></section>';
 }
 async function renderAdmin() {
   if (currentUser?.role !== "admin")
@@ -164,17 +163,15 @@ async function renderAdmin() {
   const employeeRows = employees.map((e) =>
     '<tr data-roster-department="'+esc(rosterDepartment(e.department))+'"><td>' + esc(e.displayName) + "<small>" + esc(e.isNpc?personnelIdentityNames[e.identityKind]:e.username) +
     "</small></td><td>" + esc(e.qqNumber || "未登记") +
-    "</td><td>" + esc(e.department==='公司直属'?'无部门归属':e.department || "未填写") + (e.positionTitle?'<small>'+esc(e.positionTitle)+'</small>':'') + (e.containmentClassification?'<small>'+esc(e.containmentClassification)+'</small>':'') +
-    "</td><td>" + employeeBalanceControl(e) +
-    "</td><td>" + (e.isNpc ? "—" : e.role === "admin" ? "管理员" : "员工") +
-    "</td><td>" + (e.isNpc ? personnelIdentityNames[e.identityKind] : e.enabled ? "启用" : "停用") +
-    '</td><td><details><summary>编辑</summary><form class="employee-edit-form" data-employee-id="' +
+    "</td><td>" + esc(rosterDepartment(e.department)==='公司直属'?'无部门归属':e.department || "未填写") + (e.positionTitle&&e.positionTitle!=='成员'?'<small>'+esc(e.positionTitle)+'</small>':'') + (e.containmentClassification?'<small>'+esc(e.containmentClassification)+'</small>':'') +
+    "</td><td>¤ " + Number(e.balance).toLocaleString() +
+    '</td><td><details><summary>编辑资料</summary><form class="employee-edit-form" data-employee-id="' +
     e.id + '"><input name="displayName" required maxlength="80" value="' +
     esc(e.displayName) + '" placeholder="姓名 / 收容物名称"><input name="qqNumber" maxlength="30" value="' +
     esc(e.qqNumber || "") + '" placeholder="QQ 号"><input name="department" maxlength="80" value="' +
-    esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><button class="small-action">保存修改</button></form></details></td><td><button class="small-action danger" data-delete-employee-id="' +
+    esc(e.department || "") + '" placeholder="部门"><input name="password" type="password" minlength="6" placeholder="新密码（至少 6 位；不改请留空）"><button class="small-action">保存修改</button></form>' + employeeBalanceControl(e) + '<div class="employee-edit-delete"><button type="button" class="small-action danger" data-delete-employee-id="' +
     e.id + '" data-delete-employee-name="' + esc(e.displayName) +
-    '" data-delete-employee-username="' + esc(e.username) + '">删除员工</button></td></tr>',
+    '" data-delete-employee-username="' + esc(e.username) + '">删除员工</button></div></details></td></tr>',
   ).join("");
 
   $("#panel").innerHTML =
@@ -182,23 +179,28 @@ async function renderAdmin() {
     employees.length +
     '</span></div><section class="admin-section"><div class="section-heading"><div><h3>登记员工</h3><p>登录用户名；员工姓名单独显示</p></div></div><form class="admin-form employee-create" id="employeeCreate"><input name="username" required maxlength="40" placeholder="唯一登录用户名"><input name="password" type="password" required minlength="6" placeholder="初始密码（至少 6 位）"><input name="displayName" required maxlength="80" placeholder="员工姓名 / 收容物名称"><input name="qqNumber" maxlength="30" placeholder="QQ 号（可暂空）"><input name="department" maxlength="80" placeholder="部门（可暂空）"><input name="initialBalance" type="number" min="-100000000" max="100000000" step="1" placeholder="初始余额（可为负数）"><button class="small-action">保存员工资料</button></form></section><section class="admin-section"><div class="section-heading"><div><h3>员工名册</h3><p>' +
     employees.length +
-    ' 位员工 登记资料</p></div></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>QQ 号</th><th>部门</th><th>余额</th><th>权限</th><th>状态</th><th>编辑资料</th><th>账号操作</th></tr></thead><tbody>' +
+    ' 位员工 登记资料</p></div></div><div class="table-wrap employee-roster"><table><thead><tr><th>员工</th><th>QQ 号</th><th>归属</th><th>余额</th><th>编辑资料</th></tr></thead><tbody>' +
     employeeRows +
     '</tbody></table></div></section>';
 
   document.querySelectorAll('form input[name=department]').forEach(input=>{const raw=input.value||'',value=/收容/.test(raw)?'收容部':/武器|武装|武裝|作战/.test(raw)?'武装部':/研究|科研/.test(raw)?'科研部':/后勤|後勤/.test(raw)?'后勤部':/医疗|醫療|医療/.test(raw)?'医疗部':'公司直属';const select=document.createElement('select');select.name='department';select.setAttribute('aria-label','所属部门');for(const name of ['公司直属','收容部','武装部','后勤部','科研部','医疗部']){const option=document.createElement('option');option.value=name;option.textContent=name==='公司直属'?'无部门归属':name;select.append(option);}select.value=value;input.replaceWith(select);});
   enhancePersonnelForms(employees);
   const salary=document.createElement('section');salary.className='admin-section';salary.innerHTML='<div class="section-heading"><div><h3>公司工资</h3><p>为启用的员工和部长账号每人发放 200,000 ¤；不含收容物、展示档案及公司机器人。</p></div><button type="button" class="small-action" data-payroll>一键发工资</button></div><p role="status"></p>';$('#employeeCreate').closest('section').before(salary);
+  const registration=$('#employeeCreate').closest('section'),createForm=$('#employeeCreate'),fold=document.createElement('details');fold.className='admin-section employee-registration';fold.dataset.adminCollapse='';
+  fold.innerHTML='<summary>登记员工</summary><div class="employee-registration-tabs"><button type="button" class="small-action" data-register-mode="single" aria-pressed="true">单个登记</button><button type="button" class="small-action" data-register-mode="bulk" aria-pressed="false">批量导入</button></div><div data-register-panel="single"></div><div data-register-panel="bulk" hidden></div>';
+  fold.querySelector('[data-register-panel=single]').append(createForm);registration.replaceWith(fold);
+  window.AVEDAdminEmployeeImport.mount(fold.querySelector('[data-register-panel=bulk]'),{api,onComplete:async result=>{await renderAdmin();const notice=document.createElement('p');notice.setAttribute('role','status');notice.textContent=(result.mode==='attributes'?'六维已更新：':'员工已导入：')+result.count+' 人。';$('#panel .employee-registration').before(notice);}});
+  fold.querySelectorAll('[data-register-mode]').forEach(button=>button.onclick=()=>{const mode=button.dataset.registerMode;fold.querySelectorAll('[data-register-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));fold.querySelectorAll('[data-register-panel]').forEach(x=>x.hidden=x.dataset.registerPanel!==mode);});
   let salaryRequest=null;
   salary.querySelector('button').onclick=async()=>{const button=salary.querySelector('button'),note=salary.querySelector('[role=status]');button.disabled=true;try{
    if(!salaryRequest){const preview=await api('/api/admin/payroll');if(!preview.count){note.textContent='当前没有可发薪账号。';return;}if(!await window.AVEDFeedback.confirm('向 '+preview.count+' 个员工及部长账号各发放 200,000 ¤，共 '+preview.total.toLocaleString()+' ¤？'))return;salaryRequest={requestId:crypto.randomUUID(),expectedCount:preview.count};}
    const result=await api('/api/admin/payroll',{method:'POST',body:JSON.stringify(salaryRequest)});salaryRequest=null;try{await renderAdmin();}catch{}window.AVEDFeedback.alert?.('工资已发放：'+result.count+' 个账号，共 '+result.total.toLocaleString()+' ¤。');
   }catch(e){if(e.message.includes('员工名单已变更'))salaryRequest=null;note.textContent=e.message+'；可点击重试，同一批次不会重复入账。';}finally{button.disabled=false;}};
 
-  const rosterTable=$('#panel .table-wrap'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按部门筛选员工');
-  const departments=['全部部门','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
-  filters.innerHTML=departments.map((name,index)=>`<button type="button" class="small-action" data-roster-filter="${name}" aria-pressed="${index===0}">${name==='公司直属'?'公司直属部':name}</button>`).join('')+'<p id="roster-filter-count" role="status"></p>';rosterTable.before(filters);
-  filters.onclick=event=>{const button=event.target.closest('[data-roster-filter]');if(!button)return;const selected=button.dataset.rosterFilter;let count=0;for(const row of rosterTable.querySelectorAll('tbody tr')){row.hidden=selected!=='全部部门'&&row.dataset.rosterDepartment!==selected;if(!row.hidden)count++;}for(const item of filters.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item===button));$('#roster-filter-count').textContent=(selected==='公司直属'?'公司直属部':selected)+' '+count+' 人';};
+  const rosterTable=$('#panel .employee-roster'),filters=document.createElement('div');filters.className='community-filters roster-departments';filters.setAttribute('aria-label','按归属筛选员工');
+  const departments=['全部员工','公司直属','收容部','武装部','后勤部','科研部','医疗部'];
+  filters.innerHTML=departments.map((name,index)=>`<button type="button" class="small-action" data-roster-filter="${name}" aria-pressed="${index===0}">${name}</button>`).join('')+'<p id="roster-filter-count" role="status"></p>';rosterTable.before(filters);
+  filters.onclick=event=>{const button=event.target.closest('[data-roster-filter]');if(!button)return;const selected=button.dataset.rosterFilter;let count=0;for(const row of rosterTable.querySelectorAll('tbody tr')){row.hidden=selected!=='全部员工'&&row.dataset.rosterDepartment!==selected;if(!row.hidden)count++;}for(const item of filters.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item===button));$('#roster-filter-count').textContent=selected+' '+count+' 人';};
 
   bindAdminForm("#employeeCreate", "/api/admin/employees", (v) => ({
     username: v.get("username"),
@@ -314,6 +316,7 @@ async function deleteEmployee(id, displayName, username) {
 
 // ===== Tab 路由分发 =====
 async function renderTab(tab) {
+  if(tab==='achievements')tab='admin';
   window.AVEDStopAdminMusicPreview?.();
   setActive(tab);
   try {
@@ -325,7 +328,6 @@ async function renderTab(tab) {
     else if(tab === 'robots')await renderCompanyRobots();
     else if(tab === 'speech')await renderSpeechRecords();
     else if(tab === 'terminology')await renderTerminology();
-    else if(tab === 'achievements')await renderAchievements();
     else if(tab === 'moderation')await renderModeration();
     else if(tab === 'activity')await renderActivity();
     else if(tab === 'content')await renderContentAdmin();

@@ -317,12 +317,15 @@
 
 
       const nextPaint=()=>AVEDStartup.within(new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))),500,()=>undefined);
-      const terminalArtCache=AVEDStartup.assetCache({urls:window.AVEDCriticalArt});
+      const signalProgress=window.AVEDProgress.mount(document.getElementById('signal-progress'));
+      const terminalArtCache=AVEDStartup.assetCache({urls:window.AVEDCriticalArt,fonts:['400 14px "AVED UI Latin"','400 14px "AVED Plex Mono"'],coldMinMs:0,onProgress:({completed,total})=>{
+        if(signalOverlay.dataset.assetLoading)signalProgress.update({value:completed,total,label:'RESOURCE CHECK'});
+      }});
       async function prepareTerminalArt(){
         const cached=terminalArtCache.cached;let shown=false;
         const reveal=()=>{
           shown=true;signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-          signalOverlay.dataset.assetLoading=cached?'warm':'cold';signalPhase('正在建立内网链路',35,'接入节点已响应，正在同步员工授权域……');
+          signalOverlay.dataset.assetLoading=cached?'warm':'cold';signalPhase('终端资源检查中',35,'PREPARING INTERFACE FONTS AND CORE ICONS...');
         };
         let delayed;
         if(!cached||!signalOverlay.classList.contains('hidden'))reveal();else delayed=setTimeout(reveal,350);
@@ -333,13 +336,15 @@
         ({title,line}=window.AVEDContainmentAccess.phase(title,progress,line));
         document.getElementById('signal-status-title').textContent=title;
         if(signalOverlay.dataset.containment==='true')window.AVEDContainmentAccess.fracture(document.getElementById('signal-status-title'),title);
-        document.getElementById('signal-progress-bar').style.width=progress+'%';
+        // These phase codes select narrative text, not a measured percentage.
+        if(progress===100)signalProgress.update({value:1,total:1,state:'success',label:'CONNECTED'});
+        else if(!signalOverlay.dataset.assetLoading)signalProgress.update({label:'CONNECTING'});
         document.getElementById('signal-noise-code').textContent=progress===100?'ACCESS // GRANTED':progress<40?'IDENTITY // VERIFYING':progress<80?'UPLINK // NEGOTIATING':'AUTHORITY // SYNCING';
         const logs=document.getElementById('signal-log-lines');if(progress<40)logs.replaceChildren();
-        const steps=signalOverlay.dataset.containment==='true'?['[原始身份：收容物]','[员工访问映射已恢复]','[正在挂接公司内网]']:signalOverlay.dataset.assetLoading?['人员识别回执已确认。','正在同步岗位授权域……','工作终端待激活……']:['正在检索在册人员档案……','公司主干链路握手中……','正在同步岗位访问矩阵……'];
+        const steps=signalOverlay.dataset.containment==='true'?['[ORIGINAL IDENTITY: CONTAINMENT ENTITY]','[PERSONNEL ACCESS MAPPING RESTORED]','[CONNECTING TO COMPANY INTRANET]']:signalOverlay.dataset.assetLoading?['IDENTITY VERIFIED.','PREPARING FONTS AND CORE ICONS...','WORKSTATION READY.']:['LOOKING UP PERSONNEL RECORD...','ESTABLISHING INTRANET CONNECTION...','SYNCHRONIZING ACCESS PERMISSIONS...'];
         const count=progress<40?1:progress<80?2:3;
         if(line)steps[count-1]=line;
-        steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');entry.style.animation='signalLogReveal .18s ease-out both';entry.style.animationDelay=(index*70)+'ms';logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
+        steps.slice(0,count).forEach((text,index)=>{let entry=logs.children[index];if(!entry){entry=document.createElement('div');logs.append(entry);}entry.textContent='> '+text+(progress===100?' ✓':'');});
       }
       async function restoreSavedLogin() {
         if(!document.getElementById('remember-credentials-checkbox').checked||!window.PasswordCredential||!navigator.credentials)return;
@@ -356,25 +361,24 @@
         event.preventDefault();const form=event.target,button=form.querySelector('[type=submit]');if(button.disabled)return;
         const error=document.getElementById('login-error'),identifier=document.getElementById('login-username').value.trim();
         const password=document.getElementById('login-password').value,remember=document.getElementById('remember-credentials-checkbox').checked;
-        const connectStarted=performance.now();button.disabled=true;if(error)error.textContent='';
+        button.disabled=true;if(error)error.textContent='';
         window.AVEDContainmentAccess.reset();
         loginModal.classList.add('hidden');loginModal.classList.remove('flex');
         signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');signalOverlay.setAttribute('aria-busy','true');
-        signalPhase('员工身份核验中',12,'正在检索在册人员档案，等待识别回执……');
+        signalOverlay.focus();
+        signalPhase('员工身份核验中',12,'LOOKING UP PERSONNEL RECORD...');
         try {
           await nextPaint();
+          signalOverlay.focus({preventScroll:true});
           const authenticated=await apiLogin(identifier,password,remember);
           await window.AVEDContainmentAccess.identify(authenticated.employee);
-          signalPhase('正在连接万业内网',45,'人员识别通过，正在与接入节点握手……');
+          signalPhase('员工身份核验中',45,'IDENTITY VERIFIED; LOADING EMPLOYEE PROFILE...');
           await nextPaint();
-          signalPhase('岗位授权域同步中',85,'内网链路已建立，正在调阅岗位访问矩阵……');
           const employee=await loadPlayerData();
           if(employee.account!==authenticated.employee.username)throw new Error('登录身份未能确认，请重新接入。');
-          signalPhase('正在激活员工席位',85,'归属档案已确认，正在分配工作终端……');
           await nextPaint();
           const visit=await idleSession.start(employee.id,{fresh:true});
           await completeEnterIntranet(employee,{freshLogin:true,newVisit:visit.newVisit});
-          signalPhase('欢迎归岗，'+employee.name,100,'接入许可已签发。您的工作终端已就绪。');
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
           delete signalOverlay.dataset.assetLoading;
           try {
@@ -387,6 +391,7 @@
           if(!remember)document.getElementById('login-password').value='';
         } catch(errorValue) {
           window.AVEDContainmentAccess.reset();
+          signalProgress.update({state:'error',label:'CONNECTION FAILED'});
           signalOverlay.classList.add('hidden');signalOverlay.classList.remove('flex');signalOverlay.setAttribute('aria-busy','false');
           delete signalOverlay.dataset.assetLoading;
           loginModal.classList.remove('hidden');loginModal.classList.add('flex');
@@ -1610,7 +1615,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         document.body.classList.remove('theme-landing');document.body.classList.add('theme-inner');
         landingView.classList.add('hidden');innerAppView.classList.remove('intranet-preparing');
         await nextPaint();
-        if(art.shown){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'接入许可已签发。您的工作终端已就绪。');await new Promise(resolve=>setTimeout(resolve,prefersReducedMotion?0:art.cached?80:180));}
+        if(art.shown||!signalOverlay.classList.contains('hidden')){signalOverlay.dataset.assetLoading='complete';signalPhase('欢迎归岗，'+emp.name,100,'ACCESS GRANTED. YOUR WORKSTATION IS READY.');await new Promise(resolve=>setTimeout(resolve,900));}
         document.documentElement.dataset.entryState='ready';
         const atHome=!byId('view-profile').classList.contains('hidden');
         pendingHomeVisit=newVisit&&!atHome;
@@ -1909,9 +1914,10 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
             delete signalOverlay.dataset.assetLoading;
             signalOverlay.classList.remove('hidden');signalOverlay.classList.add('flex');
             adsUI?.reset();currentUser=null;signalPhase('公司内网连接暂未建立',12,'');
+            signalProgress.update({state:'error',label:'CONNECTION FAILED'});
             const logs=document.getElementById('signal-log-lines'),message=document.createElement('div'),retry=document.createElement('button');
-            message.textContent='暂未取得内网响应，员工身份尚未确认。请重新连接。';retry.id='session-restore-retry';retry.type='button';retry.textContent='重试连接';
-            retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);
+            message.textContent='SERVER UNAVAILABLE. PLEASE RETRY THE CONNECTION.';retry.id='session-restore-retry';retry.type='button';retry.textContent='RETRY CONNECTION';
+            retry.addEventListener('click',()=>location.reload());logs.replaceChildren(message,retry);retry.focus();
           }
         });
         window.AVEDEntryBoot?.done();

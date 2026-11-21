@@ -1,0 +1,110 @@
+/* Registered before the shared layers so administrator rules also own dialogs.
+   Five text sizes: helper 12, body/control 14, group 16, section 20, entry 28. */
+@layer aved-admin-ui {
+ html[data-admin-theme] {
+  --admin-size-note:12px;--admin-size-body:14px;--admin-size-group:16px;
+  --admin-size-section:20px;--admin-size-entry:28px;--admin-stroke:.5px;
+  --admin-bg:#202122!important;--admin-panel:#18191a!important;--admin-input:#111213!important;
+  --admin-ink:#eeeeec!important;--admin-muted:#b5b6b3!important;--admin-line:#70736f!important;
+  --admin-red:#71363d!important;--admin-motion:180ms;color-scheme:dark;
+ }
+ html[data-admin-theme=beige] {
+  --admin-bg:#f2eadb!important;--admin-panel:#e5dac6!important;--admin-input:#fbf5e9!important;
+  --admin-ink:#342e26!important;--admin-muted:#665a49!important;--admin-line:#9a8970!important;color-scheme:light;
+ }
+ html[data-admin-theme=sage] {
+  --admin-bg:#dce1dc!important;--admin-panel:#cdd4ce!important;--admin-input:#f0f3ef!important;
+  --admin-ink:#2d342f!important;--admin-muted:#505a52!important;--admin-line:#859087!important;color-scheme:light;
+ }
+ /* Keep the scale independent of legacy font shorthands and inline editor sizes. */
+ html[data-admin-theme] body {
+  font-family:var(--type-ui,'Microsoft YaHei',sans-serif)!important;
+  font-size:var(--admin-size-body)!important;line-height:1.65!important;
+  --popup-copy:var(--type-ui);--window-copy:var(--type-ui);
+ }
+ html[data-admin-theme] body * {
+  font-family:inherit!important;font-size:inherit!important;font-style:inherit!important;
+  border-width:var(--admin-stroke)!important;
+ }
+ html[data-admin-theme] body :is(h1,#welcome h1) {font-size:var(--admin-size-entry)!important;line-height:1.35!important}
+ html[data-admin-theme] body :is(h2,h3) {font-size:var(--admin-size-section)!important;line-height:1.45!important}
+ html[data-admin-theme] body :is(h4,h5,h6,legend,.brand b) {font-size:var(--admin-size-group)!important;line-height:1.5!important}
+ html[data-admin-theme] body :is(small,.eyebrow,.fine,.admin-count,.app-footer,.welcome-foot,.welcome-top,.signal,.audit-identity,.hash-cell,.bar-music-credit,.dossier-preview-label) {font-size:var(--admin-size-note)!important;line-height:1.6!important}
+ html[data-admin-theme] body :is(button,input,select,textarea,summary,label,th,td,.audit-detail) {font-size:var(--admin-size-body)!important;line-height:1.6!important;font-style:normal!important}
+ html[data-admin-theme] body :is(.ui-help-note,.bar-music-help,.dossier-effects-help,.personnel-kind-note,.section-heading p,.company-robots-panel>p,.employee-attributes-fields>p,.dossier-section-editor>small,.dossier-image-editor>small,[data-life-support]>p,#panel>p:not([role])) {
+  font-size:var(--admin-size-note)!important;font-style:italic!important;line-height:1.75!important;color:var(--admin-muted)!important;
+ }
+ /* Metadata, entered content and status feedback remain upright. */
+ html[data-admin-theme] body :is(.announcement-body,.admin-post-context,[role=status],[role=alert],time) {font-style:normal!important}
+ html[data-admin-theme] body :is(button,input,select,textarea)::placeholder {font-size:inherit!important;font-style:normal!important}
+ html[data-admin-theme] body button {font-weight:600!important;letter-spacing:0!important}
+ html[data-admin-theme] body :is(button,summary,a,input,select,textarea):focus-visible {outline:2px solid var(--admin-ink)!important;outline-offset:3px!important}
+
+ html[data-admin-theme] body,html[data-admin-theme] body .dashboard.admin-mode {background:var(--admin-bg)!important;color:var(--admin-ink)!important}
+ html[data-admin-theme] body :is(.admin-form,.admin-post,.table-wrap,.notice-box,.employee-edit-form,.personnel-position-fields,.employee-attributes-fields,.admin-dialog,.scratch-setting,.pool-editor,.data-card,.dossier-admin-row,.bar-music-albums button,.aved-feedback-dialog,.aved-toast) {
+  background:var(--admin-panel)!important;color:var(--admin-ink)!important;border-color:var(--admin-line)!important;
+ }
+ html[data-admin-theme] body :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:var(--admin-input)!important;color:var(--admin-ink)!important;border-color:var(--admin-line)!important;box-sizing:border-box;max-width:100%;min-width:0}
+ html[data-admin-theme] body :is(.admin-dialog,.aved-feedback-dialog,.aved-toast) {--popup-face:var(--admin-panel);--popup-ink:var(--admin-ink);--popup-line:var(--admin-line)}
+ html[data-admin-theme] body .sidebar .tab {margin:-.5px 0 0 -.5px!important}
+ html[data-admin-theme] body :is(.small-action,.admin-theme-toggle,.sidebar .tab) {color:var(--admin-ink)!important;border-color:var(--admin-line)!important}
+ html[data-admin-theme] body :is(.small-action,.admin-theme-toggle,.sidebar .tab):not(.danger) {background:var(--admin-panel)!important}
+ html[data-admin-theme] body :is(.small-action,.admin-theme-toggle,.sidebar .tab):not(:disabled):is(:hover,[aria-pressed=true],.active) {background:var(--admin-input)!important;border-color:var(--admin-ink)!important}
+ html[data-admin-theme] body :is(.danger,.logout) {background:var(--admin-red)!important;color:#fff!important;border-color:var(--admin-red)!important}
+ html[data-admin-theme] body button.small-action.danger {background:var(--admin-red)!important;color:#fff!important;border-color:var(--admin-red)!important}
+ html[data-admin-theme] body .admin-header-actions {flex-wrap:wrap}
+ html[data-admin-theme] body .admin-dialog>header {align-items:center}
+ html[data-admin-theme] body :is(.admin-form,.community-form) {gap:12px}
+ html[data-admin-theme] body label {overflow-wrap:anywhere}
+ html[data-admin-theme] body .brand small {letter-spacing:.06em}
+ html[data-admin-theme] body .employee-registration {padding:16px;background:var(--admin-panel)!important;border:.5px solid var(--admin-line);margin-block:20px}
+ html[data-admin-theme] body .employee-registration>summary {cursor:pointer;font-weight:600;min-height:32px;align-content:center}
+ html[data-admin-theme] body :is(.employee-registration-tabs,.employee-import-actions) {display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-block:14px}
+ html[data-admin-theme] body [data-register-panel][hidden],html[data-admin-theme] body [data-import-results][hidden] {display:none!important}
+ html[data-admin-theme] body [data-register-panel=bulk] {display:grid;gap:12px;min-width:0}
+ html[data-admin-theme] body [data-register-panel=bulk]>label {display:grid;gap:6px;min-width:0}
+ html[data-admin-theme] body [data-register-panel=bulk] :is(select,textarea) {width:100%;padding:10px;border:.5px solid var(--admin-line)}
+ html[data-admin-theme] body [data-register-panel=bulk] .ui-help-note {margin:0}
+ html[data-admin-theme] body .employee-import-preview {max-width:100%;overflow:auto}
+ html[data-admin-theme] body .employee-import-preview table {min-width:720px}
+ html[data-admin-theme] body [data-import-errors] {color:var(--admin-ink);overflow-wrap:anywhere}
+ html[data-admin-theme] body [data-import-errors] ul {margin:0;padding-left:1.5em}
+ html[data-admin-theme] body .life-tag-manager {display:grid;gap:12px;min-width:0}
+ html[data-admin-theme] body .life-tag-create {display:flex!important;flex-wrap:wrap!important;align-items:end!important;gap:8px!important;margin:0!important;padding-bottom:16px!important;border-bottom:.5px solid var(--admin-line)!important}
+ html[data-admin-theme] body .life-tag-create label {flex:1 1 200px;display:grid;gap:6px}
+ html[data-admin-theme] body .life-tag-filters {display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.45fr);gap:8px}
+ html[data-admin-theme] body .life-admin-tags {display:grid!important;gap:12px!important;min-width:0!important}
+ html[data-admin-theme] body .life-tag-row {display:grid;gap:8px;padding:12px;border:.5px solid var(--admin-line);background:var(--admin-bg)}
+ html[data-admin-theme] body .life-tag-row>label {display:grid;gap:6px}
+ html[data-admin-theme] body .life-tag-manager :is(input:not([type=checkbox]),select) {width:100%;padding:8px;border:.5px solid var(--admin-line)}
+ html[data-admin-theme] body .life-tag-manager p {margin:0}
+ html[data-admin-theme] body .life-tag-actions {display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+ html[data-admin-theme] body .life-tag-actions label {display:flex;align-items:center;gap:6px;margin-right:8px}
+ html[data-admin-theme] body .life-tag-row[hidden] {display:none!important}
+ html[data-admin-theme] body .roster-departments {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
+ html[data-admin-theme] body .roster-departments :is(button,p) {min-width:0!important;margin:0!important}
+ html[data-admin-theme] body .roster-departments button {width:100%!important;min-height:36px!important;padding:6px 10px!important}
+ html[data-admin-theme] body .roster-departments :is(button:first-child,p) {grid-column:1/-1!important}
+ html[data-admin-theme] body .admin-dialog-source {border-style:none!important;padding:0!important;margin:0!important;min-width:0;max-width:100%}
+ html[data-admin-theme] body .admin-dialog-source>summary {display:none!important}
+ html[data-admin-theme] body .employee-balance-editor {margin-top:20px;padding-top:16px;border-top:.5px solid var(--admin-line)}
+ html[data-admin-theme] body .employee-balance-editor h4 {margin:0 0 12px}
+ html[data-admin-theme] body .employee-edit-delete {border-top:.5px solid var(--admin-line);margin-top:20px;padding-top:16px}
+ html[data-admin-theme] body .admin-dialog-source .employee-balance-form {min-width:0;width:100%;padding:0}
+ html[data-admin-theme] body .bar-music-metadata select {width:100%;padding:9px;border:.5px solid var(--admin-line);min-height:38px}
+ html[data-admin-theme] body .employee-roster {overflow:auto}
+ html[data-admin-theme] body .employee-roster table {min-width:520px!important;width:100%!important}
+ html[data-admin-theme] body .employee-roster :is(th,td) {padding:10px 8px!important}
+ html[data-admin-theme] body .employee-roster td:first-child {max-width:180px;white-space:normal!important;overflow-wrap:anywhere}
+ html[data-admin-theme] body :is(button,input,select,textarea,.admin-post,.employee-registration) {transition:background-color var(--admin-motion) ease,border-color var(--admin-motion) ease,box-shadow var(--admin-motion) ease,transform var(--admin-motion) ease!important}
+ html[data-admin-theme] body .small-action:not(:disabled):hover {transform:translateY(-1px)}
+ html[data-admin-theme] body .small-action:not(:disabled):active {transform:translateY(1px);box-shadow:none!important}
+ html[data-admin-theme] body #panel>* {animation:admin-content-arrive var(--admin-motion) ease-out both!important}
+ html[data-admin-theme] body dialog[open] {animation:admin-window-arrive var(--admin-motion) cubic-bezier(.2,.65,.3,1) both!important}
+ html[data-admin-theme] body .admin-dialog>header {background:var(--admin-red)!important;color:#fff!important}
+ @media(min-width:1000px){html[data-admin-theme] body .roster-departments {grid-template-columns:repeat(6,minmax(0,1fr))!important}}
+ @media(prefers-reduced-motion:reduce){html[data-admin-theme]{--admin-motion:0ms!important}}
+ html[data-admin-theme] body.effects-off {--admin-motion:0ms!important}
+ @keyframes admin-content-arrive {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+ @keyframes admin-window-arrive {from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+}

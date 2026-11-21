@@ -1,0 +1,25 @@
+/* Value/total describe measured work; an absent total remains indeterminate. */
+.aved-progress{--progress-accent:light-dark(#98282c,#c64b4f);--progress-track:light-dark(#11111124,#ffffff24);--progress-success:light-dark(#202020,#f5f5f5);--progress-error:light-dark(#98282c,#dd686b);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0;width:100%;color:light-dark(#333,#ddd)}
+.aved-progress-track{position:relative;overflow:hidden;height:6px;min-width:0;border:0;border-radius:0;background:var(--progress-track)}
+.aved-progress-fill{position:absolute;inset:0;display:block;height:100%;background:var(--progress-accent);transform:scaleX(var(--progress-ratio,0));transform-origin:left;overflow:hidden;transition:transform .75s cubic-bezier(.2,.6,.3,1),background-color .3s linear}
+.aved-progress[data-mode=indeterminate][data-state=loading] .aved-progress-fill{opacity:0}
+.aved-progress[data-mode=indeterminate][data-state=loading] .aved-progress-track::after{content:'';position:absolute;inset-block:0;left:0;width:28%;background:var(--progress-accent);animation:aved-progress-travel 2.8s ease-in-out infinite alternate;will-change:transform}
+.aved-progress[data-mode=determinate][data-state=loading] .aved-progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ffffff38,transparent);transform:translateX(-100%);animation:aved-progress-sheen 2.6s linear infinite}
+.aved-progress-output{min-width:76px;font-family:var(--type-code,monospace);font-size:12px;font-variant-numeric:tabular-nums;line-height:20px;white-space:nowrap;text-align:right}
+.aved-progress-status{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.aved-progress[data-state=success]{--progress-accent:var(--progress-success)}
+.aved-progress[data-state=error]{--progress-accent:var(--progress-error)}
+.aved-progress:is([data-state=success],[data-state=error]) .aved-progress-output{color:var(--progress-accent)}
+.aved-progress:is([data-state=success],[data-state=error]) .aved-progress-fill{transform:scaleX(1)}
+.aved-progress[data-state=success] .aved-progress-fill{transition-duration:.45s}
+@keyframes aved-progress-travel{from{transform:translateX(0)}to{transform:translateX(257.142857%)}}
+@keyframes aved-progress-sheen{to{transform:translateX(100%)}}
+@keyframes aved-progress-breathe{0%,100%{opacity:.4}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .aved-progress .aved-progress-fill{transition:none}
+ .aved-progress[data-mode=indeterminate][data-state=loading] .aved-progress-track::after{animation:aved-progress-breathe 2.8s ease-in-out infinite;transform:none;will-change:auto}
+ .aved-progress .aved-progress-fill::after{animation:none!important;display:none}
+}
+body.effects-off .aved-progress .aved-progress-fill{transition:none}
+body.effects-off .aved-progress[data-mode=indeterminate][data-state=loading] .aved-progress-track::after{animation:none;transform:none;will-change:auto}
+body.effects-off .aved-progress .aved-progress-fill::after{animation:none;display:none}

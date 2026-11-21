@@ -30,5 +30,4 @@
   #login-modal :is(button[type='submit'],#close-login-btn) * {color:#fff !important}
   #login-modal :is(button[type='submit'],#close-login-btn):is(:hover,:focus-visible) {background:#772329 !important;color:#fff !important;border-color:#772329 !important}
   #login-modal #remember-credentials-checkbox {accent-color:#fff !important}
-  #signal-Connecting-overlay #signal-progress-bar {background:#fff !important}
 }

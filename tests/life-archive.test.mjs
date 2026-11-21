@@ -56,6 +56,21 @@ test('random board spreads authors, stable seeded paging excludes later submissi
   assert.ok(filtered.items.every(x=>x.tags.includes('收容部')));assert.ok(filtered.items[0].id<filtered.items[1].id);
   assert.equal((await call('/api/player/life?kind=art')).data.items.length,0);
 });
+test('image works publish immediately on creation and revision, with preserved administrative removal',async t=>{
+  const {db,call}=fixture();t.after(()=>db.close());
+  const image='data:image/png;base64,'+(await sharp({create:{width:8,height:8,channels:3,background:'#eee'}}).png().toBuffer()).toString('base64');
+  const payload={title:'直接公开的画作',kind:'art',imageData:image};
+  const saved=await call('/api/player/life','POST',payload);assert.equal(saved.status,201);assert.equal(saved.data.pending,false);
+  const work=(await call('/api/player/life/'+saved.data.id,'GET',undefined,2)).data;assert.equal(work.title,payload.title);assert.ok(work.imageData);
+  const edited=await call('/api/player/life/'+saved.data.id,'PUT',{...payload,title:'修订后仍公开',revision:work.revision});assert.equal(edited.data.pending,false);
+  assert.equal((await call('/api/player/life/'+saved.data.id,'GET',undefined,2)).data.title,'修订后仍公开');
+  db.exec("UPDATE life_records SET moderation='pending' WHERE id=1;INSERT INTO life_records(employee_id,title,body,kind,moderation) VALUES(1,'已拒绝','正文','article','rejected');INSERT INTO life_records(employee_id,title,body,kind,moderation,deleted_at) VALUES(1,'已删除','正文','article','pending','removed');");
+  installLife({db,send(){},readBody(){},log(){}});
+  assert.equal(db.prepare('SELECT moderation FROM life_records WHERE id=1').get().moderation,'approved');
+  assert.equal(db.prepare("SELECT moderation FROM life_records WHERE title='已拒绝'").get().moderation,'rejected');
+  assert.equal(db.prepare("SELECT moderation FROM life_records WHERE title='已删除'").get().moderation,'pending');
+});
+
 test('long images retain readable width and a separate preview, malformed uploads rejected',async()=>{
   const input=await sharp({create:{width:1000,height:8000,channels:3,background:'#e0d5bd'}}).png().toBuffer();
   const result=await prepareLifeImage('data:image/png;base64,'+input.toString('base64'));
@@ -180,4 +195,33 @@ test('preview defaults center legacy and new works while explicitly chosen edges
  installLife({db,send(){},readBody:async req=>req.body,log(){}});
  assert.equal((await call('/api/player/life/'+id)).data.previewPosition,0);
  assert.equal((await call('/api/player/life/1')).data.previewPosition,50);
+});
+
+
+test('tag removal updates work revisions atomically, preserves works and stays deleted after restart, including department tags',async t=>{
+ const {db,call}=fixture();t.after(()=>db.close());const admin={id:3,role:'admin'};
+ const tags=(await call('/api/admin/life/tags','GET',undefined,admin)).data.items,daily=tags.find(x=>x.name==='日常'),dept=tags.find(x=>x.name==='收容部');
+ assert.equal(daily.usageCount,1);assert.equal('usageCount' in (await call('/api/player/life/catalog')).data.items[0],false);
+ assert.equal((await call('/api/admin/life/tags/'+daily.id,'DELETE')).status,403);
+ const before=(await call('/api/player/life/1')).data;
+ assert.equal((await call('/api/admin/life/tags/'+daily.id,'DELETE',undefined,admin)).status,200);
+ const after=(await call('/api/player/life/1')).data;assert.equal(after.title,before.title);assert.equal(after.body,before.body);assert.deepEqual(after.tags,[]);assert.equal(after.revision,before.revision+1);
+ assert.equal((await call('/api/player/life/1','PUT',{title:'旧编辑',kind:'article',body:'正文',tags:['日常'],revision:before.revision})).status,409);
+ assert.equal((await call('/api/admin/life/tags/'+daily.id,'DELETE',undefined,admin)).status,404);
+ assert.equal((await call('/api/admin/life/tags/'+daily.id,'PUT',{name:'旧标签'},admin)).status,404);
+ assert.equal((await call('/api/admin/life/tags/'+dept.id,'DELETE',undefined,admin)).status,200);
+ installLife({db,send(){},readBody:async req=>req.body,log(){}});
+ for(const name of ['日常','收容部'])assert.ok(!(await call('/api/admin/life/tags','GET',undefined,admin)).data.items.some(x=>x.name===name));
+ await assert.rejects(call('/api/player/life','POST',{title:'新作品',kind:'article',body:'正文',tags:['日常']}),/已登记/);
+ assert.equal((await call('/api/admin/life/tags','POST',{name:'日常'},admin)).status,200);
+ const restored=(await call('/api/admin/life/tags','GET',undefined,admin)).data.items.find(x=>x.name==='日常');assert.equal(restored.id,daily.id);assert.equal(restored.usageCount,0);
+ assert.deepEqual((await call('/api/player/life/1')).data.tags,[]);
+ assert.equal(db.prepare('PRAGMA quick_check').get().quick_check,'ok');assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);
+});
+
+test('tag deletion rolls back when a work cannot be updated',async t=>{
+ const {db,call}=fixture();t.after(()=>db.close());const admin={id:3,role:'admin'},daily=(await call('/api/admin/life/tags','GET',undefined,admin)).data.items.find(x=>x.name==='日常');
+ db.exec("CREATE TRIGGER reject_tag_update BEFORE UPDATE OF tags ON life_records BEGIN SELECT RAISE(ABORT,'blocked'); END");
+ await assert.rejects(call('/api/admin/life/tags/'+daily.id,'DELETE',undefined,admin),/blocked/);
+ assert.ok((await call('/api/player/life/catalog')).data.items.some(x=>x.name==='日常'));assert.deepEqual((await call('/api/player/life/1')).data.tags,['日常']);
 });
