@@ -23,6 +23,7 @@
   document.body.classList.add('terminal-next');
   try{localStorage.removeItem('aved_layout_v2');}catch{}
  }
+ window.AVEDApplyPreferences=apply;
  window.AVEDEffectsEnabled=()=>!document.body.classList.contains('effects-off');
  window.AVEDSetEffects=enabled=>{const off=!enabled,wasOn=window.AVEDEffectsEnabled();document.body.classList.toggle('effects-off',off);save('aved_effects_v1',off?'off':'on');window.AVEDSyncPreferences?.();document.dispatchEvent(new Event('aved-effects-change'));if(wasOn&&off)window.AVEDPresence?.effectsSwitch?.();};
  window.AVEDSyncPreferences=()=>{document.querySelectorAll('[data-effects-toggle]').forEach(b=>{const on=window.AVEDEffectsEnabled();b.textContent=on?'特效：开启':'特效：关闭';b.setAttribute('aria-pressed',String(on));b.title=on?'关闭普通界面特效':'开启普通界面特效';});const nav=document.querySelector('[data-nav="welcome"]'),label=nav?.querySelector('.sidebar-label');if(label){label.textContent='员工首页';nav.setAttribute('aria-label',label.textContent);}};

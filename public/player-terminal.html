@@ -37,14 +37,14 @@
   <link rel="stylesheet" href="/typography.css?v=notice-restore-20261120">
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
-  <link rel="stylesheet" href="/entry-layout-stability.css?v=visible-gateway-20261114">
+  <link rel="stylesheet" href="/entry-layout-stability.css?v=stable-wordmark-20261121">
   <link rel="stylesheet" href="/login-loading-layout.css?v=art-warmup-3">
   <link rel="stylesheet" href="/default-avatar.css?v=suit-broad-2">
   <link rel="stylesheet" href="/interface-contamination.css?v=pollution-independent-20261116">
   <link rel="stylesheet" href="/personal-hud.css?v=pattern-detail-20261119">
   <link rel="stylesheet" href="/containment-access.css?v=ranking-identity-correction-20261117">
-  <script src="terminal-preferences.js?v=pollution-independent-20261116" defer></script>
-  <script src="/gateway-preferences.js?v=background-shop-20261112" defer></script>
+  <script src="terminal-preferences.js?v=entry-preferences-20261121"></script>
+  <script src="/gateway-preferences.js?v=background-shop-20261112"></script>
   <link rel="stylesheet" href="/currency-symbol.css?v=currency-pig-salute-20261118">
   <link rel="stylesheet" href="/scratch-bomb.css?v=adaptive-ticker-3">
   <link rel="stylesheet" href="/scratch-feedback.css?v=single-action-row-5">
@@ -423,9 +423,10 @@
   <link rel="stylesheet" href="/sound-settings.css?v=web-sound-20261116">
   <link rel="stylesheet" href="/department-archive.css?v=department-no-register-20261119">
   <script src="/department-archive.js?v=interaction-polish-20261120" defer></script>
+  <link rel="stylesheet" href="/gateway-effects.css?v=stable-wordmark-20261121">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
-  <script>window.AVEDGateway?.apply();</script>
+  <script>window.AVEDApplyPreferences?.();window.AVEDGateway?.apply();</script>
 
   <!-- 全局顶部轻提示 (Toast) -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
@@ -460,7 +461,7 @@
   <!-- ==========================================================================
        模块 1：外层欢迎页面（融合宣发大图1 + 零圆角 + 按压主登录按钮）
        ========================================================================== -->
-  <main id="landing-view" data-type-ignore class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
+  <main id="landing-view" data-sphere-pattern="ascii" data-type-ignore class="flex-1 flex flex-col items-center justify-between relative px-3 sm:px-6 py-6 sm:py-8 select-none overflow-hidden">
 
     <div class="landing-edge-line w-full max-w-6xl flex flex-wrap justify-between items-center text-[10px] sm:text-[11px] tracking-[0.2em] text-neutral-400 font-mono-tech border-b border-white/15 pb-3 z-10">
       <div class="flex items-center gap-2">
@@ -1558,7 +1559,6 @@
   <script src="/terminal-ascii.js?v=pattern-detail-20261119" defer></script>
   <script src="/landing-sphere.js?v=background-shop-20261112" defer></script>
 <script src="/gateway-effects.js?v=apple-grain-fallback-20261114" defer></script>
-<link rel="stylesheet" href="/gateway-effects.css?v=opaque-sphere-20261112">
 <script src="/stock-help.js?v=player-admin-copy-20261118" defer></script>
 <link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
 <link rel="stylesheet" href="/market-header-layout.css?v=1">

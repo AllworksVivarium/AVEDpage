@@ -3,7 +3,8 @@
  #inner-app-view.intranet-preparing{visibility:hidden!important;pointer-events:none!important}
  #signal-Connecting-overlay #session-restore-retry{justify-self:start;box-sizing:border-box;min-height:22px!important;height:22px!important;padding:0 10px!important;border:1px solid currentColor;background:transparent;color:inherit;font-size:12px!important;line-height:20px!important;cursor:pointer}
  :is(#landing-view,#login-modal){--entry-copy:'Courier New','Songti SC','SimSun',serif;font-family:var(--entry-copy)!important;font-size:14px!important;line-height:1.5!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
- #landing-view .floating-kanji{box-sizing:content-box;display:inline-block!important;width:2.24em!important;text-align:center!important;font-family:'Songti SC','SimSun',serif!important;font-size:clamp(26px,4.2vw,64px)!important;line-height:1.2!important;font-weight:900!important;letter-spacing:.08em!important}
+ #landing-view .floating-kanji{box-sizing:content-box;display:inline-block!important;width:auto!important;text-align:center!important;font-family:'Songti SC','SimSun',serif!important;font-size:clamp(40px,6.4vw,88px)!important;line-height:1.15!important;font-weight:900!important;letter-spacing:0!important}
+ @media(max-width:600px){#landing-view .floating-kanji{font-size:clamp(28px,8vw,40px)!important}}
  #landing-view .landing-edge-line,#landing-view .landing-edge-line span{font-family:var(--entry-copy)!important;font-size:10px!important;line-height:15px!important}
  #landing-view .landing-float>div{font-family:var(--entry-copy)!important;font-size:11px!important;line-height:17px!important}
  #landing-view .landing-motto p{font-family:var(--entry-copy)!important;font-size:12px!important;line-height:18px!important}

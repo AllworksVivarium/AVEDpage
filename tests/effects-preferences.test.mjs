@@ -14,3 +14,16 @@ test('effects switch works without a sidebar control and persists the global sta
  handlers.get('click')({target:{closest:()=>({})}});assert.equal(window.AVEDEffectsEnabled(),false,'legacy buttons share the same toggle');
  handlers.get('DOMContentLoaded')();assert.equal(window.AVEDEffectsEnabled(),false,'initial preference application restores the saved choice');
 });
+
+
+test('saved effects apply at body creation before DOMContentLoaded',()=>{
+ const flags=new Set(),handlers=new Map();
+ const classList={contains:name=>flags.has(name),toggle(name,on){if(on)flags.add(name);else flags.delete(name);},add:name=>flags.add(name)};
+ const document={body:null,documentElement:{dataset:{},style:{}},addEventListener:(name,fn)=>handlers.set(name,fn),dispatchEvent(){},querySelectorAll:()=>[],querySelector:()=>null};
+ const window={};
+ vm.runInNewContext(readFileSync(new URL('../public/terminal-preferences.js',import.meta.url),'utf8'),{window,document,localStorage:{getItem:key=>key==='aved_effects_v1'?'off':null,removeItem(){},setItem(){}},Event:class{}});
+ assert.equal(document.body,null,'preferences load safely in the head');
+ document.body={classList};window.AVEDApplyPreferences();
+ assert.ok(flags.has('effects-off'),'disabled effects are restored before later content is parsed');
+ handlers.get('DOMContentLoaded')();assert.ok(flags.has('effects-off'));
+});
