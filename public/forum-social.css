@@ -195,3 +195,10 @@
  html[data-effects=off] #view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after{animation:none!important;display:none!important}
  @media(prefers-reduced-motion:reduce){#view-forum .forum-author[data-forum-admin] b.forum-admin-badge::after{animation:none!important;display:none!important}}
 }
+
+@layer aved-personal {
+ body.theme-inner #inner-app-view #view-forum .forum-category-choice{display:flex;align-items:center;gap:8px;font:12px/1.5 var(--type-ui)}
+ body.theme-inner #inner-app-view #view-forum .forum-category-choice select{width:auto;min-width:120px;padding:5px 8px;background:var(--inner-card-bg);color:var(--inner-text-main);border:1px solid var(--inner-border-soft);font:inherit}
+ #view-forum .forum-thread-category{font:11px/1.5 var(--type-ui);color:var(--inner-text-muted);white-space:nowrap}
+ @media(max-width:680px){body.theme-inner #inner-app-view #view-forum .forum-browse-tools{grid-template-columns:minmax(0,1fr)}body.theme-inner #inner-app-view #view-forum .forum-browse-actions{flex-wrap:wrap;justify-content:flex-start}}
+}

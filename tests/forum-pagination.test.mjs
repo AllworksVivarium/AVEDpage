@@ -28,7 +28,7 @@ test('forum paging, searching and comment-targeted unread receipts',async t=>{
  const oldest=await createTopic('目标话题','长正文'+'很'.repeat(500));
  for(let i=0;i<24;i++)await createTopic('分页主题 '+i);
  const newest=(await as(reader,'/api/player/forum?page=1')).data;
- assert.equal(newest.total,25);assert.equal(newest.pages,3);assert.equal(newest.items.length,10);
+ assert.equal(newest.sort,'activity');assert.equal(newest.total,25);assert.equal(newest.pages,3);assert.equal(newest.items.length,10);
  const second=(await as(reader,'/api/player/forum?page=2')).data;
  assert.equal(second.items.length,10);assert.ok(second.items.every(x=>!newest.items.some(y=>y.id===x.id)));
  const last=(await as(reader,'/api/player/forum?page=999')).data;assert.equal(last.page,3);assert.equal(last.items.length,5);
@@ -66,6 +66,10 @@ test('forum paging, searching and comment-targeted unread receipts',async t=>{
  const fresh=(await post(planner,oldest,'新回复仍须单独阅读',{replyToId:parent})).data.id;
  inbox=(await as(reader,'/api/player/forum/notifications')).data;assert.equal(inbox.unread,1);assert.equal(inbox.items.length,6);assert.equal(inbox.items[0].replyId,fresh);assert.equal(inbox.items.filter(x=>x.unread===0).length,5);
  const db=new DatabaseSync(join(folder,'wanyehui.db'));db.prepare("UPDATE forum_replies SET created_at='2099-01-01 00:00:00' WHERE id=?").run(addressed);db.close();
+ const defaultList=(await as(reader,'/api/player/forum')).data;
+ assert.equal(defaultList.sort,'activity');assert.equal(defaultList.items[0].id,oldest,'default browsing puts the latest public reply first');
+ const seeded=(await as(reader,'/api/player/state?section=forum')).data.forum;
+ assert.equal(seeded.sort,'activity');assert.equal(seeded.items[0].id,oldest,'initial forum state uses the same reply ordering');
  assert.equal((await as(reader,'/api/player/forum?sort=activity')).data.items[0].id,oldest);
  assert.notEqual((await as(reader,'/api/player/forum?sort=newest')).data.items[0].id,oldest);
  await a('/api/admin/forum/replies/'+parent,'DELETE');

@@ -1,9 +1,10 @@
 /* Both connecting and welcome phases use this same, stable frame. */
 @layer aved-personal {
- #signal-Connecting-overlay{font-size:14px!important;line-height:21px!important;overflow:auto!important;align-items:safe center!important;color-scheme:dark!important}
+ #signal-Connecting-overlay{z-index:120!important;font-size:14px!important;line-height:21px!important;overflow:auto!important;align-items:safe center!important;color-scheme:dark!important}
  #signal-Connecting-overlay,#signal-Connecting-overlay *{font-family:var(--type-entry,Arial,sans-serif)!important;font-synthesis:none!important;letter-spacing:0!important}
  /* Keep the progress screen steady while the gateway changes to the intranet. */
  html:has(#signal-Connecting-overlay.flex){overflow:hidden!important}
+ body:has(#signal-Connecting-overlay.flex) :is(#left-sidebar,#sidebar-backdrop){visibility:hidden!important;pointer-events:none!important}
  body:has(#signal-Connecting-overlay.flex)::after{display:none!important;animation:none!important}
  #signal-Connecting-overlay #signal-log-lines>div{animation:none!important}
  #signal-Connecting-overlay>.signal-mesh{box-sizing:border-box!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:12px!important;width:min(448px,calc(100vw - 32px))!important;max-width:448px!important;height:auto!important;min-height:min(350px,calc(100dvh - 32px))!important;max-height:calc(100dvh - 32px)!important;padding:20px!important;overflow:auto!important}

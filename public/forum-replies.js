@@ -1,10 +1,10 @@
 window.AVEDForumPager=function({label,onPage}){
  const el=document.createElement('nav');el.className='forum-pagination';el.setAttribute('aria-label',label);
  let page=1,pages=1;
- el.innerHTML='<button type="button" data-prev>上一页</button><label><select aria-label="'+label+'页码"></select><span></span></label><button type="button" data-next>下一页</button>';
- const select=el.querySelector('select'),prev=el.querySelector('[data-prev]'),next=el.querySelector('[data-next]');
+ el.innerHTML='<button type="button" data-prev>上一页</button><label><select aria-label="'+label+'页码"></select><span data-page-count></span></label><button type="button" data-next>下一页</button>';
+ const select=el.querySelector('select'),prev=el.querySelector('[data-prev]'),next=el.querySelector('[data-next]'),pageCount=el.querySelector('[data-page-count]');
  prev.onclick=()=>onPage(page-1);next.onclick=()=>onPage(page+1);select.onchange=()=>onPage(Number(select.value));
- return {el,render(data,busy=false){page=data.page||1;pages=data.pages||1;const options=Array.from({length:pages},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');if(select.innerHTML!==options)select.innerHTML=options;select.value=String(page);el.querySelector('span').textContent=' / '+pages+' 页';prev.disabled=busy||page<=1;next.disabled=busy||page>=pages;select.disabled=busy||pages<=1;el.setAttribute('aria-busy',String(busy));}};
+ return {el,render(data,busy=false){page=data.page||1;pages=data.pages||1;const options=Array.from({length:pages},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');if(select.innerHTML!==options)select.innerHTML=options;select.value=String(page);pageCount.textContent=' / '+pages+' 页';prev.disabled=busy||page<=1;next.disabled=busy||page>=pages;select.disabled=busy||pages<=1;el.setAttribute('aria-busy',String(busy));}};
 };
 window.AVEDForumReplies=function({api,container,count,renderItem,onThread,onLoading=()=>{},enabled,onError}){
  let state=null,serial=0;

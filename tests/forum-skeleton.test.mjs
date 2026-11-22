@@ -70,3 +70,24 @@ test('reply request failures, navigation and cached refresh clean up their place
  const cached=container.children[0],refresh=ui.refresh();tick();assert.equal(container.hidden,false);assert.equal(container.children[0],cached);
  pending[3].reject(Error('offline'));await refresh;assert.equal(errors,2);assert.equal(container.children[0],cached);assert.equal(container.attrs['aria-busy'],'false');
 });
+
+
+test('forum category filter survives paging and sorting, restores on failure and resets per session',async()=>{
+ const {context,document}=fixture(),pending=[];let bar;
+ document.getElementById('new-forum-topic-form').before=el=>bar=el;
+ context.window.AVEDForumPager=()=>({el:new Element(),render(){}});
+ runInNewContext(readFileSync(new URL('../public/forum-browser.js',import.meta.url),'utf8'),context);
+ const ui=context.window.AVEDForumBrowser({api:path=>new Promise((resolve,reject)=>pending.push({path,resolve,reject})),getUser:()=>({id:1}),onData(){},onError(){}});
+ const categories=[{id:1,name:'员工日常'},{id:2,name:'组队招募'},{id:3,name:'出谋划策'}];
+ ui.seed({items:[],total:0,categories,categoryId:0,sort:'activity'});
+ const select=bar.querySelector('[aria-label=帖子分类]'),composer=document.getElementById('new-topic-category');
+ assert.equal(select.children.length,4);assert.equal(composer.children.length,3);assert.equal(composer.value,'1');
+ const first=ui.load({categoryId:2});assert.equal(new URLSearchParams(pending[0].path.split('?')[1]).get('category'),'2');
+ pending[0].resolve({items:[],total:0,categories,categoryId:2,sort:'activity'});await first;assert.equal(select.value,'2');
+ const page=ui.load({page:2,sort:'newest'}),query=new URLSearchParams(pending[1].path.split('?')[1]);assert.equal(query.get('category'),'2');assert.equal(query.get('page'),'2');assert.equal(query.get('sort'),'newest');
+ pending[1].resolve({items:[],total:0,categories,categoryId:2,sort:'newest'});await page;
+ select.value='3';const failed=ui.load({categoryId:3});pending[2].reject(Error('offline'));await failed;assert.equal(select.value,'2');
+ const published=ui.published(3);assert.equal(new URLSearchParams(pending[3].path.split('?')[1]).get('category'),'3');pending[3].resolve({items:[],total:0,categories,categoryId:3});await published;
+ ui.reset();assert.equal(select.value,'0');assert.equal(composer.disabled,true);
+ const reset=ui.load();assert.equal(new URLSearchParams(pending[4].path.split('?')[1]).get('category'),'');pending[4].resolve({items:[],total:0,categories,categoryId:0,sort:'activity'});await reset;
+});

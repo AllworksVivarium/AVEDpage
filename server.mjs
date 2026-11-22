@@ -1,3 +1,4 @@
+import {resolveForumCategory} from './server-forum-categories.mjs';
 import {businessDay} from './server-business-day.mjs';
 import {installAds} from './server-ads.mjs';
 import {DAILY_REWARD} from './server-rewards.mjs';
@@ -511,10 +512,10 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     }
     if (url.pathname === '/api/forum' && req.method === 'POST') {
       const employee=requireEmployee(req,res);if(!employee)return;
-      const {title,body}=await readBody(req),profile=publicProfile(employee.id);
+      const {title,body,categoryId}=await readBody(req),profile=publicProfile(employee.id);
       if(!validText(title,120)||!validText(body,3000))return send(res,400,{error:'标题最多 120 字，内容最多 3000 字。'});
       if(!profile.anonymousName)return send(res,400,{error:'请先在个人主页设置匿名名称。'});
-      const row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body) VALUES(?,?,?,?)').run(employee.id,profile.anonymousName,title.trim(),body.trim());
+      const row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body,category_id) VALUES(?,?,?,?,?)').run(employee.id,profile.anonymousName,title.trim(),body.trim(),resolveForumCategory(db,categoryId));
       return send(res,201,{id:Number(row.lastInsertRowid)});
     }
     if (url.pathname.startsWith('/api/forum/') && url.pathname.endsWith('/replies') && req.method === 'GET') {

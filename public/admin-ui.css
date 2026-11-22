@@ -174,3 +174,14 @@
  @keyframes admin-content-arrive {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
  @keyframes admin-window-arrive {from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 }
+
+@layer aved-admin-ui {
+ html[data-admin-theme] body .admin-forum-categories{padding:12px;margin-bottom:16px;border:.5px solid var(--admin-line);background:var(--admin-panel)}
+ html[data-admin-theme] body .admin-forum-category-row{display:grid;grid-template-columns:minmax(100px,1fr) 80px auto;align-items:end;gap:8px;margin-top:10px}
+ html[data-admin-theme] body .admin-forum-category-row label{display:grid;gap:4px;min-width:0}
+ html[data-admin-theme] body .admin-forum-category-row input{width:100%;min-width:0}
+ html[data-admin-theme] body .admin-forum-category-row[data-category-create]{grid-template-columns:minmax(100px,1fr) auto}
+ html[data-admin-theme] body .admin-forum-topic-category{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+ html[data-admin-theme] body .admin-forum-topic-category label{display:flex;align-items:center;gap:8px}
+ html[data-admin-theme] body .admin-forum-topic-category select{width:auto;max-width:100%}
+}

@@ -1,6 +1,6 @@
 (function(){
  let workshopLoad;
- window.AVEDLoadForumWorkshop=()=>workshopLoad||(workshopLoad=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/forum-workshop.js?v=story-robots-20261122';script.onload=()=>resolve(window.AVEDForumWorkshop);script.onerror=()=>{script.remove();workshopLoad=null;reject(Error('通讯编排暂时无法加载，请重试。'));};document.head.append(script);}));
+ window.AVEDLoadForumWorkshop=()=>workshopLoad||(workshopLoad=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/forum-workshop.js?v=forum-categories-20261122';script.onload=()=>resolve(window.AVEDForumWorkshop);script.onerror=()=>{script.remove();workshopLoad=null;reject(Error('通讯编排暂时无法加载，请重试。'));};document.head.append(script);}));
  window.AVEDForumSocial=function({api,esc,getUser,getThread,openThread,getReply,getContext,showToast,refreshForum,getReplyRevision=()=>0,onRepliesChanged=()=>{},onStockRisk=()=>{}}){
   const view=document.getElementById('view-forum'),tools=view.querySelector('.forum-action-toolbar'),nav=document.querySelector('[data-nav="forum"]');
   const inboxButton=document.createElement('button');inboxButton.type='button';inboxButton.className='community-button forum-inbox-button';inboxButton.textContent='消息提醒';tools.prepend(inboxButton);

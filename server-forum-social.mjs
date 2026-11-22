@@ -1,3 +1,4 @@
+import {installForumCategories,forumCategoryList,resolveForumCategory} from './server-forum-categories.mjs';
 import {storedAvatar,installAvatarPresets,avatarPresets} from './server-default-avatar.mjs';
 import {ensureCompanyRobots} from './server-company-robots.mjs';
 import {randomBytes} from 'node:crypto';
@@ -112,6 +113,7 @@ export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,pres
 
 export function installForumSocial(db){
  installForumSocialSchema(db);
+ installForumCategories(db);
  function allowed(id){return !!db.prepare("SELECT 1 FROM employees WHERE id=? AND enabled=1 AND username='AVED' COLLATE BINARY").get(id);}
  function requireWorkshop(id){if(!allowed(id)){const e=Error('当前身份无权使用演绎编排。');e.status=403;throw e;}}
  function persona(id,value){if(value==null||value==='')return null;requireWorkshop(id);if(!Number.isSafeInteger(value)||!db.prepare('SELECT p.id FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id WHERE p.id=?').get(value))throw Error('演绎机器人不存在，请刷新后重新选择。');return value;}
@@ -142,7 +144,7 @@ export function installForumSocial(db){
  return {allowed,persona,target,
   list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,r.purpose,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
   create(id){requireWorkshop(id);throw Error('请在管理端的公司机器人中新增或修改演绎身份。');},
-  topics(id){requireWorkshop(id);return {items:db.prepare("SELECT id,title FROM forum_threads WHERE status='published' AND moderation='approved' AND deleted_at='' ORDER BY id DESC LIMIT 30").all()};},
+  topics(id){requireWorkshop(id);return {items:db.prepare("SELECT id,title FROM forum_threads WHERE status='published' AND moderation='approved' AND deleted_at='' ORDER BY id DESC LIMIT 30").all(),categories:forumCategoryList(db)};},
   publish(id,data){
    requireWorkshop(id);if(typeof data.requestId!=='string'||!/^[a-zA-Z0-9_-]{16,80}$/.test(data.requestId))throw Error('缺少发布凭据，请重新打开编排。');
    const existing=db.prepare('SELECT result_json FROM forum_workshop_requests WHERE employee_id=? AND request_id=?').get(id,data.requestId);if(existing)return JSON.parse(existing.result_json);
@@ -150,10 +152,11 @@ export function installForumSocial(db){
    const lines=data.lines.map(line=>{if(!line||typeof line.body!=='string'||!line.body.trim()||line.body.trim().length>3000)throw Error('每条发言应为 1 至 3000 字。');const personaId=persona(id,line.personaId);if(!personaId)throw Error('请为每条发言选择演绎身份。');return {personaId,body:line.body.trim()};});
    let threadId=data.threadId;if(threadId!=null&&(!Number.isSafeInteger(threadId)||!db.prepare("SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(threadId)))throw Error('请选择有效主题。');
    if(threadId==null&&(typeof data.title!=='string'||!data.title.trim()||data.title.trim().length>120))throw Error('新主题标题应为 1 至 120 字。');
+   const categoryId=threadId==null?resolveForumCategory(db,data.categoryId):null;
    const alias=db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name||'演绎';
    db.exec('BEGIN IMMEDIATE');try{
     const replyIds=[];for(const [i,line] of lines.entries()){
-     if(threadId==null&&i===0)threadId=Number(db.prepare("INSERT INTO forum_threads(employee_id,anonymous_name,title,body,persona_id) VALUES(?,?,?,?,?)").run(id,alias,data.title.trim(),line.body,line.personaId).lastInsertRowid);
+     if(threadId==null&&i===0)threadId=Number(db.prepare("INSERT INTO forum_threads(employee_id,anonymous_name,title,body,persona_id,category_id) VALUES(?,?,?,?,?,?)").run(id,alias,data.title.trim(),line.body,line.personaId,categoryId).lastInsertRowid);
      else replyIds.push(Number(db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body,persona_id) VALUES(?,?,?,?,?)').run(threadId,id,alias,line.body,line.personaId).lastInsertRowid));
     }
     const result={threadId,replyIds};db.prepare('INSERT INTO forum_workshop_requests VALUES(?,?,?)').run(id,data.requestId,JSON.stringify(result));db.exec('COMMIT');return result;

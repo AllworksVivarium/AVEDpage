@@ -1,3 +1,4 @@
+import {installForumCategories} from './server-forum-categories.mjs';
 import {installLife} from './server-life.mjs';
 import {normalizeDossierContent,normalizeDossierCode} from './server-dossier-content.mjs';
 import {normalizeDossierImage} from './server-dossier-images.mjs';
@@ -37,6 +38,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     insert.run('公共区域广播与设备巡检通告','公共广播线路已完成例行巡检。发现异常回声、重复呼号或无人值守设备自行启动时，请立即联系设施值班人员。',new Date(Date.now()-86400000).toISOString());
     db.prepare("INSERT INTO community_migrations VALUES('bulletins-v2')").run();
   }
+  const forumCategories=installForumCategories(db);
   const life=installLife({db,send,readBody,log});
   const audit=installAudit(db);
   const valid=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.trim().length<=n;
@@ -69,12 +71,25 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
     const adminDelete=path.match(/^\/api\/admin\/(?:forum\/(threads|replies)|(?:speech\/)?(posts|dossier_comments|chat_messages|life_records))\/(\d+)$/);
     const dossierEdit=path.match(/^\/api\/admin\/dossiers\/(\d+)$/);
     const review=path.match(/^\/api\/admin\/moderation\/life\/(\d+)$/);
+    const categoryRoute=path.match(/^\/api\/admin\/forum\/categories(?:\/(\d+))?$/),threadCategory=path.match(/^\/api\/admin\/forum\/threads\/(\d+)\/category$/);
     const forumAdmin=path.match(/^\/api\/admin\/forum(?:\/(\d+))?$/);
-    const handles=(forumAdmin&&method==='GET')||/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||/^\/api\/player\/life(?:\/(?:\d+(?:\/like)?|catalog|notifications))?$/.test(path)||/^\/api\/admin\/life(?:\/(?:settings|tags(?:\/\d+)?))?$/.test(path)||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
+    const handles=categoryRoute||threadCategory||(forumAdmin&&method==='GET')||/^\/api\/admin\/image-archive\/\d+$/.test(path)||path==='/api/terminology'||path.startsWith('/api/admin/terminology')||path==='/api/admin/speech-records'||path==='/api/admin/activity'||path==='/api/posts'||/^\/api\/player\/life(?:\/(?:\d+(?:\/like)?|catalog|notifications))?$/.test(path)||/^\/api\/admin\/life(?:\/(?:settings|tags(?:\/\d+)?))?$/.test(path)||(path==='/api/admin/moderation'&&method==='GET')||(edit&&method==='PUT')||(adminDelete&&method==='DELETE')||(dossierEdit&&method==='PUT')||review;
     if(!handles)return false;
     const user=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!user)return true;
     try {
       if(/^\/api\/admin\/image-archive\/\d+$/.test(path)){if(method!=='GET'){send(res,405,{error:'指令无效。'});return true;}audit.image(Number(path.split('/').at(-1)),res);return true;}
+      if(categoryRoute){
+        if(method==='GET'&&!categoryRoute[1])send(res,200,{items:forumCategories.list()});
+        else if((method==='POST'&&!categoryRoute[1])||(method==='PUT'&&categoryRoute[1])){const d=await readBody(req,8192),result=forumCategories.save(Number(categoryRoute[1])||null,d);log(user.id,'forum.category',String(result.id),{name:d.name});send(res,method==='POST'?201:200,result);}
+        else send(res,405,{error:'指令无效。'});
+        return true;
+      }
+      if(threadCategory){
+        if(method!=='PUT'){send(res,405,{error:'指令无效。'});return true;}
+        const d=await readBody(req,8192),categoryId=forumCategories.resolve(d.categoryId);
+        if(!db.prepare("UPDATE forum_threads SET category_id=? WHERE id=? AND deleted_at=''").run(categoryId,threadCategory[1]).changes)throw Error('主题不存在。');
+        log(user.id,'forum.thread.category',threadCategory[1],{categoryId});send(res,200,{ok:true,categoryId});return true;
+      }
       if(forumAdmin&&method==='GET'){
         const tid=Number(forumAdmin[1]),before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;
         if(tid){
@@ -83,7 +98,7 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
           send(res,200,{thread,items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});
         }else{
           const keyword=(url.searchParams.get('keyword')||'').slice(0,120);
-          const rows=db.prepare(`SELECT f.id,f.title,substr(f.body,1,180) AS excerpt,f.status,f.moderation,f.created_at AS createdAt,e.display_name AS operatorName,COALESCE(${forumPersonaNameSQL('f.persona_id')},f.anonymous_name) AS authorName,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND deleted_at='') AS replyCount FROM forum_threads f LEFT JOIN employees e ON e.id=f.employee_id WHERE f.deleted_at='' AND f.id<? AND (?='' OR f.title LIKE ? OR f.body LIKE ?) ORDER BY f.id DESC LIMIT 21`).all(before,keyword,'%'+keyword+'%','%'+keyword+'%');
+          const rows=db.prepare(`SELECT f.id,f.title,f.category_id AS categoryId,(SELECT name FROM forum_categories WHERE id=f.category_id) AS categoryName,substr(f.body,1,180) AS excerpt,f.status,f.moderation,f.created_at AS createdAt,e.display_name AS operatorName,COALESCE(${forumPersonaNameSQL('f.persona_id')},f.anonymous_name) AS authorName,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND deleted_at='') AS replyCount FROM forum_threads f LEFT JOIN employees e ON e.id=f.employee_id WHERE f.deleted_at='' AND f.id<? AND (?='' OR f.title LIKE ? OR f.body LIKE ?) ORDER BY f.id DESC LIMIT 21`).all(before,keyword,'%'+keyword+'%','%'+keyword+'%');
           send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});
         }return true;
       }
@@ -104,9 +119,10 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         const table=tables[edit[1]],row=db.prepare(`SELECT * FROM ${table} WHERE id=? AND employee_id=? AND deleted_at=''`).get(edit[2],user.id);
         if(!row){send(res,404,{error:'发言不存在或不属于当前员工。'});return true;}
         const d=await readBody(req,2500000);if(!valid(d.body,3000)||(edit[1]==='thread'&&!valid(d.title,120)))throw new Error('请填写有效标题和正文。');
+        const categoryId=edit[1]==='thread'?forumCategories.resolve(d.categoryId,row.category_id):null;
         const img=d.imageData===undefined?row.image_data:image(d.imageData),needsReview=!!img,identityMode=d.identityMode??row.identity_mode??'anonymous';if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
-        tx(()=>{db.prepare('INSERT INTO speech_revisions(source_type,source_id,employee_id,before_json,after_json) VALUES(?,?,?,?,?)').run(edit[1],row.id,user.id,JSON.stringify({title:row.title,body:row.body,imageData:row.image_data,identityMode:row.identity_mode}),JSON.stringify({title:d.title,body:d.body.trim(),imageData:img,identityMode}));
-          if(edit[1]==='thread')db.prepare("UPDATE forum_threads SET title=?,body=?,image_data=?,status=?,moderation=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.title.trim(),d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',row.id);
+        tx(()=>{db.prepare('INSERT INTO speech_revisions(source_type,source_id,employee_id,before_json,after_json) VALUES(?,?,?,?,?)').run(edit[1],row.id,user.id,JSON.stringify({title:row.title,body:row.body,imageData:row.image_data,identityMode:row.identity_mode,...(edit[1]==='thread'?{categoryId:row.category_id}:{})}),JSON.stringify({title:d.title,body:d.body.trim(),imageData:img,identityMode,...(edit[1]==='thread'?{categoryId}:{})}));
+          if(edit[1]==='thread')db.prepare("UPDATE forum_threads SET title=?,body=?,image_data=?,status=?,moderation=?,category_id=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.title.trim(),d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',categoryId,row.id);
           else db.prepare("UPDATE forum_replies SET body=?,image_data=?,status=?,moderation=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',row.id);
           db.prepare('UPDATE '+table+' SET identity_mode=? WHERE id=?').run(identityMode,row.id);log(user.id,'speech.edit',edit[1]+'/'+row.id);});send(res,200,{ok:true,pending:needsReview});return true;
       }

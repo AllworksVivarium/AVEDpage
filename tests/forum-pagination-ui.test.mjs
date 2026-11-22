@@ -21,3 +21,23 @@ test('reply paging has no automatic read observer and discards responses after n
  const target=ui.open(2,46);assert.match(requests[3].path,/reply=46/,'same-thread notifications still resolve their page');
  requests[3].resolve({thread:{id:2},items:[{id:46,body:'new thread'}],page:1,pages:1,total:1,changesCursor:46});await target;
 });
+
+
+test('pager keeps previous-page text when a text effect adds a span before the page count',()=>{
+ const prev={textContent:'上一页'},next={textContent:'下一页'},select={innerHTML:'',value:''},pageCount={textContent:''};
+ let wrapped=false;
+ const wrapper={get textContent(){return prev.textContent;},set textContent(value){prev.textContent=value;}};
+ const nav={className:'',innerHTML:'',setAttribute(){},querySelector(selector){
+  return {'select':select,'[data-prev]':prev,'[data-next]':next,'[data-page-count]':pageCount,'span':wrapped?wrapper:pageCount}[selector];
+ }};
+ const context={window:{},document:{createElement:()=>nav}},visited=[];
+ const source=readFileSync(new URL('../public/forum-replies.js',import.meta.url),'utf8');
+ runInNewContext(source.slice(0,source.indexOf('window.AVEDForumReplies=')),context);
+ const pager=context.window.AVEDForumPager({label:'帖子翻页',onPage:p=>visited.push(p)});
+ pager.render({page:1,pages:6});wrapped=true;
+ pager.render({page:2,pages:6});
+ assert.equal(prev.textContent,'上一页');assert.equal(next.textContent,'下一页');assert.equal(pageCount.textContent,' / 6 页');
+ assert.equal(prev.disabled,false);prev.onclick();next.onclick();assert.deepEqual(visited,[1,3]);
+ pager.render({page:1,pages:6});assert.equal(prev.disabled,true);assert.equal(prev.textContent,'上一页');
+ pager.render({page:6,pages:6});assert.equal(next.disabled,true);assert.equal(prev.disabled,false);
+});
