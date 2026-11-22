@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import parser from './public/employee-import.js';
 import {normalizeAttributes} from './server-employee-attributes.mjs';
+import personnelNames from './public/personnel-name.js';
 
 export function installEmployeeImport({db,send,readBody,requireAdmin,hashPassword,log}){
  db.exec(`CREATE TABLE IF NOT EXISTS employee_import_batches(request_id TEXT PRIMARY KEY,employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,payload_hash TEXT NOT NULL,result_json TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
@@ -10,7 +11,7 @@ export function installEmployeeImport({db,send,readBody,requireAdmin,hashPasswor
   const rows=[],errors=[...parsed.errors],targets=new Set(),qqs=new Set();
   for(const row of parsed.rows){
    if(data.mode==='create'){
-    if(employees.some(e=>e.username===row.name||e.displayName===row.name)){errors.push({line:row.line,message:'员工已存在：'+row.name+'；更新数值请选择仅更新六维。'});continue;}
+    if(employees.some(e=>personnelNames.normalizeRealName(e.username)===row.name||personnelNames.normalizeRealName(e.displayName)===row.name)){errors.push({line:row.line,message:'员工已存在：'+row.name+'；更新数值请选择仅更新六维。'});continue;}
     if(db.prepare('SELECT 1 FROM employees WHERE username=?').get(row.name)){errors.push({line:row.line,message:'用户名已被占用：'+row.name});continue;}
     if(row.qqNumber&&(qqs.has(row.qqNumber)||db.prepare('SELECT 1 FROM employees WHERE qq_number=?').get(row.qqNumber))){errors.push({line:row.line,message:'QQ 号重复或已被使用。'});continue;}qqs.add(row.qqNumber);
     rows.push({...row,action:'新建员工'});

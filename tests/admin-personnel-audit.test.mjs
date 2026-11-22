@@ -72,6 +72,13 @@ test('persistent identities, editable player containment, and lazy categorized a
  const companyId=await create('company_containment','company-object',{archiveBio:'公司提供的收容简介',containmentClassification:'KETER'});
  assert.equal((await a('/api/admin/employees','POST',{identityKind:'player_employee',username:'fake-leader',password,displayName:'普通玩家',positionTitle:'部长'})).status,400);
  const teamId=await create('planning_member','logistics-team',{department:'后勤部',teamName:'安保部'});
+ const englishId=await create('player_employee','name-case-login',{displayName:'alice mCkay'});
+ let english=(await a('/api/admin/employees')).data.items.find(x=>x.id===englishId);assert.equal(english.displayName,'Alice mCkay');assert.equal(english.username,'name-case-login');
+ assert.equal((await a('/api/admin/employees/'+englishId,'PUT',{displayName:"o'connor"})).status,200);
+ english=(await a('/api/admin/employees')).data.items.find(x=>x.id===englishId);assert.equal(english.displayName,"O'connor");assert.equal(english.username,'name-case-login');
+ await login('name-case-login','player_employee');
+ assert.equal((await a('/api/admin/employees/'+englishId,'PUT',{displayName:'alice张'})).status,200);
+ assert.equal((await a('/api/admin/employees')).data.items.find(x=>x.id===englishId).displayName,'alice张');
  const overflow=[150,95,100,200,0,60];assert.equal((await a('/api/admin/employees/'+playerId+'/attributes','PUT',{values:overflow})).status,200);
  assert.deepEqual((await a('/api/admin/employees/'+playerId+'/attributes')).data.values,overflow);
  assert.equal((await a('/api/admin/employees/'+employeeId+'/attributes','PUT',{values:overflow})).status,400);

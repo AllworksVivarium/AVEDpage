@@ -42,6 +42,19 @@ function fixture(t){
  const commit=async(text,mode='create',extra={})=>{const p=await preview(text,mode);return call('/api/admin/employees/import',{text,mode,fingerprint:p.fingerprint,requestId:randomUUID(),...extra});};
  return {db,call,preview,commit,app,logs:()=>logCount};
 }
+
+test('bulk creation saves the capitalized real name and matching username without renaming attribute targets',async t=>{
+ const {db,preview,commit}=fixture(t);
+ assert.equal((await preview('alice')).rows[0].name,'Alice');
+ assert.equal((await commit('alice')).status,200);
+ assert.equal(db.prepare("SELECT display_name FROM employees WHERE username='Alice'").get().display_name,'Alice');
+ assert.ok((await preview('alice')).errors.length);
+ db.exec("INSERT INTO employees(username,display_name,identity_kind,is_npc,enabled,attributes_json) VALUES('bob','既有员工','player_employee',0,1,'[1,2,3,4,5,6]')");
+ assert.ok((await preview('bob')).errors.length);
+ assert.equal((await commit('bob 60 50 40 30 20 10','attributes')).status,200);
+ assert.equal(db.prepare("SELECT attributes_json FROM employees WHERE username='bob'").get().attributes_json,'[60,50,40,30,20,10]');
+ assert.equal(db.prepare("SELECT display_name FROM employees WHERE username='bob'").get().display_name,'既有员工');
+});
 test('100 employees import atomically with fixed account defaults, separate salted hashes and idempotent retries',async t=>{
  const {db,call,preview,logs}=fixture(t),text=Array.from({length:100},(_,i)=>'批量员工'+i+' 收容部 60 50 40 30 20 10').join('\n');
  const p=await preview(text);assert.equal(p.count,100);assert.equal(p.errors.length,0);

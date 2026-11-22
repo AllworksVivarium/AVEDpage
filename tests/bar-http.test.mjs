@@ -41,7 +41,7 @@ test('two authenticated bar clients receive real presence, poured amounts, drink
  assert.equal((await request(second,'/api/player/bar/messages',{body:'另一位客人的真实消息'})).status,201);
  assert.ok((await one.next(x=>x.items.some(y=>y.body==='另一位客人的真实消息'))).items.some(x=>x.body==='另一位客人的真实消息'));
  assert.equal((await request(first,'/api/player/bar/messages',{body:'用实名发言',identityMode:'real',alias:'伪造名字'})).status,201);
- const realMessage=(await two.next(x=>x.items.some(y=>y.body==='用实名发言'))).items.find(x=>x.body==='用实名发言');assert.equal(realMessage.alias,'bar-one');assert.equal(realMessage.identityMode,'real');
+ const realMessage=(await two.next(x=>x.items.some(y=>y.body==='用实名发言'))).items.find(x=>x.body==='用实名发言');assert.equal(realMessage.alias,'Bar-one');assert.equal(realMessage.identityMode,'real');
  two.controller.abort();assert.equal((await one.next(x=>x.onlineCount===1)).onlineCount,1);
  assert.equal((await request(second,'/api/player/bar/orders',{drinkId:orderedDrink.id,requestId:'http-bar-order-0001'})).data.balance,order.data.balance);
 });

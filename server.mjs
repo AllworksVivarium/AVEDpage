@@ -9,6 +9,7 @@ import {installDossierContent,normalizeDossierContent,normalizeDossierCode,dossi
 import {installContainmentDossiers,listDossiers} from './server-containment-dossiers.mjs';
 import {installEmployeeAttributes,normalizeAttributes,attributeValues,employeeAttributes,handleEmployeeAttributes} from './server-employee-attributes.mjs';
 import {installEmployeeImport} from './server-employee-import.mjs';
+import personnelNames from './public/personnel-name.js';
 import {installSealdiceSync} from './server-sealdice-sync.mjs';
 import {installDossierImages,normalizeDossierImage} from './server-dossier-images.mjs';
 import {installLogRetention} from './server-log-retention.mjs';
@@ -187,7 +188,7 @@ const employeeCount = db.prepare('SELECT COUNT(*) AS n FROM employees').get().n;
 if (employeeCount === 0 && process.env.BOOTSTRAP_ADMIN_USERNAME && process.env.BOOTSTRAP_ADMIN_PASSWORD) {
   if(process.env.BOOTSTRAP_ADMIN_PASSWORD.length<6)throw new Error('管理员初始密码至少 6 位。');
   db.prepare('INSERT INTO employees (username,password_hash,display_name,department,role) VALUES (?,?,?,?,?)')
-    .run(process.env.BOOTSTRAP_ADMIN_USERNAME, hashPassword(process.env.BOOTSTRAP_ADMIN_PASSWORD), process.env.BOOTSTRAP_ADMIN_NAME || '系统管理员', '管理部', 'admin');
+    .run(process.env.BOOTSTRAP_ADMIN_USERNAME, hashPassword(process.env.BOOTSTRAP_ADMIN_PASSWORD), personnelNames.normalizeRealName(process.env.BOOTSTRAP_ADMIN_NAME || '系统管理员'), '管理部', 'admin');
 }
 db.exec('CREATE TABLE IF NOT EXISTS content_initializations(name TEXT PRIMARY KEY)');
 if (!db.prepare("SELECT 1 FROM content_initializations WHERE name='dossiers'").get() && db.prepare('SELECT COUNT(*) AS n FROM dossiers').get().n === 0) {
@@ -410,6 +411,17 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const employee = requireEmployee(req,res); if (!employee) return;
       return send(res, 200, { employee:{ id:employee.id, username:employee.username, displayName:employee.displayName, department:employee.department, role:employee.role }, balance:balanceFor(employee.id),serverTime:Date.now() });
     }
+    if (url.pathname === '/api/account' && req.method === 'PUT') {
+      const employee=requireEmployee(req,res);if(!employee)return;
+      const data=await readBody(req);let change;
+      try{change=await selfAccount.prepare(employee,data);}catch(error){if(error.code)return send(res,error.status,{error:error.message,code:error.code});throw error;}
+      try{
+        db.exec('BEGIN IMMEDIATE');selfAccount.apply(employee,change,sessionTokens(req.headers.cookie).map(sessionDigest));
+        if(change)playerService.log(employee.id,'account.update','self',{usernameChanged:change.username!==change.previous.username,passwordChanged:change.passwordHash!==change.previous.password_hash});
+        db.exec('COMMIT');
+      }catch(error){if(db.isTransaction)db.exec('ROLLBACK');if(error.code)return send(res,error.status||400,{error:error.message,code:error.code});throw error;}
+      return send(res,200,{ok:true,account:{username:change?.username||employee.username}});
+    }
     if (url.pathname === '/api/profile' && req.method === 'PUT') {
       const employee=requireEmployee(req,res); if(!employee)return;
       const data=await readBody(req,2500000),{anonymousName,bio,avatarUrl,avatarPreset}=data;
@@ -625,6 +637,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if (url.pathname === '/api/admin/employees' && req.method === 'POST') {
       const admin = requireAdmin(req,res); if (!admin) return;
       const data=await readBody(req);
+      data.displayName=personnelNames.normalizeRealName(data.displayName);
       const {username,password,displayName,qqNumber,role,initialBalance}=data;
       let assignment;try{assignment=personnelAssignment(data);}catch(e){return send(res,400,{error:e.message});}
       const {identityKind,department,positionTitle,isNpc,isLeadership,containmentClassification,teamName}=assignment;
@@ -647,7 +660,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if (url.pathname.startsWith('/api/admin/employees/') && !url.pathname.endsWith('/balance') && req.method === 'PUT') {
       if(!requireAdmin(req,res))return;
       const employeeId=Number(url.pathname.split('/').at(-1));
-      const data=await readBody(req),{displayName,qqNumber,password}=data;
+      const data=await readBody(req);data.displayName=personnelNames.normalizeRealName(data.displayName);const {displayName,qqNumber,password}=data;
       const previous=db.prepare('SELECT is_npc AS isNpc,identity_kind AS identityKind,containment_classification AS containmentClassification,department,position_title AS positionTitle,team_name AS teamName,attributes_json AS attributesRaw FROM employees WHERE id=?').get(employeeId);
       if(!previous)return send(res,404,{error:'员工档案不存在。'});
       previous.isNpc=!!previous.isNpc;

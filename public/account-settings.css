@@ -1,0 +1,16 @@
+.account-settings-window{width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:var(--inner-text-main);font-family:var(--type-ui);overflow:auto}
+.account-settings-window::backdrop{background:#000b}
+.account-settings-window>header{display:flex;align-items:center;justify-content:space-between;background:var(--brand-red);color:var(--inner-accent-text);padding:6px 12px;border-bottom:1px solid var(--inner-border)}
+.account-settings-window>header h2{margin:0;font-size:14px}
+.account-settings-window>header button{border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer}
+.account-settings-window form{display:grid;gap:12px;padding:16px}
+.account-settings-window fieldset{display:grid;gap:14px;padding:12px;border:1px solid var(--inner-border-soft);min-width:0;margin:0}
+.account-settings-window label{display:grid;gap:6px;font-size:14px}
+.account-settings-window input{width:100%;min-width:0;padding:9px;border:1px solid var(--inner-border-soft);background:var(--inner-card-alt);color:inherit;font:inherit}
+.account-settings-window footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+.account-settings-window footer button{min-height:36px;padding:7px 16px;border:1px solid var(--inner-border);background:var(--inner-card-alt);color:inherit;cursor:pointer}
+.account-settings-window button[type=submit]{background:var(--brand-red);color:var(--inner-accent-text)}
+.account-settings-window button:disabled{opacity:.5;cursor:default}
+.account-settings-window [data-account-error]{margin:0;color:var(--inner-crimson);font-size:12px;overflow-wrap:anywhere}
+.account-settings-window [hidden]{display:none!important}
+.account-settings-window :is(button,input):focus-visible{outline:2px solid var(--inner-crimson);outline-offset:3px}

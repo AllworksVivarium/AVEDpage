@@ -1,5 +1,5 @@
 /* The browser preview and server validation share the same table parser. */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.AVEDEmployeeImport=api;})(globalThis,function(){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./personnel-name.js'):root.AVEDPersonnelName);if(typeof module==='object'&&module.exports)module.exports=api;else root.AVEDEmployeeImport=api;})(globalThis,function({normalizeRealName}){
  const labels=['力量','意志','洞察','敏捷','智力','体质'],limit=100;
  const headers=mode=>mode==='attributes'?['姓名',...labels]:['姓名','部门','QQ号',...labels];
  const templateFile=mode=>'\uFEFF'+headers(mode).join(',')+'\r\n';
@@ -34,7 +34,7 @@
   if(lines.length>limit)return {rows,errors:[{line:0,message:'每批最多导入 '+limit+' 名员工。'}]};
   for(const source of lines){try{
    let values={},parts=cells(source.text);
-   if(header){if(parts.length!==header.length)throw Error('列数与表头不一致，请检查空列或分隔符。');header.forEach((k,i)=>{if(k==='name'&&values.name&&parts[i]&&values.name!==parts[i])throw Error('用户名和姓名须保持一致。');if(parts[i]||!values[k])values[k]=parts[i];});}
+   if(header){if(parts.length!==header.length)throw Error('列数与表头不一致，请检查空列或分隔符。');header.forEach((k,i)=>{const sameName=mode==='create'?normalizeRealName(values.name)===normalizeRealName(parts[i]):values.name===parts[i];if(k==='name'&&values.name&&parts[i]&&!sameName)throw Error('用户名和姓名须保持一致。');if(parts[i]||!values[k])values[k]=parts[i];});}
    else {
     const matches=[...source.text.matchAll(/(力量|意志|洞察|敏捷|智力|体质|STR|POW|INS|DEX|INT|CON)\s*[:：=]?\s*([-+]?\d+(?:\.\d+)?)/gi)];
     if(matches.length){
@@ -50,7 +50,7 @@
      if(parts.length>=7)parts.slice(count).forEach((v,i)=>values['a'+i]=v);
     }
    }
-   const name=String(values.name||'').trim();if(!name||name.length>40||/[\x00-\x1f\x7f]/.test(name))throw Error('姓名须为 1～40 字。');
+   const rawName=String(values.name||'').trim(),name=mode==='create'?normalizeRealName(rawName):rawName;if(!name||name.length>40||/[\x00-\x1f\x7f]/.test(name))throw Error('姓名须为 1～40 字。');
    const dept=department(values.department);if(!dept)throw Error('部门无法识别，请使用五个部门名称或公司直属。');
    const qqNumber=String(values.qqNumber||'').trim();if(qqNumber.length>30)throw Error('QQ 号最多 30 字。');
    const raw=labels.map((_,i)=>String(values['a'+i]??'').normalize('NFKC').trim());

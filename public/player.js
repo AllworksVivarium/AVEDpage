@@ -399,9 +399,14 @@
           document.getElementById('login-password').focus();
         } finally {button.disabled=false;}
       });
+      const accountSettings=window.AVEDAccountSettings.mount({api,getUser:()=>currentUser,showToast,onChange:username=>{
+        const previous=currentUser.account;currentUser.account=username;
+        try{if(localStorage.getItem('aved_username')===previous)localStorage.setItem('aved_username',username);}catch{}
+        document.getElementById('login-username').value=username;syncUserHeaderUI();
+      }});
       document.getElementById('logout-btn').addEventListener('click',async()=>{
         if(window.AVEDContamination&&!await window.AVEDContamination.beforeLogout())return;
-        try{await apiLogout();location.reload();}catch(e){showToast(e.message,'warn');}
+        try{await apiLogout();accountSettings.close();location.reload();}catch(e){showToast(e.message,'warn');}
       });
 
       // ======================================================================
@@ -1744,9 +1749,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           }else if(id.endsWith('chat-form')){
             const room=id.startsWith('skydive-')?'sky':'derby',input=form.querySelector('textarea,input:not([type]),input[type=text]');await api('/api/player/chat',{method:'POST',body:{room,body:input?.value||''}});form.reset();await refreshChat(room);
           }else if(id==='cloud-profile-form'){
-            const fd=new FormData(form),password=fd.get('password')||'';if(password!==String(fd.get('passwordConfirmation')||''))throw Error('两次输入的新密码不一致。');if((String(fd.get('username')).trim()!==currentUser.account||password)&&!fd.get('currentPassword'))throw Error('修改登录信息前，请填写当前密码。');let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
+            const fd=new FormData(form);let avatarUrl=playerProfile.avatarUrl;const file=fd.get('avatar');let avatarPreset=playerProfile.avatarPreset||'';if(fd.get('avatarMode')==='none'){avatarUrl='';avatarPreset='';}else if(fd.get('avatarMode')==='pixel'){avatarUrl='';avatarPreset=fd.get('avatarPreset')||'slate';}
             if(file?.size){avatarPreset='';avatarUrl=await AVEDImageUpload.read(file,{kind:'avatar'});}
-            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset,username:fd.get('username'),password,passwordConfirmation:fd.get('passwordConfirmation')||'',currentPassword:fd.get('currentPassword')||''}});playerProfile=d.profile;if(d.account?.username)currentUser.account=d.account.username;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});renderProfile();showToast('个人资料已保存。','success',{stamp:'档案已修订'});
+            const d=await api('/api/profile',{method:'PUT',body:{anonymousName:fd.get('anonymousName'),bio:fd.get('bio')??playerProfile.bio??'',avatarUrl,avatarPreset}});playerProfile=d.profile;if(d.account?.username)currentUser.account=d.account.username;currentUser.savedAlias=d.profile.anonymousName;aliasInputEl.value=d.profile.anonymousName;syncUserHeaderUI();refreshDirectory().catch(()=>{});renderProfile();showToast('个人资料已保存。','success',{stamp:'档案已修订'});
           }
         });
       },true);

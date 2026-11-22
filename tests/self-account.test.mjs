@@ -69,4 +69,17 @@ test('players edit their own bio and login credentials, keep real names immutabl
  assert.equal((await request(fresh,'/api/me')).status,401);assert.equal((await request(first,'/api/me')).status,200);
  assert.equal((await login('self-after',password)).status,401);assert.equal((await login('self-after',newPassword)).status,200);
  assert.equal(db.prepare('SELECT display_name FROM employees WHERE id=?').get(id).display_name,'永久真名');
+ const profileBefore=db.prepare('SELECT * FROM profiles WHERE employee_id=?').get(id);
+ const settingsBody={username:'from-settings',currentPassword:newPassword};
+ assert.equal((await request('','/api/account','PUT',settingsBody)).status,401);
+ assert.equal((await request(first,'/api/account','PUT',{...settingsBody,currentPassword:'wrong'})).status,400);
+ assert.equal((await request(first,'/api/account','PUT',{...settingsBody,displayName:'玩家自行改真名'})).status,400);
+ const anotherSession=(await login('self-after',newPassword)).cookie;
+ const settingsSaved=await request(first,'/api/account','PUT',settingsBody);
+ assert.equal(settingsSaved.status,200);assert.deepEqual(settingsSaved.data,{ok:true,account:{username:'from-settings'}});
+ assert.equal((await request(first,'/api/me')).data.employee.id,id);
+ assert.equal((await request(anotherSession,'/api/me')).status,401);
+ assert.equal((await login('self-after',newPassword)).status,401);assert.equal((await login('from-settings',newPassword)).status,200);
+ assert.deepEqual(db.prepare('SELECT * FROM profiles WHERE employee_id=?').get(id),profileBefore);
+ assert.equal(db.prepare('SELECT display_name FROM employees WHERE id=?').get(id).display_name,'永久真名');
 });
