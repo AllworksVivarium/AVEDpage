@@ -38,7 +38,7 @@
  #view-forum :is(.forum-card-title,.forum-detail-title){font-family:var(--type-heading)!important;font-size:16px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:0!important}
  #view-forum .forum-detail-title{font-size:20px!important}
  #view-forum :is(.forum-card-excerpt,.forum-detail-body,.forum-post-content),
- #view-forum #forum-detail-replies-list article>p{font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
+ #view-forum #forum-detail-replies-list article>p:not(.edited-label){font-family:var(--type-ui)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
  #view-news :is(.notice-comment-body,.notice-comment-body p){font-family:var(--type-archive)!important;font-size:14px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
  #view-forum :is(.forum-post-meta,.forum-author-balance,.forum-post-meta time),
  #view-news :is(.notice-meta,.notice-comment-heading time,.notice-comment-department){font-family:var(--type-ui)!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important}
@@ -51,6 +51,7 @@
  #view-forum :is(input,textarea,select),#view-news #news-detail-comment-input{font-family:var(--type-ui)!important;font-size:16px!important;font-weight:400!important;line-height:1.5!important}
  #view-forum :is(button,label),#view-news :is(.notice-button,#back-to-news-list-btn,#news-detail-comment-form>button){font-family:var(--type-ui)!important;font-size:12px!important;font-weight:600!important;line-height:1.5!important}
  #view-forum .forum-identity-choice{font-weight:400!important}
+ #view-forum #forum-detail-reply-form .forum-identity-choice{font-size:10px!important}
  #view-forum .forum-identity-choice span{font-size:inherit!important}
  #view-forum .forum-browse-tools :is(input,select){box-sizing:border-box;height:32px!important;min-height:32px!important;padding:4px 6px!important;font-size:12px!important;border:1px solid var(--inner-border-soft)!important;background:var(--inner-card-bg)!important;color:var(--inner-text-main)!important}
  #view-forum .forum-browse-actions select{font-size:12px!important;line-height:1.5!important}
@@ -60,7 +61,7 @@
  /* Archive prose keeps its paper character. Headings use a real heavier face. */
  #view-containment :is(.scp-item-card h3,.scp-entry-title),
  #view-departments :is(.department-sheet h3,.personnel-name),#view-life .life-record h3{font-family:var(--type-heading)!important;font-size:18px!important;line-height:1.5!important;font-weight:700!important;letter-spacing:.015em!important}
- #view-news :is(.notice-body,.notice-body p,.notice-summary),
+ #view-news :is(.notice-body,.notice-body p,.notice-summary,.notice-recipient,.notice-recipient *),
  #view-containment :is(.scp-document-body,.scp-document-body p,.scp-detail-content,.scp-entry-body),
  #view-life .life-record>p.whitespace-pre-wrap{font-family:var(--type-archive)!important;font-size:16px!important;line-height:1.85!important;font-weight:400!important;letter-spacing:0!important;filter:none!important;text-shadow:none!important}
  #view-news :is(.notice-drafter,.notice-conduct),
@@ -146,7 +147,7 @@
   #view-profile .hud-key-en{letter-spacing:0!important}
   #view-forum #forum-detail-reply-form .forum-reply-actions{gap:4px!important}
   #view-forum #forum-detail-reply-form .forum-reply-actions>button{padding-inline:5px!important;font-size:11px!important}
-  #view-forum #forum-detail-reply-form .forum-identity-choice{font-size:11px!important}
+  #view-forum #forum-detail-reply-form .forum-identity-choice{font-size:10px!important}
  }
  @media(max-width:380px){#view-profile .hud-key-en{font-size:9px!important}}
 }

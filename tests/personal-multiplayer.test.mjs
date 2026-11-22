@@ -38,9 +38,16 @@ test('hidden achievements, lazy finance, hourly idempotency and shared race sett
  const dailyClaims=await Promise.all([request(rewardCookie,'/api/checkin','POST'),request(rewardCookie,'/api/checkin','POST')]);
  assert.deepEqual(dailyClaims.map(x=>x.status).sort(),[200,409]);assert.equal(dailyClaims.find(x=>x.status===200).data.reward,8000);
  assert.equal((await request(rewardCookie,'/api/checkin')).data.reward,8000);assert.equal((await request(rewardCookie,'/api/me')).data.balance,8000);
- assert.equal((await request(one,'/api/admin/achievements')).status,403);
- const custom={code:'test-hour',title:'测试整点',description:'补给记录',metric:'hourly_count',threshold:1,enabled:true};assert.equal((await a('/api/admin/achievements','PUT',custom)).status,200);assert.ok((await p('/api/profile')).data.achievements.some(x=>x.code==='test-hour'));
- await a('/api/admin/achievements','PUT',{...custom,enabled:false});assert.ok(!(await p('/api/profile')).data.achievements.some(x=>x.code==='test-hour'));
+ const beforeRetired=(await p('/api/me')).data.balance;
+ const achievementsBefore=(await p('/api/profile')).data.achievements;
+ for(const call of [p,a]){
+  assert.equal((await call('/api/admin/posts')).status,404);
+  assert.equal((await call('/api/admin/achievements')).status,404);
+  assert.equal((await call('/api/admin/achievements','PUT',{code:'test-hour',title:'旧编辑器',description:'',metric:'hourly_count',threshold:1,enabled:true})).status,404);
+ }
+ for(const path of ['/api/games/scratch','/api/games/slot'])assert.equal((await p(path,'POST',{})).status,404);
+ assert.equal((await p('/api/me')).data.balance,beforeRetired,'retired game endpoints cannot debit or award funds');
+ assert.deepEqual((await p('/api/profile')).data.achievements,achievementsBefore,'retired editor cannot alter automatic achievements');
  await request(fresh,'/api/player/relief','POST');assert.deepEqual((await request(fresh,'/api/profile')).data.achievements.map(x=>x.code),['relief-1']);
  for(let i=1;i<10;i++){await request(fresh,'/api/player/balance/zero','POST');await request(fresh,'/api/player/relief','POST');}
  const unlocked=(await request(fresh,'/api/profile')).data.achievements.map(x=>x.code);assert.ok(unlocked.includes('relief-10')&&unlocked.includes('zero'));

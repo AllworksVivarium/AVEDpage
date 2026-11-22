@@ -223,7 +223,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
   }
   marketService.onQuote(()=>{captureStockAssets();processProtectedStockLots();});
   const forum=installForumList(db);
-  const replies=installForumReplies(db);
+  const replies=installForumReplies(db,{decorate:item=>forumSocial.mentions.decorate('reply',item)});
   return {forgetAccount(id){forumPresence.forget(id);for(const [room,clients] of chatStreams){for(const response of clients)if(response.avedEmployeeId===id){clients.delete(response);response.end();}emitChat(room);}},log,initializeStockLots:stockLots.migrate,captureStockAssets,close(){clearInterval(chatHeartbeat);for(const clients of chatStreams.values())for(const response of clients)response.end();chatStreams.clear();marketService.close();}, async handle(req,res,url) {
     const path=url.pathname;
     if(!path.startsWith('/api/player/')&&!path.startsWith('/api/admin/moderation')&&path!=='/api/admin/activity')return false;
@@ -252,6 +252,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
       if(path==='/api/player/directory'&&req.method==='GET'){send(res,200,{items:directoryEmployees(db).map(e=>({...e,avatarUrl:mediaReference('avatar',e.id,e.avatarUrl)}))});return true;}
       if(path==='/api/player/view'&&req.method==='POST'){if(valid(data.page,40))log(id,'view',data.page);send(res,200,{ok:true});return true;}
       if(path==='/api/player/forum/reactions'&&req.method==='GET'){send(res,200,{items:forumReactions.catalog});return true;}
+      if(path==='/api/player/forum/mentions'&&req.method==='GET'){send(res,200,forumSocial.mentions.search(id,url.searchParams.get('q')||'',url.searchParams.get('mode')||'anonymous'));return true;}
       if(path==='/api/player/forum/reactions'&&req.method==='POST'){send(res,200,forumReactions.add(id,data));return true;}
       if(path==='/api/player/forum/reactions/read'&&req.method==='POST'){send(res,200,forumReactions.read(id,data.notificationIds));return true;}
       if(path==='/api/player/forum/categories'&&req.method==='GET'){send(res,200,{items:forumCategories.list()});return true;}
@@ -276,17 +277,19 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
       const forumView=path.match(/^\/api\/player\/forum\/(\d+)\/view$/);
       if(forumView&&req.method==='POST'){send(res,200,forum.recordView(id,Number(forumView[1])));return true;}
       const forumRead=path.match(/^\/api\/player\/forum\/(\d+)\/read$/);
-      if(forumRead&&req.method==='POST'){send(res,200,data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
+      if(forumRead&&req.method==='POST'){send(res,200,data.mentionIds!==undefined?forumSocial.mentions.read(id,Number(forumRead[1]),data.mentionIds):data.replyIds!==undefined?forumSocial.readReplies(id,Number(forumRead[1]),data.replyIds):forumSocial.read(id,Number(forumRead[1]),data.through));return true;}
       const thread=path.match(/^\/api\/player\/forum\/(\d+)$/);
-      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.category_id AS categoryId,(SELECT name FROM forum_categories WHERE id=f.category_id) AS categoryName,f.view_count AS viewCount,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,(()=>{const {threadReactions,...page}=forumReactions.decoratePage(topic.id,replies(Number(thread[1]),id,url.searchParams),id);return {thread:{...mapForumAuthor(topic),reactions:threadReactions,readThrough:forumSocial.readThrough(Number(thread[1]),id)},...page};})());return true;}
+      if(thread&&req.method==='GET'){const row=db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]);if(!row)throw new Error('帖子不存在或未通过审核。');const topic=db.prepare(`SELECT f.id,f.title,f.body,f.category_id AS categoryId,(SELECT name FROM forum_categories WHERE id=f.category_id) AS categoryName,f.view_count AS viewCount,f.image_data AS imageData,${forumAuthorSQL('f')},f.created_at AS createdAt,f.edited_at AS editedAt,(f.employee_id=?) AS canEdit,(SELECT COUNT(*) FROM forum_replies WHERE thread_id=f.id AND status='published' AND deleted_at='') AS replyCount FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.id=?`).get(id,thread[1]);topic.imageData=mediaReference('thread',topic.id,topic.imageData);send(res,200,(()=>{const {threadReactions,...page}=forumReactions.decoratePage(topic.id,replies(Number(thread[1]),id,url.searchParams),id);return {thread:{...forumSocial.mentions.decorate('thread',mapForumAuthor(topic)),reactions:threadReactions,readThrough:forumSocial.readThrough(Number(thread[1]),id)},...page};})());return true;}
       if((path==='/api/player/forum'||thread)&&req.method==='POST') {
         if(!valid(data.body,3000)||(!thread&&!valid(data.title,120)))throw new Error('请填写标题与正文，正文最多 3000 字。');
         const img=image(data.imageData),status=img?'hidden':'published',moderation=img?'pending':'approved',alias=publicProfile(id).anonymousName;
         if(!alias)throw new Error('请先保存匿名名称。');const identityMode=data.identityMode??'anonymous';if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
         const personaId=forumSocial.persona(id,data.personaId),replyToId=thread?forumSocial.target(Number(thread[1]),data.replyToId):null;
-        let row;
+        const mentions=forumSocial.mentions.prepare(data.body.trim(),data.mentions);
+        let row;transaction(()=>{
         if(thread){if(!db.prepare("SELECT id FROM forum_threads WHERE id=? AND status='published' AND deleted_at=''").get(thread[1]))throw new Error('帖子不存在。');row=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body,image_data,status,moderation,identity_mode,persona_id,reply_to_id) VALUES(?,?,?,?,?,?,?,?,?,?)').run(thread[1],id,alias,data.body.trim(),img,status,moderation,identityMode,personaId,replyToId);}
         else row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body,image_data,status,moderation,identity_mode,persona_id,category_id) VALUES(?,?,?,?,?,?,?,?,?,?)').run(id,alias,data.title.trim(),data.body.trim(),img,status,moderation,identityMode,personaId,forumCategories.resolve(data.categoryId));
+        forumSocial.mentions.save(thread?'reply':'thread',Number(row.lastInsertRowid),thread?Number(thread[1]):Number(row.lastInsertRowid),mentions);});
         send(res,201,{id:Number(row.lastInsertRowid),pending:!!img,...(!thread?{categoryId:db.prepare('SELECT category_id AS id FROM forum_threads WHERE id=?').get(row.lastInsertRowid).id}:{})});return true;
       }
       if(path==='/api/admin/moderation'&&req.method==='GET') {
@@ -337,7 +340,7 @@ export function installPlayerService({rankingIdentity=row=>row,db,send,readBody,
       }
       if(path==='/api/player/stocks') {
         if(!['GET','POST'].includes(req.method)){send(res,405,{error:'交易指令无效。'});return true;}
-        const code=url.searchParams.get('code')||'KARMA',period=Number(url.searchParams.get('period')||1);
+        const code=url.searchParams.get('code')||'KARMA',selection=url.searchParams.get('period')||'1',period=['24h','72h'].includes(selection)?selection:Number(selection);
         // Validate chart selection before committing any trade.
         marketService.history(code,period);
         transaction(()=>{

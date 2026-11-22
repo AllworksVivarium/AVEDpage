@@ -55,7 +55,7 @@ function inboxFixture(){
  const ui=context.window.AVEDForumSocial({api,esc:String,getUser:()=>user,getThread:()=>thread,getReply:()=>null,getContext:()=>null,
   openThread:async(id,reply)=>{await control.onOpen?.();thread={id};if(reply&&!control.missingTarget)targets.set(reply,new Element());return control.openResult;},showToast:message=>warnings.push(message),refreshForum(){}});
  const view=get('view-forum'),dialog=view.children.at(-1),button=view.querySelector('.forum-action-toolbar').children[0];
- const click=async item=>{const b=new Element();b.dataset={noticeThread:String(item.threadId),noticeReply:String(item.replyId),commentKind:item.kind,noticeThrough:String(item.through)};b.closest=()=>b;await dialog.listeners.click({target:b});return b;};
+ const click=async item=>{const b=new Element();b.dataset={noticeThread:String(item.threadId),noticeReply:String(item.replyId),commentKind:item.kind,noticeThrough:String(item.through),mentionNotice:String(item.mentionId||'')};b.closest=()=>b;await dialog.listeners.click({target:b});return b;};
  return {ui,context,dialog,button,calls,warnings,control,click,tick:()=>timers[0](),items:notices.items,setUser:value=>{user=value;},receipts:()=>calls.filter(c=>c.path.endsWith('/read'))};
 }
 
@@ -78,4 +78,13 @@ test('thread summary uses the clicked snapshot and failed, hidden or switched-ac
  const missing=inboxFixture();await missing.tick();missing.control.missingTarget=true;await missing.click(missing.items[1]);assert.equal(missing.receipts().length,0);assert.ok(missing.warnings.length);
  const hidden=inboxFixture();await hidden.tick();hidden.control.onOpen=()=>{hidden.context.document.hidden=true;};await hidden.click(hidden.items[1]);assert.equal(hidden.receipts().length,0);
  const switched=inboxFixture();await switched.tick();switched.control.onOpen=()=>switched.setUser({id:2});await switched.click(switched.items[1]);assert.equal(switched.receipts().length,0);
+});
+
+test('mention notices acknowledge only the selected source after it is displayed',async()=>{
+ const f=inboxFixture();f.items.push({kind:'mention',mentionId:31,threadId:7,replyId:0,unread:1,title:'主题提及',authorName:'代号',excerpt:'@我'});
+ await f.tick();assert.match(f.dialog.querySelector('.forum-inbox-list').innerHTML,/代号 提到了你/);
+ assert.equal(f.receipts().length,0);await f.click(f.items.at(-1));
+ assert.deepEqual(JSON.parse(JSON.stringify(f.receipts()[0].body)),{mentionIds:[31]});
+ const missing=inboxFixture();await missing.tick();missing.control.missingTarget=true;
+ await missing.click({kind:'mention',mentionId:32,threadId:7,replyId:900});assert.equal(missing.receipts().length,0);
 });

@@ -157,37 +157,16 @@
       updateSystemClock();
       setInterval(updateSystemClock, 1000);
 
-      // 3. 预设员工数据（含各自持久化的签到日期 lastCheckinDate，确保每天严格只能签一次）
-      const defaultEmployees = [];
-
       const departmentsData = [];
-
-      // 内部红头通告数据
-      const initialCompanyNews = [];
-
-      function formatFuzzyDaysAgo(days) {
-        if (days === 0) return '今天';
-        if (days === 1) return '昨天';
-        if (days === 2) return '前天';
-        if (days === 3) return '三天前';
-        return `${days}天前`;
-      }
-
-      // 收容物数据（含关联责任人姓名，支持在搜索栏按双人姓名检索）
-      const initialScpItems = [];
-
-
-
-      const initialForumThreads = [];
 
       const stocksData = [];
       const stockOrdersData = [];
 
-      let employees = JSON.parse(JSON.stringify(defaultEmployees));
-      let companyNews = JSON.parse(JSON.stringify(initialCompanyNews));
-      let scpItemsData = JSON.parse(JSON.stringify(initialScpItems));
+      let employees = [];
+      let companyNews = [];
+      let scpItemsData = [];
 
-      let forumThreads = JSON.parse(JSON.stringify(initialForumThreads));
+      let forumThreads = [];
       let currentUser = null,achievementAlerts=null,adsUI=null;
       window.AVEDIncomeVoice=AVEDIncomeSpeech.create({api,getUser:()=>currentUser,canSpeak:()=>!slot5x3State.spinning&&!pendingSlotRequest&&!(activeIssuedTicket&&!activeIssuedTicket.draft&&!activeIssuedTicket.demo&&!activeIssuedTicket.settled)});
       let isDarkMode = document.documentElement.dataset.savedTheme==='night';
@@ -196,12 +175,10 @@
       let isSidebarCollapsed = true;
       let selectedScpFilter = 'ALL';
       let scpSearchKeyword = '';
-      let scpSimulatedEmpty = false;
       let selectedScpId = scpItemsData[0]?.id || null;
       let currentNewsId = null;
       let currentForumThreadId = null;
-      let karmaIndexValue = 14820.50;
-      let karmaIndexDelta = 2.45;
+
 
       try {
         localStorage.removeItem('aved_remembered_cred');
@@ -209,16 +186,6 @@
         localStorage.removeItem('aved_daily_checkins');
         document.getElementById('login-username').value=localStorage.getItem('aved_username')||'';
       } catch {}
-      const syncChannel=null;
-      function broadcastForumSync(){}
-
-      function getLiveBalanceByAuthorId(authorId) {
-        const emp = employees.find(e => e.id === authorId);
-        return emp ? emp.balance : 0;
-      }
-
-
-
 
       function syncSidebarState() {
         const sidebar = document.getElementById('left-sidebar');
@@ -269,8 +236,6 @@
         syncSidebarState();
       });
 
-
-
       // 日间模式 / 夜间模式 切换（去掉“复古”二字）
       const themeToggleBtn = document.getElementById('theme-toggle-btn');
       themeToggleBtn.addEventListener('click', () => {
@@ -278,13 +243,7 @@
         window.AVEDTheme.setMode(modes[(modes.indexOf(window.AVEDTheme.mode)+1)%modes.length]);
       });
 
-
-
-
       // 签到由服务器按日期约束。
-
-
-
 
       document.getElementById('header-quick-checkin-btn').addEventListener('click', performDailyCheckin);
       document.getElementById('claim-relief-btn').addEventListener('click', performClaimRelief);
@@ -314,7 +273,6 @@
         loginModal.classList.add('hidden');
         loginModal.classList.remove('flex');
       });
-
 
       const nextPaint=()=>AVEDStartup.within(new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))),500,()=>undefined);
       const signalProgress=window.AVEDProgress.mount(document.getElementById('signal-progress'));
@@ -495,12 +453,10 @@
       // 分页 1：内部红头通告
       // ======================================================================
 
-
       document.getElementById('back-to-news-list-btn').addEventListener('click', () => {
         currentNewsId = null;
         renderCompanyNewsView();document.getElementById('view-news').scrollIntoView({block:'start'});
       });
-
 
       // ======================================================================
       // 分页 2：部门介绍与员工名录（医疗部直接嵌入您上传的第3张宣发背景卡）
@@ -586,8 +542,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       // 分页 3：收容物一览（随机黑块乱码闪烁恢复 + 双人浅色提示搜索框 + 磁吸标题 + 空状态组件）
       // ======================================================================
 
-
-
       // One short redaction sequence per entry into the archive view.
       let scpBoardSelection=null,scpBoardPosition=null,scpReading=false;
       function triggerScpTitleRedactionGlitch() {
@@ -621,7 +575,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         // 支持按双人组合如 "蒋正一 / 溟座" 的任意拆分词匹配
         const kwParts = kw.split(/[\s/]+/).filter(Boolean);
 
-        const matching = scpSimulatedEmpty ? [] : scpItemsData.filter(item => {
+        const matching = scpItemsData.filter(item => {
           const matchLevel = selectedScpFilter === 'ALL' || item.classification === selectedScpFilter;
           if (!matchLevel) return false;
           if (kwParts.length === 0) return true;
@@ -646,13 +600,10 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           const emptyTitle = document.getElementById('scp-empty-title');
           const emptyDesc = document.getElementById('scp-empty-desc');
           emptyDesc.hidden = true;
-          if (scpSimulatedEmpty) {
-            emptyTitle.textContent = '暂无在册卷宗';
-            emptyDesc.textContent = '';
-          } else {
-            emptyTitle.textContent = '未检索到对应卷宗';
-            emptyDesc.textContent = '';
-          }
+
+          emptyTitle.textContent = '未检索到对应卷宗';
+          emptyDesc.textContent = '';
+
           return;
         }
 
@@ -753,21 +704,16 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       // 收容物搜索与空状态恢复事件
       const scpSearchInput = document.getElementById('scp-search-input');
       scpSearchInput.addEventListener('input', () => {
-        scpSimulatedEmpty = false;
         scpSearchKeyword = scpSearchInput.value;
         renderScpArchives();
       });
 
       document.getElementById('scp-search-clear-x').addEventListener('click', () => {
-        scpSimulatedEmpty = false;
         scpSearchKeyword = scpSearchInput.value;
         renderScpArchives();
       });
 
-
-
       document.getElementById('scp-empty-primary-cta').addEventListener('click', () => {
-        scpSimulatedEmpty = false;
         scpSearchKeyword = '';
         selectedScpFilter = 'ALL';
         scpSearchInput.value = '';
@@ -782,11 +728,8 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         showToast('已清除筛选。', 'success');
       });
 
-
-
       document.querySelectorAll('.scp-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          scpSimulatedEmpty = false;
           selectedScpFilter = btn.getAttribute('data-filter');
           document.querySelectorAll('.scp-filter-btn').forEach(b => {
             b.className = 'scp-filter-btn px-3 py-1.5 retro-corner-box opacity-75 hover:opacity-100 cursor-pointer';
@@ -805,18 +748,11 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       // ======================================================================
       // ======================================================================
 
-
       // ======================================================================
-      // 分页 5：匿名论坛（含 1.1秒骨架屏加载动画 + 单一合并图片上传按钮）
+      // 分页 5：匿名论坛
       // ======================================================================
       let pendingNewTopicImageData = null;
       let pendingReplyImageData = null;
-      let forumSkeletonTimer = null;
-
-
-
-
-
 
       // 单一按钮触发隐藏的 file input
       document.getElementById('new-topic-upload-trigger-btn').addEventListener('click', () => {
@@ -849,202 +785,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         },e.target);
       });
 
-      function renderAttachmentHtml(item) {
-        if (!item.imageUrl || item.imageStatus === 'NONE') return '';
-        if (item.imageStatus === 'APPROVED') {
-          return `<div class="mt-2"><img src="${item.imageUrl}" alt="论坛附图" class="max-h-56 border border-[var(--inner-border)]"></div>`;
-        }
-        if (item.imageStatus === 'PENDING') {
-          return `<div class="mt-2 px-3 py-2 inner-card-alt text-[11px] font-mono-tech text-[var(--inner-crimson)]">🖼️ [附图待管理员审核批准后展示]</div>`;
-        }
-        if (item.imageStatus === 'REJECTED') {
-          return `<div class="mt-2 px-3 py-1.5 inner-card-alt text-[11px] font-mono-tech opacity-60">🖼️ [附图未通过审核]</div>`;
-        }
-        return '';
-      }
-
-
-
       document.getElementById('back-to-forum-list-btn').addEventListener('click', () => {
         returnForumList();
       });
-
-
-
-      // ======================================================================
-      // 分页 6-1：直升机高空空投（60fps requestAnimationFrame 丝滑连续下坠 + 20秒整备倒计时 + 多样化沉默机器人 + 真实玩家发言头像上直升机）
-      // ======================================================================
-      let skydiveState = {
-        flightNo: 45267,
-        phase: 'BOARDING', // BOARDING (20秒倒计时) | DROPPING (60fps连续丝滑下坠) | SETTLED (本班结算)
-        phaseStartTime: 0,
-        currentDepth: 100.0,
-        safeLineDepth: 1200,
-        touchdownDepth: 1416,
-        playerBoarded: false,
-        playerBet: 1000,
-        playerJumped: false,
-        playerJumpDepth: 0,
-        playerPayout: 0,
-        passengers: [],
-        helicopterHighlightAvatars: [] // 真实玩家登机或发言时显示在直升机舱上的头像
-      };
-
-      // 多样化的 A.V.E.D. 特遣干员机器人名字池（每次随机抽取不同组合，且机器人全程保持沉默绝不发聊天）
-      const diverseBotPool = [];
-
-      // 机舱无线电仅保留真实在册员工发言
-      const skydiveChatLog = [];
-
-      let skydiveRafId = null;
-
-
-      function depthToMultiplier(depth) {
-        if (depth < 100) return 0;
-        return Number(((depth / 100) * 1.015).toFixed(2));
-      }
-
-      function promoteSpeakerToHelicopter(senderName, badge, color) {
-        const cleanName = senderName.split('[')[0];
-        const exists = skydiveState.helicopterHighlightAvatars.find(a => a.name === cleanName);
-        if (!exists) {
-          skydiveState.helicopterHighlightAvatars.unshift({
-            name: cleanName,
-            badge: badge || cleanName[0],
-            color: color || '#9e1b1b'
-          });
-          if (skydiveState.helicopterHighlightAvatars.length > 5) {
-            skydiveState.helicopterHighlightAvatars.pop();
-          }
-          renderSkydiveStaticList();
-        }
-      }
-
-      function spawnSkydiveDanmaku(sender, text) {
-        const layer = document.getElementById('skydive-danmaku-layer');
-        if (!layer) return;
-        const item = document.createElement('div');
-        const topPx = 4 + Math.floor(Math.random() * 64);
-        item.className = 'danmaku-item absolute right-0 px-3 py-1 bg-black/85 border border-white/50 text-xs font-mono-tech text-white flex items-center gap-1.5 shadow';
-        item.style.top = `${topPx}px`;
-        item.innerHTML = `<span class="text-red-400 font-bold">${sender}:</span><span>${text}</span>`;
-        layer.appendChild(item);
-        setTimeout(() => item.remove(), 7600);
-      }
-
-      function spawnParachuteAvatar(badge, color, name, depth) {
-        const stage = document.getElementById('skydive-parachutes-stage');
-        if (!stage) return;
-        const el = document.createElement('div');
-        const leftPct = 15 + Math.floor(Math.random() * 70);
-        el.className = 'absolute flex flex-col items-center transition-all duration-[2400ms] ease-out';
-        el.style.left = `${leftPct}%`;
-        el.style.top = '85px';
-        el.innerHTML = `
-          <div class="text-xl -mb-1">🪂</div>
-          <div class="w-7 h-7 border-2 border-white flex items-center justify-center text-[11px] font-bold text-white shadow" style="background:${color}">
-            ${badge}
-          </div>
-          <span class="text-[9px] font-mono-tech bg-black/80 px-1 mt-0.5 text-white">${name} (${Math.round(depth)}m)</span>
-        `;
-        stage.appendChild(el);
-        requestAnimationFrame(() => {
-          el.style.top = '335px';
-        });
-      }
-
-
-      // 渲染乘客列表与直升机头像（仅在状态变化时调用，避免 60fps 重绘 DOM 造成卡顿）
-      function renderSkydiveStaticList() {
-        const avatarsBox = document.getElementById('skydive-airship-avatars');
-        if (avatarsBox) {
-          const displayAvatars = skydiveState.helicopterHighlightAvatars.length > 0
-            ? skydiveState.helicopterHighlightAvatars
-            : skydiveState.passengers.slice(0, 4);
-          avatarsBox.innerHTML = displayAvatars.map(p => `
-            <div title="${p.name}" class="w-6 h-6 border border-white flex items-center justify-center text-[10px] font-bold text-white" style="background:${p.color}">
-              ${p.badge}
-            </div>
-          `).join('');
-          document.getElementById('skydive-airship-extra-count').textContent = `机上 ${skydiveState.passengers.length}`;
-        }
-
-
-        const totalOnBoard = skydiveState.passengers.length;
-        const landedCount = skydiveState.passengers.filter(p => p.status === 'LANDED').length;
-        const crashedCount = skydiveState.passengers.filter(p => p.status === 'CRASHED').length;
-        document.getElementById('skydive-passenger-stats').textContent =
-          `机上 ${totalOnBoard} 落地 ${landedCount} 坠毁 ${crashedCount}`;
-
-        const pListEl = document.getElementById('skydive-passengers-list');
-        if (pListEl) {
-          pListEl.innerHTML = skydiveState.passengers.map(p => {
-            let statusBadge = `<span class="px-2 py-0.5 border border-black/25 opacity-75">待跳</span>`;
-            let rightAmt = `${fmtMoney(p.bet)}`;
-            if (p.status === 'LANDED') {
-              statusBadge = `<span class="px-2 py-0.5 bg-emerald-800 text-white font-bold">落地</span>`;
-              rightAmt = `<span class="text-emerald-700 font-bold">+${fmtMoney(p.payout)}</span>`;
-            } else if (p.status === 'CRASHED') {
-              statusBadge = `<span class="px-2 py-0.5 bg-[#9e1b1b] text-white font-bold">坠毁</span>`;
-              rightAmt = `<span class="text-red-700 font-bold">-${fmtMoney(p.bet)}</span>`;
-            }
-
-            return `
-              <div class="flex items-center justify-between py-1 border-b border-[var(--inner-border-soft)]">
-                <div class="flex items-center gap-2">
-                  <div class="w-5 h-5 text-white text-[10px] font-bold flex items-center justify-center" style="background:${p.color}">${p.badge}</div>
-                  <span class="font-bold ${p.isPlayer ? 'text-[var(--inner-crimson)]' : ''}">${p.name}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  ${statusBadge}
-                  <span>${rightAmt}</span>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      // 60fps requestAnimationFrame 丝滑动画循环
-
-
-
-
-      document.querySelectorAll('.sky-chip-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const v = parseInt(btn.getAttribute('data-sky-chip'), 10);
-          document.getElementById('skydive-bet-input').value = v;
-        });
-      });
-
-      document.getElementById('sky-chip-half').addEventListener('click', () => {
-        const input = document.getElementById('skydive-bet-input');
-        input.value = Math.max(100, Math.round((parseInt(input.value, 10) || 1000) / 2));
-      });
-
-      document.getElementById('sky-chip-double').addEventListener('click', () => {
-        const input = document.getElementById('skydive-bet-input');
-        input.value = Math.min(100000, (parseInt(input.value, 10) || 1000) * 2);
-      });
-
-
-
-      function renderSkydiveChat() {
-        const listEl = document.getElementById('skydive-chat-list');
-        if (!listEl) return;
-        listEl.innerHTML = skydiveChatLog.map(m => `
-          <div class="p-2 inner-card-alt space-y-0.5">
-            <div class="flex justify-between text-[10px] opacity-70">
-              <strong class="text-[#9e1b1b]">${m.sender}</strong>
-              <span>${m.time}</span>
-            </div>
-            <div class="text-xs">${m.text}</div>
-          </div>
-        `).join('');
-        listEl.scrollTop = listEl.scrollHeight;
-      }
-      renderSkydiveChat();
-
 
       // ======================================================================
       // 分页 6-2：五轮五线 收容抑制矩阵（已全部替换为 SCP 工业收容符号，无猫咪）
@@ -1058,13 +801,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         { id: 'pill', icon: '💊', name: '理智镇定剂', m3: 1.5, m4: 3, m5: 6 }
       ];
 
-      const slot5x3Lines = [
-        { id: 1, name: '① 中线', rows: [1, 1, 1, 1, 1] },
-        { id: 2, name: '② 上线', rows: [0, 0, 0, 0, 0] },
-        { id: 3, name: '③ 下线', rows: [2, 2, 2, 2, 2] },
-        { id: 4, name: '④ 谷线', rows: [0, 1, 2, 1, 0] },
-        { id: 5, name: '⑤ 山线', rows: [2, 1, 0, 1, 2] }
-      ];
 
       const slot5x3Mechanisms = [
         { id: 'mech_1', title: '协议一 全视之眼锁定', desc: '盘面任意位置出现 3 枚收容之眼，拨付 ×4 倍特别津贴', discovered: false },
@@ -1083,8 +819,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         history: [],
         spinning: false
       };
-
-
 
       const slotMarkupCache=new WeakMap();
       function setSlotMarkup(el,html){if(el&&slotMarkupCache.get(el)!==html){el.innerHTML=html;slotMarkupCache.set(el,html);}}
@@ -1182,9 +916,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       });
       document.getElementById('slot5x3-bet-input').addEventListener('input',renderSlot5x3Board);
 
-
-
-
       // ======================================================================
       // 分页 6-3：多档位 3 款配给刮刮乐（已彻底去除猫咪，改为严肃 SCP 收容配给主题，隐藏EV）
       // ======================================================================
@@ -1255,17 +986,9 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       let pendingTicketType = null;
       let activeIssuedTicket = null;
 
-
-
       const scratchTierNames={t1:'随手',t2:'当班',t3:'加签',t4:'特别',t5:'珍藏',t6:'典藏'};
       const scratchTierName=t=>scratchTierNames[t.id]||t.name;
       const scratchTierAmount=t=>String(t.cost);
-      function scratchPreview(g){
-        const foil=(revealed=false)=>`<span class="scratch-mini-foil ${revealed?'mini-revealed':''}">${revealed?AVEDScratchSymbols.render(g.type):''}</span>`;
-        if(g.type==='three_match')return `<div class="scratch-mini-match">${Array.from({length:12},()=>foil()).join('')}</div>`;
-        if(g.type==='lucky_num')return `<div class="scratch-mini-reference">${Array.from({length:4},()=>foil()).join('')}</div><div class="scratch-mini-numbers">${Array.from({length:9},()=>foil()).join('')}</div>`;
-        return `<div class="scratch-mini-steps">${Array.from({length:5},(_,i)=>`<div style="--step-indent:${(4-i)*5}px">${foil()}${foil()}<i></i></div>`).join('')}</div>`;
-      }
       function renderScratchTiersAndLobby() {
         const tiersBar = document.getElementById('scratch-tiers-bar');
         const lobbyView = document.getElementById('scratch-lobby-view');
@@ -1323,7 +1046,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         pendingTicketType = g;
         playSfx('click');
 
-
         document.getElementById('ticket-modal-sublabel').textContent = `选票 ${scratchTierName(selectedTier)}档 ${g.sub}`;
         document.getElementById('ticket-modal-title').textContent = g.title;
         document.getElementById('ticket-modal-tagline').textContent = g.tagline;
@@ -1345,7 +1067,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         modal.classList.add('hidden');
         modal.classList.remove('flex');
       });
-
 
       document.getElementById('ticket-modal-close').addEventListener('click',()=>document.getElementById('ticket-modal-cancel-btn').click());
       const scratchFeedback=AVEDScratchFeedback({playSfx,isActive:()=>!byId('view-casino').classList.contains('hidden')&&!byId('scratch-play-table-view').classList.contains('hidden')});
@@ -1449,7 +1170,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           document.getElementById('market-selected-price').textContent=quote.code==='KARMA'?(quote.price/100).toFixed(2):fmtMoney(quote.price);
           const selectedTick=document.getElementById('market-selected-tick');if(selectedTick){selectedTick.textContent=quoteMove.arrow;selectedTick.className='market-tick-indicator '+quoteMove.className;}
           const change=document.getElementById('market-selected-change');change.textContent=(quote.change>=0?'+':'')+quote.change.toFixed(2)+'%';change.className=quote.change>=0?'market-up':'market-down';
-          AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA',trades:marketView.trades||[],period:marketPeriod});
+          AVEDMarketChart.render(document.getElementById('stock-candles'),marketView.candles,{isIndex:quote.code==='KARMA',trades:marketView.trades||[],period:marketView.candleMinutes||marketPeriod,from:marketView.from,to:marketView.to});
           AVEDMarketAtmosphere.render(marketView,stocksData);
         }
         const container=byId('stocks-table-body');
@@ -1493,35 +1214,21 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
       byId('next-market-tick-btn').addEventListener('click',()=>refreshMarket().catch(e=>showToast(e.message,'warn')));
       byId('stock-chart-symbol').addEventListener('change',event=>selectMarket(event.target.value));
-      byId('stock-chart-period').addEventListener('change',event=>{marketPeriod=Number(event.target.value);refreshMarket().catch(e=>showToast(e.message,'warn'));});
+      byId('stock-chart-period').addEventListener('change',event=>{const value=event.target.value;marketPeriod=['24h','72h'].includes(value)?value:Number(value);refreshMarket().catch(e=>showToast(e.message,'warn'));});
       byId('stocks-table-body').addEventListener('click',event=>{const button=event.target.closest('[data-stock-chart-code]');if(button)selectMarket(button.dataset.stockChartCode);});
       document.querySelector('[data-market-index]').addEventListener('click',()=>selectMarket('KARMA'));
       byId('stock-trade-symbol').addEventListener('change',event=>selectMarket(event.target.value));
       byId('stock-trade-ticket').addEventListener('input',event=>{if(event.target.matches('input,select'))renderTradeTicket();});
 
       // 在线牌桌
-      const rankOrder = [
-        { label: '3', val: 3 }, { label: '4', val: 4 }, { label: '5', val: 5 },
-        { label: '6', val: 6 }, { label: '7', val: 7 }, { label: '8', val: 8 },
-        { label: '9', val: 9 }, { label: '10', val: 10 }, { label: 'J', val: 11 },
-        { label: 'Q', val: 12 }, { label: 'K', val: 13 }, { label: 'A', val: 14 },
-        { label: '2', val: 15 }
-      ];
-      const suits = ['♠', '♥', '♣', '♦'];
 
       let cardTableUI=null;
 
-      // ======================================================================
-      // 分页 7：监察院特殊资料
-      // ======================================================================
-      function renderPendingImagesQueue(){}
-      function renderAnonAuditLog(){}
-      function renderEmployeeRoster(){}
       let economyUI=null,welfareUI=null,economyRevision=0,scratchBombRules=null,scratchClimbMultipliers=[],directoryRequest=0;
       let marketRiskRules=null,marketView=null,marketCode='KARMA',marketPeriod=1,marketBusy=false;
       const previousQuotePrices=new Map();
       let previousIndexPrice=null;
-      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[],skyRound=null,skyPollBusy=false;
+      let playerGameRecords=null,playerHistory=[],playerProfile={},playerAchievements=[];
       function showToast(message,type='info',options={}) {
         window.AVEDFeedback.toast(message,type,options);
       }
@@ -1646,11 +1353,13 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         byId('news-detail-comment-count').textContent='员工实名留言 ('+count+')';
       }
       function randomizeScpDualNamePlaceholder(){const item=scpItemsData.length?scpItemsData[Math.floor(Math.random()*scpItemsData.length)]:null;byId('scp-search-input').placeholder=item?(item.searchName||item.codeName):'检索收容物名称';}
-      function triggerForumSkeletonLoading(){renderForumView();}
       const pendingImageReads=new WeakMap();
       async function readImageFileAsDataUrl(file,callback,input){if(!file)return;const token={};pendingImageReads.set(input,token);const submit=input.closest('form')?.querySelector('[type=submit]');if(submit)submit.disabled=true;try{const value=await AVEDImageUpload.read(file);if(pendingImageReads.get(input)===token)callback(value);}catch(error){if(pendingImageReads.get(input)===token)showToast(error.message,'warn');}finally{if(pendingImageReads.get(input)===token&&submit)submit.disabled=false;}}
 
-      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button forum-edit-action" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
+      const forumMentionsUI=AVEDForumMentions.create({api,getUser:()=>currentUser,showToast});
+      window.AVEDForumMentionController=forumMentionsUI;
+      for(const id of ['new-topic-content','forum-detail-reply-text'])forumMentionsUI.attach(byId(id));
+      const forumEditControl=(item,kind)=>`${item.editedAt?`<p class="edited-label ui-help-note">已编辑 ${AVEDTime.markup(item.editedAt)} ${AVEDTime.markup(item.editedAt,'clock')}</p>`:''}${item.canEdit?`<button type="button" class="community-button forum-edit-action" data-edit-speech="${kind}" data-speech-id="${item.id}">编辑发言</button>`:''}`;
       const attachment=item=>item.imageData?`<img src="${esc(item.imageData)}" class="max-w-full max-h-96 object-contain mt-3" alt="随帖影像" loading="lazy">`:'';
       let forumSocialUI=null,forumDetail=null;
       const forumReactionsUI=AVEDForumReactions({api,esc,getUser:()=>currentUser,getThread:()=>forumDetail,onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();profileFreshAt=0;}},showToast});
@@ -1660,8 +1369,8 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         enabled:()=>!!currentUser&&!document.hidden&&!byId('view-forum').classList.contains('hidden')&&!!currentForumThreadId,
         onLoading:(busy,loaded)=>{if(busy&&!loaded&&forumDetail?.preview)forumMainLoading.start();if(!busy)forumMainLoading.end();},
         onError:message=>{if(forumDetail?.preview)byId('forum-detail-main-post').textContent='主题加载失败，请重试。';showToast(message,'warn');},onThread:thread=>{forumDetail=thread;const preview=forumThreads.find(t=>String(t.id)===String(thread.id));if(preview)Object.assign(preview,{replyCount:thread.replyCount,viewCount:thread.viewCount,categoryId:thread.categoryId,categoryName:thread.categoryName,title:thread.title,body:Array.from(thread.body||'').slice(0,100).join(''),truncated:Array.from(thread.body||'').length>100});renderForumMain(thread);},
-        renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${esc(r.body)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
-      function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span><small class="forum-thread-category">${esc(th.categoryName||'')}</small>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${esc(th.body)}</p>${attachment(th)}${forumEditControl(th,'thread')}${forumReactionsUI.markup('thread',th.id,th.reactions)}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
+        renderItem:r=>`<div class="forum-post-meta"><span>${forumAuthor(r)}${r.isTopicAuthor?'<small class="forum-op-badge">楼主</small>':''}<small class="forum-floor">${r.floor} 楼</small>${forumBalance(r)}</span>${AVEDTime.markup(r.createdAt)}</div>${r.replyToId?`<button type="button" class="forum-reply-quote" data-forum-quote="${r.replyToId}" aria-expanded="false"><b>↳ ${esc(r.replyToName)} ${r.replyToFloor} 楼</b><span>${esc(r.replyToBody)}</span></button>`:''}<p class="forum-reply-body whitespace-pre-wrap">${AVEDForumMentions.markup(r.body,r.mentions)}</p>${attachment(r)}<div class="forum-reply-actions"><button type="button" class="community-button forum-reply-action" data-forum-reply="${r.id}">回复</button>${forumEditControl(r,'reply')}</div>${forumReactionsUI.markup('reply',r.id,r.reactions)}`});
+      function renderForumMain(th){const box=byId('forum-detail-main-post'),markup=`<div class="forum-post-meta"><span>${forumAuthor(th)}${forumBalance(th)}</span><small class="forum-thread-category">${esc(th.categoryName||'')}</small>${AVEDTime.markup(th.createdAt)}</div><h3 class="forum-detail-title">${esc(th.title)}</h3><p class="forum-detail-body whitespace-pre-wrap">${AVEDForumMentions.markup(th.body,th.mentions)}</p>${attachment(th)}${forumEditControl(th,'thread')}${forumReactionsUI.markup('thread',th.id,th.reactions)}`;if(box.dataset.rendered!==markup){box.innerHTML=markup;box.dataset.rendered=markup;}}
       let forumListPosition=null,forumListMarkup='',forumRestoring=false;
       function forumScrollRoot(){
         for(let el=byId('view-forum').parentElement;el&&el!==document.body;el=el.parentElement){if(el.scrollHeight>el.clientHeight&&/auto|scroll/.test(getComputedStyle(el).overflowY))return el;}
@@ -1707,10 +1416,8 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       }
       function loadSlotHistory(){slot5x3State.history=playerHistory.filter(h=>h.game==='slot').map(h=>{let result={};try{result=typeof h.result==='string'?JSON.parse(h.result):h.result||{};}catch{}return {bet:h.cost,win:h.prize,penalty:result.penalty||0,penaltyKind:result.penaltyKind,tax:result.tax||0};});renderSlot5x3History();}
 
-      function initSkydiveGame(){pollSky().catch(e=>showToast(e.message));}
       function initDoudizhu(){cardTableUI?.ensure();}
-      function renderSky(state){skyRound=state.round;skyUI.render(state);}
-      async function pollSky(){return skyUI.poll();}
+      function renderSky(state){skyUI.render(state);}
       async function refreshChat(room){renderChat(room,await api('/api/player/chat?room='+room));}
       function renderChat(room,d){if(room==='sky')skyUI.radio(d.items);const box=byId(room==='sky'?'skydive-chat-list':'derby-chat-messages');if(!box)return;
         const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80;const last=box.dataset.lastId;const next=String(d.items.at(-1)?.id||'')+d.items.map(m=>m.alias).join('|');if(last===next)return;
@@ -1721,7 +1428,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       function startChatStreams(){const room=currentUser&&!document.hidden&&!byId('view-casino').classList.contains('hidden')?(!byId('game-panel-skydive').classList.contains('hidden')?'sky':!byId('game-panel-derby').classList.contains('hidden')?'derby':''):'';if(room===chatRoom)return;chatRoom=room;for(const connection of chatConnections)connection.close();chatConnections=[];if(!room)return;const source=new EventSource('/api/player/chat/stream?room='+room);source.onmessage=e=>{try{renderChat(room,JSON.parse(e.data));}catch{}};chatConnections=[source];}
       document.addEventListener('visibilitychange',startChatStreams);
       setInterval(startChatStreams,1000);
-      function fluctuateStocks(){return refreshMarket().catch(e=>showToast(e.message,'warn'));}
       function renderProfile(){personalUI.render();}
       let profileRequest=null,profileFreshAt=0,lastProfileBalance=null;
       async function showProfile(){switchMainView('profile');if(Date.now()-profileFreshAt<30000)return;if(profileRequest)return profileRequest;const uid=currentUser.id;profileRequest=(async()=>{try{const d=await api('/api/profile');if(currentUser?.id!==uid)return;playerProfile=d.profile;playerAchievements=d.achievements;playerGameRecords=d.gameRecords||null;currentUser.balance=d.balance;profileFreshAt=Date.now();if(!byId('view-profile').classList.contains('hidden'))renderProfile();}finally{profileRequest=null;}})();return profileRequest;}
@@ -1734,7 +1440,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         action(form.querySelector('[type=submit]')||form.querySelector('button'),async()=>{
           if(id==='new-forum-topic-form'||id==='forum-detail-reply-form'){
             const reply=id==='forum-detail-reply-form',social=forumSocialUI?.compose(form)||{};
-            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{...social,...(!reply?{categoryId:Number(form.elements.categoryId.value)}:{}),title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
+            const d=await api('/api/player/forum'+(reply?'/'+currentForumThreadId:''),{method:'POST',body:{...social,mentions:forumMentionsUI.payload(byId(reply?'forum-detail-reply-text':'new-topic-content')),...(!reply?{categoryId:Number(form.elements.categoryId.value)}:{}),title:byId('new-topic-title').value,body:byId(reply?'forum-detail-reply-text':'new-topic-content').value,identityMode:form.querySelector('[name=identityMode]')?.value||'anonymous',imageData:reply?pendingReplyImageData:pendingNewTopicImageData}});
             form.reset();form.querySelector('[name=identityMode]').value='anonymous';forumSocialUI?.afterPublish(form,social.personaId);if(reply)pendingReplyImageData=null;else pendingNewTopicImageData=null;byId(reply?'reply-image-selected-hint':'new-topic-image-hint').textContent='';if(reply)await refreshForum();else await forumBrowser.published(d.categoryId);if(reply&&!d.pending)await forumReplies.reveal(d.id);if(!reply)forumBrowser.closeComposer();showToast(d.pending?'已提交审核。':'已发布。');
           }else if(id==='news-detail-comment-form'){
             await api('/api/posts',{method:'POST',body:{announcementId:Number(currentNewsId),anonymousName:playerProfile.anonymousName,body:byId('news-detail-comment-input').value}});form.reset();renderCompanyNewsView();
@@ -1859,7 +1565,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         };
         const button=document.createElement('button');button.type='button';button.className='scratch-bomb-demo-btn';button.textContent='试刮炸弹';button.addEventListener('click',previewBomb);byId('ticket-modal-confirm-btn').after(button);
 
-
       }
       cardTableUI=AVEDCardTableUI({api,esc,getUser:()=>currentUser,playSfx,onBalance:balance=>{if(currentUser){currentUser.balance=balance;syncUserHeaderUI();}}});
       const skyUI=AVEDSkyUI({api,esc,byId,playSfx,onSettled:()=>{profileFreshAt=0;},getUser:()=>currentUser,onBalance:balance=>{if(currentUser&&typeof balance==='number'){currentUser.balance=balance;syncUserHeaderUI();}},showToast});
@@ -1931,6 +1636,5 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
       setInterval(()=>{if(marketVisible())refreshMarket().catch(()=>{});},5000);
 
       setInterval(()=>{if(!currentUser||document.hidden)return;refreshBalance().catch(()=>{});if(!byId('view-news').classList.contains('hidden')&&currentNewsId)refreshNoticeComments(currentNewsId).catch(()=>{});},10000);
-
 
     })();

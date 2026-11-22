@@ -10,6 +10,13 @@
 
 账号删除和定时备份共用数据目录内 `maintenance-lock.sqlite` 的 SQLite 写锁，防止旧快照并发覆盖清理结果。此文件只用于互斥，不保存账号信息。删除使用 `secure_delete` 并在提交后截断 WAL；SQLite 文件系统以外的导出、磁盘历史快照和已经下载的副本不在应用可撤回范围内。
 
+维护任务以当前数据库文件的 UID/GID 创建和修复备份目录、每日及五日快照、维护锁的归属，目录权限保持 `0700`，文件保持 `0600`。容器内网站账号需要写入已有快照以完成删除。更新既有服务器的维护脚本后，可单独修复权限，保留全部数据和现有快照：
+
+```sh
+sudo install -m 755 deploy/daily-maintenance.py /usr/local/lib/aved/daily-maintenance.py
+sudo python3 /usr/local/lib/aved/daily-maintenance.py --repair-permissions-only --database /root/AVED/data/wanyehui.db --backup-dir /root/AVED/data/daily-backups
+```
+
 提交后清理在线状态、牌桌与排行缓存，关闭该账号的游戏和聊天订阅，广播最新状态。删除期间完成的头像生成任务会再次核对源账号，不能回写已经删除的头像缓存。
 
 验证：`tests/account-erasure.test.mjs`、`tests/account-erasure-http.test.mjs`，以及管理内容、论坛、牌桌、酒吧、账号和维护任务回归测试。

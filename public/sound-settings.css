@@ -20,5 +20,13 @@
  #view-profile.personal-hud #hud-sound .sound-switch input:checked{border-color:var(--brand-red)!important;background:var(--brand-red)!important}
  #view-profile.personal-hud #hud-sound .sound-switch input:checked::after{transform:translateX(18px);background:var(--study-on-red,#fff)}
  #view-profile.personal-hud #hud-sound .sound-switch input:focus-visible{outline:2px solid var(--inner-text-main);outline-offset:3px}
+ #view-profile.personal-hud #hud-sound .sound-switch.sound-income-switch{padding:14px!important;min-height:62px;border:1px solid var(--inner-text-muted)!important;border-left:4px solid var(--inner-text-main)!important;background:color-mix(in srgb,var(--inner-text-main) 16%,var(--inner-card-bg))!important}
+ #view-profile.personal-hud #hud-sound .sound-switch.sound-income-switch:has(input:checked){background:var(--brand-red,#5e0205)!important;border-color:var(--brand-red,#5e0205)!important;border-left-color:#fff!important}
+ #view-profile.personal-hud #hud-sound .sound-income-switch:has(input:checked)>span{color:#fff!important}
+ #view-profile.personal-hud #hud-sound .sound-income-switch input[type=checkbox]{background:#202024!important;border-color:#77777d!important}
+ #view-profile.personal-hud #hud-sound .sound-income-switch input::after{background:#b8b8bd}
+ #view-profile.personal-hud #hud-sound .sound-income-switch input[type=checkbox]:checked{background:#fff!important;border-color:#fff!important}
+ #view-profile.personal-hud #hud-sound .sound-income-switch input:checked::after{background:var(--brand-red,#5e0205)}
+ #view-profile.personal-hud #hud-sound .sound-income-switch input:focus-visible{outline:2px solid #fff;box-shadow:0 0 0 4px #202024;outline-offset:2px}
  @media(prefers-reduced-motion:reduce){#view-profile.personal-hud #hud-sound .sound-switch input::after{transition:none}}
 }

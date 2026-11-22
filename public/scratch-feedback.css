@@ -79,9 +79,6 @@
  #game-panel-scratch .scratch-printed-mark{display:inline-block!important;width:25px;height:25px;vertical-align:middle;color:var(--mark-ink)!important;flex:none}
  #scratch-lobby-view .scratch-ticket-band{height:34px!important;min-height:34px!important;padding-inline:12px!important;background-image:repeating-linear-gradient(45deg,transparent 0 5px,#80808016 5px 6px)!important}
  #scratch-lobby-view .scratch-ticket-card>div>.p-5{padding:12px!important}
- #scratch-lobby-view .scratch-ticket-preview{padding:6px!important;gap:4px!important}
- #scratch-lobby-view .scratch-preview-cell{height:15px!important;min-height:15px!important}
- #scratch-lobby-view .scratch-preview-cell .scratch-printed-mark{height:13px!important;width:13px!important}
  #scratch-ticket-ornament{position:absolute;top:14px;left:19px;line-height:1}
  #scratch-ticket-ornament .scratch-printed-mark{width:22px!important;height:22px!important}
  #inner-app-view #active-ticket-board-container{padding:0!important;margin-top:0!important}
@@ -123,27 +120,8 @@
  #inner-app-view #view-casino .aved-jackpot-strip strong,#inner-app-view #view-casino .aved-jackpot-message{font-size:13px!important;font-family:inherit!important;letter-spacing:0!important}
  #inner-app-view #view-casino .aved-jackpot-strip strong{color:var(--brand-red-ink)!important;font-weight:500!important}
  #inner-app-view #view-casino .aved-jackpot-message{color:var(--inner-text-main)!important}
- #inner-app-view #scratch-lobby-view .scratch-ticket-preview{display:flex!important;flex-direction:column;align-items:center;justify-content:center;height:126px!important;min-height:126px!important;padding:12px 18px!important;gap:8px!important;border:1px dashed var(--inner-border)!important;background:repeating-linear-gradient(45deg,transparent 0 8px,#8080800b 8px 9px),var(--inner-card-alt)!important}
- .scratch-mini-foil{display:flex;align-items:center;justify-content:center;min-width:0;height:24px;border:1px solid var(--inner-border-soft);background:linear-gradient(125deg,#80808020,#e0ddce65 44%,#80808050 58%,#e0ddce35);box-shadow:inset 0 1px #ffffff18}
- .scratch-mini-foil.mini-revealed{background:var(--inner-card-bg)}
- #scratch-lobby-view .scratch-ticket-preview .scratch-printed-mark{width:19px!important;height:19px!important}
- .scratch-mini-match{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:82%;max-width:230px}
- .scratch-mini-reference{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:76%;max-width:220px}
- .scratch-mini-reference .scratch-mini-foil{height:19px;border-radius:50%}
- .scratch-mini-reference .scratch-mini-foil:last-child{border-radius:1px}
- .scratch-mini-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:76%;max-width:220px}
- .scratch-mini-numbers .scratch-mini-foil{height:18px}
- .scratch-mini-steps{display:flex;flex-direction:column;gap:4px;width:85%;max-width:240px}
- .scratch-mini-steps>div{display:grid;grid-template-columns:24px minmax(0,1fr) 7px;align-items:center;gap:6px;margin-left:var(--step-indent);margin-right:calc(20px - var(--step-indent))}
- .scratch-mini-steps .scratch-mini-foil{height:16px}
- .scratch-mini-steps i{display:block;width:6px;height:6px;border-radius:50%;background:var(--inner-border)}
- .scratch-mini-steps .scratch-printed-mark{max-height:13px!important}
- @media(max-width:767px){#inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:112px!important;min-height:112px!important;padding:10px 14px!important}}
 }
-@layer aved-section-ui {
- .scratch-mini-reference .scratch-mini-foil{border-radius:50%!important}
- .scratch-mini-reference .scratch-mini-foil:last-child{border-radius:1px!important}
-}
+
 @layer aved-section-ui {
  #inner-app-view #daily-allocation{gap:0!important}
  #inner-app-view #daily-allocation>article{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:2px 12px!important;padding:10px 0!important;min-height:0!important}
@@ -157,12 +135,6 @@
  #inner-app-view #view-casino .terminal-game-tabs{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:5px!important;width:100%!important;overflow:visible!important;padding:0!important}
  #inner-app-view #view-casino .terminal-game-tabs .game-tab-btn{min-height:34px!important;height:34px!important;padding:5px 4px!important;font-size:12px!important;line-height:22px!important;white-space:nowrap!important;width:100%!important;margin:0!important}
  #inner-app-view #view-casino .terminal-game-header>.retro-corner-box{padding:7px!important}
- #inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:146px!important;min-height:146px!important;padding:12px!important}
- #scratch-lobby-view .scratch-mini-match,#scratch-lobby-view .scratch-mini-reference,#scratch-lobby-view .scratch-mini-numbers,#scratch-lobby-view .scratch-mini-steps{width:92%!important;max-width:360px!important}
- #scratch-lobby-view .scratch-mini-match .scratch-mini-foil{height:31px!important}
- #scratch-lobby-view .scratch-mini-reference .scratch-mini-foil{height:25px!important}
- #scratch-lobby-view .scratch-mini-numbers .scratch-mini-foil{height:25px!important}
- #scratch-lobby-view .scratch-mini-steps .scratch-mini-foil{height:21px!important}
  #scratch-play-rules{padding:13px 14px!important;margin-top:14px!important;border-top:1px solid var(--inner-border)!important;background:var(--inner-card-alt)}
  #scratch-play-rules h4{font-size:14px!important;line-height:22px!important;margin:0 0 6px!important;color:var(--inner-text-main)!important}
  #scratch-play-rules p,#ticket-modal-rules p{font-size:12px!important;line-height:1.7!important;margin:3px 0!important;color:var(--inner-text-main)!important}
@@ -170,24 +142,10 @@
   #inner-app-view #view-casino .terminal-game-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important}
   #inner-app-view #view-casino .terminal-game-tabs .game-tab-btn{font-size:11px!important;min-height:32px!important;height:32px!important;padding:4px 2px!important}
   #inner-app-view #game-panel-home{padding:12px!important}
-  #inner-app-view #scratch-lobby-view .scratch-ticket-preview{height:138px!important;min-height:138px!important}
  }
 }
-@layer aved-section-ui {
- #inner-app-view #scratch-lobby-view .scratch-ticket-preview{width:100%!important;max-width:560px!important;height:auto!important;min-height:0!important;box-sizing:border-box!important;padding:12px!important;margin-inline:auto!important}
- #scratch-lobby-view .scratch-mini-ticket{display:flex;flex-direction:column;justify-content:center;gap:6px;width:88%;max-width:480px;aspect-ratio:1.618/1;min-height:0}
- #scratch-lobby-view .scratch-mini-match,#scratch-lobby-view .scratch-mini-reference,#scratch-lobby-view .scratch-mini-numbers,#scratch-lobby-view .scratch-mini-steps{width:100%!important;max-width:none!important;min-height:0!important}
- #scratch-lobby-view .scratch-mini-match{height:100%;grid-template-rows:repeat(3,minmax(0,1fr))}
- #scratch-lobby-view .scratch-mini-reference{height:23%;flex:0 0 23%;gap:6px}
- #scratch-lobby-view .scratch-mini-numbers{flex:1;grid-template-rows:repeat(3,minmax(0,1fr))}
- #scratch-lobby-view .scratch-mini-steps{height:100%;justify-content:space-between}
- #scratch-lobby-view .scratch-mini-steps>div{height:17%;grid-template-columns:24% minmax(0,1fr) 7px}
- #scratch-lobby-view .scratch-ticket-preview .scratch-mini-foil{height:100%!important;min-height:0!important}
-}
-@layer aved-section-ui {
- #inner-app-view #scratch-lobby-view .scratch-ticket-preview{width:88%!important;max-width:320px!important;padding:10px!important;margin:12px auto!important}
- #scratch-lobby-view .scratch-mini-ticket{width:94%!important;max-width:none!important}
-}
+
+
 
 @layer aved-section-ui {
  .scratch-award-toast[data-presentation="ordinary"] .scratch-award-label{font-size:17px!important;min-height:0!important;line-height:1.6!important;margin:0!important;font-weight:500!important}

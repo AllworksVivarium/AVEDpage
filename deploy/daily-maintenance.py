@@ -10,8 +10,36 @@ import sqlite3
 import tempfile
 
 
+def private_storage(path, owner, mode):
+    """Keep maintenance files private and writable by the database owner."""
+    current = path.stat()
+    if hasattr(os, 'chown') and (current.st_uid, current.st_gid) != (owner.st_uid, owner.st_gid):
+        os.chown(path, owner.st_uid, owner.st_gid)
+    os.chmod(path, mode)
+
+
+def repair_permissions(database, directory):
+    database, directory = Path(database), Path(directory)
+    owner = database.stat()
+    if directory.exists():
+        private_storage(directory, owner, 0o700)
+        for pattern in ('daily-????-??-??.sqlite', 'five-day-????-??-??.sqlite'):
+            for snapshot in directory.glob(pattern):
+                for suffix in ('', '-wal', '-shm', '-journal'):
+                    file = Path(str(snapshot) + suffix)
+                    if file.is_file():
+                        private_storage(file, owner, 0o600)
+    lock = database.parent / 'maintenance-lock.sqlite'
+    for suffix in ('', '-wal', '-shm', '-journal'):
+        file = Path(str(lock) + suffix)
+        if file.is_file():
+            private_storage(file, owner, 0o600)
+
+
 def verified_backup(database, directory, day, prefix="daily"):
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    owner = database.stat()
+    private_storage(directory, owner, 0o700)
     destination = directory / (prefix + "-" + day + ".sqlite")
     fd, temporary = tempfile.mkstemp(prefix="." + prefix + "-", suffix=".tmp", dir=directory)
     os.close(fd)
@@ -23,7 +51,7 @@ def verified_backup(database, directory, day, prefix="daily"):
                 target.execute("PRAGMA journal_mode=DELETE")
                 if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                     raise RuntimeError("Backup integrity check failed")
-        os.chmod(temporary, 0o600)
+        private_storage(Path(temporary), owner, 0o600)
         os.replace(temporary, destination)
     finally:
         if os.path.exists(temporary):
@@ -70,7 +98,9 @@ def run(database, directory, now=None):
     database = Path(database)
     if not database.is_file():
         raise FileNotFoundError(database)
+    repair_permissions(database, directory)
     with closing(sqlite3.connect(database.parent / 'maintenance-lock.sqlite', timeout=30)) as lock:
+        private_storage(database.parent / 'maintenance-lock.sqlite', database.stat(), 0o600)
         lock.execute('BEGIN IMMEDIATE')
         try:
             return run_locked(database, directory, now)
@@ -102,5 +132,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--database", default="/root/AVED/data/wanyehui.db")
     parser.add_argument("--backup-dir", default="/root/AVED/data/daily-backups")
+    parser.add_argument("--repair-permissions-only", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(run(args.database, args.backup_dir)))
+    if args.repair_permissions_only:
+        repair_permissions(args.database, args.backup_dir)
+        print(json.dumps({"permissionsRepaired": True}))
+    else:
+        print(json.dumps(run(args.database, args.backup_dir)))

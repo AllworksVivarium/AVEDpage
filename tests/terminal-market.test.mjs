@@ -60,6 +60,34 @@ test('candles preserve OHLC, aggregate periods and survive reinstallation',()=>{
   reopened.close();db.close();
 });
 
+test('24/72 hour charts bound real history, preserve empty spans and aggregate OHLC and volume',()=>{
+ const db=new DatabaseSync(':memory:');
+ db.exec(`CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER);
+  CREATE TABLE stock_holdings(employee_id INTEGER,code TEXT,quantity INTEGER,cost_basis INTEGER DEFAULT 0,position_notional INTEGER DEFAULT 0,margin_used INTEGER DEFAULT 0,realized_pnl INTEGER DEFAULT 0,stop_loss INTEGER,take_profit INTEGER);
+  INSERT INTO stock_prices VALUES('TEST.A','甲',160,0,0);`);
+ const at=Date.parse('2026-11-23T12:17:00+08:00'),market=installMarket(db,{clock:()=>at,automatic:false});
+ try{
+  db.prepare("DELETE FROM stock_candles WHERE code='TEST.A'").run();
+  const insert=db.prepare("INSERT INTO stock_candles(code,bucket,open,high,low,close,volume,turnover) VALUES('TEST.A',?,?,?,?,?,?,?)");
+  for(const [ago,open,high,low,close,volume,turnover]of [
+   [80*60,40,45,30,42,1,100],[70*60,70,90,50,80,2,200],
+   [23*60,100,120,80,110,3,300],[12*60,110,145,100,140,4,400],
+   [10,140,180,130,170,5,500],[5,170,190,150,160,6,600]
+  ])insert.run(at-ago*60000,open,high,low,close,volume,turnover);
+  for(const [period,hours,candleMinutes,count,opening,volume]of [['24h',24,30,3,100,18],['72h',72,90,4,70,20]]){
+   const result=market.history('TEST.A',period);
+   assert.equal(result.period,period);assert.equal(result.candleMinutes,candleMinutes);
+   assert.equal(result.to-result.from,hours*3600000);assert.ok(result.from<at&&result.to>at);
+   assert.equal(result.candles.length,count,'missing history stays empty rather than filling 48 fabricated bars');
+   assert.equal(result.candles[0].open,opening);assert.ok(result.candles.every(c=>c.bucket>=result.from&&c.bucket<result.to));
+   const last=result.candles.at(-1);
+   assert.deepEqual([last.open,last.high,last.low,last.close,last.volume,last.turnover],[140,190,130,160,11,1100]);
+   assert.equal(result.candles.reduce((sum,c)=>sum+c.volume,0),volume);
+  }
+  for(const invalid of ['96h','7d',24,72,1440])assert.throws(()=>market.history('TEST.A',invalid),/周期/);
+ }finally{market.close();db.close();}
+});
+
 test('items fallback to latest open-trade leverage when legacy holdings lack leverage fields',()=>{
   const db=new DatabaseSync(':memory:');
   db.exec(`CREATE TABLE stock_prices(code TEXT PRIMARY KEY,name TEXT,price INTEGER,change REAL,tick INTEGER);
@@ -140,6 +168,8 @@ test('live API uses database login, server-priced trades and persistent quantiti
   assert.equal(noticeCount,noticeComments.length);assert.equal(noticeCount,1);
   assert.equal((await api('/api/admin/announcements',{title:'日期核验',body:'正文',issuer:'收容部',issuedOn:'2026-02-30'})).status,400);
   const state=(await player('/api/player/state')).data;assert.ok(state.serverTime);assert.ok(state.market.candles.length);
+  for(const period of ['24h','72h']){const response=await player('/api/player/stocks?period='+period);assert.equal(response.status,200);assert.equal(response.data.market.period,period);assert.ok(response.data.market.to>response.data.market.from);}
+  assert.equal((await player('/api/player/stocks?period=96h')).status,400);
   const index=state.stocks.find(s=>s.code==='KARMA');assert.ok(index);
   assert.equal(index.price,Math.round(state.market.index.price/100));
   const indexBuy=await player('/api/player/stocks',{code:'KARMA',intent:'open',side:'long',quantity:2,leverage:3,price:1});

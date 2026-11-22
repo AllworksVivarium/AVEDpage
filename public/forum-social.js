@@ -1,12 +1,12 @@
 (function(){
  let workshopLoad;
- window.AVEDLoadForumWorkshop=()=>workshopLoad||(workshopLoad=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/forum-workshop.js?v=forum-categories-20261122';script.onload=()=>resolve(window.AVEDForumWorkshop);script.onerror=()=>{script.remove();workshopLoad=null;reject(Error('通讯编排暂时无法加载，请重试。'));};document.head.append(script);}));
+ window.AVEDLoadForumWorkshop=()=>workshopLoad||(workshopLoad=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/forum-workshop.js?v=forum-mentions-20261123';script.onload=()=>resolve(window.AVEDForumWorkshop);script.onerror=()=>{script.remove();workshopLoad=null;reject(Error('通讯编排暂时无法加载，请重试。'));};document.head.append(script);}));
  window.AVEDForumSocial=function({api,esc,getUser,getThread,openThread,getReply,getContext,showToast,refreshForum,getReplyRevision=()=>0,onRepliesChanged=()=>{},onStockRisk=()=>{}}){
   const view=document.getElementById('view-forum'),tools=view.querySelector('.forum-action-toolbar'),nav=document.querySelector('[data-nav="forum"]');
   const inboxButton=document.createElement('button');inboxButton.type='button';inboxButton.className='community-button forum-inbox-button';inboxButton.textContent='消息提醒';tools.prepend(inboxButton);
   const toolbarBack=document.createElement('button');toolbarBack.type='button';toolbarBack.id='forum-toolbar-back';toolbarBack.className='community-button';toolbarBack.textContent='← 返回';toolbarBack.setAttribute('aria-label','返回帖子列表');toolbarBack.hidden=true;toolbarBack.onclick=()=>document.getElementById('forum-global-back')?.click();inboxButton.after(toolbarBack);
   const dot=document.createElement('span');dot.className='forum-unread-dot';dot.hidden=true;dot.setAttribute('aria-hidden','true');nav.append(dot);
-  const dialog=document.createElement('dialog');dialog.className='community-dialog forum-social-dialog';dialog.innerHTML='<header><h2>消息提醒</h2><button type="button" aria-label="关闭消息提醒">×</button></header><section class="forum-inbox-section forum-reaction-inbox"><h3>收到反应 <small data-reaction-unread></small></h3><div class="forum-reaction-inbox-list"></div></section><section class="forum-inbox-section"><h3>收到评论</h3><div class="forum-inbox-list"></div></section>';view.append(dialog);dialog.querySelector('header button').onclick=()=>dialog.close();
+  const dialog=document.createElement('dialog');dialog.className='community-dialog forum-social-dialog';dialog.innerHTML='<header><h2>消息提醒</h2><button type="button" aria-label="关闭消息提醒">×</button></header><section class="forum-inbox-section forum-reaction-inbox"><h3>收到反应 <small data-reaction-unread></small></h3><div class="forum-reaction-inbox-list"></div></section><section class="forum-inbox-section"><h3>回复与提及</h3><div class="forum-inbox-list"></div></section>';view.append(dialog);dialog.querySelector('header button').onclick=()=>dialog.close();
   let inbox={unread:0,items:[]},busy=false,lastPoll=0,uid=null,capability=false,people=[],personaBusy=false,replyTarget=null;
   let syncTimer=null,queuedSync=false;
   const presence=window.AVEDForumPresence?.({view,onChange:changed=>{clearTimeout(syncTimer);syncTimer=setTimeout(()=>{if(changed){if(busy)queuedSync=true;else poll(true);}else poll();},changed?250:500);}});
@@ -25,10 +25,10 @@
   function paintInbox(){
    const reactions=inbox.reactions||{unread:0,items:[]},comments=inbox.unread||0,count=comments+reactions.unread;
    inboxButton.textContent=count?'消息提醒 ('+(count>99?'99+':count)+')':'消息提醒';inboxButton.dataset.unread=String(count>0);dot.hidden=!count;
-   nav.setAttribute('aria-label',count?'匿名论坛，'+comments+' 条新评论，'+reactions.unread+' 条新反应':'匿名论坛');
+   nav.setAttribute('aria-label',count?'匿名论坛，'+comments+' 条新回复或提及，'+reactions.unread+' 条新反应':'匿名论坛');
    dialog.querySelector('[data-reaction-unread]').textContent=reactions.unread?'('+reactions.unread+')':'';
    dialog.querySelector('.forum-reaction-inbox-list').innerHTML=(reactions.items||[]).map(n=>`<button type="button" data-reaction-notice="${n.notificationId}" data-unread="${n.unread!==0}" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId||0}"><span class="forum-reaction-notice-heading">${window.AVEDForumReactionArt?.icon(n.reaction)||''}<strong>你的${n.replyId?'评论':'帖子'}收到反应</strong></span><small>${n.unread===0?'已读':'新反应'} ${esc(n.title)} →</small></button>`).join('')||'<p>暂无反应提醒。</p>';
-   dialog.querySelector('.forum-inbox-list').innerHTML=inbox.items.map(n=>`<button type="button" data-unread="${n.unread!==0}" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId}" data-comment-kind="${n.kind}" data-notice-through="${n.through}"><strong>${n.kind==='reply'?esc(n.authorName||'新回复')+' 回复了你的评论':'你的帖子有新回复了'}</strong><span>${esc(n.kind==='reply'?n.excerpt:n.title)}</span><small>${n.unread===0?'已读':'未读'} ${n.kind==='reply'?esc(n.title)+' '+(n.floor||'')+' 楼':(n.unread===0?'共 ':'新增 ')+n.count+' 条回复'} →</small></button>`).join('')||'<p>暂无评论提醒。</p>';
+   dialog.querySelector('.forum-inbox-list').innerHTML=inbox.items.map(n=>`<button type="button" data-unread="${n.unread!==0}" data-notice-thread="${n.threadId}" data-notice-reply="${n.replyId}" data-comment-kind="${n.kind}" data-mention-notice="${n.mentionId||''}" data-notice-through="${n.through}"><strong>${n.kind==='mention'?esc(n.authorName||'有人')+' 提到了你':n.kind==='reply'?esc(n.authorName||'新回复')+' 回复了你的评论':'你的帖子有新回复了'}</strong><span>${esc(n.kind==='thread'?n.title:n.excerpt)}</span><small>${n.unread===0?'已读':'未读'} ${n.kind==='mention'?esc(n.title):n.kind==='reply'?esc(n.title)+' '+(n.floor||'')+' 楼':(n.unread===0?'共 ':'新增 ')+n.count+' 条回复'} →</small></button>`).join('')||'<p>暂无评论提醒。</p>';
   }
   async function poll(force=false){const user=getUser();if(uid!==(user?.id??null)){uid=user?.id??null;inbox={unread:0,items:[]};people=[];capability=false;lastPoll=0;presence?.reset();onStockRisk(null);cancelReply();paintInbox();renderPeople();dialog.close();workshopDialog?.close();}if(!user||document.hidden&&!force||busy||!force&&Date.now()-lastPoll<30000)return;busy=true;const id=user.id;lastPoll=Date.now();try{
    const threadId=!document.hidden&&!view.classList.contains('hidden')?getThread()?.id||0:0;
@@ -44,10 +44,11 @@
    try{
     const opened=await openThread(thread,reply||undefined);
     if(opened===false||getUser()?.id!==owner||String(getThread()?.id)!==String(thread)||getThread()?.preview)throw Error('回复加载失败。');
-    if(reply)await reveal(reply);
+    if(reply)await reveal(reply);else if(kind==='mention')document.getElementById('forum-detail-main-post').scrollIntoView({block:'center',behavior:'instant'});
     if(getUser()?.id!==owner||document.hidden||view.classList.contains('hidden')||String(getThread()?.id)!==String(thread))return;
     dialog.close();
     if(b.dataset.reactionNotice)await api('/api/player/forum/reactions/read',{method:'POST',body:{notificationIds:[Number(b.dataset.reactionNotice)]}});
+    else if(kind==='mention')await api('/api/player/forum/'+thread+'/read',{method:'POST',body:{mentionIds:[Number(b.dataset.mentionNotice)]}});
     else await api('/api/player/forum/'+thread+'/read',{method:'POST',body:kind==='thread'?{through}:{replyIds:[reply]}});
     if(getUser()?.id===owner)await poll(true);
    }catch(error){if(getUser()?.id===owner)showToast(error.message,'warn');}finally{b.disabled=false;}

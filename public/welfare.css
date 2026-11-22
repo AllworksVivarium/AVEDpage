@@ -108,8 +108,8 @@ body,.admin-mode,.community-form input,.community-form textarea,.community-form 
  body.theme-inner #inner-app-view #game-panel-home .welfare-dashboard>:is(.company-fund-panel,.company-ranking-panel){padding:12px!important;border:1px solid var(--inner-border-soft)!important;border-top:2px solid var(--inner-border)!important;background:var(--inner-card-bg)!important;scroll-margin-top:64px}
  body.theme-inner #inner-app-view .company-ranking-panel{margin-top:16px}
  body.theme-inner #inner-app-view #game-panel-home>:is(.reward-allocation,.card-room-lobby),body.theme-inner #inner-app-view #game-panel-home .welfare-dashboard>:is(.company-fund-panel,.company-ranking-panel){box-shadow:inset 0 1px #ffffff38,2px 3px 0 #00000020,0 5px 10px #0000000c!important}
- body.theme-inner #inner-app-view #lowest-balances .rank-donate{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border:1px solid var(--inner-accent)!important;min-height:34px;padding:5px 10px;opacity:1!important;font-weight:700;box-shadow:inset 1px 1px #ffffff55,inset -1px -2px #0005,0 2px 0 #0005!important}
- body.theme-inner #inner-app-view #lowest-balances .rank-donate:active{box-shadow:inset 1px 2px #0006!important;transform:translateY(1px)}
+ body.theme-inner #inner-app-view :is(#lowest-balances,#highest-balances) .rank-donate{background:var(--inner-accent)!important;color:var(--inner-accent-text)!important;border:1px solid var(--inner-accent)!important;min-height:34px;padding:5px 10px;opacity:1!important;font-weight:700;box-shadow:inset 1px 1px #ffffff55,inset -1px -2px #0005,0 2px 0 #0005!important}
+ body.theme-inner #inner-app-view :is(#lowest-balances,#highest-balances) .rank-donate:active{box-shadow:inset 1px 2px #0006!important;transform:translateY(1px)}
 }
 
 /* Pixel podiums: champion > runner-up > third > the remaining register. */

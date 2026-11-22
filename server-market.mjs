@@ -134,11 +134,16 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       });
   }
   function history(code='KARMA',period=1,employeeId=null) {
-    if(![1,5,15].includes(period))throw new Error('行情周期无效。');
-    advance();const view=quotes(),q=view.values.get(code),width=period*60000;if(!q)throw Error('证券代码不存在。');
-    const cacheKey=view.key+':'+code+':'+period;let common=!db.isTransaction?historyCache.get(cacheKey):null;
+    if(![1,5,15,'24h','72h'].includes(period))throw new Error('行情周期无效。');
+    const hours=period==='24h'?24:period==='72h'?72:0,candleMinutes=hours?hours*60/48:period,width=candleMinutes*60000;
+    advance();const view=quotes(),q=view.values.get(code);if(!q)throw Error('证券代码不存在。');
+    // A range contains 48 real quote buckets, including the current unfinished bucket.
+    const to=hours?(Math.floor(clock()/width)+1)*width:0,from=hours?to-hours*3600000:0;
+    const cacheKey=view.key+':'+code+':'+period+':'+to;let common=!db.isTransaction?historyCache.get(cacheKey):null;
     if(!common){
-    const rows=db.prepare('SELECT bucket,open,high,low,close,volume,turnover FROM stock_candles WHERE code=? ORDER BY bucket DESC LIMIT ?').all(code,period*120).reverse();
+    const rows=hours
+      ?db.prepare('SELECT bucket,open,high,low,close,volume,turnover FROM stock_candles WHERE code=? AND bucket>=? AND bucket<? ORDER BY bucket').all(code,from,to)
+      :db.prepare('SELECT bucket,open,high,low,close,volume,turnover FROM stock_candles WHERE code=? ORDER BY bucket DESC LIMIT ?').all(code,period*120).reverse();
     const grouped=[];
     for(const row of rows) {
       const bucket=Math.floor(row.bucket/width)*width,last=grouped.at(-1);
@@ -146,7 +151,7 @@ export function installMarket(db, {clock=()=>Date.now(), automatic=true}={}) {
       else grouped.push({...row,bucket});
     }
     const candles=grouped.slice(-60);
-    common={code,period,index:view.values.get('KARMA'),quote:q,candles,bulletins:bulletins.recent()};
+    common={code,period,candleMinutes,...(hours?{from,to}:{}),index:view.values.get('KARMA'),quote:q,candles,bulletins:bulletins.recent()};
     if(!db.isTransaction){if(historyCache.size>=24)historyCache.clear();historyCache.set(cacheKey,common);}
     }
     const {candles}=common;

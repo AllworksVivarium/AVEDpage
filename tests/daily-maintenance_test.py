@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import sqlite3
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -13,6 +14,44 @@ spec.loader.exec_module(maintenance)
 
 
 class MaintenanceTest(unittest.TestCase):
+    def test_private_files_are_assigned_to_database_owner(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            file = Path(temporary) / 'snapshot.sqlite'
+            file.write_bytes(b'unchanged')
+            current = file.stat()
+            owner = SimpleNamespace(st_uid=current.st_uid + 1, st_gid=current.st_gid + 1)
+            with patch.object(maintenance.os, 'chown', create=True) as chown:
+                maintenance.private_storage(file, owner, 0o600)
+            chown.assert_called_once_with(file, owner.st_uid, owner.st_gid)
+            self.assertEqual(file.read_bytes(), b'unchanged')
+
+    def test_permission_repair_covers_retained_snapshots_and_lock_without_new_backups(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database = root / 'event.sqlite'
+            with closing(sqlite3.connect(database)) as db:
+                db.execute('CREATE TABLE employees(id INTEGER)')
+                db.commit()
+            backups = root / 'backups'
+            backups.mkdir()
+            files = [backups / 'daily-2026-11-23.sqlite', backups / 'five-day-2026-11-20.sqlite',
+                     root / 'maintenance-lock.sqlite', root / 'maintenance-lock.sqlite-journal']
+            for file in files:
+                file.write_bytes(b'preserved')
+            unrelated = backups / 'readme.txt'
+            unrelated.write_text('keep')
+            before = sorted(str(p.relative_to(root)) for p in root.rglob('*'))
+            with patch.object(maintenance, 'private_storage', wraps=maintenance.private_storage) as private:
+                maintenance.repair_permissions(database, backups)
+            owner = database.stat()
+            repaired = {call.args[0]: call.args[2] for call in private.call_args_list}
+            self.assertEqual(repaired, {backups: 0o700, **{file: 0o600 for file in files}})
+            for call in private.call_args_list:
+                self.assertEqual((call.args[1].st_uid, call.args[1].st_gid), (owner.st_uid, owner.st_gid))
+            self.assertEqual(sorted(str(p.relative_to(root)) for p in root.rglob('*')), before)
+            self.assertTrue(all(file.read_bytes() == b'preserved' for file in files))
+            self.assertEqual(unrelated.read_text(), 'keep')
+
     def test_daily_updates_but_five_day_snapshot_stays_until_day_five(self):
         with tempfile.TemporaryDirectory() as temporary:
             database = Path(temporary) / 'event.sqlite'

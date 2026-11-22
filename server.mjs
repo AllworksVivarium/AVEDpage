@@ -1,4 +1,3 @@
-import {resolveForumCategory} from './server-forum-categories.mjs';
 import {businessDay} from './server-business-day.mjs';
 import {installAds} from './server-ads.mjs';
 import {DAILY_REWARD} from './server-rewards.mjs';
@@ -245,21 +244,8 @@ const requireAdmin = (req, res) => {
   return employee;
 };
 const validText = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max;
-const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 const balanceFor = employeeId => personal ? personal.balance(employeeId) : db.prepare('SELECT COALESCE(SUM(delta),0) AS balance FROM balance_ledger WHERE employee_id=?').get(employeeId).balance;
 const today = () => businessDay();
-const secureRoll = (seedHex, range) => {
-  const seed = Buffer.from(seedHex, 'hex');
-  const limit = Math.floor(0x100000000 / range) * range;
-  for (let counter=0; counter<64; counter++) {
-    const bytes=createHmac('sha256',seed).update(String(counter)).digest();
-    for (let offset=0; offset+4<=bytes.length; offset+=4) {
-      const n=bytes.readUInt32BE(offset);
-      if (n<limit) return n%range;
-    }
-  }
-  throw new Error('random generation failed');
-};
 const publicProfile = employeeId => {
   const profile=db.prepare('SELECT anonymous_name AS anonymousName,bio,avatar_url AS avatarUrl,avatar_preset AS avatarPreset FROM profiles WHERE employee_id=?').get(employeeId) || {};
   const prefs=db.prepare('SELECT ranking_identity AS rankingIdentity,forum_identity AS forumIdentity FROM employee_preferences WHERE employee_id=?').get(employeeId)||{rankingIdentity:'anonymous',forumIdentity:'anonymous'};return { anonymousName:profile.anonymousName||'',bio:profile.bio||'',avatarUrl:storedAvatar(employeeId,profile.avatarUrl,profile.avatarPreset,256),avatarPreset:profile.avatarUrl?'':profile.avatarPreset||'',...prefs,rankingIdentity:isPlayerContainment(employeeId)?'anonymous':prefs.rankingIdentity,attributes:employeeAttributes(db,employeeId),appearance:appearance.snapshot(employeeId) };
@@ -301,7 +287,7 @@ const welfare=installWelfare({rosterState:createWelfareRosterReader(db),db,send,
 highlights=installGameHighlights({db,send,requireEmployee});
 gameTax=installGameTax({db,recordLedger});
 const sky=installSky({db,send,readBody,requireEmployee,sessionEmployee,balanceFor,recordLedger,economy,highlights,companyRobots,gameTax});
-personal=installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights});
+personal=installPersonal({db,send,requireEmployee,balanceFor,recordLedger,publicProfile,today,highlights});
 installContainmentWelcome(db);
 const payrollIntrusion=installPayrollIntrusion({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger});
 payrollIntrusion.runAutomatic();
@@ -466,34 +452,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       const date=today(); const row=db.prepare('SELECT reward FROM checkins WHERE employee_id=? AND checkin_date=?').get(employee.id,date);
       return send(res,200,{checkedIn:!!row,reward:row?.reward||0});
     }
-    if (url.pathname === '/api/games/scratch' && req.method === 'POST') {
-      const employee=requireEmployee(req,res);if(!employee)return;
-      const cost=1000; if(balanceFor(employee.id)<cost)return send(res,400,{error:'余额不足，无法购买刮刮乐。'});
-      const seed=randomBytes(32).toString('hex'), seedHash=createHash('sha256').update(seed).digest('hex');
-      const roll=secureRoll(seed,100000); let prize=0,prizeName='未中奖';
-      if(roll===0){prize=500000;prizeName='超级大奖';} else if(roll<10){prize=50000;prizeName='特等奖';} else if(roll<100){prize=5000;prizeName='大奖';} else if(roll<15100){prize=1000;prizeName='中奖';}
-      db.exec('BEGIN IMMEDIATE');
-      try { if(balanceFor(employee.id)<cost){db.exec('ROLLBACK');return send(res,400,{error:'余额不足，无法购买刮刮乐。'});}
-        recordLedger(employee.id,-cost,'刮刮乐购券');if(prize)recordLedger(employee.id,prize,'刮刮乐奖金');
-        const tax=gameTax.charge({employeeId:employee.id,game:'scratch',key:seedHash,cost,prize});const result={prizeName,tax};const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'scratch',cost,prize,seed,seedHash,JSON.stringify(result));db.exec('COMMIT');
-        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,tax,prizeName,balance:balanceFor(employee.id),seed,seedHash,roll});
-      } catch(error){db.exec('ROLLBACK');throw error;}
-    }
-    if (url.pathname === '/api/games/slot' && req.method === 'POST') {
-      const employee=requireEmployee(req,res);if(!employee)return;
-      const cost=500;if(balanceFor(employee.id)<cost)return send(res,400,{error:'余额不足，无法启动老虎机。'});
-      const seed=randomBytes(32).toString('hex'),seedHash=createHash('sha256').update(seed).digest('hex');
-      const symbols=['◆','●','▲','✚','★']; const rolls=[secureRoll(seed,5),secureRoll(createHash('sha256').update(seed+'b').digest('hex'),5),secureRoll(createHash('sha256').update(seed+'c').digest('hex'),5)];
-      const result=rolls.map(n=>symbols[n]);let multiplier=0;
-      if(result.every(x=>x===result[0]))multiplier=result[0]==='★'?25:5;else if(new Set(result).size===2)multiplier=.5;
-      const prize=cost*multiplier;
-      db.exec('BEGIN IMMEDIATE');
-      try{if(balanceFor(employee.id)<cost){db.exec('ROLLBACK');return send(res,400,{error:'余额不足，无法启动老虎机。'});}
-        recordLedger(employee.id,-cost,'老虎机');if(prize)recordLedger(employee.id,prize,'老虎机奖金');
-        const tax=gameTax.charge({employeeId:employee.id,game:'slot',key:seedHash,cost,prize});const row=db.prepare('INSERT INTO game_tickets(employee_id,game,cost,prize,seed,seed_hash,result_json) VALUES(?,?,?,?,?,?,?)').run(employee.id,'slot',cost,prize,seed,seedHash,JSON.stringify({symbols:result,multiplier,tax}));db.exec('COMMIT');
-        return send(res,200,{ticketId:Number(row.lastInsertRowid),cost,prize,tax,multiplier,symbols:result,balance:balanceFor(employee.id),seed,seedHash});
-      }catch(error){db.exec('ROLLBACK');throw error;}
-    }
     if (url.pathname === '/api/games/history' && req.method === 'GET') {
       const employee=requireEmployee(req,res);if(!employee)return;
       // An early cashout must not reveal the shared flight's limit to other players.
@@ -502,107 +460,7 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
           THEN json_remove(result_json,'$.safetyLine') ELSE result_json END AS result,
         created_at AS createdAt FROM game_tickets WHERE employee_id=? ORDER BY id DESC LIMIT 30`).all(employee.id)});
     }
-    if (url.pathname === '/api/forum' && req.method === 'GET') {
-      if(!requireEmployee(req,res))return;
-      const items=db.prepare(`SELECT f.id,f.title,f.body,f.created_at AS createdAt,p.anonymous_name AS anonymousName,
-        (SELECT COALESCE(SUM(delta),0) FROM balance_ledger l WHERE l.employee_id=f.employee_id) AS balance,
-        (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=f.id AND r.status='published') AS replyCount
-        FROM forum_threads f JOIN profiles p ON p.employee_id=f.employee_id WHERE f.status='published' ORDER BY f.id DESC LIMIT 100`).all();
-      return send(res,200,{items});
-    }
-    if (url.pathname === '/api/forum' && req.method === 'POST') {
-      const employee=requireEmployee(req,res);if(!employee)return;
-      const {title,body,categoryId}=await readBody(req),profile=publicProfile(employee.id);
-      if(!validText(title,120)||!validText(body,3000))return send(res,400,{error:'标题最多 120 字，内容最多 3000 字。'});
-      if(!profile.anonymousName)return send(res,400,{error:'请先在个人主页设置匿名名称。'});
-      const row=db.prepare('INSERT INTO forum_threads(employee_id,anonymous_name,title,body,category_id) VALUES(?,?,?,?,?)').run(employee.id,profile.anonymousName,title.trim(),body.trim(),resolveForumCategory(db,categoryId));
-      return send(res,201,{id:Number(row.lastInsertRowid)});
-    }
-    if (url.pathname.startsWith('/api/forum/') && url.pathname.endsWith('/replies') && req.method === 'GET') {
-      if(!requireEmployee(req,res))return;const id=Number(url.pathname.split('/')[3]);
-      return send(res,200,{items:db.prepare(`SELECT r.id,COALESCE((SELECT anonymous_name FROM profiles WHERE employee_id=r.employee_id),r.anonymous_name) AS anonymousName,r.body,r.created_at AS createdAt,
-        (SELECT COALESCE(SUM(delta),0) FROM balance_ledger l WHERE l.employee_id=r.employee_id) AS balance FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id WHERE r.thread_id=? AND r.status='published' AND r.deleted_at='' AND t.status='published' AND t.deleted_at='' ORDER BY r.id`).all(id)});
-    }
-    if (url.pathname.startsWith('/api/forum/') && url.pathname.endsWith('/replies') && req.method === 'POST') {
-      const employee=requireEmployee(req,res);if(!employee)return;const id=Number(url.pathname.split('/')[3]);const {body}=await readBody(req),profile=publicProfile(employee.id);
-      if(!db.prepare('SELECT id FROM forum_threads WHERE id=?').get(id))return send(res,404,{error:'帖子不存在。'});
-      if(!validText(body,2000)||!profile.anonymousName)return send(res,400,{error:'请设置匿名名称，回复最多 2000 字。'});
-      const row=db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body) VALUES(?,?,?,?)').run(id,employee.id,profile.anonymousName,body.trim());return send(res,201,{id:Number(row.lastInsertRowid)});
-    }
-    if (url.pathname === '/api/admin/forum' && req.method === 'GET') {
-      if(!requireAdmin(req,res))return;
-      const items=db.prepare(`SELECT 'thread' AS itemType,f.id,f.title,f.body,f.anonymous_name AS anonymousName,f.status,f.created_at AS createdAt,
-        f.employee_id AS employeeId,e.username,e.display_name AS displayName,e.department,NULL AS parentTitle
-        FROM forum_threads f JOIN employees e ON e.id=f.employee_id
-        UNION ALL
-        SELECT 'reply',r.id,t.title,r.body,r.anonymous_name,r.status,r.created_at,
-        r.employee_id,e.username,e.display_name,e.department,t.title
-        FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id JOIN employees e ON e.id=r.employee_id ORDER BY createdAt DESC`).all();
-      return send(res,200,{items});
-    }
-    if (url.pathname === '/api/admin/posts' && req.method === 'GET') {
-      if(!requireAdmin(req,res))return;
-      const items=db.prepare(`SELECT p.id,'comment' AS itemType,a.title,p.body,p.anonymous_name AS anonymousName,p.status,p.created_at AS createdAt,
-        p.employee_id AS employeeId,e.username,e.display_name AS displayName,e.department
-        FROM posts p JOIN announcements a ON a.id=p.announcement_id JOIN employees e ON e.id=p.employee_id ORDER BY p.id DESC`).all();
-      return send(res,200,{items});
-    }
-    if (url.pathname === '/api/admin/speech-records' && req.method === 'GET') {
-      if(!requireAdmin(req,res))return;
-      const employeeIdParam = url.searchParams.get('employeeId');
-      const employeeId = employeeIdParam == null ? null : Number(employeeIdParam);
-      if (employeeIdParam != null && (!Number.isInteger(employeeId) || employeeId < 1)) return send(res,400,{error:'employeeId 必须是正整数。'});
-      const sourceType = url.searchParams.get('sourceType');
-      if (sourceType != null && !['comment','thread','reply'].includes(sourceType)) return send(res,400,{error:'sourceType 仅支持 comment/thread/reply。'});
-      const usernameParam = url.searchParams.get('username');
-      const username = usernameParam == null ? null : usernameParam.trim();
-      if (username != null && username.length > 40) return send(res,400,{error:'username 最多 40 个字符。'});
-      const from = url.searchParams.get('from');
-      if (from != null && !validDate(from)) return send(res,400,{error:'from 日期格式应为 YYYY-MM-DD。'});
-      const to = url.searchParams.get('to');
-      if (to != null && !validDate(to)) return send(res,400,{error:'to 日期格式应为 YYYY-MM-DD。'});
-      const keywordParam = url.searchParams.get('keyword');
-      const keyword = keywordParam == null ? null : keywordParam.trim();
-      if (keyword != null && keyword.length > 120) return send(res,400,{error:'keyword 最多 120 个字符。'});
-      const limitParam = Number(url.searchParams.get('limit') || 200);
-      if (!Number.isInteger(limitParam) || limitParam < 1 || limitParam > 500) return send(res,400,{error:'limit 必须是 1 到 500 之间的整数。'});
-      const keywordLike = keyword ? `%${keyword}%` : null;
-      const usernameLike = username ? `%${username}%` : null;
-      const items = db.prepare(`SELECT * FROM (
-        SELECT 'comment' AS sourceType,p.id AS sourceId,p.created_at AS createdAt,p.anonymous_name AS anonymousName,
-          p.body,NULL AS title,a.title AS parentTitle,p.employee_id AS employeeId,e.username,e.display_name AS displayName,e.department
-        FROM posts p JOIN announcements a ON a.id=p.announcement_id JOIN employees e ON e.id=p.employee_id
-        UNION ALL
-        SELECT 'thread',f.id,f.created_at,f.anonymous_name,f.body,f.title,NULL,f.employee_id,e.username,e.display_name,e.department
-        FROM forum_threads f JOIN employees e ON e.id=f.employee_id
-        UNION ALL
-        SELECT 'reply',r.id,r.created_at,r.anonymous_name,r.body,NULL,t.title,r.employee_id,e.username,e.display_name,e.department
-        FROM forum_replies r JOIN forum_threads t ON t.id=r.thread_id JOIN employees e ON e.id=r.employee_id
-      ) records
-      WHERE (? IS NULL OR employeeId = ?)
-        AND (? IS NULL OR sourceType = ?)
-        AND (? IS NULL OR username LIKE ?)
-        AND (? IS NULL OR date(createdAt) >= date(?))
-        AND (? IS NULL OR date(createdAt) <= date(?))
-        AND (? IS NULL OR (anonymousName LIKE ? OR body LIKE ? OR COALESCE(title,'') LIKE ? OR COALESCE(parentTitle,'') LIKE ? OR displayName LIKE ? OR username LIKE ?))
-      ORDER BY createdAt DESC
-      LIMIT ?`).all(
-        employeeId, employeeId,
-        sourceType, sourceType,
-        usernameLike, usernameLike,
-        from, from,
-        to, to,
-        keywordLike, keywordLike, keywordLike, keywordLike, keywordLike, keywordLike, keywordLike,
-        limitParam
-      );
-      return send(res,200,{items});
-    }
-    if (url.pathname.startsWith('/api/admin/forum/threads/') && req.method === 'DELETE') {
-      if(!requireAdmin(req,res))return;const result=db.prepare('DELETE FROM forum_threads WHERE id=?').run(Number(url.pathname.split('/').at(-1)));if(!result.changes)return send(res,404,{error:'帖子不存在。'});return send(res,200,{ok:true});
-    }
-    if (url.pathname.startsWith('/api/admin/forum/replies/') && req.method === 'DELETE') {
-      if(!requireAdmin(req,res))return;const result=db.prepare('DELETE FROM forum_replies WHERE id=?').run(Number(url.pathname.split('/').at(-1)));if(!result.changes)return send(res,404,{error:'回复不存在。'});return send(res,200,{ok:true});
-    }
+
     if (url.pathname === '/api/dossiers' && req.method === 'GET') {
       if (!requireEmployee(req,res)) return;
       return send(res, 200, { items:listDossiers(db).map(dossierView) });
@@ -612,23 +470,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
       return send(res, 200, { items:db.prepare(`SELECT a.id,a.title,a.body,a.pinned,a.recipient,CASE WHEN a.issuer_explicit=1 THEN a.issuer ELSE '' END AS issuer,a.drafter,a.issued_on AS issuedOn,COALESCE(NULLIF(a.published_at,''),a.created_at) AS createdAt,COALESCE(NULLIF(a.published_at,''),a.created_at) AS publishedAt,
         (SELECT COUNT(*) FROM posts p WHERE p.announcement_id=a.id AND p.status='published' AND p.deleted_at='') AS postCount
         FROM announcements a ORDER BY a.pinned DESC,datetime(COALESCE(NULLIF(a.published_at,''),a.created_at)) DESC,a.id DESC`).all() });
-    }
-    if (url.pathname === '/api/posts' && req.method === 'GET') {
-      if (!requireEmployee(req,res)) return;
-      const announcementId = Number(url.searchParams.get('announcementId'));
-      if (!Number.isInteger(announcementId) || announcementId < 1) return send(res,400,{error:'公告编号无效。'});
-      return send(res,200,{items:db.prepare(`SELECT p.id,p.anonymous_name AS anonymousName,p.body,p.created_at AS createdAt,
-        (SELECT COALESCE(SUM(delta),0) FROM balance_ledger l WHERE l.employee_id=p.employee_id) AS balance
-        FROM posts p WHERE p.announcement_id=? AND p.status='published' ORDER BY p.id DESC`).all(announcementId)});
-    }
-    if (url.pathname === '/api/posts' && req.method === 'POST') {
-      const employee = requireEmployee(req,res); if (!employee) return;
-      const { announcementId, anonymousName, body } = await readBody(req);
-      const announcement = Number(announcementId);
-      if (!Number.isInteger(announcement) || !db.prepare('SELECT id FROM announcements WHERE id=?').get(announcement)) return send(res,400,{error:'请选择有效公告。'});
-      if (!validText(anonymousName,32) || !validText(body,2000)) return send(res,400,{error:'匿名名称最多 32 字，留言最多 2000 字。'});
-      const result = db.prepare('INSERT INTO posts (announcement_id,employee_id,anonymous_name,body) VALUES (?,?,?,?)').run(announcement,employee.id,anonymousName.trim(),body.trim());
-      return send(res,201,{id:Number(result.lastInsertRowid)});
     }
     if (url.pathname === '/api/admin/employees' && req.method === 'GET') {
       if (!requireAdmin(req,res)) return;
@@ -779,12 +620,6 @@ const server = createServer({headersTimeout:15000,requestTimeout:30000},async (r
     if (url.pathname.startsWith('/api/admin/announcements/') && req.method === 'DELETE') {
       if (!requireAdmin(req,res)) return;
       if(!db.prepare('DELETE FROM announcements WHERE id=?').run(Number(url.pathname.split('/').at(-1))).changes)return send(res,404,{error:'公告不存在。'});
-      return send(res,200,{ok:true});
-    }
-    if (url.pathname.startsWith('/api/admin/posts/') && req.method === 'DELETE') {
-      if (!requireAdmin(req,res)) return;
-      const result=db.prepare('DELETE FROM posts WHERE id=?').run(Number(url.pathname.split('/').at(-1)));
-      if(!result.changes)return send(res,404,{error:'帖子不存在。'});
       return send(res,200,{ok:true});
     }
     if (url.pathname.startsWith('/api/')) return send(res,404,{error:'未找到此接口。'});

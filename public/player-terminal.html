@@ -44,7 +44,7 @@
   })();
   </script>
   <link rel="stylesheet" href="/paper-stamps.css?v=paper-tax-20261110b">
-  <link rel="stylesheet" href="/typography.css?v=notice-restore-20261120">
+  <link rel="stylesheet" href="/typography.css?v=forum-edit-note-20261123">
   <script src="/popup-ui.js?v=paper-tax-20261110" defer></script>
   <link rel="stylesheet" href="/popup-density.css?v=integrated-ui-20261109">
   <link rel="stylesheet" href="/entry-layout-stability.css?v=stable-wordmark-20261121">
@@ -63,8 +63,8 @@
   <link rel="stylesheet" href="/player-art-restoration.css?v=frameless-ticket-3">
   <link rel="stylesheet" href="/matrix-restoration.css?v=matrix-restore-1">
   <link rel="stylesheet" href="/archive-room-restoration.css?v=intrusion-sequence-20261117">
-  <link rel="stylesheet" href="/notice-document.css?v=notice-restore-20261120">
-  <link rel="stylesheet" href="/section-mastheads.css?v=tax-achievements-20261111">
+  <link rel="stylesheet" href="/notice-document.css?v=notice-alignment-20261123">
+  <link rel="stylesheet" href="/section-mastheads.css?v=forum-reply-row-20261123">
   <link rel="stylesheet" href="/player-fonts.css?v=measured-progress-20261122">
   <link rel="stylesheet" href="/interaction-motion.css?v=restore-feedback-2">
   <link rel="stylesheet" href="/site-refinements.css?v=measured-progress-20261122">
@@ -371,24 +371,6 @@
       filter: brightness(1.08);
     }
 
-    @keyframes heliRotor {
-      0%, 100% { transform: scaleX(1); }
-      50% { transform: scaleX(0.15); }
-    }
-    .rotor-spin {
-      transform-origin: center;
-      animation: heliRotor 0.12s infinite linear;
-    }
-
-    @keyframes danmakuSlide {
-      0% { transform: translateX(100%); opacity: 0.95; }
-      100% { transform: translateX(-140%); opacity: 0.95; }
-    }
-    .danmaku-item {
-      white-space: nowrap;
-      animation: danmakuSlide 7.5s linear forwards;
-    }
-
     /* 尊重系统减弱动态效果偏好 (prefers-reduced-motion) */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -408,7 +390,7 @@
   <link rel="stylesheet" href="/vendor/pattern.css-1.0.0/pattern.min.css">
   <link rel="stylesheet" href="/life-archive.css?v=center-preview-20261120">
 <link rel="stylesheet" href="/economy.css?v=compact-margin-row-20261113">
-<link rel="stylesheet" href="/welfare.css?v=rank-pockets-20261118">
+<link rel="stylesheet" href="/welfare.css?v=ranking-actions-20261123">
 <link rel="stylesheet" href="/signal-preview.css?v=signal-5">
 <link rel="stylesheet" href="/notices.css?v=notices-1">
 <link rel="stylesheet" href="/page-headings.css?v=warm-1">
@@ -1025,10 +1007,14 @@
                 <textarea id="forum-detail-reply-text" rows="2" maxlength="2000" placeholder="输入跟帖内容..." required
                   class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
                 <div class="forum-compose-footer forum-reply-actions">
+                  <div class="forum-compose-tools">
                   <input id="forum-detail-reply-image" type="file" accept="image/*" class="hidden">
                   <button type="button" data-forum-emoji-target="forum-detail-reply-text" aria-haspopup="dialog" aria-controls="forum-emoji-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M8 8v2m8-2v2M7 14q5 6 10 0"/></svg>表情</button>
                   <button id="reply-upload-trigger-btn" type="button" title="上传图片需管理员审核" class="inner-card-alt">本地附图</button>
-                  <button type="submit" class="press-cta inner-btn-primary">回贴</button>
+                  </div>
+                  <div class="forum-compose-send">
+                  <button type="submit" class="press-cta inner-btn-primary">回帖</button>
+                  </div>
                 </div>
                 <span id="reply-image-selected-hint" class="forum-image-filename ui-help-note"></span>
               </form>
@@ -1079,180 +1065,7 @@
           <!-- ================================================================
                娱乐面板 1：直升机高空空投（60fps requestAnimationFrame 丝滑连续下坠 + 每轮之间 20 秒整备倒计时 + 多样化沉默特遣机器人 + 真实玩家登机/发言头像显示在武装直升机机舱内）
                ================================================================ -->
-          <div id="game-panel-skydive" class="space-y-4">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-
-              <div class="lg:col-span-8 space-y-4">
-                <!-- 高空夜视战术视窗 (高 480px) -->
-                <div class="relative h-[480px] bg-[#0b0d0e] text-[#f5f2eb] border-2 border-[var(--inner-border)] overflow-hidden select-none flex flex-col justify-between"
-                  style="background-image: linear-gradient(180deg, #090a0c 0%, #12161b 65%, #2b1414 92%, #471212 100%);">
-
-                  <!-- 左侧深度标尺柱 -->
-                  <div class="absolute left-0 top-0 bottom-0 w-14 bg-black/70 border-r border-white/15 z-20 flex flex-col justify-between py-4 px-1.5 font-mono-tech text-[10px] text-neutral-400">
-                    <div class="text-white font-bold">机舱门</div>
-                    <div>100m</div>
-                    <div>400m</div>
-                    <div>800m</div>
-                    <div>1200m</div>
-                    <div>1600m</div>
-                    <div class="w-2 h-36 bg-neutral-800 mx-auto relative overflow-hidden">
-                      <div id="skydive-ruler-fill" class="w-full bg-white" style="height: 0%"></div>
-                    </div>
-                    <div class="text-center">
-                      <div class="text-[9px] leading-tight text-neutral-300">安全线</div>
-                      <div id="skydive-seal-stamp" class="w-6 h-6 bg-[#9e1b1b] text-white font-bold flex items-center justify-center mx-auto mt-1 border border-white text-[11px]">
-                        封
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 顶部空中弹幕漂浮层 -->
-                  <div id="skydive-danmaku-layer" class="absolute top-4 left-16 right-4 h-24 pointer-events-none z-30 overflow-hidden"></div>
-
-                  <!-- 顶部中央：A.V.E.D. 战术武装直升机 SVG + 机舱内真实玩家与特遣干员头像展示 -->
-                  <div class="relative z-10 pt-4 pl-16 pr-6 flex items-start justify-between">
-                    <div class="text-[10px] font-mono-tech text-neutral-400">CHOPPER // A.V.E.D.-HELI-09</div>
-
-                    <div id="skydive-airship-box" class="relative flex flex-col items-center">
-                      <!-- 旋转螺旋桨顶翼 -->
-                      <div class="w-48 h-1 bg-white/80 rotor-spin mb-1"></div>
-                      <div class="w-1.5 h-2 bg-neutral-400"></div>
-                      <!-- 战术直升机装甲机身 -->
-                      <div class="relative bg-[#1a1c1e] border-2 border-white/75 px-5 py-2 shadow-[0_0_25px_rgba(255,255,255,0.12)] flex items-center gap-2">
-                        <span class="text-[10px] font-mono-tech text-red-400 font-bold mr-1">[机舱]</span>
-                        <!-- 机舱内实时头像槽位（真实玩家登机或说话时高亮置顶显示在此处） -->
-                        <div id="skydive-airship-avatars" class="flex items-center gap-1"></div>
-                        <span id="skydive-airship-extra-count" class="px-1.5 py-0.5 bg-black text-white border border-white/30 text-[10px] font-mono-tech font-bold">+12</span>
-                      </div>
-                      <!-- 起落滑橇 -->
-                      <div class="w-36 h-1.5 border-b-2 border-x-2 border-neutral-400 mt-0.5"></div>
-                    </div>
-
-                    <div class="text-[10px] font-mono-tech text-emerald-400">RADAR: LOCKED</div>
-                  </div>
-
-                  <!-- 中央核心状态区（60fps 丝滑跳动的米数与倍率） -->
-                  <div class="relative z-20 my-auto pl-14 pr-4 text-center space-y-2">
-                    <div id="skydive-center-subtitle" class="text-xs font-mono-tech text-neutral-300 tracking-widest">
-                      距离机舱门开启倒计时
-                    </div>
-                    <div id="skydive-center-main-num" class="text-5xl sm:text-6xl font-bold font-mono-tech text-white tracking-wider">
-                      20.0s
-                    </div>
-                    <div id="skydive-center-subinfo" class="text-xs font-mono-tech text-neutral-400">
-                      每秒深 13% 越晚开伞赔率越高 超过安全线深度直接坠毁归零
-                    </div>
-                  </div>
-
-                  <!-- 降落伞小人丝滑飘落动画层 -->
-                  <div id="skydive-parachutes-stage" class="absolute inset-0 left-14 pointer-events-none z-20 overflow-hidden"></div>
-
-                  <!-- 底部收容站点着陆坪 + 红色激光警戒线 + 开伞大按钮 -->
-                  <div class="relative z-20 pl-14">
-                    <div class="flex flex-col items-center">
-                      <div class="w-80 h-7 bg-[#181a1c] border-t-2 border-x-2 border-white/60 flex justify-between px-5 items-center font-mono-tech text-[10px]">
-                        <span class="text-red-500">●</span>
-                        <span class="text-neutral-300 tracking-widest">SITE-01 HELIPAD // 一号收容停机坪</span>
-                        <span class="text-red-500">●</span>
-                      </div>
-                    </div>
-                    <div class="w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_12px_#ef4444]"></div>
-
-                    <div class="p-3 bg-black/80 border-t border-white/15 flex items-center justify-between px-6 font-mono-tech text-xs">
-                      <span id="skydive-bottom-left-hint" class="text-neutral-400">尚未登机</span>
-                      <button id="skydive-open-chute-btn" type="button" disabled
-                        class="press-cta px-7 py-2 bg-white text-black font-bold text-xs tracking-wider disabled:opacity-30 cursor-pointer">
-                        🪂 立即拉绳开伞
-                      </button>
-                      <span class="text-[11px] text-neutral-400">着陆区</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 底部空投规程说明 -->
-                <div class="retro-corner-box p-5 space-y-3 text-xs">
-                  <div class="text-xs font-mono-tech text-[#9e1b1b] font-bold">— 高空索降规程</div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-                    <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">连续下坠</strong>
-                      <span class="opacity-85">初始高度 100 米 下降速度 35 米 / 秒</span>
-                    </div>
-                    <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">津贴赔付</strong>
-                      <span class="opacity-85">按开伞瞬间的精确深度结算：100米×0.5，200米×1；越晚开伞风险越高</span>
-                    </div>
-                    <div class="flex gap-3 border-b border-[var(--inner-border-soft)] pb-2">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">整备时间</strong>
-                      <span class="opacity-85">每架次之间有 20 秒停机整备与登机押注窗口</span>
-                    </div>
-                    <div class="flex gap-3">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">超线坠毁</strong>
-                      <span class="opacity-85">掉过安全线深度再开伞或未开伞直接触地，本局押注全额损失</span>
-                    </div>
-                    <div class="flex gap-3">
-                      <strong class="text-[#9e1b1b] shrink-0 w-14">出舱即毁</strong>
-                      <span class="opacity-85">在 200 米以前开伞可能亏损；未及时开伞将损失本局投入</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 右侧 4 列：1. 登机面板；2. 机上人员名单（多样化特遣干员代号）；3. 机舱无线电（真实玩家发言后头像同步高亮在直升机上） -->
-              <div class="lg:col-span-4 space-y-4">
-
-                <div class="retro-corner-box p-4 space-y-3 font-mono-tech text-xs">
-                  <div class="flex items-center justify-between text-[11px] text-[#9e1b1b] font-bold">
-                    <span id="skydive-flight-no-label">— 第 45267 架次 20s 后关舱门</span>
-                    <span>A.V.E.D. AIR</span>
-                  </div>
-                  <h4 class="text-lg font-bold font-serif-sc">登机押注配置</h4>
-
-                  <div>
-                    <label class="block text-[11px] opacity-70 mb-1">押注金额 (余额)</label>
-                    <input id="skydive-bet-input" type="number" min="100" max="100000" step="100" value="1000"
-                      class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black font-bold text-sm">
-                  </div>
-
-                  <div class="flex flex-wrap gap-1.5">
-                    <button type="button" data-sky-chip="500" class="sky-chip-btn px-2.5 py-1 border border-[var(--inner-border-soft)] hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] cursor-pointer">500</button>
-                    <button type="button" data-sky-chip="1000" class="sky-chip-btn px-2.5 py-1 bg-[#9e1b1b] text-white font-bold cursor-pointer">1,000</button>
-                    <button type="button" data-sky-chip="5000" class="sky-chip-btn px-2.5 py-1 border border-[var(--inner-border-soft)] hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] cursor-pointer">5,000</button>
-                    <button type="button" data-sky-chip="20000" class="sky-chip-btn px-2.5 py-1 border border-[var(--inner-border-soft)] hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] cursor-pointer">20,000</button>
-                    <button type="button" id="sky-chip-half" class="px-2.5 py-1 border border-[var(--inner-border-soft)] cursor-pointer">½</button>
-                    <button type="button" id="sky-chip-double" class="px-2.5 py-1 border border-[var(--inner-border-soft)] cursor-pointer">×2</button>
-                  </div>
-
-                  <button id="skydive-board-btn" type="button" class="press-cta w-full py-3 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold text-xs tracking-wider cursor-pointer">
-                    确认登机 1,000
-                  </button>
-                </div>
-
-                <!-- 机上名单 -->
-                <div class="retro-corner-box p-4 space-y-2.5 font-mono-tech text-xs">
-                  <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-1.5">
-                    <span class="font-bold text-[#9e1b1b]">— 机舱跳伞名单</span>
-                    <span id="skydive-passenger-stats" class="text-[11px] opacity-75">机上 10 落地 0 坠毁 0</span>
-                  </div>
-                  <div id="skydive-passengers-list" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
-                </div>
-
-                <!-- 机舱无线电（仅真实玩家发言，机器人绝不说话；玩家发言后头像同步登上直升机舷窗） -->
-                <div class="retro-corner-box p-4 space-y-2.5 font-mono-tech text-xs">
-                  <div class="flex items-center justify-between border-b border-[var(--inner-border-soft)] pb-1.5">
-                    <span class="font-bold text-[#9e1b1b]">— 机舱无线电</span>
-                    <span class="text-[10px] text-emerald-700 font-bold">● PERSONNEL RADIO</span>
-                  </div>
-                  <div id="skydive-chat-list" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
-                  <form id="skydive-chat-form" class="flex gap-1.5 pt-1">
-                    <input id="skydive-chat-input" type="text" placeholder="发送聊天消息..." required
-                      class="flex-1 px-2.5 py-1.5 border border-[var(--inner-border-soft)] bg-white text-black text-xs">
-                    <button type="submit" class="inner-btn-primary px-3 py-1.5 font-bold cursor-pointer">发送</button>
-                  </form>
-                </div>
-
-              </div>
-            </div>
-          </div>
+          <div id="game-panel-skydive" class="space-y-4"></div>
 
           <!-- ================================================================
                娱乐面板 2：五轮五线 异常回路（已全部替换为硬朗 SCP 收容符号：收容之眼、辐射核心、抑制锁、机密卷宗、血清药剂、镇定配给）
@@ -1428,7 +1241,7 @@
               <section class="market-terminal" aria-label="证券行情">
                 <div class="market-toolbar">
                   <label>证券 <select id="stock-chart-symbol"><option value="KARMA">KARMA INDEX</option></select></label>
-                  <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option></select></label>
+                  <label>周期 <select id="stock-chart-period"><option value="1">1 分钟</option><option value="5">5 分钟</option><option value="15">15 分钟</option><option value="24h">24 小时</option><option value="72h">72 小时</option></select></label>
                 </div>
                 <div class="market-selected-quote"><b id="market-selected-name">KARMA INDEX</b><span id="market-selected-price">—</span><span id="market-selected-tick" class="market-tick-indicator tick-flat">•</span><span id="market-selected-change">—</span></div>
                 <p id="market-candle-details" class="market-candle-details">等待行情。</p>
@@ -1479,7 +1292,7 @@
   <script src="/terminology.js?v=signal-5" defer></script>
   <script src="/life-content.js?v=life-social-20261120" defer></script>
   <script src="/life-archive.js?v=center-preview-20261120" defer></script>
-  <script src="/player-community.js?v=forum-categories-20261122" defer></script>
+  <script src="/player-community.js?v=forum-mentions-20261123" defer></script>
   <link rel="stylesheet" href="/game-results.css?v=gross-awards-20261113">
   <script src="/game-results.js?v=interaction-polish-20261120" defer></script>
   <link rel="stylesheet" href="/forum-skeleton.css?v=2">
@@ -1487,7 +1300,9 @@
   <script src="/forum-replies.js?v=pager-label-20261122" defer></script>
   <script src="/forum-browser.js?v=forum-categories-20261122" defer></script>
   <script src="/forum-presence.js?v=casual-race-20261113" defer></script>
-  <script src="/forum-social.js?v=forum-categories-20261122" defer></script>
+  <script src="/forum-mentions.js?v=mentions-20261123" defer></script>
+<link rel="stylesheet" href="/forum-mentions.css?v=mentions-20261123">
+<script src="/forum-social.js?v=forum-mentions-20261123" defer></script>
 <link rel="stylesheet" href="/forum-social.css?v=forum-categories-20261122">
   <script src="/personal-record.js?v=casual-race-20261113" defer></script>
   <link rel="stylesheet" href="/personal-record.css?v=1">
@@ -1571,7 +1386,7 @@
 <script src="/payroll-notices.js?v=unified-payroll-20261120" defer></script>
 <link rel="stylesheet" href="/account-settings.css?v=profile-account-20261122">
 <script src="/account-settings.js?v=profile-account-20261122" defer></script>
-<script src="/player.js?v=profile-account-20261122" defer></script>
+<script src="/player.js?v=forum-mentions-20261123" defer></script>
   <script src="/page-headings.js?v=notice-restore-20261120" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>
@@ -1582,7 +1397,7 @@
 <script src="/stock-help.js?v=player-admin-copy-20261118" defer></script>
 <link rel="stylesheet" href="/stock-help.css?v=market-guide-expanded-20261110">
 <link rel="stylesheet" href="/market-header-layout.css?v=1">
-<link rel="stylesheet" href="/archive-type-signal.css?v=notice-comments-20261112">
+<link rel="stylesheet" href="/archive-type-signal.css?v=notice-recipient-20261123">
 <link rel="stylesheet" href="/desktop-game-layout.css?v=trading-style-20261114">
 </body>
 </html>

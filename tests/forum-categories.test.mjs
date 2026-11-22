@@ -63,8 +63,12 @@ test('forum categories: admin catalog, single-category publishing, filtering and
  const persona=(await request(avedCookie,'/api/player/forum/personas')).data.items[0];
  const workshop=await request(avedCookie,'/api/player/forum/workshop','POST',{requestId:'category-workshop-001',title:'线索标题',categoryId:extra.data.id,lines:[{personaId:persona.id,body:'线索正文'}]});assert.equal(workshop.status,201);
  assert.equal((await p('/api/player/forum/'+workshop.data.threadId)).data.thread.categoryId,extra.data.id);
- const legacy=await p('/api/forum','POST',{title:'兼容发帖',body:'兼容正文',categoryId:recruit.id});assert.equal(legacy.status,201);
- assert.equal((await p('/api/player/forum/'+legacy.data.id)).data.thread.categoryId,recruit.id);
+ const beforeRetired=(await p('/api/player/forum')).data.total;
+ for(const path of ['/api/forum','/api/forum/'+first.data.id+'/replies']){
+  assert.equal((await p(path)).status,404);
+  assert.equal((await p(path,'POST',{title:'旧接口发帖',body:'旧接口正文',categoryId:recruit.id})).status,404);
+ }
+ assert.equal((await p('/api/player/forum')).data.total,beforeRetired,'retired routes cannot bypass the current forum workflow');
 });
 
 

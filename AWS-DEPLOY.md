@@ -36,7 +36,7 @@ curl -fsS http://127.0.0.1:4173/api/health
 
 ## 更新
 
-发布前确认提交范围，完成数据库一致性备份，并记录当前代码版本。
+发布前确认提交范围、现有每日及五日滚动快照和数据库完整性检查结果，并记录当前代码版本。快照由 `deploy/daily-maintenance.py` 管理，发布复用已有滚动快照。
 
 ```sh
 git pull --ff-only origin main

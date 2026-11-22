@@ -19,7 +19,7 @@
     const width=period*60000;
     return rows.map(c=>trades.filter(t=>Number.isFinite(t.tradedAt)&&t.tradedAt>=c.bucket&&t.tradedAt<c.bucket+width));
   }
-  function render(container,candles,{isIndex=false,trades=[],period=1}={}) {
+  function render(container,candles,{isIndex=false,trades=[],period=1,from,to}={}) {
     const rows=candles.filter(c=>['open','high','low','close','volume'].every(k=>Number.isFinite(c[k])));
     if(!rows.length){container.innerHTML='<p class="market-empty">等待首笔行情。</p>';return;}
 
@@ -30,15 +30,18 @@
     const highest=Math.max(...rows.map(c=>c.high)),lowest=Math.min(...rows.map(c=>c.low));
     const padding=Math.max((highest-lowest)*.12,highest*.001,1),upper=highest+padding,lower=lowest-padding;
     const y=price=>top+(upper-price)/(upper-lower)*(bottom-top);
-    const step=(width-left-right)/Math.max(rows.length,24);
+    const ranged=Number.isFinite(from)&&Number.isFinite(to)&&to>from;
+    const slots=ranged?(to-from)/(period*60000):Math.max(rows.length,24),step=(width-left-right)/slots;
     const candleWidth=Math.max(2,Math.min(18,step*.65)),maxVolume=Math.max(1,...rows.map(c=>c.volume));
-    const xAt=index=>left+step*(index+.5);
+    const xAt=index=>left+step*((ranged?(rows[index].bucket-from)/(period*60000):index)+.5);
+    const date=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit'});
+    const timeLabel=value=>ranged?date.format(new Date(value))+' '+root.AVEDTime.clock(value):root.AVEDTime.clock(value);
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const price=value=>number(isIndex?value/100:value);
 
     const details=c=>{
       const target=root.document.getElementById('market-candle-details');
-      if(target)target.textContent=root.AVEDTime.clock(c.bucket)+'　开 '+price(c.open)+'　高 '+price(c.high)+'　低 '+price(c.low)+'　收 '+price(c.close)+'　量 '+number(c.volume);
+      if(target)target.textContent=timeLabel(c.bucket)+'　开 '+price(c.open)+'　高 '+price(c.high)+'　低 '+price(c.low)+'　收 '+price(c.close)+'　量 '+number(c.volume);
     };
 
     let svg='<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="行情 K 线、成交量、MACD 与 KDJ，红涨绿跌">';
@@ -52,14 +55,15 @@
       const x=xAt(i),color=c.close>=c.open?'var(--market-up)':'var(--market-down)';
       const bodyY=Math.min(y(c.open),y(c.close)),bodyHeight=Math.max(2,Math.abs(y(c.open)-y(c.close)));
       const volumeHeight=(volumeBottom-volumeTop)*c.volume/maxVolume;
-      const label=root.AVEDTime.clock(c.bucket)+' 开 '+price(c.open)+' 高 '+price(c.high)+' 低 '+price(c.low)+' 收 '+price(c.close)+' 成交量 '+number(c.volume);
+      const label=timeLabel(c.bucket)+' 开 '+price(c.open)+' 高 '+price(c.high)+' 低 '+price(c.low)+' 收 '+price(c.close)+' 成交量 '+number(c.volume);
       svg+='<g data-candle-index="'+i+'" tabindex="0" role="button" aria-label="'+label+'"><title>'+label+'</title>';
       svg+='<rect x="'+(x-step/2)+'" y="'+top+'" width="'+step+'" height="'+(volumeBottom-top)+'" fill="transparent"/>';
       svg+='<line x1="'+x+'" y1="'+y(c.high)+'" x2="'+x+'" y2="'+y(c.low)+'" stroke="'+color+'" stroke-width="1.5"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+bodyY+'" width="'+candleWidth+'" height="'+bodyHeight+'" fill="'+color+'"/>';
       svg+='<rect x="'+(x-candleWidth/2)+'" y="'+(volumeBottom-volumeHeight)+'" width="'+candleWidth+'" height="'+Math.max(1,volumeHeight)+'" fill="'+color+'" opacity=".65"/></g>';
-      if(i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(priceHeight-10)+'" text-anchor="middle" class="market-axis">'+root.AVEDTime.clock(c.bucket)+'</text>';
+      if(!ranged&&i%Math.max(1,Math.ceil(rows.length/6))===0)svg+='<text x="'+x+'" y="'+(priceHeight-10)+'" text-anchor="middle" class="market-axis">'+timeLabel(c.bucket)+'</text>';
     });
+    if(ranged){const labels=width<500?2:4;for(let i=0;i<=labels;i++){const x=left+(width-left-right)*i/labels;svg+='<text x="'+x+'" y="'+(priceHeight-10)+'" text-anchor="'+(i===0?'start':i===labels?'end':'middle')+'" class="market-axis">'+timeLabel(from+(to-from)*i/labels)+'</text>';}}
 
     groups.forEach((list,i)=>{
       for(const [side,letter,offset,color] of [['buy','B',-8,'up'],['sell','S',8,'down']]){
@@ -121,7 +125,7 @@
       crossLayer.style.display='block';
 
       tooltip.innerHTML=''+
-        '<div class="market-crosshair-time">'+root.AVEDTime.clock(candle.bucket)+'</div>'+
+        '<div class="market-crosshair-time">'+timeLabel(candle.bucket)+'</div>'+
         '<div>开 <strong>'+price(candle.open)+'</strong> ｜ 收 <strong>'+price(candle.close)+'</strong></div>'+
         '<div>高 '+price(candle.high)+' ｜ 低 '+price(candle.low)+'</div>'+
         '<div class="'+(change>=0?'market-up':'market-down')+'">变化 '+(change>=0?'+':'')+change.toFixed(2)+'%</div>'+
@@ -154,7 +158,7 @@
       const rect=container.getBoundingClientRect();
       const localX=(event.clientX-rect.left)/Math.max(rect.width,1)*width;
       const localY=(event.clientY-rect.top)/Math.max(rect.height,1)*height;
-      const index=Math.round((localX-left)/step-.5);
+      const index=ranged?rows.reduce((best,row,i)=>Math.abs(xAt(i)-localX)<Math.abs(xAt(best)-localX)?i:best,0):Math.round((localX-left)/step-.5);
       showCross(index,localX,localY);
     };
 
@@ -183,7 +187,7 @@
     container.onpointerleave=hideCross;
     container.onblur=hideCross;
 
-    container._chartRender={candles,options:{isIndex,trades,period},width};
+    container._chartRender={candles,options:{isIndex,trades,period,from,to},width};
     if(!container._chartObserver&&root.ResizeObserver){
       container._chartObserver=new ResizeObserver(()=>{
         const nextWidth=Math.max(320,Math.min(960,Math.round(container.getBoundingClientRect().width||960)));

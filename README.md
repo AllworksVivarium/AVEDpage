@@ -1,4 +1,4 @@
-# AVED · 万业携生
+# AVED 万业携生
 
 一个以公司内网为舞台的互动网站。你可以建立员工档案、阅读内部通告、参与论坛讨论，也可以到娱乐空间玩几局，或去 Sloper 酒吧坐一会儿。
 
@@ -49,5 +49,6 @@
 
 - [更新记录](LOCAL-CHANGES.md)
 - [开发与维护说明](DEVELOPER.md)
+- [目录与文档索引](docs/README.md)
 - [Sloper 功能说明](docs/bar-local-preview.md)
 - [牌桌功能说明](docs/CARD-TABLE-PREVIEW.md)

@@ -2,7 +2,7 @@ import {installForumSocialSchema,forumAuthorSQL,forumNameSQL,mapForumAuthor} fro
 import {mediaReference} from './server-media.mjs';
 
 // One revision per reply, including tombstones; editing never copies image bytes.
-export function installForumReplies(db){
+export function installForumReplies(db,{decorate=item=>item}={}){
  installForumSocialSchema(db);
  db.exec(`CREATE TABLE IF NOT EXISTS forum_reply_clock(id INTEGER PRIMARY KEY CHECK(id=1),revision INTEGER NOT NULL);
  INSERT OR IGNORE INTO forum_reply_clock VALUES(1,0);
@@ -26,7 +26,7 @@ export function installForumReplies(db){
  CASE WHEN q.id IS NOT NULL THEN (SELECT COUNT(*) FROM forum_replies f WHERE f.thread_id=q.thread_id AND f.id<=q.id) END AS replyToFloor
  FROM forum_replies r JOIN profiles p ON p.employee_id=r.employee_id
  LEFT JOIN forum_replies q ON q.id=r.reply_to_id AND q.thread_id=r.thread_id AND q.status='published' AND q.deleted_at='' WHERE r.thread_id=? AND r.status='published' AND r.deleted_at=''`;
- const map=row=>mapForumAuthor({...row,imageData:mediaReference('reply',row.id,row.imageData)});
+ const map=row=>decorate(mapForumAuthor({...row,imageData:mediaReference('reply',row.id,row.imageData)}));
  return (threadId,viewer,q)=>{
   const revision=db.prepare('SELECT revision FROM forum_reply_clock WHERE id=1').get().revision;
   if(q.has('page')||q.has('reply')){

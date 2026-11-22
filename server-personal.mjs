@@ -1,12 +1,11 @@
 import {installHourlyRewards} from './server-rewards.mjs';
-import {installSocialAchievements,socialMetrics} from './server-social-achievements.mjs';
+import {installSocialAchievements} from './server-social-achievements.mjs';
 import {achievementCatalog} from './achievement-catalog.mjs';
-import {installFunAchievements,funAchievementCatalog} from './server-fun-achievements.mjs';
-import {installGameplayAchievements,gameplayRules,gameplayAwardsSQL} from './server-game-achievements.mjs';
+import {installFunAchievements} from './server-fun-achievements.mjs';
+import {installGameplayAchievements} from './server-game-achievements.mjs';
 
-export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,balanceFor,recordLedger,publicProfile,today,highlights}) {
+export function installPersonal({db,send,requireEmployee,balanceFor,recordLedger,publicProfile,today,highlights}) {
  const personalMetrics=['zero_count','relief_count','peak','debt','donated','checkin_count','hourly_count','prize_max','loss_max'];
- const metrics=[...personalMetrics,...gameplayRules.map(r=>r.metric),...socialMetrics.map(r=>r.metric),...funAchievementCatalog.map(r=>r.metric),'containment_login'];
  db.exec(`CREATE TABLE IF NOT EXISTS achievement_definitions(code TEXT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL,metric TEXT NOT NULL,threshold INTEGER NOT NULL,enabled INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS personal_metrics(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,balance INTEGER NOT NULL DEFAULT 0,peak INTEGER NOT NULL DEFAULT 0,debt INTEGER NOT NULL DEFAULT 0,zero_count INTEGER NOT NULL DEFAULT 0,relief_count INTEGER NOT NULL DEFAULT 0,donated INTEGER NOT NULL DEFAULT 0,checkin_count INTEGER NOT NULL DEFAULT 0,hourly_count INTEGER NOT NULL DEFAULT 0,prize_max INTEGER NOT NULL DEFAULT 0,loss_max INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS hourly_claims(employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,hour INTEGER NOT NULL,reward INTEGER NOT NULL,PRIMARY KEY(employee_id,hour));
@@ -63,19 +62,14 @@ export function installPersonal({db,send,readBody,requireEmployee,requireAdmin,b
  db.exec(`INSERT INTO personal_metrics(employee_id,balance) SELECT e.id,COALESCE(SUM(l.delta),0) FROM employees e LEFT JOIN balance_ledger l ON l.employee_id=e.id GROUP BY e.id ON CONFLICT(employee_id) DO UPDATE SET balance=excluded.balance;`);
  const balanceQuery=db.prepare('SELECT balance FROM personal_metrics WHERE employee_id=?');
  return {balance:id=>balanceQuery.get(id)?.balance||0,earned,async handle(req,res,url) {
-  const path=url.pathname;if(!['/api/profile','/api/player/history','/api/player/rewards','/api/player/rewards/hourly','/api/admin/achievements'].includes(path)||path==='/api/profile'&&req.method!=='GET')return false;
-  const employee=path.startsWith('/api/admin/')?requireAdmin(req,res):requireEmployee(req,res);if(!employee)return true;
+  const path=url.pathname;if(!['/api/profile','/api/player/history','/api/player/rewards','/api/player/rewards/hourly'].includes(path)||path==='/api/profile'&&req.method!=='GET')return false;
+  const employee=requireEmployee(req,res);if(!employee)return true;
   try {
    if(path==='/api/profile'&&req.method==='GET'){send(res,200,{profile:publicProfile(employee.id),achievements:earned(employee.id),gameRecords:highlights.records(employee.id),balance:balanceFor(employee.id)});return true;}
    if(path==='/api/player/history'&&req.method==='GET'){const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare("SELECT id,game,cost,prize,COALESCE(json_extract(result_json,'$.penalty'),0) AS penalty,COALESCE(json_extract(result_json,'$.tax'),0) AS tax,created_at AS createdAt FROM game_tickets WHERE employee_id=? AND id<? ORDER BY id DESC LIMIT 21").all(employee.id,before);send(res,200,{items:rows.slice(0,20),next:rows.length>20?rows[19].id:null});return true;}
    if(path==='/api/player/rewards'&&req.method==='GET'){send(res,200,rewards(employee.id));return true;}
    if(path==='/api/player/rewards/hourly'&&req.method==='POST') {
     const claimed=hourlyRewards.claim(employee.id);send(res,200,{...rewards(employee.id),reward:claimed.reward});return true;
-   }
-   if(path==='/api/admin/achievements') {
-    if(req.method==='PUT'){const d=await readBody(req);if(!/^[-a-z0-9]{1,40}$/.test(d.code)||typeof d.title!=='string'||!d.title.trim()||d.title.length>60||typeof d.description!=='string'||d.description.length>200||!metrics.includes(d.metric)||!Number.isSafeInteger(d.threshold)||d.threshold<1||typeof d.enabled!=='boolean')throw Error('请填写有效的成就编号、名称、条件及正整数门槛。');db.exec('BEGIN IMMEDIATE');try{db.prepare('INSERT INTO achievement_definitions VALUES(?,?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET title=excluded.title,description=excluded.description,metric=excluded.metric,threshold=excluded.threshold,enabled=excluded.enabled').run(d.code,d.title.trim(),d.description,d.metric,d.threshold,d.enabled?1:0);db.exec(awardSQL()+gameplayAwardsSQL());db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
-    else if(req.method!=='GET'){send(res,405,{error:'指令无效。'});return true;}
-    send(res,200,{items:db.prepare('SELECT * FROM achievement_definitions ORDER BY rowid').all(),metrics,metricLabels:Object.fromEntries([...gameplayRules,...socialMetrics].map(r=>[r.metric,r.label]))});return true;
    }
    send(res,405,{error:'指令无效。'});return true;
   }catch(e){send(res,400,{error:e.message});return true;}

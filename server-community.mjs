@@ -2,13 +2,15 @@ import {installForumCategories} from './server-forum-categories.mjs';
 import {installLife} from './server-life.mjs';
 import {normalizeDossierContent,normalizeDossierCode} from './server-dossier-content.mjs';
 import {normalizeDossierImage} from './server-dossier-images.mjs';
-import {forumPersonaNameSQL} from './server-forum-social.mjs';
+import {forumPersonaNameSQL,forumNameSQL} from './server-forum-social.mjs';
+import {installForumMentions} from './server-forum-mentions.mjs';
 import {storedAvatar} from './server-default-avatar.mjs';
 import {recordImageReview,checkImageVersion} from './server-image-archive.mjs';
 import {installAudit,auditRange} from './server-audit.mjs';
 import {mediaReference} from './server-media.mjs';
 // Persistent community records and moderation. Raw timestamps remain server-side.
 export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,publicProfile,balanceFor,log}) {
+  const forumMentions=installForumMentions(db,{nameSQL:forumNameSQL});
   const add=(table,name,definition)=>{if(!db.prepare(`PRAGMA table_info(${table})`).all().some(c=>c.name===name))db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);};
   for(const table of ['forum_threads','forum_replies','posts','dossier_comments','chat_messages']) {
     add(table,'edited_at',"TEXT NOT NULL DEFAULT ''");add(table,'deleted_at',"TEXT NOT NULL DEFAULT ''");add(table,'deleted_by','INTEGER');
@@ -120,11 +122,13 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
         if(!row){send(res,404,{error:'发言不存在或不属于当前员工。'});return true;}
         const d=await readBody(req,2500000);if(!valid(d.body,3000)||(edit[1]==='thread'&&!valid(d.title,120)))throw new Error('请填写有效标题和正文。');
         const categoryId=edit[1]==='thread'?forumCategories.resolve(d.categoryId,row.category_id):null;
+        const retained=d.mentions===undefined&&d.body.trim()===row.body?db.prepare('SELECT start_pos AS start,end_pos AS end,target_key AS key FROM forum_mention_spans WHERE source_kind=? AND source_id=? ORDER BY start_pos').all(edit[1],row.id):d.mentions;
+        const mentions=forumMentions.prepare(d.body.trim(),retained);
         const img=d.imageData===undefined?row.image_data:image(d.imageData),needsReview=!!img,identityMode=d.identityMode??row.identity_mode??'anonymous';if(!['anonymous','real'].includes(identityMode))throw new Error('请选择发言身份。');
         tx(()=>{db.prepare('INSERT INTO speech_revisions(source_type,source_id,employee_id,before_json,after_json) VALUES(?,?,?,?,?)').run(edit[1],row.id,user.id,JSON.stringify({title:row.title,body:row.body,imageData:row.image_data,identityMode:row.identity_mode,...(edit[1]==='thread'?{categoryId:row.category_id}:{})}),JSON.stringify({title:d.title,body:d.body.trim(),imageData:img,identityMode,...(edit[1]==='thread'?{categoryId}:{})}));
           if(edit[1]==='thread')db.prepare("UPDATE forum_threads SET title=?,body=?,image_data=?,status=?,moderation=?,category_id=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.title.trim(),d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',categoryId,row.id);
           else db.prepare("UPDATE forum_replies SET body=?,image_data=?,status=?,moderation=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(d.body.trim(),img,needsReview?'hidden':'published',needsReview?'pending':'approved',row.id);
-          db.prepare('UPDATE '+table+' SET identity_mode=? WHERE id=?').run(identityMode,row.id);log(user.id,'speech.edit',edit[1]+'/'+row.id);});send(res,200,{ok:true,pending:needsReview});return true;
+          db.prepare('UPDATE '+table+' SET identity_mode=? WHERE id=?').run(identityMode,row.id);forumMentions.save(edit[1],row.id,edit[1]==='thread'?row.id:row.thread_id,mentions);log(user.id,'speech.edit',edit[1]+'/'+row.id);});send(res,200,{ok:true,pending:needsReview});return true;
       }
       if(adminDelete&&method==='DELETE') {
         const table=({threads:'forum_threads',replies:'forum_replies'})[adminDelete[1]]||adminDelete[2],rid=Number(adminDelete[3]);

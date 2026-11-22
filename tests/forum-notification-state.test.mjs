@@ -10,7 +10,7 @@ function fixture(){
  INSERT INTO employees(id,enabled,role,username) VALUES(1,1,'employee','owner'),(2,1,'employee','reader');
  CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT,avatar_url TEXT);INSERT INTO profiles VALUES(1,'作者',''),(2,'读者','');
  CREATE TABLE balance_ledger(employee_id INTEGER,delta INTEGER);
- CREATE TABLE forum_threads(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),title TEXT,status TEXT DEFAULT 'published',moderation TEXT DEFAULT 'approved',deleted_at TEXT DEFAULT '');
+ CREATE TABLE forum_threads(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),title TEXT,body TEXT DEFAULT '',identity_mode TEXT DEFAULT 'anonymous',status TEXT DEFAULT 'published',moderation TEXT DEFAULT 'approved',deleted_at TEXT DEFAULT '');
  INSERT INTO forum_threads(id,employee_id,title) VALUES(1,1,'通知测试');
  CREATE TABLE forum_replies(id INTEGER PRIMARY KEY,thread_id INTEGER REFERENCES forum_threads(id),employee_id INTEGER REFERENCES employees(id),body TEXT,identity_mode TEXT DEFAULT 'anonymous',created_at TEXT DEFAULT CURRENT_TIMESTAMP,status TEXT DEFAULT 'published',moderation TEXT DEFAULT 'approved',deleted_at TEXT DEFAULT '',reply_to_id INTEGER REFERENCES forum_replies(id) ON DELETE SET NULL);
  INSERT INTO forum_replies(id,thread_id,employee_id,body) VALUES(1,1,1,'作者的评论');

@@ -15,7 +15,7 @@ if (action === 'list') {
   console.table(db.prepare('SELECT id,username,display_name,enabled FROM employees WHERE role=?').all('admin'));
   db.close();
 } else if (action === 'reset') {
-  if (!process.stdin.isTTY) throw new Error('请使用 docker compose exec web node admin-account.mjs reset，不要加 -T。');
+  if (!process.stdin.isTTY) throw new Error('请使用 docker compose exec web node tools/admin-account.mjs reset，不要加 -T。');
   let muted = false;
   const output = new Writable({ write(chunk, encoding, done) { if (!muted) process.stdout.write(chunk); done(); } });
   const rl = createInterface({ input:process.stdin, output, terminal:true });
@@ -47,7 +47,7 @@ if (action === 'list') {
     process.exitCode=1;
   } finally { muted=false; rl.close(); db.close(); }
 } else {
-  console.log('用法：node admin-account.mjs list 或 node admin-account.mjs reset');
+  console.log('用法：node tools/admin-account.mjs list 或 node tools/admin-account.mjs reset');
   db.close();
   process.exitCode=1;
 }

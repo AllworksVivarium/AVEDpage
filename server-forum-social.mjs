@@ -3,6 +3,7 @@ import {storedAvatar,installAvatarPresets,avatarPresets} from './server-default-
 import {ensureCompanyRobots} from './server-company-robots.mjs';
 import {randomBytes} from 'node:crypto';
 import {presenceKey} from './server-forum-presence.mjs';
+import {installForumMentions} from './server-forum-mentions.mjs';
 
 function migrateLegacyPersonaOwner(db){
  const columns=db.prepare('PRAGMA table_info(forum_personas)').all();
@@ -103,24 +104,26 @@ export function installForumSocialSchema(db){
 export const forumPersonaNameSQL=id=>`(SELECT COALESCE((SELECT codename FROM company_robots WHERE employee_id=p.robot_employee_id),NULLIF(p.robot_name,''),p.name) FROM forum_personas p WHERE p.id=${id})`;
 const forumAdminSQL=a=>`${a}.persona_id IS NULL AND EXISTS(SELECT 1 FROM employees WHERE id=${a}.employee_id AND username='AVED' COLLATE BINARY)`;
 export const forumNameSQL=a=>`CASE WHEN ${a}.persona_id IS NOT NULL THEN ${forumPersonaNameSQL(a+'.persona_id')} WHEN (${forumAdminSQL(a)}) OR ${a}.identity_mode='real' THEN (SELECT display_name FROM employees WHERE id=${a}.employee_id) ELSE (SELECT anonymous_name FROM profiles WHERE employee_id=${a}.employee_id) END`;
-export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,(${forumAdminSQL(a)}) AS isForumAdmin,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
+export const forumAuthorSQL=a=>`${forumNameSQL(a)} AS anonymousName,(${forumAdminSQL(a)}) AS isForumAdmin,EXISTS(SELECT 1 FROM employees WHERE id=${a}.employee_id AND username='AVED' COLLATE BINARY) AS suppressEditLabel,${a}.identity_mode AS identityMode,${a}.persona_id AS personaId,
  CASE WHEN ${a}.persona_id IS NULL THEN ${a}.employee_id ELSE (SELECT robot_employee_id FROM forum_personas WHERE id=${a}.persona_id) END AS presenceEmployeeId,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_url FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarData,
  CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN ${a}.employee_id ELSE NULL END AS avatarId,CASE WHEN ${a}.persona_id IS NULL AND ${a}.identity_mode='real' THEN (SELECT avatar_preset FROM profiles WHERE employee_id=${a}.employee_id) ELSE '' END AS avatarPreset,
  CASE WHEN ${a}.persona_id IS NULL THEN (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=${a}.employee_id)
  ELSE (SELECT (SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=p.robot_employee_id) FROM forum_personas p WHERE p.id=${a}.persona_id AND p.robot_employee_id IS NOT NULL) END AS balance`;
-export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,presenceEmployeeId,...rest}=row;return {...rest,presenceKey:presenceKey(presenceEmployeeId,!row.personaId&&row.identityMode==='real'?'real':'anonymous'),avatarUrl:avatarId?storedAvatar(avatarId,avatarData,avatarPreset,64):''};}
+export function mapForumAuthor(row){const {avatarData,avatarId,avatarPreset,presenceEmployeeId,suppressEditLabel,...rest}=row;return {...rest,...(suppressEditLabel?{editedAt:''}:{}),presenceKey:presenceKey(presenceEmployeeId,!row.personaId&&row.identityMode==='real'?'real':'anonymous'),avatarUrl:avatarId?storedAvatar(avatarId,avatarData,avatarPreset,64):''};}
 
 export function installForumSocial(db){
  installForumSocialSchema(db);
  installForumCategories(db);
+ const mentions=installForumMentions(db,{nameSQL:forumNameSQL});
  function allowed(id){return !!db.prepare("SELECT 1 FROM employees WHERE id=? AND enabled=1 AND username='AVED' COLLATE BINARY").get(id);}
  function requireWorkshop(id){if(!allowed(id)){const e=Error('当前身份无权使用演绎编排。');e.status=403;throw e;}}
  function persona(id,value){if(value==null||value==='')return null;requireWorkshop(id);if(!Number.isSafeInteger(value)||!db.prepare('SELECT p.id FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id WHERE p.id=?').get(value))throw Error('演绎机器人不存在，请刷新后重新选择。');return value;}
  function target(thread,value){if(value==null||value==='')return null;if(!Number.isSafeInteger(value)||!db.prepare("SELECT id FROM forum_replies WHERE id=? AND thread_id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(value,thread))throw Error('回复对象不存在或不在本帖中。');return value;}
  const visible=`FROM forum_notifications n JOIN forum_threads t ON t.id=n.thread_id JOIN forum_replies r ON r.id=n.reply_id
  WHERE n.employee_id=? AND r.employee_id<>n.employee_id
- AND t.status='published' AND t.moderation='approved' AND t.deleted_at='' AND r.status='published' AND r.moderation='approved' AND r.deleted_at=''`;
+ AND t.status='published' AND t.moderation='approved' AND t.deleted_at='' AND r.status='published' AND r.moderation='approved' AND r.deleted_at=''
+ AND NOT EXISTS(SELECT 1 FROM forum_mention_spans m WHERE m.source_kind='reply' AND m.source_id=n.reply_id AND m.recipient_id=n.employee_id)`;
  const inboxSQL=`WITH notices AS (
  SELECT n.id AS notificationId,1-n.is_read AS unread,n.kind,n.thread_id AS threadId,t.title,n.reply_id AS replyId,r.created_at AS createdAt,
  ${forumNameSQL('r')} AS authorName,substr(r.body,1,90) AS excerpt,
@@ -141,7 +144,7 @@ export function installForumSocial(db){
   db.prepare(`UPDATE forum_notifications SET is_read=1 WHERE employee_id=? AND thread_id=? AND ${condition}
    AND id IN (SELECT n.id ${visible})`).run(id,thread,...args,id);
  }
- return {allowed,persona,target,
+ return {allowed,persona,target,mentions,
   list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,r.purpose,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
   create(id){requireWorkshop(id);throw Error('请在管理端的公司机器人中新增或修改演绎身份。');},
   topics(id){requireWorkshop(id);return {items:db.prepare("SELECT id,title FROM forum_threads WHERE status='published' AND moderation='approved' AND deleted_at='' ORDER BY id DESC LIMIT 30").all(),categories:forumCategoryList(db)};},
@@ -149,22 +152,26 @@ export function installForumSocial(db){
    requireWorkshop(id);if(typeof data.requestId!=='string'||!/^[a-zA-Z0-9_-]{16,80}$/.test(data.requestId))throw Error('缺少发布凭据，请重新打开编排。');
    const existing=db.prepare('SELECT result_json FROM forum_workshop_requests WHERE employee_id=? AND request_id=?').get(id,data.requestId);if(existing)return JSON.parse(existing.result_json);
    if(!Array.isArray(data.lines)||data.lines.length<1||data.lines.length>12)throw Error('每次编排 1 至 12 条发言。');
-   const lines=data.lines.map(line=>{if(!line||typeof line.body!=='string'||!line.body.trim()||line.body.trim().length>3000)throw Error('每条发言应为 1 至 3000 字。');const personaId=persona(id,line.personaId);if(!personaId)throw Error('请为每条发言选择演绎身份。');return {personaId,body:line.body.trim()};});
+   const lines=data.lines.map(line=>{if(!line||typeof line.body!=='string'||!line.body.trim()||line.body.trim().length>3000)throw Error('每条发言应为 1 至 3000 字。');const personaId=persona(id,line.personaId);if(!personaId)throw Error('请为每条发言选择演绎身份。');return {personaId,body:line.body.trim(),mentions:mentions.prepare(line.body.trim(),line.mentions)};});
    let threadId=data.threadId;if(threadId!=null&&(!Number.isSafeInteger(threadId)||!db.prepare("SELECT 1 FROM forum_threads WHERE id=? AND status='published' AND moderation='approved' AND deleted_at=''").get(threadId)))throw Error('请选择有效主题。');
    if(threadId==null&&(typeof data.title!=='string'||!data.title.trim()||data.title.trim().length>120))throw Error('新主题标题应为 1 至 120 字。');
    const categoryId=threadId==null?resolveForumCategory(db,data.categoryId):null;
    const alias=db.prepare('SELECT anonymous_name FROM profiles WHERE employee_id=?').get(id)?.anonymous_name||'演绎';
    db.exec('BEGIN IMMEDIATE');try{
     const replyIds=[];for(const [i,line] of lines.entries()){
-     if(threadId==null&&i===0)threadId=Number(db.prepare("INSERT INTO forum_threads(employee_id,anonymous_name,title,body,persona_id,category_id) VALUES(?,?,?,?,?,?)").run(id,alias,data.title.trim(),line.body,line.personaId,categoryId).lastInsertRowid);
+     const newThread=threadId==null&&i===0;
+     if(newThread)threadId=Number(db.prepare("INSERT INTO forum_threads(employee_id,anonymous_name,title,body,persona_id,category_id) VALUES(?,?,?,?,?,?)").run(id,alias,data.title.trim(),line.body,line.personaId,categoryId).lastInsertRowid);
      else replyIds.push(Number(db.prepare('INSERT INTO forum_replies(thread_id,employee_id,anonymous_name,body,persona_id) VALUES(?,?,?,?,?)').run(threadId,id,alias,line.body,line.personaId).lastInsertRowid));
+     mentions.save(newThread?'thread':'reply',newThread?threadId:replyIds.at(-1),threadId,line.mentions);
     }
     const result={threadId,replyIds};db.prepare('INSERT INTO forum_workshop_requests VALUES(?,?,?)').run(id,data.requestId,JSON.stringify(result));db.exec('COMMIT');return result;
    }catch(e){db.exec('ROLLBACK');throw e;}
   },
   inbox(id){
    const rows=db.prepare(inboxSQL).all(id);
-   return {unread:rows[0]?.unreadTotal||0,items:rows.map(({unreadTotal,position,...item})=>item)};
+   const mentioned=mentions.inbox(id),items=[...rows.map(({unreadTotal,position,...item})=>item),...mentioned.items];
+   items.sort((a,b)=>b.unread-a.unread||String(b.createdAt).localeCompare(String(a.createdAt)));
+   return {unread:(rows[0]?.unreadTotal||0)+mentioned.unread,items};
   },
   readReplies(id,thread,ids){
    if(!Array.isArray(ids)||ids.length>20||ids.some(n=>!Number.isSafeInteger(n)||n<1))throw Error('无效的已读楼层。');

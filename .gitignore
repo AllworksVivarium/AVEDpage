@@ -14,6 +14,8 @@ data-local/
 UPDATE-NOTES-*.md
 .local-text-history/
 node_modules/
+__pycache__/
+*.py[cod]
 public/typography-preview.local.html
 
 

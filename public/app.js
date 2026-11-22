@@ -327,7 +327,6 @@ async function deleteEmployee(id, displayName, username) {
 
 // ===== Tab 路由分发 =====
 async function renderTab(tab) {
-  if(['achievements','forumWorkshop'].includes(tab))tab='admin';
   window.AVEDStopAdminMusicPreview?.();
   setActive(tab);
   try {
