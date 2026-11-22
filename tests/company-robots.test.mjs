@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {installCompanyRobots} from '../server-company-robots.mjs';import {installWelfare} from '../server-welfare.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {installCompanyRobots,ensureCompanyRobots} from '../server-company-robots.mjs';import {installWelfare} from '../server-welfare.mjs';
 test('admin-managed robots persist, rank with employees and accept conserved idempotent donations',async t=>{
  const db=new DatabaseSync(':memory:');t.after(()=>db.close());db.exec(`PRAGMA foreign_keys=ON;CREATE TABLE employees(id INTEGER PRIMARY KEY,username TEXT UNIQUE,password_hash TEXT,display_name TEXT,department TEXT,role TEXT,enabled INTEGER DEFAULT 1,is_npc INTEGER DEFAULT 0);CREATE TABLE profiles(employee_id INTEGER PRIMARY KEY,anonymous_name TEXT,avatar_url TEXT DEFAULT '');CREATE TABLE balance_ledger(id INTEGER PRIMARY KEY,employee_id INTEGER REFERENCES employees(id),delta INTEGER,reason TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);CREATE TABLE checkins(employee_id INTEGER,reward INTEGER);INSERT INTO employees VALUES(1,'admin','x','管理员','','admin',1,0),(2,'human','x','员工','','employee',1,0),(3,'leader','x','领导','','employee',0,1);INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(2,10000,'初始');`);
  const balanceFor=id=>db.prepare('SELECT COALESCE(SUM(delta),0) b FROM balance_ledger WHERE employee_id=?').get(id).b,recordLedger=(id,delta,reason)=>db.prepare('INSERT INTO balance_ledger(employee_id,delta,reason) VALUES(?,?,?)').run(id,delta,reason);
@@ -25,5 +25,24 @@ test('admin-managed robots persist, rank with employees and accept conserved ide
  portrait=robots.list().find(x=>x.id===id);assert.equal((await call(robots,'/api/admin/company-robots/'+id,'PUT',{codename:portrait.codename,balance:portrait.balance,revision:portrait.revision,expectedBalance:portrait.balance,avatarPreset:'wine'})).status,200);assert.equal(robots.list().find(x=>x.id===id).hasCustomAvatar,false);assert.match(robots.list().find(x=>x.id===id).avatarUrl,/wine/);
  assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'坏图片',balance:0,avatarData:'data:image/png;base64,bm90YW5pbWFnZQ=='})).status,400);
 
+ const story=(await call(robots,'/api/admin/company-robots','POST',{codename:'档案室值班员',balance:50000,purpose:'story'}));assert.equal(story.status,200);
+ const storyId=story.data.id;let role=robots.list().find(r=>r.id===storyId);assert.equal(role.purpose,'story');
+ assert.equal(robots.list().find(r=>r.id===id).purpose,'companion','existing requests default to companion');
+ assert.equal((await call(robots,'/api/admin/company-robots/'+storyId,'PUT',{codename:role.codename,balance:role.balance,revision:role.revision,expectedBalance:role.balance})).status,200);
+ robots=installCompanyRobots(deps);role=robots.list().find(r=>r.id===storyId);assert.equal(role.purpose,'story','omitted purpose and reinstall preserve story use');
+ assert.equal((await call(robots,'/api/admin/company-robots/'+storyId,'PUT',{codename:role.codename,balance:role.balance,revision:1,expectedBalance:role.balance,purpose:'companion'})).status,409);
+ assert.equal(robots.list().find(r=>r.id===storyId).purpose,'story');
+ assert.equal((await call(robots,'/api/admin/company-robots/'+storyId,'PUT',{codename:role.codename,balance:role.balance,revision:role.revision,expectedBalance:role.balance,purpose:'companion'})).status,200);
+ assert.equal(robots.list().find(r=>r.id===storyId).purpose,'companion');assert.equal(balanceFor(storyId),50000);
+ assert.equal(db.prepare('SELECT enabled FROM employees WHERE id=?').get(storyId).enabled,0);
+ for(const purpose of ['',null,'admin','STORY',true])assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'无效用途',balance:0,purpose})).status,400);
  for(const balance of [1.5,NaN,1e12])assert.equal((await call(robots,'/api/admin/company-robots','POST',{codename:'无效',balance})).status,400);
+});
+
+test('robot purpose migrates existing rows once and retains story choices',()=>{
+ const db=new DatabaseSync(':memory:');try{
+  db.exec("CREATE TABLE employees(id INTEGER PRIMARY KEY);INSERT INTO employees VALUES(1);CREATE TABLE company_robots(employee_id INTEGER PRIMARY KEY,codename TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);INSERT INTO company_robots(employee_id,codename) VALUES(1,'旧机器人')");
+  ensureCompanyRobots(db);assert.equal(db.prepare('SELECT purpose FROM company_robots').get().purpose,'companion');
+  db.exec("UPDATE company_robots SET purpose='story'");ensureCompanyRobots(db);assert.equal(db.prepare('SELECT purpose FROM company_robots').get().purpose,'story');
+ }finally{db.close();}
 });

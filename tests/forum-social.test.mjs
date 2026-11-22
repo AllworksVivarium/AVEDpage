@@ -61,9 +61,9 @@ test('forum replies, private notifications, real avatars and authorized persona 
  assert.equal((await request('session=invalid','/api/player/forum/workshop','POST',{username:'AVED'})).status,401);
  assert.equal((await as(planner,'/api/player/forum/workshop')).status,200);
  const setup=new DatabaseSync(join(folder,'wanyehui.db'));const legacyId=Number(setup.prepare('INSERT INTO forum_personas(name,created_by) VALUES(?,?)').run('演绎角色甲',planner.id).lastInsertRowid);setup.close();
- const robotA=(await a('/api/admin/company-robots','POST',{codename:'演绎角色甲',balance:12345})).data,robotB=(await a('/api/admin/company-robots','POST',{codename:'演绎角色乙',balance:-900})).data;
+ const robotA=(await a('/api/admin/company-robots','POST',{codename:'演绎角色甲',balance:12345})).data,robotB=(await a('/api/admin/company-robots','POST',{codename:'演绎角色乙',balance:-900,purpose:'story'})).data;
  const people=(await as(planner,'/api/player/forum/personas')).data.items,persona=people.find(p=>p.robotId===robotA.id),second=people.find(p=>p.robotId===robotB.id);
- assert.equal(persona.id,legacyId,'matching historical roles bind without changing their IDs');assert.equal(persona.balance,12345);assert.equal(second.balance,-900);
+ assert.equal(persona.id,legacyId,'matching historical roles bind without changing their IDs');assert.equal(persona.balance,12345);assert.equal(second.balance,-900);assert.equal(second.purpose,'story');assert.equal(persona.purpose,'companion');
  assert.equal((await as(reader,'/api/player/forum/personas')).data.items.length,0);
  assert.equal((await post(reader,thread,'伪造角色',{personaId:persona.id})).status,403);
  for(const user of [ordinaryPlanner,lowercase,{cookie:admin}]){

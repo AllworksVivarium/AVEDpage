@@ -140,7 +140,7 @@ export function installForumSocial(db){
    AND id IN (SELECT n.id ${visible})`).run(id,thread,...args,id);
  }
  return {allowed,persona,target,
-  list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
+  list(id){const canManage=allowed(id);if(!canManage)return {canManage,items:[]};syncRobotPersonas(db);return {canManage,items:db.prepare('SELECT p.id,r.employee_id AS robotId,r.codename AS name,r.purpose,(SELECT COALESCE(SUM(delta),0) FROM balance_ledger WHERE employee_id=r.employee_id) AS balance FROM forum_personas p JOIN company_robots r ON r.employee_id=p.robot_employee_id ORDER BY r.employee_id DESC').all()};},
   create(id){requireWorkshop(id);throw Error('请在管理端的公司机器人中新增或修改演绎身份。');},
   topics(id){requireWorkshop(id);return {items:db.prepare("SELECT id,title FROM forum_threads WHERE status='published' AND moderation='approved' AND deleted_at='' ORDER BY id DESC LIMIT 30").all()};},
   publish(id,data){

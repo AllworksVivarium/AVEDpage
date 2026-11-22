@@ -4,7 +4,7 @@
 .terminal-content-pane{position:relative;isolation:isolate}
 body.theme-inner .terminal-content-pane::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;--pattern-ink:#715c3c20;--pattern-fine:#715c3c0c;background-position:0 0}
 body.dark-mode.theme-inner .terminal-content-pane::before{--pattern-ink:#d4c6a91c;--pattern-fine:#d4c6a90a}
-body[data-terminal-pattern=grid] .terminal-content-pane::before{background-image:linear-gradient(var(--pattern-ink) 1px,transparent 1px),linear-gradient(90deg,var(--pattern-ink) 1px,transparent 1px),linear-gradient(var(--pattern-fine) 1px,transparent 1px),linear-gradient(90deg,var(--pattern-fine) 1px,transparent 1px);background-size:96px 96px,96px 96px,24px 24px,24px 24px}
+body[data-terminal-pattern=grid] .terminal-content-pane::before{background-image:linear-gradient(var(--pattern-ink) 1px,transparent 1px),linear-gradient(90deg,var(--pattern-ink) 1px,transparent 1px);background-size:24px 24px}
 body[data-terminal-pattern=dots] .terminal-content-pane::before{background-image:radial-gradient(var(--pattern-ink) .8px,transparent 1px);background-size:6px 6px}
 body[data-terminal-pattern=ascii] .terminal-content-pane::before{background:var(--pattern-ink);mask-image:var(--terminal-ascii-mask);mask-repeat:repeat;mask-size:192px 128px}
 body[data-terminal-pattern=plain] .terminal-content-pane::before{display:none}
@@ -29,7 +29,7 @@ body.landing-sphere #landing-view[data-sphere-pattern=ascii]::before{background:
 
 /* Personal collection: restrained symbol waterfall and circuit dot matrix. */
 body.theme-inner[data-terminal-pattern=ascii] .terminal-content-pane::before{background:color-mix(in srgb,var(--inner-text-main) 23%,transparent);mask-image:url('/assets/profile-ascii-flow.svg?v=numeric-20261119');mask-size:240px 320px;mask-repeat:repeat;animation:profile-ascii-flow 28s steps(224,end) infinite}
-body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{background:linear-gradient(180deg,color-mix(in srgb,var(--inner-text-main) 12%,transparent),color-mix(in srgb,var(--inner-crimson) 38%,transparent) 48%,color-mix(in srgb,var(--inner-text-main) 12%,transparent) 65%);background-size:100% 240%;mask-image:url('/assets/profile-phase-dots.svg');mask-size:120px 120px;mask-repeat:repeat;animation:profile-phase-scan 12s linear infinite}
+body.theme-inner[data-terminal-pattern=phase] .terminal-content-pane::before{background:linear-gradient(180deg,color-mix(in srgb,var(--inner-text-main) 12%,transparent),color-mix(in srgb,var(--inner-crimson) 38%,transparent) 48%,color-mix(in srgb,var(--inner-text-main) 12%,transparent) 65%);background-size:100% 240%;mask-image:url('/assets/profile-phase-circuit.svg');mask-size:288px 288px;mask-repeat:repeat;animation:profile-phase-scan 12s linear infinite}
 @keyframes profile-ascii-flow{from{mask-position:0 -320px}to{mask-position:0 0}}
 @keyframes profile-phase-scan{from{background-position:0 0}to{background-position:0 240%}}
 body.effects-off:is([data-terminal-pattern=ascii],[data-terminal-pattern=phase]) .terminal-content-pane::before{animation:none}

@@ -2,6 +2,7 @@
 export function installContainmentDossiers(db){
  db.exec('BEGIN IMMEDIATE');
  try{
+  if(!db.prepare('PRAGMA table_info(dossiers)').all().some(c=>c.name==='player_visible'))db.exec('ALTER TABLE dossiers ADD COLUMN player_visible INTEGER NOT NULL DEFAULT 1 CHECK(player_visible IN (0,1))');
   if(!db.prepare('PRAGMA table_info(dossiers)').all().some(c=>c.name==='employee_id'))db.exec('ALTER TABLE dossiers ADD COLUMN employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS dossiers_employee_unique ON dossiers(employee_id) WHERE employee_id IS NOT NULL');
   const accounts=db.prepare("SELECT e.id,e.display_name,e.containment_classification,COALESCE(p.bio,'') AS bio FROM employees e LEFT JOIN profiles p ON p.employee_id=e.id WHERE e.identity_kind IN ('player_containment','company_containment')").all();
@@ -47,6 +48,6 @@ export function installContainmentDossiers(db){
 
 export function listDossiers(db,{admin=false}={}){
  return db.prepare(`SELECT d.id,d.code,d.title,d.department,d.status,d.summary,d.abstract,d.classification,d.procedures,d.sections_json,
-  length(d.image_data)>0 AS hasImage,d.employee_id AS employeeId,e.identity_kind AS identityKind
-  FROM dossiers d LEFT JOIN employees e ON e.id=d.employee_id ORDER BY d.id ${admin?'DESC':'ASC'}`).all();
+  d.player_visible AS playerVisible,length(d.image_data)>0 AS hasImage,d.employee_id AS employeeId,e.identity_kind AS identityKind
+  FROM dossiers d LEFT JOIN employees e ON e.id=d.employee_id ${admin?'':'WHERE d.player_visible=1'} ORDER BY d.id ${admin?'DESC':'ASC'}`).all();
 }

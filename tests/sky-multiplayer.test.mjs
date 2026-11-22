@@ -47,6 +47,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  start();await ready();const admin=await login('sky-admin');
  for(const name of ['pilot-a','pilot-b'])assert.equal((await req(admin,'/api/admin/employees','POST',{username:name,displayName:name,password,initialBalance:100000})).status,201);
  const robot=(await req(admin,'/api/admin/company-robots','POST',{codename:'陪玩测试员',balance:10000})).data;
+ const story=(await req(admin,'/api/admin/company-robots','POST',{codename:'剧情线索员',balance:100000,purpose:'story'})).data;
  const a=await login('pilot-a'),b=await login('pilot-b'),call=(cookie,path,method,body)=>req(cookie,'/api/player/games/sky/'+path,method,body);
  db=new DatabaseSync(join(folder,'wanyehui.db'));
  const flight=(await call(a,'current')).data;
@@ -88,12 +89,15 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  const waiting=(await call(a,'current')).data;
  assert.equal(waiting.phase,'BOARDING');assert.equal(waiting.passengers.length,1);
  const arrivals=db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=?').all(next.round);
- assert.equal(arrivals.length,1,'an eligible pool of one yields one companion');
+ assert.equal(arrivals.length,1,'an eligible pool of one yields one companion; story robots are excluded');assert.equal(arrivals[0].employee_id,robot.id);
  assert.ok(arrivals[0].board_at>=waiting.departAt-4000&&arrivals[0].board_at<waiting.departAt);
  assert.equal((await req(admin,'/api/admin/company-robots')).data.items[0].balance,10000,'planning does not spend funds');
  await call(a,'current');assert.deepEqual(db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=?').all(next.round),arrivals);
  db.prepare('UPDATE sky_companion_arrivals SET board_at=? WHERE flight_id=?').run(Date.now()-1,next.round);
+ db.prepare('INSERT INTO sky_companion_arrivals VALUES(?,?,?)').run(next.round,story.id,Date.now()-1);
  const boarding=(await call(a,'current')).data;
+ assert.ok(!boarding.passengers.some(p=>p.id===story.id),'queued arrivals recheck purpose before charging');
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM sky_companion_arrivals WHERE flight_id=? AND employee_id=?').get(next.round,story.id).n,0);
  assert.equal(boarding.phase,'BOARDING');assert.ok(boarding.passengers.some(p=>p.id===robot.id),'companion is visible in the helicopter before takeoff');
  const originalPlan=db.prepare('SELECT * FROM sky_robot_plans WHERE flight_id=?').get(next.round);
  assert.equal(originalPlan.jump_at,Math.round(boarding.departAt+(originalPlan.jump_depth-100)/boarding.speed*1000));
@@ -121,6 +125,7 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  const depart=Date.now()+3900;db.prepare('UPDATE sky_flights SET depart_at=? WHERE id=?').run(depart,solo.round);
  await call(a,'current');
  const chosen=db.prepare('SELECT * FROM sky_companion_arrivals WHERE flight_id=? ORDER BY board_at').all(solo.round);
+ assert.ok(chosen.every(r=>r.employee_id!==story.id));
  assert.ok(chosen.length>=1&&chosen.length<=3);assert.equal(new Set(chosen.map(x=>x.employee_id)).size,chosen.length);
  for(let i=0;i<chosen.length;i++){assert.ok(chosen[i].board_at>=depart-4000&&chosen[i].board_at<depart);if(i)assert.ok(chosen[i].board_at>chosen[i-1].board_at);}
  // Restart inside the boarding window retains precisely the scheduled employees.
@@ -129,6 +134,8 @@ test('shared sky: sealed limit, independent cashouts, automatic crash, SSE chat 
  db.prepare('UPDATE sky_companion_arrivals SET board_at=? WHERE flight_id=?').run(Date.now()-1,solo.round);
  const withCompany=(await call(a,'current')).data;
  assert.equal(withCompany.phase,'BOARDING');assert.equal(withCompany.passengers.length,chosen.length+1);
+ assert.equal((await req(admin,'/api/admin/company-robots')).data.items.find(r=>r.id===story.id).balance,100000);
+ assert.equal(db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE employee_id=? AND reason LIKE '共享空投登机%'").get(story.id).n,0);
  const spent=db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE reason=?").get('共享空投登机 #'+solo.round).n;
  await call(a,'current');assert.equal(db.prepare("SELECT COUNT(*) n FROM balance_ledger WHERE reason=?").get('共享空投登机 #'+solo.round).n,spent,'arrivals charge once');
 

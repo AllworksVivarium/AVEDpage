@@ -1,15 +1,18 @@
 import {normalizeAvatar} from './server-avatar.mjs';
 import {avatarPresets,storedAvatar,installAvatarPresets} from './server-default-avatar.mjs';
 import {randomBytes} from 'node:crypto';
-export function ensureCompanyRobots(db){db.exec(`CREATE TABLE IF NOT EXISTS company_robots(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,codename TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);}
+export function ensureCompanyRobots(db){db.exec(`CREATE TABLE IF NOT EXISTS company_robots(employee_id INTEGER PRIMARY KEY REFERENCES employees(id) ON DELETE CASCADE,codename TEXT NOT NULL UNIQUE,revision INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);
+ if(!db.prepare('PRAGMA table_info(company_robots)').all().some(c=>c.name==='purpose'))db.exec("ALTER TABLE company_robots ADD COLUMN purpose TEXT NOT NULL DEFAULT 'companion' CHECK(purpose IN ('companion','story'))");
+}
 export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,recordLedger,log=()=>{}}){
  installAvatarPresets(db);ensureCompanyRobots(db);
- const list=()=>db.prepare('SELECT r.employee_id AS id,r.codename,r.revision,p.avatar_url AS avatarData,p.avatar_preset AS avatarPreset,0 AS balance FROM company_robots r LEFT JOIN profiles p ON p.employee_id=r.employee_id ORDER BY r.employee_id').all().map(({avatarData,...row})=>({...row,hasCustomAvatar:!!avatarData,avatarUrl:storedAvatar(row.id,avatarData,row.avatarPreset||avatarPresets[row.id%avatarPresets.length]),balance:balanceFor(row.id)}));
+ const list=()=>db.prepare('SELECT r.employee_id AS id,r.codename,r.revision,r.purpose,p.avatar_url AS avatarData,p.avatar_preset AS avatarPreset,0 AS balance FROM company_robots r LEFT JOIN profiles p ON p.employee_id=r.employee_id ORDER BY r.employee_id').all().map(({avatarData,...row})=>({...row,hasCustomAvatar:!!avatarData,avatarUrl:storedAvatar(row.id,avatarData,row.avatarPreset||avatarPresets[row.id%avatarPresets.length]),balance:balanceFor(row.id)}));
  const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const v=fn();db.exec('COMMIT');return v;}catch(e){db.exec('ROLLBACK');throw e;}};
  return {list,async handle(req,res,url){if(!/^\/api\/admin\/company-robots(?:\/\d+)?$/.test(url.pathname))return false;const actor=requireAdmin(req,res);if(!actor)return true;
   try{if(req.method==='GET'&&url.pathname==='/api/admin/company-robots'){send(res,200,{items:list()});return true;}
    if(!['POST','PUT'].includes(req.method)){send(res,405,{error:'不支持的操作。'});return true;}
    const data=await readBody(req,2300000),codename=typeof data.codename==='string'?data.codename.trim():'';
+   if(data.purpose!==undefined&&!['companion','story'].includes(data.purpose))throw Error('请选择有效的机器人用途。');
    if(!codename||codename.length>32||/[\u0000-\u001f\u007f]/.test(codename))throw Error('内网 ID须为 1—32 个可见字符。');
    if(!Number.isSafeInteger(data.balance)||Math.abs(data.balance)>1000000000)throw Error('余额须为 -1,000,000,000 至 1,000,000,000 的整数。');
    if(data.avatarPreset!==undefined&&data.avatarPreset!==''&&!avatarPresets.includes(data.avatarPreset))throw Error('请选择有效的头像底色。');
@@ -19,17 +22,17 @@ export function installCompanyRobots({db,send,readBody,requireAdmin,balanceFor,r
     let robotId=id,oldBalance=0;
     if(req.method==='POST'){
      const row=db.prepare("INSERT INTO employees(username,password_hash,display_name,department,role,enabled,is_npc) VALUES(?,?,?,'','employee',0,1)").run('company-robot-'+randomBytes(16).toString('hex'),randomBytes(64).toString('hex'),codename);robotId=Number(row.lastInsertRowid);
-     db.prepare('INSERT INTO company_robots(employee_id,codename) VALUES(?,?)').run(robotId,codename);
+     db.prepare('INSERT INTO company_robots(employee_id,codename,purpose) VALUES(?,?,?)').run(robotId,codename,data.purpose||'companion');
     }else{
      const row=db.prepare('SELECT * FROM company_robots WHERE employee_id=?').get(id);if(!row)throw Error('机器人不存在。');oldBalance=balanceFor(id);
      if(row.revision!==data.revision||oldBalance!==data.expectedBalance)throw Object.assign(Error('资料或余额已更新，请刷新后再保存。'),{status:409});
-     db.prepare('UPDATE company_robots SET codename=?,revision=revision+1 WHERE employee_id=?').run(codename,id);db.prepare('UPDATE employees SET display_name=? WHERE id=?').run(codename,id);
+     db.prepare('UPDATE company_robots SET codename=?,purpose=?,revision=revision+1 WHERE employee_id=?').run(codename,data.purpose??row.purpose,id);db.prepare('UPDATE employees SET display_name=? WHERE id=?').run(codename,id);
     }
     if(data.avatarPreset!==undefined)db.prepare('INSERT INTO profiles(employee_id,anonymous_name,avatar_preset) VALUES(?,?,?) ON CONFLICT(employee_id) DO UPDATE SET avatar_preset=excluded.avatar_preset').run(robotId,codename,data.avatarPreset);
     if(avatar!==undefined)db.prepare("INSERT INTO profiles(employee_id,anonymous_name,avatar_url,avatar_preset) VALUES(?,?,?,?) ON CONFLICT(employee_id) DO UPDATE SET avatar_url=excluded.avatar_url,avatar_preset=excluded.avatar_preset").run(robotId,codename,avatar,avatar?'':data.avatarPreset||'');
     else if(data.avatarPreset!==undefined)db.prepare("UPDATE profiles SET avatar_url='' WHERE employee_id=?").run(robotId);
     const delta=data.balance-oldBalance;if(delta)recordLedger(robotId,delta,'管理员调整公司机器人余额');
-    log(actor.id,req.method==='POST'?'robot.create':'robot.update','company-robot',{id:robotId,codename,oldBalance,balance:data.balance});return {id:robotId,codename,balance:balanceFor(robotId)};
+    log(actor.id,req.method==='POST'?'robot.create':'robot.update','company-robot',{id:robotId,codename,purpose:db.prepare('SELECT purpose FROM company_robots WHERE employee_id=?').get(robotId).purpose,oldBalance,balance:data.balance});return {id:robotId,codename,balance:balanceFor(robotId)};
    });send(res,200,result);return true;
   }catch(e){send(res,e.status||(/UNIQUE constraint/.test(e.message)?409:400),{error:/UNIQUE constraint/.test(e.message)?'这个内网 ID已被机器人使用。':e.message});return true;}
  }};

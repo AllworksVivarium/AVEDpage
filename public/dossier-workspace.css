@@ -152,3 +152,6 @@ body dialog.dossier-editor-dialog{--popup-size:1400px;--popup-padding:0px;width:
 @media(max-width:600px){#view-containment .scp-search-control{flex-basis:100%}.dossier-reader>#scp-discussion-panel>div:first-child{align-items:start;gap:8px;flex-wrap:wrap}#scp-realname-comment-form input{min-width:0}}
 
 .dossier-optional{border-top:1px solid var(--admin-line);padding-top:14px}.dossier-optional>summary{font-size:12px;cursor:pointer}.dossier-optional[open]>summary{margin-bottom:10px}.dossier-editor-dialog [data-dossier-image-clear][hidden]{display:none!important}
+
+.dossier-base-fields .dossier-visibility-field{display:flex;align-items:center;gap:8px;grid-column:1/-1}
+.dossier-visibility-field input[type=checkbox]{width:16px;height:16px;margin:0;flex:0 0 auto}

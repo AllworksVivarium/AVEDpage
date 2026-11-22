@@ -23,7 +23,7 @@ export function installDossierImages({db,send,requireAdmin,requireEmployee}){
   if(!(playerImage?requireEmployee:requireAdmin)(req,res))return true;
   if(list){const items=listDossiers(db,{admin:true});send(res,200,{items:items.map(item=>({...dossierView(item),hasImage:item.hasImage,imageUrl:item.hasImage?'/api/admin/dossiers/'+item.id+'/image':''}))});return true;}
   if(!['GET','HEAD'].includes(req.method)){send(res,405,{error:'影像读取指令无效。'});return true;}
-  const row=db.prepare('SELECT image_data FROM dossiers WHERE id=?').get(image[1]),match=row?.image_data.match(/^data:(image\/webp);base64,(.+)$/);
+  const row=db.prepare('SELECT image_data FROM dossiers WHERE id=? AND (?=0 OR player_visible=1)').get(image[1],playerImage?1:0),match=row?.image_data.match(/^data:(image\/webp);base64,(.+)$/);
   if(!match){send(res,404,{error:'此卷宗暂无图片。'});return true;}
   const bytes=Buffer.from(match[2],'base64');res.writeHead(200,{'Content-Type':match[1],'Content-Length':bytes.length,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});res.end(req.method==='HEAD'?undefined:bytes);return true;
  }};

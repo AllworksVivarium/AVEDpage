@@ -95,3 +95,19 @@ test('two markets settle once across restart; balances, privacy, closed rounds a
  await call(1,'current');service.close();service=installDerby(deps);await call(1,'current');assert.equal(db.prepare('SELECT COUNT(*) n FROM game_tickets').get().n,3);assert.equal(deps.balanceFor(1),25750);
  assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
 });
+
+test('automatic racing companions exclude story robots without spending their balance',async t=>{
+ const db=new DatabaseSync(':memory:');db.exec(`CREATE TABLE employees(id INTEGER PRIMARY KEY,balance INTEGER);INSERT INTO employees VALUES(1,10000),(2,10000),(3,10000);
+ CREATE TABLE ledger(employee_id INTEGER,delta INTEGER);
+ CREATE TABLE game_tickets(id INTEGER PRIMARY KEY,employee_id INTEGER,game TEXT,cost INTEGER,prize INTEGER,seed TEXT,seed_hash TEXT,result_json TEXT);`);
+ const balanceFor=id=>db.prepare('SELECT balance FROM employees WHERE id=?').get(id).balance;
+ const service=installDerby({db,send:(res,status,data)=>Object.assign(res,{status,data}),readBody:async r=>r.body,requireEmployee:()=>({id:1}),sessionEmployee:()=>true,balanceFor,
+ recordLedger:(id,delta)=>{db.prepare('INSERT INTO ledger VALUES(?,?)').run(id,delta);db.prepare('UPDATE employees SET balance=balance+? WHERE id=?').run(delta,id);},
+ companyRobots:{list:()=>[{id:2,purpose:'companion',balance:balanceFor(2)},{id:3,purpose:'story',balance:balanceFor(3)}]},highlights:{roundEvent:()=>null},setTimer:()=>1,clearTimer:()=>{}});
+ t.after(()=>{service.close();db.close();});
+ const read=async()=>{const res={};await service.handle({method:'GET'},res,new URL('http://test/api/player/games/derby/current'));assert.equal(res.status,200);return res.data;};
+ const race=await read();await read();
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM derby_wagers WHERE race_id=? AND employee_id=2').get(race.round).n,1);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM derby_wagers WHERE employee_id=3').get().n,0);assert.equal(balanceFor(3),10000);assert.equal(balanceFor(2),9900);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM ledger WHERE employee_id=3').get().n,0);
+});

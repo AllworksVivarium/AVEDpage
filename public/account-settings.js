@@ -1,6 +1,8 @@
 (function(){
  function mount({api,getUser,onChange,showToast}){
-  const trigger=document.getElementById('account-settings-btn'),dialog=document.createElement('dialog');
+  const trigger=document.getElementById('account-settings-btn');
+  if(!trigger)return {close(){}};
+  const dialog=document.createElement('dialog');
   dialog.id='account-settings-dialog';dialog.className='account-settings-window';dialog.setAttribute('aria-labelledby','account-settings-title');
   dialog.innerHTML='<header><h2 id="account-settings-title">设置</h2><button type="button" data-account-close aria-label="关闭设置">×</button></header><form id="cloud-account-form"><fieldset><legend>账号设置</legend><label>登录用户名<input name="username" required maxlength="40" autocomplete="username" autocapitalize="none" spellcheck="false"></label><label>当前密码<input name="currentPassword" type="password" maxlength="1024" autocomplete="current-password" placeholder="修改用户名或密码时填写"></label><label>新密码<input name="password" type="password" minlength="6" maxlength="1024" autocomplete="new-password" placeholder="留空则不修改"></label><label data-account-confirm hidden>确认新密码<input name="passwordConfirmation" type="password" maxlength="1024" autocomplete="new-password" placeholder="修改密码时填写"></label></fieldset><p data-account-error role="alert"></p><footer><button type="submit">保存</button><button type="button" data-account-close>取消</button></footer></form>';
   document.body.append(dialog);const form=dialog.querySelector('form'),error=dialog.querySelector('[data-account-error]'),submit=form.querySelector('[type=submit]');let busy=false;

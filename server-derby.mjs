@@ -22,7 +22,7 @@ export function installDerby({db,send,readBody,requireEmployee,sessionEmployee,b
   tx(()=>{
    if(db.prepare('SELECT 1 FROM derby_robot_checks WHERE race_id=?').get(race.id))return;
    db.prepare('INSERT INTO derby_robot_checks VALUES(?)').run(race.id);
-   const candidates=companyRobots.list().filter(p=>p.balance>=100),count=Math.min(candidates.length,randomInt(2,5));
+   const candidates=companyRobots.list().filter(p=>p.purpose!=='story'&&p.balance>=100),count=Math.min(candidates.length,randomInt(2,5));
    for(let i=0;i<count;i++){
     const [robot]=candidates.splice(randomInt(candidates.length),1),market=randomInt(2)?'first':'last',runner=randomInt(5),cost=100;
     if(balanceFor(robot.id)<cost)continue;

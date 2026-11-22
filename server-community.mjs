@@ -118,8 +118,10 @@ export function installCommunity({db,send,readBody,requireEmployee,requireAdmin,
       }
       if(dossierEdit&&method==='PUT') {
         const d=await readBody(req,2500000),previous=db.prepare('SELECT * FROM dossiers WHERE id=?').get(dossierEdit[1]);if(!previous)throw Error('档案不存在。');const content=normalizeDossierContent(d,previous);d.code=normalizeDossierCode(d,previous);const image=d.imageData===undefined?undefined:await normalizeDossierImage(d.imageData);if(!valid(d.code,80)||!valid(d.title,150)||!valid(d.summary,12000))throw new Error('请填写编号、名称和档案正文。');
+        if(d.playerVisible!==undefined&&typeof d.playerVisible!=='boolean')throw Error('展示设置无效。');
+        if(d.playerVisible!==undefined&&!(previous.player_visible===0&&d.playerVisible===true)&&db.prepare('SELECT identity_kind FROM employees WHERE id=?').get(previous.employee_id)?.identity_kind!=='player_containment')throw Error('此设置仅适用于玩家收容物。');
         if(previous.employee_id&&d.title.trim().length>80)throw Error('关联账号的收容物名称最多 80 字。');
-        if(!db.prepare('UPDATE dossiers SET code=?,title=?,department=?,status=?,summary=?,image_data=COALESCE(?,image_data),classification=?,procedures=?,sections_json=?,abstract=? WHERE id=?').run(d.code.trim(),d.title.trim(),String(d.department||'').slice(0,80),String(d.status||'观察中').slice(0,80),d.summary.trim(),image??null,content.classification,content.procedures,content.sectionsJSON,content.abstract,dossierEdit[1]).changes)throw new Error('档案不存在。');send(res,200,{ok:true});return true;
+        if(!db.prepare('UPDATE dossiers SET code=?,title=?,department=?,status=?,summary=?,image_data=COALESCE(?,image_data),classification=?,procedures=?,sections_json=?,abstract=?,player_visible=? WHERE id=?').run(d.code.trim(),d.title.trim(),String(d.department||'').slice(0,80),String(d.status||'观察中').slice(0,80),d.summary.trim(),image??null,content.classification,content.procedures,content.sectionsJSON,content.abstract,d.playerVisible===undefined?previous.player_visible:Number(d.playerVisible),dossierEdit[1]).changes)throw new Error('档案不存在。');send(res,200,{ok:true});return true;
       }
       if(await life.handle(req,res,url,user))return true;
       if(path==='/api/admin/moderation'&&method==='GET') {

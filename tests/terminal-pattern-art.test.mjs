@@ -17,7 +17,7 @@ test('drafting grid is truly static while character field and phase matrix retai
  assert.deepEqual(draw('grid',0,null),draw('grid',200,{x:.2,y:.9}));
  for(const pattern of ['ascii','phase'])assert.notDeepEqual(draw(pattern,0,null),draw(pattern,2,null));
  for(const pattern of ['ascii','phase','rain','grid']){
-  const calls=draw(pattern,7,null);assert.ok(calls.some(x=>x[0]==='stop'&&x[2]==='#8b2727'));
+  const calls=draw(pattern,7,null);assert.ok(calls.some(x=>x[0]==='stop'&&x[2]===(pattern==='grid'?'#d4c6a9':'#8b2727')));
   for(const call of calls)for(const arg of call.slice(1))if(typeof arg==='number')assert.ok(Number.isFinite(arg));
  }
 });

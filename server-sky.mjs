@@ -45,7 +45,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
     db.prepare('INSERT INTO sky_companion_checks VALUES(?)').run(f.id);
     const humans=db.prepare('SELECT COUNT(*) n FROM sky_passengers s WHERE flight_id=? AND NOT EXISTS(SELECT 1 FROM company_robots r WHERE r.employee_id=s.employee_id)').get(f.id).n;
     if(humans===1){
-     const eligible=companyRobots.list().filter(r=>r.balance>=100);
+     const eligible=companyRobots.list().filter(r=>r.purpose!=='story'&&r.balance>=100);
      const count=Math.min(randomInt(1,4),eligible.length),window=Math.max(1,Math.floor(f.depart_at-now-150)),lead=Math.min(150,Math.floor(window/2));
      for(let i=0;i<count;i++){
       const robot=eligible.splice(randomInt(eligible.length),1)[0];
@@ -57,7 +57,7 @@ export function installSky({db,send,readBody,requireEmployee,sessionEmployee,bal
    for(const arrival of db.prepare(`SELECT a.employee_id FROM sky_companion_arrivals a
     WHERE a.flight_id=? AND a.board_at<=? AND NOT EXISTS(SELECT 1 FROM sky_passengers s WHERE s.flight_id=a.flight_id AND s.employee_id=a.employee_id)
     ORDER BY a.board_at`).all(f.id,now)){
-     const robot=companyRobots.list().find(r=>r.id===arrival.employee_id);
+     const robot=companyRobots.list().find(r=>r.purpose!=='story'&&r.id===arrival.employee_id);
      if(robot&&robot.balance>=100){const cost=Math.min(1000,Math.floor(robot.balance));
       recordLedger(robot.id,-cost,'共享空投登机 #'+f.id);
       db.prepare('INSERT INTO sky_passengers(flight_id,employee_id,cost) VALUES(?,?,?)').run(f.id,robot.id,cost);
