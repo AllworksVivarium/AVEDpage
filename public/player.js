@@ -497,19 +497,18 @@
           const deptDisplay = [['所属部门',emp.department&&!/^公司直属(?:部|领导)?$/.test(emp.department)?emp.department:''],['职务',emp.positionTitle],['收容分类',emp.containmentClassification]].filter(([,value])=>value).map(([label,value])=>`<div class="directory-detail-row"><dt>${label}</dt><dd>${value}</dd></div>`).join('');
 
           return `
-            <div class="retro-corner-box p-5 space-y-4">
-              <div class="flex items-center justify-between border-b-2 border-[var(--inner-border)] pb-2 text-xs font-mono-tech">
-                <span class="font-bold">A.V.E. DIRECTORATE // ID</span>
-                <span class="px-2 py-0.5 bg-[var(--inner-crimson)] text-white text-[10px] font-bold">${emp.bracketTag}</span>
+            <div class="retro-corner-box directory-personnel-card p-5 space-y-4">
+              <div class="directory-personnel-heading">
+                <span>A.V.E. DIRECTORATE // ID</span>
+                <span class="directory-personnel-role">${emp.bracketTag}</span>
               </div>
 
               <div class="grid grid-cols-2 gap-3 items-center pt-1">
-                <div class="border border-[var(--inner-border)] p-2 bg-black/5 flex flex-col items-center">
+                <div class="directory-portrait border border-[var(--inner-border)] p-2 bg-black/5 flex flex-col items-center">
                   <div data-emp-photo-slot="${emp.id}" class="w-20 h-24 bg-[#9e1b1b] flex flex-col items-center justify-end relative overflow-hidden border border-black">
                     ${emp.avatarUrl?`<img src="${esc(emp.avatarUrl)}" alt="员工证件照" class="w-full h-full object-cover">`:'<span class="avatar-noinfo">NOINFO</span>'}
-                    <span class="absolute bottom-1 text-[10px] font-mono-tech text-white/90 tracking-widest bg-black/60 px-1.5">员工档案</span>
                   </div>
-                  <div class="text-sm font-bold mt-2 font-serif-sc">${emp.name}</div>
+                  <div class="personnel-name text-sm font-bold mt-2 font-serif-sc">${emp.name}</div>
                 </div>
 
                 <div class="flex flex-col items-center">
@@ -533,6 +532,9 @@ ${emp.location?`                <dl class="directory-detail-list"><div class="di
 ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-detail-list"><div class="directory-detail-row"><dt>档案简述</dt><dd>${emp.abilityNote}</dd></div></dl>`:''}
                 ${emp.personalMessage?`<div class="directory-personal-message"><span>个人留言</span><p>${emp.personalMessage}</p></div>`:''}
               </div>
+              <footer class="directory-personnel-footer" aria-hidden="true" data-type-ignore>
+                <span>A.V.E.D.</span><small>ALLWORKS VIVARIUM</small>
+              </footer>
             </div>
           `;
         }).join('')||'<p class="p-5">暂无在册人员。</p>';

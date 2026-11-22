@@ -92,6 +92,15 @@
 #department-archive .division-roster-tools select{height:32px;max-width:100%;padding:4px 26px 4px 9px;border:1px solid var(--inner-border);background:var(--inner-card-bg);color:var(--inner-text-main);font:inherit;border-radius:0}
 
 /* Employee metadata shares the interface face and an inset label/value grid. */
+#inner-app-view #personnel-directory-grid .directory-personnel-card{position:relative;isolation:isolate;overflow:hidden}
+#inner-app-view #personnel-directory-grid .directory-personnel-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding:0 0 9px;border-bottom:.5px solid var(--inner-border);font:9px/1.5 var(--type-ui)!important;letter-spacing:.07em;color:var(--inner-text-muted)}
+#inner-app-view #personnel-directory-grid .directory-personnel-heading>span:first-child{font:italic 9px/1.5 var(--type-ui)!important;letter-spacing:.07em}
+#inner-app-view #personnel-directory-grid .directory-personnel-role{font:500 10px/1.5 var(--type-ui)!important;letter-spacing:.05em;color:var(--inner-text-main)}
+#inner-app-view #personnel-directory-grid .directory-personnel-footer{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:5px 16px;margin-top:16px;padding:9px 0 0;border-top:.5px solid var(--inner-border);color:var(--inner-text-muted);font-family:var(--type-ui)!important}
+#inner-app-view #personnel-directory-grid .directory-personnel-footer>span{font:500 11px/1.4 var(--type-ui)!important;letter-spacing:.2em;color:var(--inner-text-main)}
+#inner-app-view #personnel-directory-grid .directory-personnel-footer>small{font:8px/1.5 var(--type-ui)!important;letter-spacing:.12em}
+#inner-app-view #personnel-directory-grid .directory-portrait{border-color:var(--inner-border-soft);background:transparent;padding:12px 8px 10px;min-width:0}
+#inner-app-view #personnel-directory-grid .directory-portrait .personnel-name{width:100%;margin-top:10px;padding-top:8px;border-top:1px solid var(--inner-border-soft);text-align:center;overflow-wrap:anywhere}
 #inner-app-view #personnel-directory-grid .directory-card-details{padding:10px 12px;border:1px solid var(--inner-border-soft);font-family:var(--type-ui)!important;font-size:12px;line-height:1.75;letter-spacing:0;text-align:left}
 #inner-app-view #personnel-directory-grid .directory-detail-list{margin:0;padding:0}
 #inner-app-view #personnel-directory-grid .directory-detail-list+.directory-detail-list{margin-top:5px}
