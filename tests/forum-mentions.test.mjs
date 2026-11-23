@@ -27,6 +27,7 @@ test('mention bindings survive renames, stay private and deliver read-on-open no
  const edit=(u,kind,id,body,mentions,extra={})=>as(u,'/api/player/forum/'+kind+'/'+id,'PUT',{title:'提及验证',body,...(mentions===undefined?{}:{mentions}),...extra});
  const span=(target,start=0)=>({key:target.key,start,end:start+1+target.label.length});
  assert.equal((await request('','/api/player/forum/mentions?q=甲')).status,401);
+ assert.deepEqual(await search(author,''),{items:[],ambiguous:false},'empty mention searches never expose an employee list');
  const alias=(await search(author,'甲')).items[0],real=(await search(author,'第一实名','real')).items[0];
  assert.deepEqual(Object.keys(alias).sort(),['key','label','mode']);assert.notEqual(alias.key,real.key);assert.equal(alias.label,'甲');
  assert.equal((await search(author,'第一实名')).items.length,0);assert.equal((await search(author,'甲','real')).items.length,0);assert.equal((await search(one,'甲')).items.length,0);

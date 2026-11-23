@@ -17,7 +17,7 @@
     return state;
    }
    const panel=document.createElement('div');panel.className='forum-mention-picker';panel.hidden=true;
-   panel.innerHTML='<div class="forum-mention-modes" role="group" aria-label="提及身份"><button type="button" data-mention-mode="anonymous" aria-pressed="true">内网 ID</button><button type="button" data-mention-mode="real" aria-pressed="false">角色名</button></div><div role="listbox" aria-label="提及候选"></div><p role="status"></p>';
+   panel.innerHTML='<div class="forum-mention-modes" role="group" aria-label="提及身份"><button type="button" data-mention-mode="anonymous" aria-pressed="true">内网 ID</button><button type="button" data-mention-mode="real" aria-pressed="false">实名</button></div><div role="listbox" aria-label="提及候选"></div><p role="status"></p>';
    panel.querySelector('[role=listbox]').id='forum-mention-list-'+(++serial);(field.closest('label')||field).after(panel);
    const button=document.createElement('button');button.type='button';button.className='community-button forum-mention-trigger';button.textContent='@ 提及';button.setAttribute('aria-haspopup','listbox');
    const form=field.closest('form'),actions=form?.querySelector('.forum-compose-tools')||form?.querySelector('.forum-compose-footer,.community-actions');if(actions)actions.prepend(button);else panel.before(button);
@@ -27,9 +27,9 @@
    function sync(){s.spans=moveSpans(s.previous,field.value,s.spans);s.previous=field.value;}
    function query(){const before=field.value.slice(0,field.selectionStart),m=/(?:^|[\s（(，,。；;])@([^@\n\r]{0,32})$/u.exec(before);if(!m)return null;const start=m.index+m[0].lastIndexOf('@');if(s.spans.some(x=>x.start===start))return null;return {start,end:field.selectionStart,text:m[1]};}
    function paint(){const list=panel.querySelector('[role=listbox]');list.replaceChildren(...s.items.map((item,i)=>{const b=document.createElement('button');b.type='button';b.id=list.id+'-'+i;b.setAttribute('role','option');b.setAttribute('aria-selected',String(i===s.selected));b.textContent='@'+item.label;b.onmousedown=e=>e.preventDefault();b.onclick=()=>{if(s.query)insert(field,item,s.query.start,s.query.end);close();};return b;}));if(s.items[s.selected])field.setAttribute('aria-activedescendant',list.id+'-'+s.selected);else field.removeAttribute('aria-activedescendant');}
-   async function lookup(){clearTimeout(s.timer);sync();const q=query();if(!q){close();return;}if(openPicker!==s)openPicker?.close();openPicker=s;s.query=q;panel.hidden=false;s.items=[];s.selected=0;paint();const owner=getUser()?.id,version=++s.version;
+   async function lookup(){clearTimeout(s.timer);sync();const q=query();if(!q||!q.text.trim()){close();return;}if(openPicker!==s)openPicker?.close();openPicker=s;s.query=q;panel.hidden=false;s.items=[];s.selected=0;paint();const owner=getUser()?.id,version=++s.version;
     panel.querySelector('[role=status]').textContent='正在查找…';
-    try{const data=await api('/api/player/forum/mentions?mode='+s.mode+'&q='+encodeURIComponent(q.text));if(version!==s.version||getUser()?.id!==owner||!field.isConnected)return;s.items=data.items;paint();panel.querySelector('[role=status]').textContent=data.ambiguous?'有重名，请改用角色名或内网 ID 查找。':s.items.length?'':'未找到匹配的名字。';}
+    try{const data=await api('/api/player/forum/mentions?mode='+s.mode+'&q='+encodeURIComponent(q.text));if(version!==s.version||getUser()?.id!==owner||!field.isConnected)return;s.items=data.items;paint();panel.querySelector('[role=status]').textContent=data.ambiguous?'有重名，请改用实名或内网 ID 查找。':s.items.length?'':'未找到匹配的名字。';}
     catch(error){if(version===s.version)panel.querySelector('[role=status]').textContent=error.message;}
    }
    field.addEventListener('input',e=>{sync();clearTimeout(s.timer);s.version++;if(!e.isComposing)s.timer=setTimeout(lookup,180);});

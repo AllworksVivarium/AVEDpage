@@ -40,9 +40,10 @@ export function installForumMentions(db,{nameSQL}={}){
  return {
   search(viewer,q,mode){
    if(!['anonymous','real'].includes(mode)||typeof q!=='string'||q.length>32)throw Error('提及检索条件无效。');
+   q=q.trim();if(!q)return {items:[],ambiguous:false};
    const field=mode==='real'?'e.display_name':'p.anonymous_name';
    const rows=db.prepare(`SELECT e.id,${field} AS label,(SELECT COUNT(*) FROM employees other LEFT JOIN profiles op ON op.employee_id=other.id WHERE other.enabled=1 AND other.is_npc=0 AND ${mode==='real'?'other.display_name':'op.anonymous_name'}=${field} COLLATE NOCASE) AS duplicates
-    FROM employees e JOIN profiles p ON p.employee_id=e.id WHERE e.enabled=1 AND e.is_npc=0 AND e.id<>? AND ${field}<>'' AND instr(lower(${field}),lower(?))>0 ORDER BY CASE WHEN ${field}=? THEN 0 ELSE 1 END,${field},e.id LIMIT 12`).all(viewer,q.trim(),q.trim());
+    FROM employees e JOIN profiles p ON p.employee_id=e.id WHERE e.enabled=1 AND e.is_npc=0 AND e.id<>? AND ${field}<>'' AND instr(lower(${field}),lower(?))>0 ORDER BY CASE WHEN ${field}=? THEN 0 ELSE 1 END,${field},e.id LIMIT 8`).all(viewer,q,q);
    return {items:rows.filter(r=>r.duplicates===1).map(r=>target(r.id,mode,r.label)),ambiguous:rows.some(r=>r.duplicates>1)};
   },
   prepare(body,spans=[]){
