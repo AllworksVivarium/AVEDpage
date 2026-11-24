@@ -30,7 +30,7 @@ window.AVEDCardRoomLobby=function({api,esc,getUser,cardTable,openTable}){
   root.querySelector('[data-room-list]').innerHTML=items.map(room=>{
    const own=current?.id===room.id,phase=room.canJoin?'等待入座':room.phase==='waiting'||room.phase==='ended'?'已坐满':'对局中';
    return '<article><div><strong>'+esc(room.hostName)+'的牌桌</strong><small>'+room.size+' 人桌 底注 '+(room.base||100)+' '+phase+'</small></div><span>'+room.players+' / '+room.size+'</span><button type="button" data-room-id="'+esc(room.id)+'" '+(!own&&(busy||current||!room.canJoin)?'disabled':'')+'>'+(own?'返回':'入座')+'</button><button type="button" data-room-watch="'+esc(room.id)+'" '+(current||busy?'disabled':'')+'>旁观</button></article>';
-  }).join('')||'<p class="card-room-empty ui-help-note">暂无员工牌桌，开一桌等同事入座。</p>';
+  }).join('')||'<p class="card-room-empty ui-help-note">暂无员工牌桌。</p>';
  }}
  async function refresh(force=false){
   if(!visible())return;if(inflight)return inflight;if(!force&&Date.now()-lastFetch<15000&&owner===getUser().id)return;

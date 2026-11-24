@@ -117,7 +117,7 @@
  function mount(panel,visible){
   const doc=root.document,reduced=root.matchMedia('(prefers-reduced-motion: reduce)'),shell=panel;
   // Walk text nodes so links, buttons, nested formatting, and listeners stay in place.
-  const excluded='script,style,noscript,textarea,input,select,option,svg,canvas,iframe,[contenteditable],.pollution-dialog,[inert],#signal-Connecting-overlay,#landing-view,#login-modal,[data-hud-typed],[data-hud-console],.hud-corruption-run,.haunt-label,.haunt-transient,[data-contamination-exempt]';
+  const excluded='#inner-app-view > header,script,style,noscript,textarea,input,select,option,svg,canvas,iframe,[contenteditable],.pollution-dialog,[inert],#signal-Connecting-overlay,#landing-view,#login-modal,[data-hud-typed],[data-hud-console],.hud-corruption-run,.haunt-label,.haunt-transient,[data-contamination-exempt]';
   // SourceGraphic displaces the existing instrument pixels; this SVG defines a filter and paints no content.
   // Reference: https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/Filters
   const filterId='hud-source-displace-'+(++mountId),svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -236,7 +236,7 @@
     const rect=parent.getBoundingClientRect();
     if(!rect.width||!rect.height||rect.bottom<=0||rect.top>=root.innerHeight||rect.right<=0||rect.left>=root.innerWidth)continue;
     const style=root.getComputedStyle(parent);if(style.visibility==='hidden'||style.display==='none')continue;
-    if(parent.closest('#inner-app-view > header,.bar-header')){headingCandidates.push(node);continue;}
+    if(parent.closest('.bar-header')){headingCandidates.push(node);continue;}
     const size=parseFloat(style.fontSize)||14;
     const small=size<12||parent.closest('small,.ui-help-note,.hint,.hud-key-en,.hud-micro-label');
     const main=!small&&(parent.closest('h1,h2,h3,h4,h5,h6,[role=heading],p,blockquote')||size>=16||text.trim().length>=16);

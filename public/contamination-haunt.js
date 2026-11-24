@@ -77,9 +77,9 @@
  function leaveText(text,rect){if(!allowed())return;const chars=Array.from(text),el=transient('haunt-dialog-residue',text,rect);if(!el)return;const hold=550+Math.random()*350;for(let n=1;n<=Math.ceil(chars.length/2);n++)later(()=>{el.textContent=chars.slice(n,chars.length-n).join('');if(n===Math.ceil(chars.length/2))remove(el);},hold+n*45);}
  function whisperResidue(overlay){
   if(!allowed())return;const rect=overlay.getBoundingClientRect(),style=root.getComputedStyle(overlay),el=transient('haunt-whisper-residue',overlay.textContent,rect);if(!el)return;
-  el.dataset.contaminationExempt='';el.dataset.typeIgnore='';el.style.font=style.font;el.style.lineHeight=style.lineHeight;el.style.letterSpacing=style.letterSpacing;
+  el.dataset.contaminationExempt='';el.dataset.typeIgnore='';el.style.fontFamily=style.fontFamily;el.style.fontSize=style.fontSize;el.style.fontWeight=style.fontWeight;el.style.lineHeight=style.lineHeight;el.style.letterSpacing=style.letterSpacing;
   const hold=1300+Math.random()*1300,linger=Math.random()<.55,fade=850+Math.random()*500;
-  for(let n=1;n<=12;n++)later(()=>{const progress=n/12,inset=progress*(linger?36:50);el.style.clipPath='inset(0 '+inset+'%)';el.style.opacity=String(.62-progress*(linger?.22:.55));if(n===12){if(linger)later(()=>remove(el),650+Math.random()*650);else remove(el);}},hold+fade*n/12);
+  for(let n=1;n<=12;n++)later(()=>{const progress=n/12,inset=progress*(linger?36:50);el.style.opacity=String(Math.max(0,.62-progress*(linger?.22:.62)));if(n===12){if(linger)later(()=>remove(el),650+Math.random()*650);else remove(el);}},hold+fade*n/12);
  }
  function restoreLabel(el,echo=false){const state=labels.get(el);if(!state)return;if(echo&&el.isConnected&&visible(el))whisperResidue(state.overlay);remove(state.overlay);if(el.firstChild===state.run)el.replaceChildren(...state.nodes);if(!allowed())for(const span of el.querySelectorAll('.hud-ambient-shear'))span.replaceWith(...span.childNodes);el.classList.remove('haunt-label');labels.delete(el);}
  function positionWhisper(el,state){if(!el.isConnected||!visible(el)){restoreLabel(el);return;}const rect=el.getBoundingClientRect();state.overlay.style.left=rect.left+'px';state.overlay.style.top=rect.top+'px';}

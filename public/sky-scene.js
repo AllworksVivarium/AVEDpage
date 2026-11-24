@@ -20,31 +20,41 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   else{text('NOINFO',x+size/2,y+size*.62,'#243645',Math.max(2,size*.19));}
  }
  function cloud(x,y,size,alpha){c.save();c.globalAlpha=alpha;rect(x,y+4,size,6,'#fff0df');rect(x+size*.2,y,size*.35,13,'#fff0df');rect(x+size*.58,y+2,size*.22,9,'#fff0df');rect(x+4,y+10,size-8,3,'#dac9d6');c.restore();}
- function helicopter(x,y,scale,passengers,time,animated){
+ function helicopter(x,y,scale,passengers,time,animated,selfId=null){
   c.save();c.translate(Math.round(x),Math.round(y));c.scale(scale,scale);
   rect(42,28,154,56,'#152e3b');rect(38,38,172,37,'#152e3b');rect(46,25,120,3,'#152e3b');
   rect(48,30,123,46,'#d6dfbf');rect(48,72,141,8,'#829e90');rect(44,36,7,36,'#8aa79a');
   rect(169,35,23,34,'#e4dfb7');rect(192,44,10,23,'#e4dfb7');rect(174,39,17,23,'#3f6a7b');rect(191,46,8,16,'#3f6a7b');rect(176,41,5,17,'#87a8ac');
   rect(7,47,37,10,'#152e3b');rect(10,48,34,6,'#9db3a1');rect(5,33,9,24,'#152e3b');rect(7,35,5,14,'#d6dfbf');
+  const tailSpin=animated?Math.floor(time/70)%2:0;rect(tailSpin?3:7,tailSpin?41:36,tailSpin?11:2,tailSpin?2:12,'#eff0cc');
+  if(animated){for(let e=0;e<3;e++){const ep=((time/380+e*.33)%1);c.globalAlpha=(1-ep)*.45;rect(42-ep*18,29-ep*7+Math.sin(ep*5)*2,3,3,'#d6dfbf');}c.globalAlpha=1;}
   rect(99,12,5,15,'#172f3b');rect(79,21,46,6,'#536e67');rect(99,8,6,4,'#ebcf8c');
   const rotor=animated?Math.sin(time/55):1;rect(102-96*Math.abs(rotor),10,192*Math.abs(rotor)+3,3,'#eff0cc');rect(99,6,6,11,'#304c52');
   rect(52,81,5,10,'#172f3b');rect(177,81,5,10,'#172f3b');rect(39,91,155,4,'#172f3b');rect(35,87,5,7,'#172f3b');
   rect(48,66,10,4,'#b55d4d');rect(194,67,4,4,'#e2a976');
-  const seats=8;for(let i=0;i<seats;i++){const sx=64+(i%4)*24,sy=34+Math.floor(i/4)*20;rect(sx-2,sy-1,20,19,'#69867d');rect(sx,sy,16,16,'#354d51');if(passengers[i])avatar(passengers[i],sx+1,sy+1,14);else{text('+',sx+8,sy+12,'#8ba39b',12);}}
+  rect(56,36,108,28,'#354d51');rect(54,34,112,2,'#69867d');rect(54,64,112,2,'#69867d');
+  const crew=passengers.slice(0,16),n=crew.length;
+  if(n){
+   const step=n<=5?20:Math.max(5,Math.floor(88/(n-1)));
+   const startX=60+Math.max(0,Math.floor((96-(step*(n-1)+16))/2));
+   const ordered=crew.map((p,idx)=>({p,idx})).sort((a,b)=>Number(a.p.id===selfId)-Number(b.p.id===selfId));
+   for(const {p,idx} of ordered){const sx=startX+idx*step,sy=42;avatar(p,sx,sy,16);if(p.id===selfId){c.strokeStyle='#ffcd7f';c.strokeRect(sx-1,sy-1,18,18);}}
+  }
   text('A V E D',120,85,'#102e38',6);
   c.restore();
  }
  function person(p,x,y,chute,self,time,animated,grounded=false){
   c.save();c.translate(Math.round(x),y);const color=colors[p.id%colors.length];
   if(chute&&!grounded){
-   c.save();const opening=animated?ease((time-p.settledAt)/450):1;c.translate(0,-7);c.scale(.25+.75*opening,.18+.82*opening);c.translate(0,7);
+   c.save();const age=Math.max(0,time-p.settledAt),raw=Math.min(1,age/420),opening=animated?(raw<.7?ease(raw/.7)*1.08:1.08-.08*ease((raw-.7)/.3)):1,sway=animated?Math.sin(time/520+p.id)*.09:0;c.translate(0,-7);c.rotate(sway);c.scale(.22+.78*opening,.18+.82*opening);c.translate(0,7);
    rect(-19,-32,38,7,'#18333e');rect(-15,-38,30,7,'#18333e');rect(-9,-42,18,5,'#18333e');
    rect(-17,-32,34,5,color);rect(-13,-37,26,6,color);rect(-8,-40,16,5,color);rect(-4,-39,8,12,'#f7e8bb');rect(-16,-26,8,2,'#e7ddc5');rect(8,-26,8,2,'#e7ddc5');
    c.strokeStyle='#e9ddc6';c.lineWidth=1;c.beginPath();c.moveTo(-17,-25);c.lineTo(-3,-7);c.moveTo(17,-25);c.lineTo(3,-7);c.moveTo(-7,-25);c.lineTo(-1,-7);c.moveTo(7,-25);c.lineTo(1,-7);c.stroke();c.restore();
   }
   avatar(p,-8,-8,16);
   if(self){c.strokeStyle='#ffcd7f';c.strokeRect(-10,-10,20,20);label('ui:self','▼ YOU',x,y+(chute&&!grounded?-56:-25),'flight-scene-label flight-scene-label-self');}
-  nameplate(p,x,y);if(labels.get(p.id))labels.get(p.id).style.zIndex=self?'3':'1';
+  if(grounded&&animated&&time-p.settledAt<1400){for(let d=0;d<4;d++){const dp=((time/260+d*.25)%1);c.globalAlpha=(1-dp)*.5;rect((d<2?-1:1)*(6+dp*8),6-dp*3,2,2,'#d5cfb0');}c.globalAlpha=1;}
+  nameplate(p,x,y);if(labels.get(p.id))labels.get(p.id).style.zIndex=self?'5':'1';
   c.restore();
  }
  function ground(t){
@@ -81,7 +91,7 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   c=backdrop;c.drawImage(skyCache,0,0);c.fillStyle='rgba(18,36,58,'+(dark*.45)+')';c.fillRect(0,0,w,h);
   // Scenery is visual only; wind tracks the falling camera, never the hidden safety line.
   for(let i=0;i<12;i++){const x=35+((i*53)%Math.max(20,w-35)),size=18+i%4*8,travel=animated?(board?now/5000:state.departAt/5000+air.travel*.12):0;const y=((i*47-travel)%(h+55)+h+55)%(h+55)-20;cloud(x,y,size,.14+(i%3)*.08);}
-  if(!board){c.globalAlpha=.18*ease((now-state.departAt)/1800)*(landing?1-ease(elapsed/800):1);for(let i=0;i<13;i++){const x=40+i*31%(w-45),y=((i*61-(animated?air.travel:0))%h+h)%h;rect(x,y,1,7+i%3*5+Math.min(18,air.speed/18),'#f2e3d8');}c.globalAlpha=1;}
+  if(!board){const fade=ease((now-state.departAt)/1800)*(landing?1-ease(elapsed/800):1);c.globalAlpha=.14*fade;for(let i=0;i<12;i++){const x=44+i*29%(w-50),y=((i*53-(animated?air.travel*.65:0))%h+h)%h;rect(x,y,1,5+i%3*4,'#d9e8ef');}c.globalAlpha=.24*fade;for(let i=0;i<14;i++){const x=40+i*31%(w-45),y=((i*61-(animated?air.travel*1.25:0))%h+h)%h;rect(x,y,1,8+i%3*5+Math.min(20,air.speed/16),'#f2e3d8');}c.globalAlpha=1;}
   // Fixed-size cached city + runway. Move the whole plane; never grow buildings.
   if(terrainNight!==night){
    c=terrainContext;c.clearRect(0,0,w,h);terrainNight=night;
@@ -104,15 +114,16 @@ window.AVEDSkyScene=function(canvas,labelLayer){
   const approach=landing?ease(elapsed/650):0,offset=110*(1-approach);
   terrain.style.transform='translate3d(0,'+(offset*displayHeight/h)+'px,0)';terrain.style.opacity=String(approach*.9);
   runway.style.transform='translate3d(0,'+(offset*displayHeight/h)+'px,0)';runway.style.opacity=String(approach);
+  if(landing&&animated&&approach>.5){const activeLight=Math.floor(t/180)%8;c=actorContext;for(let i=0;i<8;i++){const lx=34+i*(w-35)/8;if(i===activeLight||i===(activeLight+4)%8)rect(lx-1,h-31,5,4,'#fff4be');}}
   c=actorContext;
   const selected=[...state.passengers];if(selected.length>24){const own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];}
   if(board){
-   const s=Math.min(1.1,(w-38)/220),x=(w-220*s)/2+14,y=h*.52-50*s+(animated?Math.sin(t/700)*2:0);helicopter(x,y,s,state.passengers.slice(0,8),t,animated);
+   const s=Math.min(1.1,(w-38)/220),x=(w-220*s)/2+14,y=h*.52-50*s+(animated?Math.sin(t/700)*2:0);helicopter(x,y,s,selected,t,animated,selfId);
    label('ui:passengers',selected.length+' 人入座',w*.56,h*.89-7,'flight-scene-label flight-scene-label-manifest');
   }else{
    const departElapsed=now-state.departAt;
    const heliScale=Math.min(1.1,(w-38)/220),heliX=(w-220*heliScale)/2+14,heliY=h*.52-50*heliScale;
-   if(departElapsed<2400){const k=ease(departElapsed/2400);helicopter(heliX+k*30,heliY-k*(h*.75+70),heliScale,departElapsed<180?state.passengers.slice(0,8):[],t,animated);}
+   if(departElapsed<2400){const k=ease(departElapsed/2400);helicopter(heliX+k*30,heliY-k*(h*.75+70),heliScale,departElapsed<180?selected:[],t,animated,selfId);}
    const drawOrder=window.AVEDSkyScene.fallLayout(selected,selfId,w,h);
    for(const {p,i,x,startY} of drawOrder){
     let y=startY,actorX=x,chute=p.status==='landed',grounded=false;
@@ -167,4 +178,4 @@ window.AVEDSkyScene.airMotion=function(state,now){
  return {travel:reveal.travel+reveal.speed*.28*(1-decay),speed:reveal.speed*decay};
 };
 
-window.AVEDSkyScene.fallLayout=function(passengers,selfId,width,height){const selected=[...passengers],own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];const shown=selected.slice(0,24),columns=Math.min(8,Math.max(1,shown.length)),rows=Math.ceil(shown.length/columns);return shown.map((p,i)=>({p,i,x:48+(i%columns+.5)*(width-53)/columns,startY:height*.60+(Math.floor(i/columns)-(rows-1)/2)*Math.min(43,height*.30/Math.max(1,rows-1))})).sort((a,b)=>Number(a.p.id===selfId)-Number(b.p.id===selfId));};
+window.AVEDSkyScene.fallLayout=function(passengers,selfId,width,height){const selected=[...passengers],own=selected.findIndex(p=>p.id===selfId);if(own>=24)[selected[0],selected[own]]=[selected[own],selected[0]];const shown=selected.slice(0,24),n=Math.max(1,shown.length),left=58,right=Math.max(left+20,width-24),span=right-left;return shown.map((p,i)=>({p,i,x:n===1?left+span/2:left+(i/(n-1))*span,startY:height*.62})).sort((a,b)=>Number(a.p.id===selfId)-Number(b.p.id===selfId));};

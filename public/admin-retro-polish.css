@@ -1,0 +1,229 @@
+@layer aved-admin-override {
+/* Admin Terminal Retro-Modernist Polish
+   Distilled from Anthropic frontend-design, Leonxlnx taste-skill, and
+   madebymustafa design-taste:
+   - Crisp 1px instrument borders & strict 0px radius on working dashboard
+   - Upright Chinese UI typography (removes fake-oblique italic on CJK notes)
+   - Clear Primary (Save/Submit) vs Secondary vs Danger (Red) hierarchy
+   - Consistent 38px control heights, readable max-width, sticky table headers
+   - Works seamlessly across all 3 admin themes (black, beige, sage) */
+
+html[data-admin-theme] body .dashboard.admin-mode,
+html[data-admin-theme] body .admin-dialog {
+  --admin-stroke: 1px;
+  --admin-fs-xs: 12px;
+  --admin-fs-sm: 13px;
+  --admin-fs-base: 14px;
+  --admin-fs-lg: 16px;
+  --admin-fs-xl: 20px;
+}
+
+/* 1. Strict 0px radius & crisp 1px borders on working dashboard (keeps CRT entry intact) */
+html[data-admin-theme] body .dashboard.admin-mode *,
+html[data-admin-theme] body .admin-dialog,
+html[data-admin-theme] body .admin-dialog * {
+  border-radius: 0 !important;
+}
+
+/* 2. Typography discipline: kill fake-oblique italic on Chinese help/meta copy */
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  .ui-help-note,
+  .bar-music-help,
+  .dossier-effects-help,
+  .personnel-kind-note,
+  .section-heading p,
+  .company-robots-panel > p,
+  .employee-attributes-fields > p,
+  .dossier-section-editor > small,
+  .dossier-image-editor > small,
+  [data-life-support] > p,
+  #panel > p:not([role])
+) {
+  font-style: normal !important;
+  font-size: var(--admin-fs-xs) !important;
+  line-height: 1.65 !important;
+  color: var(--admin-muted) !important;
+}
+
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  td,
+  time,
+  .admin-count,
+  .hash-cell,
+  .audit-identity,
+  input[type="number"]
+) {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* 3. Workspace alignment & readable measure on wide screens */
+html[data-admin-theme] body .dashboard.admin-mode .portal-main {
+  min-width: 0;
+}
+html[data-admin-theme] body .dashboard.admin-mode #panel {
+  max-width: 1180px;
+  margin-inline: auto;
+  padding-top: 18px !important;
+  padding-bottom: 28px !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode #panel > * {
+  animation: none !important;
+}
+
+/* 4. Header & Navigation Tabs: unmistakable active state */
+html[data-admin-theme] body .dashboard.admin-mode .app-header {
+  border-bottom: 1px solid var(--admin-line) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode .sidebar .tab {
+  min-height: 42px !important;
+  padding: 9px 10px !important;
+  font-size: var(--admin-fs-sm) !important;
+  font-weight: 600 !important;
+  border-width: 1px !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode .sidebar .tab.active {
+  background: var(--admin-input) !important;
+  color: var(--admin-ink) !important;
+  border-color: var(--admin-ink) !important;
+  box-shadow: inset 0 3px 0 var(--admin-red) !important;
+  font-weight: 700 !important;
+}
+@media (min-width: 900px) {
+  html[data-admin-theme] body .dashboard.admin-mode .sidebar .tab.active {
+    box-shadow: inset 3px 0 0 var(--admin-red) !important;
+  }
+}
+
+/* 5. Action Hierarchy: Primary (Save/Submit) vs Secondary vs Danger (Red) */
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  button[type="submit"]:not(.danger),
+  .primary:not(.danger)
+),
+html[data-admin-theme] body .admin-dialog button[type="submit"]:not(.danger) {
+  background: var(--admin-ink) !important;
+  color: var(--admin-bg) !important;
+  border: 1px solid var(--admin-ink) !important;
+  font-weight: 700 !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  button[type="submit"]:not(.danger),
+  .primary:not(.danger)
+):not(:disabled):hover,
+html[data-admin-theme] body .admin-dialog button[type="submit"]:not(.danger):not(:disabled):hover {
+  filter: brightness(0.92);
+}
+
+/* 6. Uniform control heights & equal-width form fields */
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select
+),
+html[data-admin-theme] body .admin-dialog :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select
+) {
+  min-height: 38px !important;
+  padding: 7px 10px !important;
+  border-width: 1px !important;
+  font-size: var(--admin-fs-base) !important;
+  box-sizing: border-box !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode :is(
+  .small-action,
+  .primary,
+  .danger,
+  .logout,
+  .admin-theme-toggle,
+  .admin-open-dialog,
+  .moderation-actions button,
+  .roster-departments button,
+  .employee-registration-tabs button,
+  .employee-import-actions button,
+  .life-tag-actions button,
+  button[type="submit"]
+),
+html[data-admin-theme] body .admin-dialog :is(.small-action, .primary, .danger, button[type="submit"]) {
+  min-height: 38px !important;
+  padding: 7px 14px !important;
+  font-size: var(--admin-fs-sm) !important;
+  line-height: 1.4 !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode .admin-form,
+html[data-admin-theme] body .dashboard.admin-mode .admin-post,
+html[data-admin-theme] body .dashboard.admin-mode .notice-box {
+  padding: 16px !important;
+  border-width: 1px !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode .admin-post + .admin-post {
+  margin-top: 12px !important;
+}
+
+/* 7. Tables: sticky headers, crisp horizontal rules, gentle row hover */
+html[data-admin-theme] body .dashboard.admin-mode :is(.table-wrap, .employee-roster) {
+  border: 1px solid var(--admin-line) !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode :is(.table-wrap, .employee-roster) thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--admin-input) !important;
+  color: var(--admin-ink) !important;
+  font-size: var(--admin-fs-xs) !important;
+  font-weight: 700 !important;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-line) !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode :is(.table-wrap, .employee-roster) tbody tr:hover {
+  background: color-mix(in srgb, var(--admin-ink) 5%, transparent) !important;
+}
+
+/* 8. Dialogs: flush full-width form controls & clean header/footer spacing */
+html[data-admin-theme] body .admin-dialog > header {
+  padding: 10px 14px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 2px solid var(--admin-line) !important;
+}
+html[data-admin-theme] body .admin-dialog .admin-dialog-body {
+  padding: 16px !important;
+}
+html[data-admin-theme] body .admin-dialog :is(.employee-edit-form, .community-form) {
+  display: grid;
+  gap: 12px;
+}
+
+/* 9. Mobile ergonomics (<= 640px) */
+@media (max-width: 640px) {
+  html[data-admin-theme] body .dashboard.admin-mode .admin-form,
+  html[data-admin-theme] body .dashboard.admin-mode .admin-post,
+  html[data-admin-theme] body .dashboard.admin-mode .notice-box {
+    padding: 12px !important;
+  }
+  html[data-admin-theme] body .dashboard.admin-mode .moderation-actions {
+    flex-direction: column;
+  }
+  html[data-admin-theme] body .dashboard.admin-mode .admin-forum-category-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+/* 10. Cassette Futurism Instrument Panel & Mechanical Keycap Unity */
+html[data-admin-theme] body .dashboard.admin-mode :is(.admin-form, .admin-post, .employee-registration, .admin-forum-categories) {
+  border-top: 2px solid var(--admin-line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 2px 2px 0 rgba(0, 0, 0, 0.16) !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode .section-heading {
+  border-bottom: 3px double var(--admin-line) !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 14px !important;
+}
+html[data-admin-theme] body .dashboard.admin-mode :is(button[type="submit"]:not(.danger), .primary:not(.danger)),
+html[data-admin-theme] body .admin-dialog button[type="submit"]:not(.danger) {
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.3), 2px 2px 0 rgba(0, 0, 0, 0.25) !important;
+}
+html[data-admin-theme] body:not(.effects-off) .dashboard.admin-mode :is(button[type="submit"]:not(.danger), .primary:not(.danger)):not(:disabled):active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+}

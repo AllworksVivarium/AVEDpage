@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-entry-state="checking">
 <head>
+  <style>@layer aved-retro-override;</style>
   <meta charset="UTF-8">
   <style>@layer aved-pollution;</style>
   <link rel="preload" as="image" href="/assets/entrance-clean.1cb8cb71ca1d.webp" fetchpriority="high">
@@ -416,7 +417,7 @@
   <link rel="stylesheet" href="/ui-help-notes.css?v=editorial-type-20261120">
   <link rel="stylesheet" href="/sound-settings.css?v=profile-account-20261122">
   <link rel="stylesheet" href="/department-archive.css?v=personnel-rules-20261123">
-  <script src="/department-archive.js?v=containment-card-20261122" defer></script>
+  <script src="/department-archive.js?v=retro-polish-20261124r" defer></script>
   <link rel="stylesheet" href="/gateway-effects.css?v=stable-wordmark-20261121">
 </head>
 <body class="theme-landing crt-scanlines min-h-screen flex flex-col">
@@ -946,32 +947,26 @@
           <!-- 论坛列表页 -->
           <div id="forum-list-subview" class="space-y-5">
             <!-- 发起新匿名主题帖表单（已将上传图片合并为唯一的单一交互按钮，隐藏原生丑陋的“选择文件”控件） -->
-            <form id="new-forum-topic-form" class="retro-corner-box forum-compose p-5 space-y-3 font-mono-tech">
-              <div class="text-xs font-bold flex flex-wrap items-center justify-between gap-2">
+            <form id="new-forum-topic-form" class="retro-corner-box forum-compose p-5 space-y-3">
+              <div class="forum-compose-header">
                 <span>发起新主题帖</span>
-
               </div>
-              <div class="forum-compose-title-row">
+              <div class="forum-compose-meta-row">
+                <label class="forum-category-choice"><span>分类</span><select name="categoryId" id="new-topic-category" required disabled></select></label>
                 <input id="new-topic-title" type="text" placeholder="输入帖子标题..." maxlength="120" required
-                  class="sm:col-span-2 px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs">
-                <button type="submit" class="press-cta inner-btn-primary py-2 px-4 font-bold text-xs cursor-pointer">
-                  发布
-                </button>
+                  class="px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black">
               </div>
-              <label class="forum-category-choice">所属分类<select name="categoryId" id="new-topic-category" required disabled></select></label>
-              <textarea id="new-topic-content" rows="4" maxlength="3000" placeholder="在此输入正文内容..." required
-                class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black text-xs"></textarea>
-
-              <p class="forum-upload-note ui-help-note">附图需审核。</p>
-              <!-- 单一合并的图片上传交互按钮 -->
-              <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-                <div class="flex items-center gap-3">
+              <textarea id="new-topic-content" rows="5" maxlength="3000" placeholder="输入正文内容..." required
+                class="w-full px-3 py-2 border border-[var(--inner-border-soft)] bg-white text-black"></textarea>
+              <div class="forum-compose-footer">
+                <div class="forum-compose-tools">
                   <input id="new-topic-image-input" type="file" accept="image/*" class="hidden">
                   <button type="button" data-forum-emoji-target="new-topic-content" aria-haspopup="dialog" aria-controls="forum-emoji-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M8 8v2m8-2v2M7 14q5 6 10 0"/></svg>表情</button>
-                  <button id="new-topic-upload-trigger-btn" type="button" class="px-3.5 py-1.5 inner-card-alt hover:bg-[var(--inner-accent)] hover:text-[var(--inner-accent-text)] font-bold cursor-pointer transition">
-                    上传图片（需审核）
-                  </button>
+                  <button id="new-topic-upload-trigger-btn" type="button" class="inner-card-alt cursor-pointer">上传图片（需审核）</button>
                   <span id="new-topic-image-hint" class="forum-image-filename ui-help-note"></span>
+                </div>
+                <div class="forum-compose-send">
+                  <button type="submit" class="press-cta inner-btn-primary cursor-pointer">发布帖子</button>
                 </div>
               </div>
             </form>
@@ -1121,7 +1116,7 @@
                         </thead>
                         <tbody id="slot5x3-paytable-body" class="divide-y divide-[var(--inner-border-soft)]"></tbody>
                       </table>
-                      <p class="text-[11px] opacity-70 mt-2">选择投入后启动回路。沿任一轨迹从最左轮连中相同信标，即可获奖；奖金包含本金。</p>
+                      <p class="text-[11px] opacity-70 mt-2">沿任一轨迹从最左轮连中相同信标即可获奖，奖金含本金。</p>
                     </div>
 
                     <div class="md:col-span-5 space-y-4">
@@ -1141,7 +1136,7 @@
                           <span class="font-bold">隐藏收容协议录</span>
                           <span id="slot5x3-mechanisms-count" class="font-mono-tech opacity-75">已识别 0/3</span>
                         </div>
-                        <p class="text-[11px] opacity-75">触发隐藏协议，领取额外津贴。</p>
+                        
                         <div id="slot5x3-mechanisms-list" class="space-y-1.5 text-xs font-mono-tech"></div>
                       </div>
                     </div>
@@ -1285,7 +1280,7 @@
   <script src="/http-client.js?v=network-input-20261110" defer></script>
   <script src="/game-clock.js?v=bounded-network-20261110" defer></script>
   <script src="/terminal-time.js?v=notices-1" defer></script>
-  <script src="/notices-ui.js?v=notice-restore-20261120" defer></script>
+  <script src="/notices-ui.js?v=retro-polish-20261124r" defer></script>
   <script src="/market-chart.js?v=interaction-polish-20261120" defer></script>
   <script src="/market-atmosphere.js?v=copy-20261116" defer></script>
   <link rel="stylesheet" href="/market-atmosphere.css?v=wire-5min-small-1">
@@ -1318,9 +1313,9 @@
 <script src="/scratch-bomb-demo.js?v=twelve-floors-20261119" defer></script>
 <script src="/scratch-feedback.js?v=interaction-polish-20261120" defer></script>
   <script src="/currency-symbol.js?v=currency-pig-salute-20261118" defer></script>
-  <script src="/sky-scene.js?v=tax-achievements-20261111" defer></script>
+  <script src="/sky-scene.js?v=retro-polish-20261124r" defer></script>
   <script src="/sky-rules.js?v=uncapped-2" defer></script>
-<script src="/sky-ui.js?v=interaction-polish-20261120" defer></script>
+<script src="/sky-ui.js?v=retro-polish-20261124r" defer></script>
   <script src="/stock-risk-notice.js?v=dismissible-1" defer></script>
   <script src="/economy-ui.js?v=interaction-polish-20261120" defer></script>
   <script src="/ranking-pixel-art.js?v=6" defer></script>
@@ -1329,16 +1324,16 @@
   <script src="/begging-ui.js?v=reward-details-20261119" defer></script>
   <script src="/welfare-ui.js?v=begging-once-amount-20261119" defer></script>
   <script src="/visual-style.js?v=steady-progress-20261122" defer></script>
-  <script src="/interface-contamination.js?v=repeat-exit-confirm-20261118" defer></script>
-  <script src="/contamination-haunt.js?v=beer-foam-pour-20261118" defer></script>
+  <script src="/interface-contamination.js?v=retro-polish-20261124r" defer></script>
+  <script src="/contamination-haunt.js?v=retro-polish-20261124r" defer></script>
   <script src="/contamination-presence.js?v=away-frequency-20261117" defer></script>
   <script src="/containment-access.js?v=steady-progress-20261122" defer></script>
   <script src="/attribute-radar.js?v=overflow-20261122" defer></script>
-<script src="/personal-hud.js?v=profile-account-20261122" defer></script>
+<script src="/personal-hud.js?v=retro-polish-20261124r" defer></script>
 <script src="/rewards-ui.js?v=reward-toasts-no-stamp-20261118" defer></script>
 <link rel="stylesheet" href="/derby-pixel.css?v=animal-habits-16">
-<script src="/derby-scene.js?v=casual-race-20261113" defer></script>
-<script src="/derby-ui.js?v=interaction-polish-20261120" defer></script>
+<script src="/derby-scene.js?v=retro-polish-20261124r" defer></script>
+<script src="/derby-ui.js?v=retro-polish-20261124r" defer></script>
 <script src="/interaction-motion.js?v=performance-audit-20261117" defer></script>
 <script src="/archive-board.js?v=linked-containment-dossiers-20261118" defer></script>
 <script src="/player-session.js?v=session-return-20261119" defer></script>
@@ -1355,7 +1350,7 @@
 <script src="/card-reactions.js?v=interaction-polish-20261120" defer></script>
 <script src="/card-feedback.js?v=interaction-polish-20261120" defer></script>
 <script src="/ddz-ui.js?v=interaction-polish-20261120" defer></script>
-<script src="/card-room-lobby.js?v=interaction-polish-20261120" defer></script>
+<script src="/card-room-lobby.js?v=retro-polish-20261124r" defer></script>
 <link rel="stylesheet" href="/slot-effects.css?v=award-coin-size-20261113">
 <script src="/slot-effects.js?v=shared-slot-confetti-20261119" defer></script>
 <script src="/dossier-content.js?v=editorial-type-20261120" defer></script>
@@ -1386,7 +1381,7 @@
 <script src="/payroll-notices.js?v=unified-payroll-20261120" defer></script>
 <link rel="stylesheet" href="/account-settings.css?v=profile-account-20261122">
 <script src="/account-settings.js?v=profile-account-20261122" defer></script>
-<script src="/player.js?v=personnel-rules-20261123" defer></script>
+<script src="/player.js?v=retro-polish-20261124r" defer></script>
   <script src="/page-headings.js?v=notice-restore-20261120" defer></script>
   <script src="/print-signal.js?v=single-gateway-grain-20261114" defer></script>
   <script src="/terminal-frame.js?v=system-theme-icons-20261113" defer></script>
@@ -1399,5 +1394,7 @@
 <link rel="stylesheet" href="/market-header-layout.css?v=1">
 <link rel="stylesheet" href="/archive-type-signal.css?v=notice-recipient-20261123">
 <link rel="stylesheet" href="/desktop-game-layout.css?v=trading-style-20261114">
+<link rel="stylesheet" href="/retro-ui-polish.css?v=retro-polish-20261124r">
+<script src="/retro-terminal-fx.js?v=retro-polish-20261124r" defer></script>
 </body>
 </html>

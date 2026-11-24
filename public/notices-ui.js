@@ -11,12 +11,15 @@
     list(items) {
       const pinned = item => item.pinned ?? /置顶/.test(item.category || '');
       const ordered = [...items].sort((a,b) => Number(pinned(b))-Number(pinned(a)) || (Date.parse(b.createdAt)||0)-(Date.parse(a.createdAt)||0) || Number(b.id)-Number(a.id));
-      return ordered.map(item => `<article class="retro-corner-box notice-card">
-        <div class="notice-meta"><span>${item.category}</span>${time(item.createdAt)}</div>
-        <h2 class="notice-title-secondary">${item.title}</h2>
+      return ordered.map(item => {
+        const isPinned = Boolean(pinned(item));
+        const cleanCategory = isPinned ? String(item.category || '').replace(/^置顶[·•\s/-]*/, '') || '通告' : item.category;
+        return `<article class="retro-corner-box notice-card${isPinned ? ' is-pinned' : ''}">
+        <div class="notice-meta"><span class="notice-meta-left">${isPinned ? '<b class="notice-pin-stamp">置顶</b>' : ''}<span class="notice-cat">${cleanCategory}</span></span><span class="notice-meta-right">${time(item.createdAt)}<span class="notice-comment-total">留言 ${Number(item.postCount)||0}</span></span></div>
+        <h2 class="notice-title-secondary"><a href="#/news/${escape(item.id)}" data-cloud-news="${escape(item.id)}" class="notice-card-link">${item.title}</a></h2>
         <p class="notice-summary">${item.summary}</p>
-        <button type="button" data-cloud-news="${escape(item.id)}" class="inner-btn-primary notice-button">查阅全文 →</button><span class="notice-comment-total">留言 ${Number(item.postCount)||0}</span>
-      </article>`).join('') || '<p class="notice-empty">暂无通告。</p>';
+      </article>`;
+      }).join('') || '<p class="notice-empty">暂无通告。</p>';
     },
     article(item) {
       return `<header class="notice-article-heading"><div class="notice-meta"><span>${item.category}</span>${time(item.createdAt)}</div>

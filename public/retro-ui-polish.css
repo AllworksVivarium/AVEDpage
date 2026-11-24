@@ -1,0 +1,1726 @@
+:root {
+  --aved-fs-xs: 11px;
+  --aved-fs-sm: 12px;
+  --aved-fs-base: 14px;
+  --aved-fs-lg: 18px;
+  --aved-fs-xl: 26px;
+}
+
+@layer aved-retro-override {
+/* Retro-modernist player UI polish:
+   1) Unified button typography across ordinary UI controls
+   2) Symmetrical desktop mini-game grid & aligned heights
+   3) Bottom-right pop-out open & warp-collapse close window motion
+   Strictly preserves zero border-radius and all existing themes. */
+
+  /* ========================================================================
+     1. UNIFIED BUTTON TYPOGRAPHY & TACTILE RETRO-MODERNIST CONSISTENCY
+     Keeps specialized pixel-art lettering (.flight-main-button, .scratch-print,
+     .scratch-award-toast, #casino-switch-window [data-game]) and × icons intact.
+     ======================================================================== */
+  body.theme-inner #inner-app-view :is(
+    .community-button,
+    .inner-btn-primary,
+    .press-cta,
+    .game-tab-btn,
+    .notice-button,
+    .division-roster-link,
+    .dossier-reader-tools a,
+    .dossier-reader-tools button,
+    .dossier-reader-pagination button,
+    .forum-browse-tools button,
+    .forum-compose-tools button,
+    .forum-compose-send button,
+    .life-publish-actions button,
+    .ad-exchange-entry button,
+    .card-room-lobby button,
+    .welfare-dashboard button,
+    .stock-trade-actions button,
+    .slot-chip-btn,
+    .race-market-tabs button,
+    .race-amounts button,
+    .race-submit,
+    .flight-bet-multiplier,
+    .flight-radio-tools button,
+    .game-radio form button,
+    #claim-relief-btn,
+    #slot5x3-minus-btn,
+    #slot5x3-plus-btn,
+    #slot5x3-double-btn,
+    #slot5x3-spin-btn,
+    #scratch-reveal-all-cells-btn,
+    #scratch-next-ticket,
+    #scp-comment-submit,
+    #news-detail-comment-form > button
+  ),
+  body.theme-inner :is(
+    .system-message-window footer button,
+    .hud-dialog-actions button,
+    .life-submit-actions button,
+    #hud-settings-hub .hud-settings-tabs button
+  ) {
+    font-family: var(--type-ui) !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  /* Restore intentional illustrated / pixel-art game lettering */
+  body.theme-inner #game-panel-scratch .scratch-print button,
+  body.theme-inner .scratch-award-toast button {
+    font-family: 'AVED IPix', 'AVED Plex Mono', monospace !important;
+  }
+  body.theme-inner #casino-switch-window [data-game] {
+    font-family: 'AVED IPix', 'AVED Plex Mono', monospace !important;
+  }
+  body.theme-inner #casino-switch-window [data-game="stocks"] span:first-child {
+    font-family: 'AVED Plex Mono', monospace !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-intrusion button {
+    font-family: var(--terminal-type), monospace !important;
+  }
+
+  /* Consistent weight & alignment on shared game/utility button groups */
+  body.theme-inner #view-casino :is(
+    .game-tab-btn,
+    #claim-relief-btn,
+    .slot-chip-btn,
+    #slot5x3-minus-btn,
+    #slot5x3-plus-btn,
+    #slot5x3-double-btn,
+    #slot5x3-spin-btn,
+    .race-market-tabs button,
+    .race-amounts button,
+    .race-submit,
+    .flight-bet-multiplier,
+    .flight-radio-tools button,
+    .game-radio form button,
+    .donation-presets button,
+    .stock-trade-actions button,
+    #scratch-reveal-all-cells-btn,
+    #scratch-next-ticket
+  ) {
+    font-family: var(--type-ui) !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Keep numeric chip buttons crisp and evenly aligned */
+  body.theme-inner #view-casino :is(.slot-chip-btn, .race-amounts button, .flight-bet-multiplier, .donation-presets button) {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px !important;
+  }
+
+  /* Retro-modernist tactile hover/active snap for standard buttons */
+  @media (hover: hover) {
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .community-button,
+      .notice-button,
+      .slot-chip-btn,
+      .race-amounts button,
+      .race-market-tabs button,
+      .flight-bet-multiplier,
+      .card-room-lobby button,
+      .stock-trade-actions button
+    ):not(:disabled):hover {
+      border-color: var(--inner-text-main) !important;
+      box-shadow: inset 1px 1px 0 #ffffff55, inset -1px -1px 0 #0004, 2px 2px 0 color-mix(in srgb, var(--inner-text-main) 28%, transparent) !important;
+    }
+  }
+
+  /* ========================================================================
+     2. DESKTOP MINI-GAME ALIGNMENT & BALANCED BOTTOM LAYOUT (>= 1000px)
+     Aligns left stage box & right control column to an exact 420px top band,
+     balances Row 2 cards side-by-side, and spans rules cleanly across bottom.
+     ======================================================================== */
+  @media (min-width: 1000px) {
+    /* Shared 2-column geometry: flush with container, no awkward center float */
+    .terminal-next #game-panel-skydive .flight-layout,
+    #game-panel-derby .animal-race-layout,
+    .terminal-next #game-panel-slots > .grid {
+      width: 100% !important;
+      max-width: none !important;
+      margin: 0 !important;
+      display: grid !important;
+      grid-template-columns: minmax(0, 1.48fr) minmax(300px, 1fr) !important;
+      gap: 20px !important;
+      align-items: stretch !important;
+    }
+
+    /* --- 2A. SKYDIVE (高空速降) ---
+       Row 1+2 (left = 420px console, right = 152px stake + 20px gap + 248px manifest = 420px)
+       Row 3   (left = rankings, right = radio — equal height)
+       Row 4   (full-width flight protocol) */
+    #game-panel-skydive .flight-layout {
+      grid-template-rows: 152px 248px auto auto !important;
+    }
+    #game-panel-skydive .flight-main,
+    #game-panel-skydive .flight-sidebar {
+      display: contents !important;
+    }
+    #game-panel-skydive .flight-console {
+      grid-column: 1 !important;
+      grid-row: 1 / span 2 !important;
+      width: 100% !important;
+      max-width: none !important;
+      height: 420px !important;
+      max-height: 420px !important;
+      margin: 0 !important;
+    }
+    #game-panel-skydive .flight-stake-panel {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+      height: 152px !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-skydive .flight-manifest {
+      grid-column: 2 !important;
+      grid-row: 2 !important;
+      height: 248px !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-skydive #skydive-passengers-list {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      scrollbar-width: thin;
+    }
+    /* Desktop already has live radio right beside the game; hide duplicate quick-chat */
+    #game-panel-skydive .flight-quick-chat {
+      display: none !important;
+    }
+    #game-panel-skydive .card-rankings {
+      grid-column: 1 !important;
+      grid-row: 3 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-skydive .flight-radio {
+      grid-column: 2 !important;
+      grid-row: 3 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-skydive .flight-radio #skydive-chat-list {
+      flex: 1 1 180px !important;
+      min-height: 180px !important;
+    }
+    #game-panel-skydive .flight-protocol {
+      grid-column: 1 / -1 !important;
+      grid-row: 4 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-skydive .flight-rule-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 0 20px !important;
+    }
+    #game-panel-skydive .flight-rule-grid > div {
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: 4px !important;
+      border-bottom: 0 !important;
+      padding: 6px 0 !important;
+    }
+
+    /* --- 2B. DERBY (随便跑跑) ---
+       Row 1 (left = 420px stage, right = 420px betting slip)
+       Row 2 (left = rankings, right = radio — equal height)
+       Row 3 (full-width race rules) */
+    #game-panel-derby .animal-race-layout {
+      grid-template-rows: 420px auto auto !important;
+    }
+    #game-panel-derby .race-main,
+    #game-panel-derby .race-sidebar {
+      display: contents !important;
+    }
+    #game-panel-derby .animal-stage {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      width: 100% !important;
+      max-width: none !important;
+      height: 420px !important;
+      max-height: 420px !important;
+      margin: 0 !important;
+    }
+    #game-panel-derby .race-slip {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+      height: 420px !important;
+      max-height: 420px !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow-y: auto !important;
+      scrollbar-width: thin;
+      box-sizing: border-box !important;
+    }
+    #game-panel-derby .race-slip .race-stake {
+      margin-top: auto !important;
+    }
+    #game-panel-derby .card-rankings {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-derby .animal-radio {
+      grid-column: 2 !important;
+      grid-row: 2 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-derby .animal-radio #derby-radio-slot {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #game-panel-derby .animal-radio #derby-chat-messages {
+      flex: 1 1 180px !important;
+      min-height: 180px !important;
+    }
+    #game-panel-derby .race-rules {
+      grid-column: 1 / -1 !important;
+      grid-row: 3 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-derby .race-rule-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      column-gap: 20px !important;
+    }
+    #game-panel-derby .race-rule-grid > div {
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: 4px !important;
+      border-bottom: 0 !important;
+      padding: 6px 0 !important;
+    }
+
+    /* --- 2C. SLOTS (异常回路) ---
+       Row 1 (left = 420px machine, right = 420px bet panel)
+       Row 2 (left = paytable/rules, right = history log — equal height) */
+    .terminal-next #game-panel-slots > .grid {
+      grid-template-rows: 420px auto !important;
+    }
+    #game-panel-slots .slot-main,
+    #game-panel-slots .slot-controls {
+      display: contents !important;
+    }
+    #game-panel-slots .slot-machine {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      width: 100% !important;
+      max-width: none !important;
+      height: 420px !important;
+      max-height: 420px !important;
+      margin: 0 !important;
+    }
+    #game-panel-slots .slot-controls > div:first-child {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+      height: 420px !important;
+      max-height: 420px !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-slots .game-rule-card {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-slots .slot-controls > div:last-child {
+      grid-column: 2 !important;
+      grid-row: 2 !important;
+      margin: 0 !important;
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+    }
+    #game-panel-slots #slot5x3-history-list {
+      flex: 1 1 auto !important;
+      max-height: 360px !important;
+    }
+
+    /* --- 2D. STOCKS (KARMA指数) --- */
+    #game-panel-stocks .stock-workspace {
+      align-items: stretch !important;
+      gap: 16px !important;
+    }
+    #game-panel-stocks .stock-workspace > .market-terminal {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #game-panel-stocks .stock-workspace > .market-terminal .market-chart {
+      flex: 1 1 auto !important;
+    }
+  }
+/* ========================================================================
+     3. SOUND SETTINGS SWITCHES (UNIFIED & PROMINENT ACCENT STYLE)
+     Fixes mismatch between .sound-switch (网页音效) and .sound-income-switch (到账播报)
+     ======================================================================== */
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    min-height: 56px !important;
+    padding: 12px 14px !important;
+    border: 1px solid var(--inner-border) !important;
+    border-left: 4px solid var(--inner-border) !important;
+    border-radius: 0 !important;
+    background: var(--inner-card-alt) !important;
+    color: var(--inner-text-main) !important;
+    cursor: pointer !important;
+    transition: background-color 140ms ease, border-color 140ms ease;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch > span,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch > span {
+    font-family: var(--type-ui) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--inner-text-main) !important;
+    letter-spacing: 0.02em;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch:has(input:checked),
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch:has(input:checked) {
+    background: var(--inner-accent) !important;
+    border-color: var(--inner-accent) !important;
+    border-left: 4px solid var(--inner-accent-text) !important;
+    color: var(--inner-accent-text) !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch:has(input:checked) > span,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch:has(input:checked) > span {
+    color: var(--inner-accent-text) !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch input[type="checkbox"],
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch input[type="checkbox"] {
+    appearance: none !important;
+    position: relative !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 26px !important;
+    flex: 0 0 48px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--inner-border) !important;
+    border-radius: 0 !important;
+    background: var(--inner-bg) !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch input[type="checkbox"]::after,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch input[type="checkbox"]::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 3px !important;
+    left: 3px !important;
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--inner-text-muted) !important;
+    transition: transform 150ms ease, background-color 150ms ease !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch input[type="checkbox"]:checked,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch input[type="checkbox"]:checked {
+    background: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent-text) !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch input[type="checkbox"]:checked::after,
+  body.theme-inner #view-profile.personal-hud #hud-sound .hud-sound-settings .sound-switch.sound-income-switch input[type="checkbox"]:checked::after {
+    transform: translateX(22px) !important;
+    background: var(--inner-accent) !important;
+  }
+
+  body.theme-inner #view-profile.personal-hud #hud-sound [data-sound-preview],
+  body.theme-inner #view-profile.personal-hud #hud-sound [data-sound-sfx-preview] {
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    min-height: 34px !important;
+    padding: 6px 14px !important;
+    border: 1px solid var(--inner-border) !important;
+    box-shadow: var(--system-key-shadow) !important;
+  }
+
+  /* ========================================================================
+     4. TOKEN HIERARCHY, LEFT/RIGHT ALIGNMENT & DENSITY AUDIT
+     ======================================================================== */
+  @media (min-width: 1000px) {
+    /* Plan A: Left column stacks Fund + Ad Exchange; Right column holds full 10-row Rankings */
+    #inner-app-view #game-panel-home .welfare-dashboard {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr) !important;
+      grid-template-rows: auto 1fr !important;
+      gap: 20px !important;
+      align-items: start !important;
+    }
+    #inner-app-view #game-panel-home .welfare-dashboard > .company-fund-panel {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #inner-app-view #game-panel-home .welfare-dashboard > .company-ranking-panel {
+      grid-column: 2 !important;
+      grid-row: 1 / span 2 !important;
+      margin: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+  }
+
+  /* Stocks workspace: equalize trade action buttons & align toolbar baseline */
+  #inner-app-view #game-panel-stocks .stock-trade-actions button {
+    min-height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+  }
+
+  /* Personal HUD controls: sharper key border & clearer active accent */
+  body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key {
+    border-color: var(--inner-border) !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key[aria-pressed="true"] {
+    border-color: var(--inner-accent) !important;
+    box-shadow: inset 0 2px 0 var(--inner-accent) !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key[aria-pressed="true"] .hud-led {
+    background: var(--inner-accent) !important;
+    box-shadow: 0 0 6px var(--inner-accent) !important;
+  }
+/* ========================================================================
+     5. UNIFIED TERMINAL SETTINGS HUB & MOBILE-FIRST ENTRY BAR
+     ======================================================================== */
+  body.theme-inner #view-profile.personal-hud .hud-settings-entry {
+    padding: 10px 12px !important;
+    display: grid !important;
+    gap: 10px !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-entry-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-entry-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-entry-title > span {
+    font-family: var(--type-ui) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--inner-text-main) !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-entry-title > small {
+    font-family: var(--type-ui) !important;
+    font-size: 11px !important;
+    color: var(--inner-text-muted) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-open-btn {
+    flex: none !important;
+    min-height: 34px !important;
+    padding: 6px 12px !important;
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border: 1px solid var(--inner-accent) !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-quick-links {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  @media (min-width: 600px) {
+    body.theme-inner #view-profile.personal-hud .hud-settings-quick-links {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-quick-links button {
+    min-height: 36px !important;
+    padding: 6px 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    background: var(--inner-card-alt) !important;
+    border: 1px solid var(--inner-border-soft) !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-settings-quick-links button:hover {
+    border-color: var(--inner-text-main) !important;
+  }
+
+  /* Unified tabbed settings dialog */
+  body.theme-inner #hud-settings-hub {
+    --popup-size: 520px !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-settings-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    margin: 0 0 14px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid var(--inner-border-soft) !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-settings-tabs button {
+    min-height: 38px !important;
+    padding: 6px 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    border: 1px solid var(--inner-border-soft) !important;
+    background: var(--inner-card-alt) !important;
+    color: var(--inner-text-main) !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-settings-tabs button[aria-selected="true"] {
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent) !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-login-collapse {
+    border: 1px solid var(--inner-border-soft) !important;
+    background: var(--inner-card-alt) !important;
+    margin: 4px 0 !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-login-collapse > summary {
+    padding: 9px 10px !important;
+    min-height: 38px !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--inner-text-main) !important;
+    cursor: pointer !important;
+  }
+  body.theme-inner #hud-settings-hub .hud-login-collapse > .hud-login-fields {
+    border: 0 !important;
+    border-top: 1px solid var(--inner-border-soft) !important;
+    margin: 0 !important;
+    padding: 10px !important;
+  }
+/* ========================================================================
+     6. SEMANTIC TYPE SCALE & HIERARCHY (5-STEP SCALE, 3 TYPEFACE ROLES)
+     Distills madebymustafa/design-taste (<=5 sizes/page), Anthropic
+     frontend-design (clear scale, no noisy micro-labels), and taste-skill.
+     ======================================================================== */
+  :root {
+    --aved-fs-xs: 11px;
+    --aved-fs-sm: 12px;
+    --aved-fs-base: 14px;
+    --aved-fs-lg: 18px;
+    --aved-fs-xl: 26px;
+  }
+
+  /* Page titles: unified xl scale (22px mobile / 26px desktop) */
+  body.theme-inner #inner-app-view .player-section-title,
+  body.theme-inner #inner-app-view #view-forum h2,
+  body.theme-inner #inner-app-view .casino-compact-bar > [data-casino-title] {
+    font-family: var(--type-heading) !important;
+    font-size: clamp(20px, 4.5vw, var(--aved-fs-xl)) !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  /* Card & module headings: unified lg scale (18px) */
+  body.theme-inner #inner-app-view :is(
+    .welfare-heading h3,
+    .ad-exchange-entry h3,
+    .card-room-lobby h3,
+    .game-rule-card h4,
+    .race-rules h3,
+    .flight-protocol h4,
+    .stock-trade-ticket h3,
+    .department-sheet h3,
+    .scp-item-card h3
+  ) {
+    font-family: var(--type-heading) !important;
+    font-size: var(--aved-fs-lg) !important;
+    font-weight: 700 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  /* Body & reading copy: unified base scale (14px, 1.7 leading) */
+  body.theme-inner #inner-app-view :is(
+    .forum-card-excerpt,
+    .forum-detail-body,
+    .forum-post-content,
+    .department-summary p,
+    .hud-bio p
+  ) {
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+    line-height: 1.7 !important;
+  }
+
+  /* Secondary labels & metadata: unified xs scale (11px, restrained tracking) */
+  body.theme-inner #inner-app-view :is(
+    .section-kicker,
+    .player-section-kicker > span,
+    .ad-exchange-entry small,
+    .forum-post-meta,
+    .notice-meta,
+    .game-radio-heading small
+  ) {
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-xs) !important;
+    line-height: 1.45 !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Numeric readouts: tabular monospace */
+  body.theme-inner #inner-app-view :is(
+    #hub-balance,
+    .casino-compact-balance strong,
+    #karma-index-val,
+    #market-selected-price,
+    .hud-clock time
+  ) {
+    font-family: var(--type-code) !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+
+  /* ========================================================================
+     7. CASINO AD SLOT DESKTOP ALIGNMENT (FULL-WIDTH SPAN BELOW 2-COL GRID)
+     ======================================================================== */
+  @media (min-width: 1000px) {
+    #inner-app-view #game-panel-home .welfare-dashboard > .ad-exchange-entry {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #inner-app-view #game-panel-home > .ad-text-strip[data-ad-slot="casino"],
+    #inner-app-view #game-panel-home > .ad-text-example {
+      width: 100% !important;
+      max-width: none !important;
+      margin-inline: 0 !important;
+      box-sizing: border-box !important;
+    }
+  }
+
+  /* ========================================================================
+     8. FORUM TOOLBAR & COMPOSER ERGONOMIC LAYOUT (MOBILE-FIRST + DESKTOP)
+     ======================================================================== */
+  body.theme-inner #inner-app-view #view-forum .forum-browse-tools {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    margin-bottom: 14px !important;
+    border: 1px solid var(--inner-border-soft) !important;
+    background: var(--inner-card-bg) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-search {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-search input {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-search button[type="submit"] {
+    flex: none !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 14px !important;
+    background: var(--inner-card-alt) !important;
+    color: var(--inner-text-main) !important;
+    border: 1px solid var(--inner-border) !important;
+    font-size: var(--aved-fs-sm) !important;
+    font-weight: 600 !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-browse-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+    width: 100% !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-browse-actions label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: var(--aved-fs-sm) !important;
+    color: var(--inner-text-muted) !important;
+    font-weight: 600 !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-browse-actions select {
+    width: auto !important;
+    min-width: 96px !important;
+    max-width: 140px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 4px 8px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+  /* Promote "发帖" to primary accent CTA, anchored right */
+  body.theme-inner #inner-app-view #view-forum .forum-browse-actions [data-compose] {
+    margin-left: auto !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 18px !important;
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border: 1px solid var(--inner-accent) !important;
+    font-size: var(--aved-fs-sm) !important;
+    font-weight: 700 !important;
+  }
+  @media (min-width: 860px) {
+    body.theme-inner #inner-app-view #view-forum .forum-browse-tools {
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+    }
+    body.theme-inner #inner-app-view #view-forum .forum-search {
+      flex: 1 1 280px !important;
+      max-width: 420px !important;
+    }
+    body.theme-inner #inner-app-view #view-forum .forum-browse-actions {
+      width: auto !important;
+      flex: 0 0 auto !important;
+    }
+  }
+
+  /* Forum Composer: natural top-to-bottom writing flow */
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form[hidden] {
+    display: none !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-compose-header {
+    font-family: var(--type-heading) !important;
+    font-size: var(--aved-fs-lg) !important;
+    font-weight: 700 !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--inner-border-soft) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-compose-meta-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  @media (min-width: 640px) {
+    body.theme-inner #inner-app-view #view-forum .forum-compose-meta-row {
+      grid-template-columns: 180px minmax(0, 1fr) !important;
+      align-items: center !important;
+    }
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-compose-meta-row .forum-category-choice {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-compose-meta-row .forum-category-choice > span {
+    flex: none !important;
+    font-size: var(--aved-fs-sm) !important;
+    color: var(--inner-text-muted) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum .forum-compose-meta-row .forum-category-choice select {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    padding: 6px 8px !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-topic-title {
+    width: 100% !important;
+    height: 38px !important;
+    box-sizing: border-box !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-topic-content {
+    min-height: 130px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+    line-height: 1.7 !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form .forum-compose-footer {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid var(--inner-border-soft) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form .forum-compose-tools {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form .forum-compose-tools button {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+  body.theme-inner #inner-app-view #view-forum #new-forum-topic-form .forum-compose-send button[type="submit"] {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 22px !important;
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border: 1px solid var(--inner-accent) !important;
+    font-size: var(--aved-fs-sm) !important;
+    font-weight: 700 !important;
+  }
+/* ========================================================================
+     9. CROSS-PAGE UI AUDIT FIXES (DEPARTMENTS, LIFE, CONTAINMENT, NEWS, LOBBY)
+     ======================================================================== */
+  /* Departments: keep all 5 department cards equal single-column width */
+
+  /* Life Archive: clear primary vs secondary CTA hierarchy & uniform filter heights */
+  body.theme-inner #inner-app-view #view-life .life-publish-actions [data-create],
+  body.theme-inner #life-composer #life-create .life-submit-actions button[type="submit"] {
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent) !important;
+    font-weight: 700 !important;
+  }
+  body.theme-inner #inner-app-view #view-life #life-filters button[type="submit"] {
+    background: var(--inner-card-alt) !important;
+    color: var(--inner-text-main) !important;
+    border-color: var(--inner-border) !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+  body.theme-inner #inner-app-view #view-life #life-filters :is(input, select) {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+  body.theme-inner #inner-app-view #view-life .life-filter-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  @media (min-width: 720px) {
+    body.theme-inner #inner-app-view #view-life .life-filter-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
+  body.theme-inner #life-composer #life-create .life-submit-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid var(--inner-border-soft) !important;
+  }
+
+  /* Containment & News comment forms: uniform height & mobile-safe width */
+  body.theme-inner #inner-app-view #view-containment #scp-search-input {
+    width: 100% !important;
+    max-width: 280px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+  body.theme-inner #inner-app-view #scp-realname-comment-form,
+  body.theme-inner #inner-app-view #news-detail-comment-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  @media (min-width: 600px) {
+    body.theme-inner #inner-app-view #scp-realname-comment-form,
+    body.theme-inner #inner-app-view #news-detail-comment-form {
+      flex-direction: row !important;
+      align-items: stretch !important;
+    }
+  }
+  body.theme-inner #inner-app-view :is(#scp-realname-comment-input, #news-detail-comment-input) {
+    min-height: 38px !important;
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+  }
+  body.theme-inner #inner-app-view :is(#scp-comment-submit, #news-detail-comment-form > button[type="submit"]) {
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent) !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Card Room Lobby: prevent cramped mobile header controls */
+  body.theme-inner #inner-app-view .card-room-lobby > header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+  }
+  body.theme-inner #inner-app-view .card-room-lobby .card-room-controls {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-left: auto !important;
+  }
+  body.theme-inner #inner-app-view .card-room-lobby .card-room-controls :is(select, button) {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: var(--aved-fs-sm) !important;
+  }
+/* ========================================================================
+     10. SETTINGS HUB FULL-WIDTH INPUTS & ACTIVE TAB/SUBMIT ACCENT FIX
+     Overrides legacy #hud-edit width: min(420px, 67vw) so inputs align flush
+     with the 4-tab bar above them on desktop and mobile.
+     ======================================================================== */
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub #hud-edit,
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-settings-pane,
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub #cloud-profile-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub #cloud-profile-form :is(
+    label,
+    input:not([type="radio"]):not([type="checkbox"]),
+    select,
+    textarea,
+    fieldset,
+    details,
+    .hud-dialog-actions
+  ) {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-settings-tabs button[aria-selected="true"],
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub #cloud-profile-form button[type="submit"] {
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent) !important;
+    font-weight: 700 !important;
+  }
+/* Static read-only real name field in player profile settings */
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-readonly-field {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: 8px 12px !important;
+    border: 1px dashed var(--inner-border-soft) !important;
+    background: color-mix(in srgb, var(--inner-bg) 55%, var(--inner-card-bg)) !important;
+    box-sizing: border-box !important;
+    cursor: default !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-readonly-label {
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-sm) !important;
+    color: var(--inner-text-muted) !important;
+    flex: none !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-readonly-value {
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-base) !important;
+    font-weight: 700 !important;
+    color: var(--inner-text-main) !important;
+    margin-right: auto !important;
+    user-select: text !important;
+  }
+  body.theme-inner #inner-app-view #view-profile.personal-hud #hud-settings-hub .hud-readonly-badge {
+    font-family: var(--type-ui) !important;
+    font-size: var(--aved-fs-xs) !important;
+    color: var(--inner-text-muted) !important;
+    flex: none !important;
+  }
+/* ========================================================================
+     11. RESTRAINED RETRO-TERMINAL MICRO-INTERACTIONS
+     Distilled from taste-skill (core micro-interactions, GPU-only) and
+     design-taste dark-tech (120-240ms cubic-bezier, 1 ambient status pulse).
+     Strictly disabled under body.effects-off & prefers-reduced-motion.
+     ======================================================================== */
+  @keyframes aved-led-pulse {
+    0%, 100% { opacity: 0.95; }
+    50% { opacity: 0.38; }
+  }
+
+  /* Single restrained ambient flourish: live status LEDs */
+  body.theme-inner:not(.effects-off) #inner-app-view :is(.hud-topline .hud-led, .hud-key[aria-pressed="true"] .hud-led) {
+    animation: aved-led-pulse 3.2s ease-in-out infinite;
+  }
+
+  /* Sidebar nav & tabs: crisp left accent draw on hover/active */
+  body.theme-inner:not(.effects-off) #left-sidebar .nav-tab-btn {
+    position: relative;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  body.theme-inner:not(.effects-off) #left-sidebar .nav-tab-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--inner-accent);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  body.theme-inner:not(.effects-off) #left-sidebar .nav-tab-btn:is(:hover, :focus-visible, [aria-current="page"])::before {
+    transform: scaleY(1);
+  }
+
+  /* Interactive cards: subtle -1px GPU lift & crisp border brighten on desktop hover */
+  @media (hover: hover) {
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .scp-item-card,
+      .department-sheet,
+      .forum-card,
+      .notice-card,
+      .life-paper
+    ) {
+      transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .scp-item-card,
+      .department-sheet,
+      .forum-card,
+      .notice-card,
+      .life-paper
+    ):hover {
+      transform: translateY(-1px);
+      border-color: var(--inner-text-main);
+    }
+  }
+
+  /* Crisp focus-visible ring & smooth transitions on explicit UI action buttons */
+  body.theme-inner:not(.effects-off) #inner-app-view :is(
+    .community-button,
+    .inner-btn-primary,
+    .press-cta,
+    .game-tab-btn,
+    .slot-chip-btn,
+    .race-amounts button,
+    .race-market-tabs button,
+    .card-room-lobby button,
+    .stock-trade-actions button,
+    .division-view-tabs button,
+    .hud-settings-tabs button
+  ):not(:disabled) {
+    transition: background-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+                color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.theme-inner #inner-app-view :is(.hud-topline .hud-led, .hud-key[aria-pressed="true"] .hud-led) {
+      animation: none !important;
+    }
+    body.theme-inner #left-sidebar .nav-tab-btn::before,
+    body.theme-inner #inner-app-view :is(.scp-item-card, .department-sheet, .forum-card, .notice-card, .life-paper) {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
+  /* ========================================================================
+     12. CONTAMINATION MODE AESTHETIC REFINEMENT
+     Elevates hidden signal-contaminated mode from raw neon-red/Times-New-Roman
+     into cohesive archival analog-horror fitting AVED's retro-terminal palette.
+     ======================================================================== */
+  /* Subtle non-blocking atmospheric edge vignette when contaminated */
+  body.theme-inner.signal-contaminated::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 900;
+    box-shadow: inset 0 0 70px rgba(110, 12, 18, 0.22), inset 0 0 2px rgba(176, 28, 34, 0.35);
+  }
+  body.theme-inner.signal-contaminated.dark-mode::after {
+    box-shadow: inset 0 0 90px rgba(135, 16, 22, 0.32), inset 0 0 2px rgba(210, 42, 48, 0.4);
+  }
+
+  /* Refined editorial crimson palette & proper CJK serif typography */
+  body.signal-contaminated {
+    --haunt-echo: #9e1418;
+  }
+  body.signal-contaminated.dark-mode {
+    --haunt-echo: #d6383e;
+  }
+  body.signal-contaminated .haunt-transient,
+  body.signal-contaminated .presence-effect {
+    font-family: var(--type-heading), 'Noto Serif SC', serif !important;
+    letter-spacing: 0.03em !important;
+  }
+  body.signal-contaminated .haunt-whisper-residue,
+  body.signal-contaminated .haunt-label,
+  body.signal-contaminated .haunt-label > span,
+  body.signal-contaminated .haunt-label-clear,
+  body.signal-contaminated .presence-effect {
+    color: var(--haunt-echo) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 0 6px color-mix(in srgb, var(--haunt-echo) 35%, transparent) !important;
+  }
+
+  /* Fix watching eyes visibility in dark mode (previously hardcoded #000) */
+  body.signal-contaminated.dark-mode .presence-tracking {
+    color: rgba(235, 220, 222, 0.38) !important;
+  }
+  body.signal-contaminated:not(.dark-mode) .presence-tracking {
+    color: rgba(28, 16, 18, 0.34) !important;
+  }
+
+  /* Elevated archival CRT warning dialog (high contrast, sharp 0px shadow) */
+  body.theme-inner dialog.pollution-dialog {
+    --warning-ink: #ebe1e3 !important;
+    --warning-edge: #9e181d !important;
+    --warning-face: #0b090a !important;
+    border: 1px solid var(--warning-edge) !important;
+    border-radius: 0 !important;
+    box-shadow: inset 0 0 0 1px #3a0b0d, 6px 6px 0 rgba(0, 0, 0, 0.72) !important;
+  }
+  body.theme-inner dialog.pollution-dialog[data-tone="red"] {
+    --warning-edge: #be2026 !important;
+    --warning-face: #100809 !important;
+  }
+  body.theme-inner .pollution-window {
+    background: repeating-linear-gradient(0deg, rgba(190, 32, 38, 0.05) 0 1px, transparent 1px 4px), var(--warning-face) !important;
+  }
+  body.theme-inner .pollution-window header {
+    background: #6e0f14 !important;
+    border-bottom: 2px double #d65156 !important;
+    color: #f6eaea !important;
+    padding: 8px 12px !important;
+    font-family: var(--type-code), monospace !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+  }
+  body.theme-inner .pollution-window header :is(span, button) {
+    color: #f6eaea !important;
+    text-shadow: none !important;
+  }
+  body.theme-inner .pollution-window header button {
+    border: 1px solid rgba(246, 234, 234, 0.45) !important;
+  }
+  body.theme-inner .pollution-dialog-body {
+    padding: 22px 20px 18px !important;
+  }
+  body.theme-inner .pollution-dialog-body p {
+    margin: 0 0 22px !important;
+    font-family: var(--type-heading), serif !important;
+    font-size: 15px !important;
+    line-height: 1.75 !important;
+    color: #efe5e7 !important;
+    text-shadow: 0 0 6px rgba(190, 32, 38, 0.25) !important;
+  }
+  body.theme-inner .pollution-dialog-actions button {
+    min-height: 36px !important;
+    padding: 6px 16px !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 0 !important;
+    background: #171214 !important;
+    border: 1px solid #6b3538 !important;
+    color: #dccacc !important;
+    box-shadow: 2px 2px 0 #000 !important;
+  }
+  body.theme-inner .pollution-dialog-actions [data-pollution-confirm] {
+    background: #7c1217 !important;
+    border-color: #c93238 !important;
+    color: #fff3f3 !important;
+    font-weight: 700 !important;
+  }
+  body.theme-inner .pollution-window-echo {
+    border: 1px solid rgba(190, 32, 38, 0.45) !important;
+    opacity: 0.38 !important;
+    box-shadow: none !important;
+  }
+
+  /* Contamination toggle button inside settings hub */
+  body.theme-inner #view-profile.personal-hud .hud-contamination-toggle[aria-pressed="true"] {
+    border-color: #9e181d !important;
+    box-shadow: inset 3px 0 0 #9e181d !important;
+  }
+  body.theme-inner #view-profile.personal-hud .hud-contamination-toggle[aria-pressed="true"] b {
+    color: #c92a2a !important;
+    font-weight: 700 !important;
+  }
+/* ========================================================================
+     13. CURRENCY NO-WRAP & DIALOG FORM INPUT SCALE FIXES
+     ======================================================================== */
+  /* Keep currency coin mark & numeric amount strictly on a single line */
+  body.theme-inner #inner-app-view :is(
+    #company-fund-summary article strong,
+    #top-balance-val,
+    #hub-balance,
+    .casino-compact-balance strong,
+    .hud-balance-row strong,
+    .balance-rankings strong,
+    .rank-top strong,
+    .finance-stat-value
+  ) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+  }
+  body.theme-inner .aved-currency-mark {
+    display: inline-block !important;
+    vertical-align: -0.14em !important;
+    flex: none !important;
+  }
+
+  /* Fix oversized 16px inputs & file selector inside desktop dialogs */
+  @media (min-width: 768px) {
+    body.theme-inner dialog:not(:where(#text-edit-panel, #type-study-panel)) :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+      select,
+      textarea
+    ) {
+      font-size: 13px !important;
+      line-height: 1.5 !important;
+    }
+  }
+  body.theme-inner dialog:not(:where(#text-edit-panel, #type-study-panel)) input[type="file"] {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    padding: 6px 8px !important;
+  }
+  body.theme-inner dialog:not(:where(#text-edit-panel, #type-study-panel)) input[type="file"]::file-selector-button {
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    margin-right: 10px !important;
+  }
+/* ========================================================================
+     14. NOTICE CARDS (FULL-CARD CLICKABLE) & CASSETTE FUTURISM AESTHETIC
+     ======================================================================== */
+  /* Full-card clickable notice entry via accessible stretched-link pattern */
+  body.theme-inner #inner-app-view #view-news .notice-card {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 18px 20px !important;
+    border: 1px solid var(--inner-border-soft) !important;
+    border-top: 2px solid var(--inner-border) !important;
+    background: var(--inner-card-bg) !important;
+    cursor: pointer !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card.is-pinned {
+    border-left: 4px solid var(--inner-accent) !important;
+    border-top-color: var(--inner-accent) !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-meta {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 6px 12px !important;
+    margin: 0 !important;
+    padding: 0 0 8px 0 !important;
+    border-bottom: 1px solid var(--inner-border-soft) !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-meta-left,
+  body.theme-inner #inner-app-view #view-news .notice-meta-right {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-pin-stamp {
+    display: inline-block !important;
+    padding: 1px 6px !important;
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    font-family: var(--type-ui) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.06em !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-comment-total {
+    font-family: var(--type-code), monospace !important;
+    font-variant-numeric: tabular-nums !important;
+    font-size: 11px !important;
+    color: var(--inner-text-muted) !important;
+    padding-left: 8px !important;
+    border-left: 1px solid var(--inner-border-soft) !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-title-secondary {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: var(--type-heading) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.45 !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card-link {
+    position: static !important;
+    display: inline !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    font: inherit !important;
+    text-align: left !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card-link::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card-link:focus-visible {
+    outline: 2px solid var(--inner-accent) !important;
+    outline-offset: 3px !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-summary {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: var(--type-archive) !important;
+    font-size: 14px !important;
+    line-height: 1.7 !important;
+    color: var(--inner-text-muted) !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* P2: Department Archive view tabs (archival folder-tab switch) */
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    border-bottom: 0 !important;
+    border: 1px solid var(--inner-border) !important;
+    background: var(--inner-card-alt) !important;
+    margin-bottom: 18px !important;
+  }
+  @media (max-width: 640px) {
+    body.theme-inner #inner-app-view #department-archive .division-view-tabs {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      width: 100% !important;
+    }
+  }
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs button {
+    margin: 0 !important;
+    padding: 9px 20px !important;
+    min-height: 40px !important;
+    border: 0 !important;
+    border-right: 1px solid var(--inner-border-soft) !important;
+    background: transparent !important;
+    color: var(--inner-text-muted) !important;
+    display: inline-flex !important;
+    align-items: baseline !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    font-family: var(--type-ui) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs button:last-child {
+    border-right: 0 !important;
+  }
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs button small {
+    font-family: var(--type-code), monospace !important;
+    font-size: 10px !important;
+    letter-spacing: 0.06em !important;
+    opacity: 0.72 !important;
+    margin: 0 !important;
+  }
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs button[aria-pressed="true"] {
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    font-weight: 700 !important;
+  }
+  body.theme-inner #inner-app-view #department-archive .division-view-tabs button[aria-pressed="true"] small {
+    color: var(--inner-accent-text) !important;
+    opacity: 0.85 !important;
+  }
+
+  /* Cassette Futurism / Retro-Futurist Instrument Panel Craft */
+  body.theme-inner #inner-app-view :is(
+    .company-fund-panel,
+    .company-ranking-panel,
+    .ad-exchange-entry,
+    .card-room-lobby,
+    .game-rule-card,
+    .race-rules,
+    .flight-protocol,
+    #view-forum .forum-browse-tools,
+    #new-forum-topic-form
+  ) {
+    border-top: 2px solid var(--inner-border) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 2px 2px 0 rgba(0, 0, 0, 0.16) !important;
+  }
+  body.theme-inner:not(.dark-mode) #inner-app-view :is(
+    .company-fund-panel,
+    .company-ranking-panel,
+    .ad-exchange-entry,
+    .card-room-lobby,
+    .game-rule-card,
+    .race-rules,
+    .flight-protocol,
+    #view-forum .forum-browse-tools,
+    #new-forum-topic-form
+  ) {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 2px 2px 0 rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Archival double-rule headers */
+  body.theme-inner #inner-app-view :is(
+    .welfare-heading,
+    .game-radio-heading,
+    .notice-article-heading,
+    .forum-compose-header
+  ) {
+    border-bottom: 3px double var(--inner-border-soft) !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Tactile mechanical keycap press on primary & secondary action keys */
+  body.theme-inner #inner-app-view :is(
+    .inner-btn-primary,
+    .press-cta,
+    #view-forum .forum-browse-actions [data-compose],
+    #view-life .life-publish-actions [data-create],
+    #scp-comment-submit,
+    #news-detail-comment-form > button[type="submit"]
+  ) {
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.24),
+                inset -1px -1px 0 rgba(0, 0, 0, 0.35),
+                2px 2px 0 rgba(0, 0, 0, 0.28) !important;
+  }
+  body.theme-inner:not(.effects-off) #inner-app-view :is(
+    .inner-btn-primary,
+    .press-cta,
+    #view-forum .forum-browse-actions [data-compose],
+    #view-life .life-publish-actions [data-create],
+    #scp-comment-submit,
+    #news-detail-comment-form > button[type="submit"]
+  ):not(:disabled):active {
+    transform: translate(1px, 1px) !important;
+    box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.35) !important;
+  }
+/* ========================================================================
+     15. NOTICE TITLE > SUMMARY HIERARCHY FIX & RETRO TERMINAL FX STYLES
+     ======================================================================== */
+  /* Guarantee notice title (20px bold) is clearly larger than summary (14px) */
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-title-secondary,
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-title-secondary .notice-card-link {
+    font-family: var(--type-heading) !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.015em !important;
+    color: var(--inner-text-main) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  body.theme-inner #inner-app-view #view-news .notice-card .notice-summary {
+    font-family: var(--type-ui) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.7 !important;
+    color: var(--inner-text-muted) !important;
+  }
+/* Skydive: crisp non-pixelated indicator text & strict 3-tier z-order */
+  body.theme-inner #game-panel-skydive .flight-main-button button,
+  body.theme-inner #game-panel-skydive .flight-feedback,
+  body.theme-inner #game-panel-skydive .flight-readout p,
+  body.theme-inner #game-panel-skydive .flight-readout > span,
+  body.theme-inner #game-panel-skydive .flight-scene-label,
+  body.theme-inner #game-panel-skydive .flight-nameplate {
+    font-family: var(--type-ui) !important;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.theme-inner #game-panel-skydive .flight-main-button button {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    line-height: 1.3 !important;
+  }
+  body.theme-inner #game-panel-skydive .flight-readout > strong {
+    font-family: var(--type-code), monospace !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+  body.theme-inner #game-panel-skydive #flight-actors-canvas { z-index: 2 !important; }
+  body.theme-inner #game-panel-skydive #flight-nameplates { z-index: 3 !important; }
+  body.theme-inner #game-panel-skydive .flight-scene-label-self { z-index: 5 !important; }
+  body.theme-inner #game-panel-skydive .flight-danmaku { z-index: 6 !important; }
+  body.theme-inner #game-panel-skydive .flight-safety { z-index: 11 !important; }
+  body.theme-inner #game-panel-skydive .flight-readout { z-index: 12 !important; }
+  body.theme-inner #game-panel-skydive .flight-main-button { z-index: 13 !important; }
+  body.theme-inner #game-panel-skydive .flight-feedback { z-index: 14 !important; }
+  body.theme-inner #game-panel-skydive .flight-result { z-index: 15 !important; }
+
+}
+
+/* Effect 3: Subtle monochrome CRT surface sheen on desktop card hover */
+  @media (hover: hover) and (pointer: fine) {
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .division-overview-card,
+      .scp-item-card,
+      .notice-card,
+      .company-fund-panel,
+      .company-ranking-panel
+    ) {
+      position: relative;
+      overflow: hidden;
+    }
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .division-overview-card,
+      .scp-item-card,
+      .notice-card,
+      .company-fund-panel,
+      .company-ranking-panel
+    )::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      background: radial-gradient(
+        280px circle at var(--aved-sheen-x, 50%) var(--aved-sheen-y, 50%),
+        color-mix(in srgb, var(--inner-accent) 11%, transparent),
+        transparent 72%
+      );
+      z-index: 0;
+    }
+    body.theme-inner:not(.effects-off) #inner-app-view :is(
+      .division-overview-card,
+      .scp-item-card,
+      .notice-card,
+      .company-fund-panel,
+      .company-ranking-panel
+    ):hover::before {
+      opacity: 1;
+    }
+  }
+
+  /* Effect 4: Crisp CRT channel-switch horizontal scanline wipe */
+  @keyframes aved-channel-wipe-run {
+    0% {
+      opacity: 0.9;
+      transform: translateY(0) scaleX(0.25);
+    }
+    45% {
+      opacity: 0.85;
+      transform: translateY(32vh) scaleX(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(82vh) scaleX(1);
+    }
+  }
+  #aved-channel-wipe {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 48px;
+    height: 2px;
+    pointer-events: none;
+    z-index: 1100;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, var(--inner-accent, #9e1b1b) 18%, var(--inner-text-main, #fff) 50%, var(--inner-accent, #9e1b1b) 82%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--inner-accent, #9e1b1b) 55%, transparent);
+  }
+  body:not(.effects-off) #aved-channel-wipe.is-wiping {
+    animation: aved-channel-wipe-run 190ms cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #aved-channel-wipe,
+    body.theme-inner #inner-app-view :is(.division-overview-card, .scp-item-card, .notice-card, .company-fund-panel, .company-ranking-panel)::before {
+      display: none !important;
+      animation: none !important;
+    }
+  }

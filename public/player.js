@@ -666,7 +666,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         document.getElementById('scp-comment-submit').hidden=false;
         if (commentsListEl) {
           if (!currentScp.realComments || currentScp.realComments.length === 0) {
-            commentsListEl.innerHTML = `<div class="text-xs opacity-60 font-mono-tech py-3 text-center">暂无实名评议记录，可在下方签署发表。</div>`;
+            commentsListEl.innerHTML = `<div class="text-xs opacity-60 font-mono-tech py-3 text-center">暂无实名评议记录。</div>`;
           } else {
             commentsListEl.innerHTML = currentScp.realComments.map(c => `
               <div class="inner-card-alt p-3 text-xs space-y-1 font-mono-tech">
