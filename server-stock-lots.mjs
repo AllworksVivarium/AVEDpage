@@ -67,7 +67,7 @@ export function installStockLots(db){
   const summary=db.prepare(`SELECT COUNT(*) AS closedCount,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)>0),0) AS wins,COALESCE(SUM(COALESCE(net_pnl,realized_pnl_change)=0),0) AS draws FROM stock_trades WHERE employee_id=? AND ${closed}`).get(id);
   Object.assign(summary,db.prepare('SELECT COALESCE(SUM(realized_pnl_change),0) AS realizedPnl,COALESCE(SUM(fee),0) AS totalFees FROM stock_trades WHERE employee_id=?').get(id));
   const opening="(intent IN ('open','mixed') OR (intent='' AND (holding_before=0 OR (holding_before>0 AND action='buy') OR (holding_before<0 AND action='sell'))))";
-  const recentOpens=db.prepare(`SELECT action,code,leverage FROM stock_trades WHERE employee_id=? AND created_at>=datetime('now','-5 days') AND ${opening} ORDER BY id DESC LIMIT 50`).all(id);
+  const recentOpens=db.prepare(`SELECT action,code,leverage FROM stock_trades WHERE employee_id=? AND ${opening} ORDER BY id DESC LIMIT 50`).all(id);
   const style=tradingStyle(recentOpens);
   return {style,items:rows.slice(0,20),nextCursor:rows.length>20?rows[19].id:null,summary:{...summary,winRate:summary.closedCount?summary.wins/summary.closedCount:null}};
  }
