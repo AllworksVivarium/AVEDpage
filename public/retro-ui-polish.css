@@ -1640,30 +1640,6 @@
   body.theme-inner #game-panel-skydive .flight-feedback { z-index: 14 !important; }
   body.theme-inner #game-panel-skydive .flight-result { z-index: 15 !important; }
 
-/* Containment "查看全部" toggle button aligned with .scp-filter-btn */
-  body.theme-inner #inner-app-view #view-containment #scp-show-all-btn {
-    box-sizing: border-box !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 32px !important;
-    padding: 6px 10px !important;
-    border: 1px solid var(--inner-border) !important;
-    border-radius: 0 !important;
-    font-family: var(--type-ui) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    line-height: 18px !important;
-    white-space: nowrap !important;
-    box-shadow: var(--system-key-shadow) !important;
-  }
-  body.theme-inner #inner-app-view #view-containment #scp-show-all-btn[aria-pressed="true"] {
-    background: var(--inner-accent) !important;
-    color: var(--inner-accent-text) !important;
-    border-color: var(--inner-accent) !important;
-    font-weight: 700 !important;
-  }
-
   /* Stocks Summary: 4 horizontal strips (prevents large balance wrapping) */
   body.theme-inner #inner-app-view #game-panel-stocks .stock-funds-grid {
     display: flex !important;

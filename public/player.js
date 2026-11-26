@@ -174,7 +174,6 @@
       let sidebarNarrow = window.innerWidth < 768;
       let isSidebarCollapsed = true;
       let selectedScpFilter = 'ALL';
-      let scpShowAll = false;
       let scpSearchKeyword = '';
       let selectedScpId = scpItemsData[0]?.id || null;
       let currentNewsId = null;
@@ -586,17 +585,7 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
           return kwParts.some(part => haystack.includes(part));
         });
 
-        const boardKey=JSON.stringify([currentUser?.id,currentUser?.identityKind,kw,selectedScpFilter,matching.map(item=>item.id)]);
-        if(!scpBoardSelection||scpBoardSelection.key!==boardKey)scpBoardSelection={key:boardKey,ids:AVEDArchiveBoard.forViewer(matching,currentUser,4).map(item=>item.id)};
-        const filtered=scpShowAll?matching:scpBoardSelection.ids.map(id=>matching.find(item=>item.id===id)).filter(Boolean);
-        const showAllBtn=document.getElementById('scp-show-all-btn');
-        if(showAllBtn){
-          showAllBtn.setAttribute('aria-pressed',String(scpShowAll));
-          showAllBtn.textContent=scpShowAll?'收起全部':'查看全部';
-          showAllBtn.className=scpShowAll
-            ?'scp-show-all-btn px-3 py-1.5 bg-[var(--inner-accent)] text-[var(--inner-accent-text)] font-bold cursor-pointer'
-            :'scp-show-all-btn px-3 py-1.5 retro-corner-box opacity-85 hover:opacity-100 cursor-pointer';
-        }
+        const filtered = matching;
         if (countFooter) countFooter.textContent = `SHOWING: ${filtered.length} / FILES: ${matching.length}`;
 
         document.getElementById('scp-realname-comment-form').hidden=!filtered.length;
@@ -739,10 +728,6 @@ ${emp.abilityNote&&!emp.personalMessage?`                <dl class="directory-de
         showToast('已清除筛选。', 'success');
       });
 
-      document.getElementById('scp-show-all-btn')?.addEventListener('click', () => {
-        scpShowAll = !scpShowAll;
-        renderScpArchives();
-      });
       document.querySelectorAll('.scp-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           selectedScpFilter = btn.getAttribute('data-filter');
