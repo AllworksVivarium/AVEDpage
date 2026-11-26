@@ -513,13 +513,11 @@
     font-size: 12px !important;
   }
 
-  /* Personal HUD controls: sharper key border & clearer active accent */
-  body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key {
-    border-color: var(--inner-border) !important;
-  }
+  /* Personal HUD controls: keep effects key border & face identical to sibling keys when ON or OFF */
+  body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key,
   body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key[aria-pressed="true"] {
-    border-color: var(--inner-accent) !important;
-    box-shadow: inset 0 2px 0 var(--inner-accent) !important;
+    border-color: var(--inner-border) !important;
+    background: var(--hud-control-face, var(--inner-card-bg)) !important;
   }
   body.theme-inner #inner-app-view #view-profile.personal-hud .hud-controls .hud-key[aria-pressed="true"] .hud-led {
     background: var(--inner-accent) !important;
@@ -1641,6 +1639,96 @@
   body.theme-inner #game-panel-skydive .flight-main-button { z-index: 13 !important; }
   body.theme-inner #game-panel-skydive .flight-feedback { z-index: 14 !important; }
   body.theme-inner #game-panel-skydive .flight-result { z-index: 15 !important; }
+
+/* Containment "查看全部" toggle button aligned with .scp-filter-btn */
+  body.theme-inner #inner-app-view #view-containment #scp-show-all-btn {
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    border: 1px solid var(--inner-border) !important;
+    border-radius: 0 !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 18px !important;
+    white-space: nowrap !important;
+    box-shadow: var(--system-key-shadow) !important;
+  }
+  body.theme-inner #inner-app-view #view-containment #scp-show-all-btn[aria-pressed="true"] {
+    background: var(--inner-accent) !important;
+    color: var(--inner-accent-text) !important;
+    border-color: var(--inner-accent) !important;
+    font-weight: 700 !important;
+  }
+
+  /* Stocks Summary: 4 horizontal strips (prevents large balance wrapping) */
+  body.theme-inner #inner-app-view #game-panel-stocks .stock-funds-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+  body.theme-inner #inner-app-view #game-panel-stocks .stock-funds-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 9px 14px !important;
+    border: 1px solid var(--inner-border-soft) !important;
+    background: var(--inner-card-bg) !important;
+    box-sizing: border-box !important;
+  }
+  body.theme-inner #inner-app-view #game-panel-stocks .stock-funds-card h4 {
+    margin: 0 !important;
+    font-family: var(--type-ui) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--inner-text-muted) !important;
+    white-space: nowrap !important;
+    flex: none !important;
+  }
+  body.theme-inner #inner-app-view #game-panel-stocks .stock-funds-card .stock-funds-value {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    font-family: var(--type-code), monospace !important;
+    font-variant-numeric: tabular-nums !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Stocks History: "本人累计手续费" full-width single line, strictly no wrap */
+  body.theme-inner #inner-app-view #stock-history-page .portfolio-stat-grid > div:last-child {
+    grid-column: 1 / -1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 9px 14px !important;
+    border-top: 1px solid var(--inner-border-soft) !important;
+    white-space: nowrap !important;
+  }
+  body.theme-inner #inner-app-view #stock-history-page .portfolio-stat-grid > div:last-child small {
+    margin: 0 !important;
+    white-space: nowrap !important;
+    flex: none !important;
+  }
+  body.theme-inner #inner-app-view #stock-history-page .portfolio-stat-grid > div:last-child strong {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    font-family: var(--type-code), monospace !important;
+    font-variant-numeric: tabular-nums !important;
+  }
 
 }
 
